@@ -1,0 +1,4 @@
+interface:
+  display_name: "Research Optimization"
+  short_description: "Investigate evidence for an optimization contract"
+  default_prompt: "Use $research-optimization to investigate one bounded factual question for the selected optimization task."

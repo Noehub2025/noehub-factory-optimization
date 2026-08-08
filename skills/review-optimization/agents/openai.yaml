@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Optimization"
+  short_description: "Audit an optimization contract before solution work"
+  default_prompt: "Use $review-optimization in a fresh context to review the selected optimization task and issue a fail-closed verdict."

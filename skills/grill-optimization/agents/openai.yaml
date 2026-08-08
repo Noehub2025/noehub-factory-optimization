@@ -1,0 +1,4 @@
+interface:
+  display_name: "Grill Optimization"
+  short_description: "Resolve user-owned optimization decisions"
+  default_prompt: "Use $grill-optimization to resolve the next user-owned decision in the selected optimization task."

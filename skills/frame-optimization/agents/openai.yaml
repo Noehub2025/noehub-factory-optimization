@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frame Optimization"
+  short_description: "Define an evidence-backed optimization contract"
+  default_prompt: "Use $frame-optimization to create or resume an evidence-backed A-H optimization framing task."

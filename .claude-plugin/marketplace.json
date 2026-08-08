@@ -1,0 +1,27 @@
+{
+  "name": "noehub",
+  "owner": {
+    "name": "Ken Chen",
+    "url": "https://github.com/Noehub2025"
+  },
+  "description": "Noehub optimization-framing Skills, installable as a Claude Code plugin.",
+  "metadata": {
+    "description": "Noehub optimization-framing Skills, installable as a Claude Code plugin."
+  },
+  "plugins": [
+    {
+      "name": "noehub-factory-optimization",
+      "source": "./",
+      "description": "Frame optimization problems into evidence-backed comparison contracts and gate them through independent review before solution work.",
+      "category": "engineering",
+      "keywords": [
+        "optimization",
+        "problem-framing",
+        "decision-making",
+        "research",
+        "review",
+        "workflow"
+      ]
+    }
+  ]
+}
