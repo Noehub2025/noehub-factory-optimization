@@ -1,7 +1,7 @@
 {
   "name": "noehub-factory-optimization",
-  "version": "0.1.0",
-  "description": "Evidence-backed optimization framing with bounded research, user decision interviews, and independent readiness and comparability gates.",
+  "version": "0.2.0",
+  "description": "Evidence-backed optimization problem framing and representation design with bounded research, user decisions, and independent readiness gates.",
   "author": {
     "name": "Ken Chen"
   },
@@ -10,6 +10,8 @@
   "keywords": [
     "optimization",
     "problem-framing",
+    "representation",
+    "decomposition",
     "decision-making",
     "research",
     "review",
@@ -20,6 +22,7 @@
     "./skills/frame-optimization",
     "./skills/research-optimization",
     "./skills/grill-optimization",
-    "./skills/review-optimization"
+    "./skills/review-optimization",
+    "./skills/review-representation"
   ]
 }

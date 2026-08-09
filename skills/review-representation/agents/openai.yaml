@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Representation"
+  short_description: "Gate representation and decomposition readiness"
+  default_prompt: "Use $review-representation in a fresh context to review the selected optimization representation and issue a fail-closed result."

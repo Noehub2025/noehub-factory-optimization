@@ -22,7 +22,7 @@ Treat blogs, forum answers, secondary tutorials, marketing pages, and model-writ
 External search is done for a working answer when every material claim in that answer meets one of these:
 
 - it has at least one **applicable** source from rungs 1–5 that **supports** the claim (not merely mentions it), and the owning authority is identified; or
-- it is labeled `Unknown`, and the Slot document names the missing owning authority or primary source that would settle it; or
+- it is labeled `Unknown`, and the research record and packet name the missing owning authority or primary source that would settle it; or
 - it is labeled `Disputed`, with each side's applicable primary source recorded.
 
 Before counting a source as support, check applicability against the task:

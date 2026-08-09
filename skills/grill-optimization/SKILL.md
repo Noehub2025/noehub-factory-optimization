@@ -1,50 +1,97 @@
 ---
 name: grill-optimization
-description: Interview the user for the user-owned decisions an optimization frame needs. Use when frame-optimization delegates an unresolved decision point, or when an A-H contract row waits on a preference, authority, private context, or value choice that evidence cannot settle.
+description: Ask one user-owned optimization decision or authorization question, record the answer in a coordinator-selected detail, and return it without adopting Contract changes. Use when frame-optimization delegates an A-H or R1-R8 preference, private fact, authority choice, authorization, or value judgment that evidence cannot settle.
 ---
 
 # grill-optimization
 
-Resolve the **user-owned decisions** of an optimization framing task — a directory under `docs/skills/optimization/<task-slug>/` holding a `PROBLEM.md` A–H contract. Decisions are the user's; facts are yours.
+Ask one exact user-owned question for the Primary Framing Agent. Record the user's answer in one selected detail, then return one matching decision packet.
 
 ## Inputs
 
-Require the canonical task path — confirm it resolves under `docs/skills/optimization/` and contains `PROBLEM.md`. Take the caller's decision point when given; otherwise sweep the `O` and `~` rows for eligible points.
+Require these inputs from `frame-optimization`:
 
-When a previous session ended with an unrecorded answer, confirm only that answer before anything else; a reconstruction from a summary is not a record.
+- the canonical task path under `docs/skills/optimization/<task-slug>/`;
+- one A-H, R1-R8, or cross-cutting target;
+- one exact decision or authorization question;
+- the evidence, serious alternatives, recommendation, and consequence needed to answer it;
+- one exact existing Slot or representation detail path for the decision record.
+
+Confirm that both paths remain under the selected task and that `PROBLEM.md` exists. Do not create a destination, sweep open rows, select the next decision, or expand one question into an interview plan.
+
+When an input is missing or ambiguous, return the missing input to the coordinator. Do not invent task context.
 
 ## Eligibility gate
 
-Put a point to the user only when all four hold:
+Ask the user only when all conditions hold:
 
-1. it is unresolved;
-2. the answer can change legality, ranking, success, measurement, or feasibility;
-3. available evidence cannot answer it;
-4. it depends on private context, authority, preference, or a value choice.
+1. the point is unresolved;
+2. the answer can change legality, ranking, success, measurement, feasibility, permitted search scope, representation loss, module responsibility, or coordination cost;
+3. available evidence cannot settle it;
+4. the answer depends on private context, authority, preference, authorization, or a value choice.
 
-A point that fails condition 3 or 4 is a fact: investigate it yourself or delegate it to `research-optimization`, and let only its downstream decisions wait on the result.
+If a condition fails, return `NO USER DECISION` with the failed condition. Do not investigate facts or delegate work to another skill.
 
-## Interview
+## Ask one question
 
-Map the eligible decisions as a **design tree**: every decision branches into the decisions that hang off it. The **frontier** is every decision whose prerequisites are settled. Ask one question per turn — the frontier's most upstream decision — then wait for the answer.
+Use this format, then wait:
 
+```text
+Question: <one decision or authorization>
+Evidence: <what is known, with labels and locators>
+Alternatives: <serious options>
+Recommendation: <evidence-backed option>
+Consequence: <what changes with the answer>
 ```
-❓ **<decision title>** — <the decision at stake>
 
-Evidence: <what is known, labeled, with source locators>
-Alternatives: <the serious options>
-➡️ Recommendation: <the evidence-backed answer>
-Consequence: <what changes depending on the answer>
+Do not ask the user to judge technical completeness. Do not combine unrelated decisions.
+
+## Record and return the answer
+
+After every material user answer, write a concise faithful record before continuing or returning. Follow [task-documents.md](../frame-optimization/references/task-documents.md) for A-H details and [representation-documents.md](../frame-optimization/references/representation-documents.md) for R1-R8 details.
+
+Write only:
+
+- the user's answer;
+- the user's authorization, denial, or conditions;
+- decision source and necessary context;
+- unresolved user choices.
+
+Update `generated`. Do not store a full transcript, secrets, or unnecessary private content.
+
+Return exactly one packet that matches the durable record:
+
+```text
+USER DECISION
+Task: <canonical task path>
+Target: <A-H | R1-R8 | named cross-cutting point>
+Question: <exact delegated question>
+Decision status: decided | authorized | denied | deferred | unable
+User answer: <faithful concise answer>
+Authorization: granted | denied | not applicable
+Conditions: <user-stated conditions or none>
+Decision source: user
+Decision context: <minimum context needed to interpret the answer>
+Unresolved user choices: <remaining choices or none>
+Decision record: <canonical detail path>
 ```
 
-**Return, record, then continue.** After each material answer, return the Slot, answer, decision source, and Contract effect to the Primary Framing Agent. The Primary Framing Agent records the answer under [task-documents.md](../frame-optimization/references/task-documents.md) before the next question. An explicit user answer can pin (`P`) its row. Each durable decision reshapes the tree; recompute the frontier.
+When the user cannot decide, use `Decision status: unable` and preserve the response and unresolved choice. Do not adopt an agent default. The Primary Framing Agent decides whether an evidence-backed reversible default is permitted.
 
-## When the user cannot decide
+When the user defers, denies authorization, or lacks authority, preserve that exact distinction. Do not translate it into a Contract status or blocker.
 
-For a reversible choice, recommend the evidence-backed default with its evidence. The Primary Framing Agent records it provisional (`~`) with `Decision source: agent default`. Only explicit user confirmation or independent review pins a default.
+## Protected content
 
-Block — rather than default — when the gap is missing authority, a private fact, or a safety boundary; record in the row's open action what unblocks it.
+Do not edit:
 
-## Done
+- `PROBLEM.md` or `REPRESENTATION.md` Contract cells;
+- A-H or R1-R8 row status;
+- adopted normative rules in any detail;
+- problem epochs or `representation_revision`;
+- `status`, `verified`, or `review_scope`;
+- normative module-contract content;
+- logs, review files, or downstream handoffs.
 
-The interview is done when the frontier is empty and the Primary Framing Agent has recorded every decision as answered, defaulted-provisional, or blocked with its unblocking condition.
+Do not write any file except the selected decision detail. In that detail, change only the permitted decision record and `generated`.
+
+Do not research factual questions, choose defaults, interpret the answer into Contract wording, pin a row, or coordinate the next action. The Primary Framing Agent validates the record and packet, then makes every normative decision.

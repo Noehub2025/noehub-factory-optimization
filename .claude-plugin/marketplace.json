@@ -4,19 +4,21 @@
     "name": "Ken Chen",
     "url": "https://github.com/Noehub2025"
   },
-  "description": "Noehub optimization-framing Skills, installable as a Claude Code plugin.",
+  "description": "Noehub optimization problem-framing and representation-design Skills, installable as a Claude Code plugin.",
   "metadata": {
-    "description": "Noehub optimization-framing Skills, installable as a Claude Code plugin."
+    "description": "Noehub optimization problem-framing and representation-design Skills, installable as a Claude Code plugin."
   },
   "plugins": [
     {
       "name": "noehub-factory-optimization",
       "source": "./",
-      "description": "Frame optimization problems into evidence-backed comparison contracts and gate them through independent review before solution work.",
+      "description": "Frame optimization problems, define representations and decomposition, and gate exact search scope through independent review.",
       "category": "engineering",
       "keywords": [
         "optimization",
         "problem-framing",
+        "representation",
+        "decomposition",
         "decision-making",
         "research",
         "review",

@@ -1,6 +1,6 @@
 # Task documents — format and writing rules
 
-Disclosed reference for skills that write optimization framing task documents (`PROBLEM.md`, `slots/<letter>.md`, `terms.md`, `review.md`, `log.md`). Implements the Evidence-Backed Optimization Framing spec; the task directory conforms to Open Knowledge Format (OKF) v0.2.
+Shared base reference for skills that write optimization task documents. It defines parent problem paths, formats, ownership, result comparability, and language rules. Read [representation-documents.md](representation-documents.md) for representation-stage document lifecycle and handoff rules.
 
 ## Contents
 
@@ -23,14 +23,18 @@ Resolve the canonical path and confirm that it remains under `docs/skills/optimi
 ```text
 docs/skills/optimization/<task-slug>/
 ├── PROBLEM.md
+├── REPRESENTATION.md
 ├── log.md
 ├── review.md
+├── representation-review.md
 ├── terms.md
 ├── slots/
+├── representation/
+├── modules/
 └── eval/
 ```
 
-Only `PROBLEM.md` is always in context. Create each optional file only when its content is necessary.
+Only `PROBLEM.md` is always in context. Representation work also loads `REPRESENTATION.md`. Create each optional file only when its content is necessary.
 
 Keep existing project documents in place. Link them as sources; publish or rewrite them only under separate authorization.
 
@@ -88,13 +92,17 @@ Use one or two sentences in each Contract cell. Put formulas, quantifiers, distr
 - `O` means a necessary point remains open; its Contract names the closing action or event.
 - `-` means the Slot cannot affect comparison; its Contract gives the reason.
 
-The Primary Framing Agent alone edits Contract cells, row status, normative Slot semantics, task terms, and the downstream handoff.
+The Primary Framing Agent alone adopts A-H or R1-R8 Contract cells, row status, normative rules, task terms, epochs, representation revisions, module-contract semantics, and downstream handoffs.
 
-The Research Agent writes labeled evidence and research results in a Slot document. The Grill Agent returns decisions for the Primary Framing Agent to record.
+The Primary Framing Agent creates or selects each worker detail before delegation. The Research Agent writes only research evidence, sources, observations, candidate representations, risks, unknowns, recommendations, and explicitly proposed Contract text. The Grill Agent writes only user answers, authorizations, decision provenance, necessary context, and unresolved user choices. Each worker returns a packet that matches its durable record.
+
+Research and grill workers do not edit core Contract cells, row status, adopted normative rules, epochs, representation revisions, lifecycle assurance metadata, or normative module-contract content.
 
 The Review Agent writes valid verdicts and finding text in `review.md`. It can edit review metadata and contract-document frontmatter without changing A-H semantics.
 
-If no valid review is available, the Primary Framing Agent can record only a review-capability blocker and `Workflow outcome: BLOCKED` in `review.md`.
+The Representation Review Agent writes valid results and finding text in `representation-review.md`. It can edit review metadata and reviewed-document frontmatter without changing representation semantics.
+
+If a required valid review is unavailable, the Primary Framing Agent records a review-capability blocker in the applicable review file and keeps affected documents draft.
 
 ## `review.md` structure
 
@@ -142,7 +150,7 @@ type: Optimization Slot Detail
 title: "Slot E: Evaluation semantics"
 description: Defines evaluation semantics that do not fit in the Slot E contract.
 status: draft
-generated: { by: research-optimization/1, at: <ISO-8601 datetime> }
+generated: { by: frame-optimization/1, at: <ISO-8601 datetime> }
 sources: []
 ---
 ```
@@ -161,6 +169,8 @@ Any meaningful change to `PROBLEM.md` or a linked contract document invalidates 
 A meaningful change can alter legality, ranking, success, measurement, resource feasibility, or result interpretation. Spelling, links, and clearer text that keep the same contract carry no invalidation; changes only to review metadata do not invalidate themselves.
 
 The linked Slot document is part of the row contract: formulas, quantifiers, distributions, seed rules, and measurement rules in it are normative. A semantic change to a pinned (`P`) contract while retained results exist additionally requires a comparability review and a `log.md` disposition — flag this to the caller; the disposition decision belongs to `review-optimization`.
+
+When `REPRESENTATION.md` exists, a parent semantic change also invalidates its parent binding and review assurance. Follow [representation-documents.md](representation-documents.md) without changing the parent epoch solely for representation state.
 
 ## Epoch and `log.md`
 
@@ -184,7 +194,13 @@ Write the newest `log.md` entry first. Include date, Slot, old epoch, new epoch,
 
 A Slot document can contain: evidence and source links; rejected interpretations; formulas and quantifier order; research results; discussion results; a detailed action that can close an open point. The A–H table lives only in `PROBLEM.md`.
 
-Keep normative rules and evidence under separate headings. The Primary Framing Agent owns normative sections. A Research Agent can write the evidence section without changing the contract meaning.
+Keep adopted normative rules, research records, and user-decision records under separate headings.
+
+- The Primary Framing Agent writes adopted normative sections.
+- A Research Agent writes the delegated question and scope, research evidence and sources, code or experiment observations, candidate representations, risks, unknowns, recommendations, and `Proposed Contract text — not adopted`. It can update `generated` and `sources`.
+- A Grill Agent writes user answers, authorizations, decision source and context, and unresolved user choices. It can update `generated`.
+
+Proposed Contract text and candidate representations remain nonnormative until the Primary Framing Agent adopts them.
 
 When a default was adopted because the user could not decide, mark it `Decision source: agent default` and give its evidence.
 

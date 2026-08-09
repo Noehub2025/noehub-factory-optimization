@@ -1,17 +1,18 @@
 # Noehub Factory Optimization
 
-Reusable Agent Skills for framing optimization problems before solution work begins. The workflow turns an ambiguous objective into an evidence-backed A-H comparison contract, resolves user-owned decisions, and requires an independent readiness gate.
+Reusable Agent Skills for preparing optimization work before solution search begins. The workflow turns an ambiguous objective into an evidence-backed A-H comparison contract, then defines R1-R8 representations, operations, modules, and safe search scope through independent gates.
 
 The workflow defines how solutions will be compared. It does not search for, implement, or claim a winning solution.
 
 ## Skills
 
-- **[frame-optimization](./skills/frame-optimization/SKILL.md)** — The entry point and workflow coordinator. It owns the comparison contract, task state, review repair loop, epoch changes, and downstream handoff.
-- **[research-optimization](./skills/research-optimization/SKILL.md)** — Investigates one bounded factual question and records labeled evidence without changing contract semantics.
-- **[grill-optimization](./skills/grill-optimization/SKILL.md)** — Resolves one user-owned decision at a time when evidence cannot decide it.
+- **[frame-optimization](./skills/frame-optimization/SKILL.md)** — The entry point and sole workflow coordinator. It owns A-H problem semantics, R1-R8 representation semantics, lifecycle state, repair loops, and exact-scope handoffs.
+- **[research-optimization](./skills/research-optimization/SKILL.md)** — Investigates one bounded A-H or R1-R8 question and writes nonnormative evidence without adopting contract changes.
+- **[grill-optimization](./skills/grill-optimization/SKILL.md)** — Asks and records one user-owned decision or authorization without adopting contract changes.
 - **[review-optimization](./skills/review-optimization/SKILL.md)** — Runs a fresh-context, fail-closed readiness or result-comparability review.
+- **[review-representation](./skills/review-representation/SKILL.md)** — Runs a fresh-context gate for bounded whole-candidate or named modular search scope.
 
-Start with `frame-optimization`. The other three Skills are narrow workers used by that coordinator.
+Start with `frame-optimization`. The other four Skills are narrow workers used by that coordinator.
 
 ## Install
 
@@ -25,7 +26,7 @@ After this repository is published at the configured GitHub address, run:
 npx skills@latest add Noehub2025/noehub-factory-optimization
 ```
 
-Choose the four Skills and the coding agents where you want to install them.
+Choose the five Skills and the coding agents where you want to install them.
 
 ### Claude Code plugin
 
@@ -34,7 +35,7 @@ Choose the four Skills and the coding agents where you want to install them.
 /plugin install noehub-factory-optimization@noehub
 ```
 
-The plugin installs the four Skills as one managed bundle.
+The plugin installs the five Skills as one managed bundle.
 
 ### Manual installation
 
@@ -50,27 +51,28 @@ Keep each complete Skill folder together. Its `SKILL.md`, references, and option
 
 ## Use
 
-Ask the coding agent to use `frame-optimization` and provide a task slug or the canonical path under `docs/skills/optimization/`.
+Ask the coding agent to use `frame-optimization` and provide a task slug or the canonical path under `docs/skills/optimization/`. The same coordinator recovers and advances both `PROBLEM.md` and `REPRESENTATION.md`.
 
 Example:
 
 ```text
-Use frame-optimization to create the comparison contract for inference-cost-reduction.
+Use frame-optimization to define inference-cost-reduction and continue through representation readiness.
 ```
 
-The full readiness gate requires a fresh agent context for `review-optimization`. If the host cannot provide an independent context, the workflow stops with a review-capability blocker instead of reporting readiness.
+The full workflow requires fresh agent contexts for `review-optimization` and `review-representation`. If the host cannot provide an independent context, the workflow stops with a review-capability blocker instead of reporting readiness.
 
 ## Workflow boundary
 
 ```text
 frame-optimization
-  -> research-optimization   factual evidence
-  -> grill-optimization      user-owned decisions
-  -> review-optimization     independent readiness or comparability gate
-  -> downstream optimizer    only after PROCEED
+  -> research-optimization   bounded A-H or R1-R8 evidence
+  -> grill-optimization      one user decision or authorization
+  -> review-optimization     parent readiness or comparability gate
+  -> review-representation   exploratory or modular scope gate
+  -> downstream optimizer    only within the exact permitted scope
 ```
 
-The coordinator is the single owner of the A-H contract. Worker Skills return evidence, decisions, or verdicts through stable interfaces; they do not take over the shared contract.
+The coordinator is the single owner of A-H and R1-R8 contracts. Worker Skills return evidence, decisions, or review results through stable interfaces; they do not take over the shared contract.
 
 ## Layout
 

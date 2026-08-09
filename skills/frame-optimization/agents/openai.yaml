@@ -1,4 +1,4 @@
 interface:
   display_name: "Frame Optimization"
-  short_description: "Define an evidence-backed optimization contract"
-  default_prompt: "Use $frame-optimization to create or resume an evidence-backed A-H optimization framing task."
+  short_description: "Recover, repair, and hand off optimization contracts"
+  default_prompt: "Use $frame-optimization to recover one optimization task, repair stale reviews, manage representation search state, and produce only the reviewed handoff scope."

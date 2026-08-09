@@ -1,4 +1,4 @@
 interface:
   display_name: "Research Optimization"
-  short_description: "Investigate evidence for an optimization contract"
-  default_prompt: "Use $research-optimization to investigate one bounded factual question for the selected optimization task."
+  short_description: "Write research details and return findings"
+  default_prompt: "Use $research-optimization to investigate one bounded A-H or R1-R8 question, write only permitted nonnormative detail sections, and return the findings."
