@@ -84,6 +84,7 @@ When the user defers, denies authorization, or lacks authority, preserve that ex
 
 Do not edit:
 
+- `PROBLEM.md` or `REPRESENTATION.md` Brief, Open decisions, or Known limits;
 - `PROBLEM.md` or `REPRESENTATION.md` Contract cells;
 - A-H or R1-R8 row status;
 - adopted normative rules in any detail;

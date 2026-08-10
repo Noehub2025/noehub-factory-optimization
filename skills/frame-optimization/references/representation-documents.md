@@ -35,18 +35,17 @@ docs/skills/optimization/<task-slug>/
 
 `PROBLEM.md` must exist before `REPRESENTATION.md`. Do not create a second core representation file or a separate state directory.
 
-Only `PROBLEM.md` and `REPRESENTATION.md` are default representation-stage context. Create optional documents only when their content is necessary.
+During search design, readers normally start with only `PROBLEM.md` and `REPRESENTATION.md`. Create optional documents only when their extra detail is necessary.
+
+The two main documents state every choice that a person or agent doing the work must make. They also name the fixed code, manifests, configs, or schemas that remove a choice. Details may contain complete contents, algorithms, command syntax, serialization, validation order, and evidence. If two allowed implementations may choose differently, state the choice or allowed freedom and its limits in the main document that owns it.
 
 ## `REPRESENTATION.md` template
 
-Keep the body to one title, one R1-R8 table, one status key, and one authority and revision rule block. The body has at most 40 nonblank lines. Each Contract cell has at most two sentences, and each sentence has at most 25 words.
+Use the same core shape as `PROBLEM.md`: minimal frontmatter, one title, a plain-language Brief, one R1-R8 Contract table, one Open decisions list, one Known limits list, one status key, and a three-line rule block. Do not impose a sentence, paragraph, word, or source-line count on the Brief. Keep the core document compact through the necessity rules below. Use one concise decision sentence in each Contract cell and a second short sentence only when its direct consequence would otherwise be unclear.
 
 ```markdown
 ---
 type: Optimization Representation
-title: <effort name> representation and decomposition
-description: Defines candidate encodings, moves, modules, and search-state compatibility for <effort name>.
-tags: [optimization, representation, decomposition]
 status: draft
 problem: PROBLEM.md
 problem_epoch: <positive integer copied from PROBLEM.md>
@@ -58,24 +57,112 @@ generated: { by: frame-optimization/1, at: "<ISO-8601 datetime>" }
 
 # REPRESENTATION: <effort name>
 
+## Brief
+
+<Name the concrete thing from PROBLEM.md that search changes. In plain language, explain the loop from the starting point through proposal, conversion, rejection or measurement, permitted feedback, selection, and stopping. State whether search changes the whole thing or named parts and what the results cannot prove.>
+
+## Contract
+
 | # | Item | St | Contract | Detail |
 |---|---|---|---|---|
-| R1 | Working forms | O | Name the canonical evaluation form, active search forms, translations, searched subset, and coverage limit. | |
-| R2 | Redundancy | O | Record redundancy as known, absent, or Unknown. Define its search effect, next action, or claim limit. | |
-| R3 | Scale behavior | O | Map each material Slot A scale variable to encoding size, operation cost, neighborhood growth, and module structure. | |
-| R4 | Moves and legality | O | Define operations, legality modes, neighborhoods, and reachability. Name the action or claim limit for every unknown. | |
-| R5 | Modules | O | Define module-owned and shared decisions, local alternatives, resource partitions, and the practical reason for each boundary. | |
-| R6 | Interfaces | O | Define active interfaces, invariants, failure behavior, composition, and translation to the evaluation representation. | |
-| R7 | Coupling | O | Record material objective, constraint, resource, and information coupling. Define coordination, global evaluation, or a claim limit. | |
-| R8 | Validation and state | O | Identify the harness, baseline, starting set, budget, validation limits, and retained search-state dispositions. | |
+| R1 | Measured and proposed forms | O | What the harness measures, what the optimizer proposes, how conversion works, and which options search may try are not decided. | |
+| R2 | Duplicate proposals | O | We do not know whether different proposals can produce the same option, so results cannot claim unique or complete coverage. | |
+| R3 | Effect of problem size | O | How problem size changes proposal size and scoring cost is undecided, so results cannot claim efficient search. | |
+| R4 | Allowed changes | O | Allowed changes, invalid-option handling, and whether repeated changes can reach every allowed option are undecided, so search cannot start. | |
+| R5 | Split into parts | - | Search treats each option as one whole; no split is active. | |
+| R6 | Part boundaries | - | No rules for joining separately changed parts apply while search treats each option as one whole. | |
+| R7 | Cross-part effects | - | No cross-part rule applies because search does not split the option into parts. | |
+| R8 | Search run and old work | O | The start, budget, feedback use, selection, stopping, harness checks, and old-work reuse are not decided. | |
 
-St: `P` = pinned; `~` = provisional; `O` = open; `-` = not applicable.
+## Open decisions
 
-Rules: `PROBLEM.md` owns problem semantics and result comparability. Representation changes do not change its epoch.
-Increase `representation_revision` only when retained search state requires migration or becomes invalid. Record its disposition in `log.md`.
+- R1 (O): decide what the harness measures, what the optimizer proposes, how conversion is checked, and which options search may try.
+- R2 (O): check whether different proposals produce the same option, or state that results cannot claim unique or complete coverage.
+- R3 (O): check how changing problem size affects proposal size and scoring cost before saying search is efficient.
+- R4 (O): decide allowed changes, illegal-option handling, starting points, and what search cannot prove before search starts.
+- R8 (O): decide the start, budget, allowed feedback, selection and stopping rules, harness checks, and old-work reuse before review.
+
+## Known limits
+
+- None.
+
+St: `P` = decided for this work; `~` = working answer; `O` = not decided; `-` = not relevant.
+
+Rules: `PROBLEM.md` decides what results mean and which results can be compared.
+Keep `representation_revision` when old checkpoints and saved search work can still be used without change.
+Increase it only when old work must be converted or discarded, and record that decision in `log.md`.
 ```
 
-Replace each placeholder with inspected evidence, an authorized decision, or an exact closing action. Do not copy illustrative contracts into a real task.
+Replace the Brief placeholder with inspected task facts. Replace each starter Contract with a task-specific decision when evidence supports one; keep a starter sentence only when it truthfully describes the open state. Do not copy illustrative task nouns into a real task.
+
+The Brief is the plain-language search story, not an R1-R8 summary and not a second Contract. Once search design begins, readers normally use `PROBLEM.md` and `REPRESENTATION.md` together to make decisions. Use the Contract table as a completeness check after drafting; do not use its row order as the reading order.
+
+Explain search through this general path:
+
+1. Name the concrete thing from `PROBLEM.md` that search changes. Do not repeat the full problem Contract.
+2. Name the complete thing that measurement code accepts and what search proposes.
+3. Explain how a proposal becomes measurable and what happens when conversion or validation fails.
+4. State the starting point, allowed changes, reachable set, duplicate handling, and whether search changes the whole thing or named parts.
+5. Explain whether earlier results may guide later proposals, how work is selected, and when search confirms, promotes, stops, or expands.
+6. Orient the reader to the budget, measurement code, completed checks, old-work reuse, and major limits where they affect this loop. Let the Contract and lists carry exact values and complete coverage.
+
+Adapt the paragraphs to the task. Combine adjacent steps when that improves flow, and add a paragraph when a distinction would otherwise be hidden. Do not give each R row its own sentence.
+
+Do not copy the parent Contract into `REPRESENTATION.md`. Readers normally load both main documents during search design. Repeat only enough problem context to make the search story flow, and keep `PROBLEM.md` as the authority. Any mismatch is a defect.
+
+Use concrete task nouns. At first use, define a task-specific term as a familiar kind of thing and state its role before using its short name. Do not define one unexplained term with another. Use verbs to show how one search step produces the next. If one sentence contains two terms that a new reader cannot explain, split or rewrite it.
+
+Keep the Brief compact by removing evidence history, rejected alternatives, full formulas, file hashes, and step-by-step procedures. Keep a version, path, or identifier only when a reader needs it to interpret the current result. Remove repeated meaning, but never merge separate concepts only to shorten the document.
+
+The Contract table decides the ordinary search actions and conclusions. Use one concise decision sentence in each Contract cell and a second short sentence only when its direct consequence would otherwise be unclear. Never write a request to define or fill in information. Put derivations, evidence, exhaustive operation parameters, validation logs, and multi-step procedures in `representation/<item>.md`. A detail must not introduce a rule that changes permitted proposals, feedback use, selection, stopping, evaluation, reuse, or claims without a plain-language summary in one of the two main documents. The Detail cell contains only one link or stays empty.
+
+Use this main-document test: if omitting a fact could make two reasonable readers or agents propose different kinds of work, use different feedback, select different survivors, stop at different times, choose different fixed evaluation code or inputs, exceed the budget, reuse incompatible state, or make different search claims, summarize that fact in `REPRESENTATION.md` or the row in `PROBLEM.md` that owns it. Exact contents and internal behavior may stay in a detail when a named executable, manifest, config, or schema already removes the choice.
+
+List every `O` or `~` row exactly once under Open decisions. Each bullet states the pending decision, next action, closure condition, and immediate consequence when it is not obvious. Omit `P` and `-` rows. Write `- None.` when no decision remains open or provisional.
+
+List under Known limits every current restriction on search or conclusions that remains after a row is decided, plus any cross-cutting evidence limit. A `P` row can appear here because its search rule is decided even when available evidence cannot support a stronger claim. Do not put a `P` row under Open decisions. Write `- None.` when no known limit remains.
+
+Use the same plain language in the Brief, Contract cells, Open decisions, and Known limits. Prefer the task's real noun, such as `config`, `schedule`, `model`, or `deck`, over `candidate`, `solution`, or `representation`.
+
+Use plain names before formal labels:
+
+| Avoid in the Brief | Write instead |
+|---|---|
+| canonical form C | the rendered config the harness measures |
+| search form E1 | the parameter vector the optimizer proposes |
+| checked translation T1 | the render step and the checks that verify it |
+| subset U | the configs this search is allowed to propose |
+| encoding redundancy | different proposals can produce the same config |
+| reachability | repeated allowed changes can reach every allowed config |
+| decomposition | search is split into separately changed parts |
+| claim limit | what the results cannot prove |
+| state compatibility | whether old checkpoints may be reused |
+| evaluation protocol | the data, code, repetitions, hardware, and score calculation |
+| candidate legality | which configs or schedules are allowed |
+| exact identity or equivalence | when two configs or schedules count as the same |
+| normalization | which one of several equivalent proposals search keeps |
+| exhaustion | testing every allowed config or schedule |
+| retained search state | old checkpoints, saved proposals, and cached scores |
+| search efficiency | how the time and computing needed for search grow with problem size |
+| parent contract | the rules in `PROBLEM.md` |
+| representation review is not ready | state the missing fact or file and the action it blocks |
+| pinned | decided and fixed for the current work |
+
+Formal labels can appear in the Contract table or a linked detail only after the Brief has introduced the underlying item in plain language. A label never replaces the concrete noun.
+
+Words such as `canonical`, `normative`, `encoding`, `redundancy`, `reachability`, `decomposition`, `coupling`, `semantics`, `claim limit`, `exhaustion`, `state compatibility`, `epoch`, `revision`, and `review` fail the plain-language check in Brief prose unless an exact field or quotation requires them. Rewrite the concrete fact and consequence.
+
+Read both Briefs before review. Without merely repeating task-specific labels, a new reader must be able to explain:
+
+- what system or process is being improved, what can change, and how that change affects the result;
+- the complete thing measurement accepts and what search proposes;
+- the path from starting point through proposal, conversion, rejection or measurement, feedback, selection, and stopping;
+- whether search changes the whole thing or named parts;
+- what the search results cannot prove.
+
+Then read the complete `PROBLEM.md` and `REPRESENTATION.md` without opening details. The pair passes the decision check only when the reader can decide what search may try, how proposals become measurable, how invalid work is handled, how feedback and budget may be used, how work is selected or stopped, whether search is split, which old work may be reused, what remains unknown, and what the results cannot prove.
+
+For an older table-only `REPRESENTATION.md`, derive the Brief, Open decisions, and Known limits from the current table and linked rule details. Apply both the task-to-search understanding check and the two-document decision test before preserving review assurance. When the search meaning already exists consistently and only the Brief explanation is missing, keep R1-R8 status and `representation_revision`, rewrite the Brief, set `REPRESENTATION.md` to draft, remove `review_scope` and `verified`, and require a fresh readability review. When an underlying search decision is absent, set the affected row to `O`, name the missing decision under Open decisions, invalidate representation assurance, and apply the search-state rules. In particular, absent feedback, survivor selection, tie handling, confirmation, promotion, stopping, or scale-up rules are missing R8 decisions, not wording omissions.
 
 ## Frontmatter and row status
 
@@ -97,8 +184,8 @@ A verification-only parent edit does not change `problem_generated_at`. A parent
 Use row statuses as follows:
 
 - `P`: the current search or proof claim depends on the contract.
-- `~`: a documented hypothesis permits limited work but cannot support a stronger claim.
-- `O`: a necessary item is unresolved; the Contract names the closing action or event.
+- `~`: a documented working decision permits limited work but cannot support a stronger conclusion. Its Open decisions bullet states the next action and closure condition.
+- `O`: a necessary item is unresolved; the Contract states the current boundary and its Open decisions bullet states the closing action.
 - `-`: the item cannot affect the requested search scope; the Contract gives the reason.
 
 A stable exploratory document can contain `~` rows when each row states a next action or claim limit. Provisional module rows do not permit independent module optimization.
@@ -108,6 +195,8 @@ A modular review requires pinned module, interface, and coupling contracts for t
 ## Authority boundary
 
 `PROBLEM.md` is the only authority for problem semantics. `REPRESENTATION.md` owns search strategy and references the parent instead of restating it as a new decision.
+
+The representation Brief is the search half of the two-document story, not a second problem contract. It gives only the parent context needed to understand search. `PROBLEM.md` supplies the score, required rules, baseline, success test, run combination, resources, and measurement meaning, and resolves any conflict.
 
 Use this ownership boundary:
 
@@ -127,7 +216,7 @@ Use this ownership boundary:
 | Module ownership and practical boundaries | `REPRESENTATION.md` R5 |
 | Interfaces and candidate composition | `REPRESENTATION.md` R6 |
 | Coupling and local-to-global claim limits | `REPRESENTATION.md` R7 |
-| Representation validation and search-state compatibility | `REPRESENTATION.md` R8 |
+| Search-run rules, validation, and old-work compatibility | `REPRESENTATION.md` R8 |
 
 A search representation can cover a subset of legal solutions. It cannot redefine the legal solution space.
 
@@ -137,7 +226,7 @@ When a representation document conflicts with `PROBLEM.md`, the parent wins. Pre
 
 ## Detail and module documents
 
-Create `representation/<item>.md` only when two Contract sentences cannot define the rule. Use this minimum frontmatter:
+Create `representation/<item>.md` when one Contract sentence cannot define the rule. Use this minimum frontmatter:
 
 ```yaml
 ---
@@ -156,7 +245,7 @@ Keep adopted normative rules, research records, and user-decision records under 
 - A Research Agent writes the delegated question and scope, research evidence and sources, code or experiment observations, candidate representations, risks, unknowns, recommendations, and `Proposed Contract text — not adopted`. It can update `generated` and `sources`.
 - A Grill Agent writes user answers, authorizations, decision source and context, and unresolved user choices. It can update `generated`.
 
-Proposed Contract text and candidate representations remain nonnormative until the Primary Framing Agent adopts them. Neither worker edits core Contract cells, R1-R8 status, adopted normative rules, `representation_revision`, lifecycle assurance metadata, or normative module-contract content.
+Proposed Contract text and candidate representations remain nonnormative until the Primary Framing Agent adopts them. Neither worker edits the representation Brief, Open decisions, Known limits, core Contract cells, R1-R8 status, adopted normative rules, `representation_revision`, lifecycle assurance metadata, or normative module-contract content.
 
 Create `modules/<module-slug>/PROBLEM.md` only for actual separate optimization, proof, review, or delegation. Use the A-H template and add:
 
@@ -171,7 +260,7 @@ epoch: 1
 
 The module contract refines the parent without copying it. Use `Inherit parent Slot <letter> without change` when no local refinement is needed.
 
-Use one module layer by default. R5 must state the separate work and practical benefit before a nested module contract exists.
+Use one module layer by default. Keep R5-R7 at `-` until an actual decomposition is proposed. R5 must state the separate work and practical benefit before a nested module contract exists.
 
 ## Representation review record
 
@@ -200,6 +289,13 @@ Result: <allowed result>
 Reviewed: <canonical path to REPRESENTATION.md and every reviewed detail or module contract>
 Reviewed at: <ISO-8601 datetime>
 Permitted: <none | bounded whole-candidate search | exact named modules and operations plus bounded whole-candidate search>
+
+## Cold-read reconstruction
+
+- Task and result: <plain restatement based only on both Briefs>
+- Proposal path: <what measurement accepts, what search proposes, and how it becomes measurable>
+- Search loop: <start, propose, reject or measure, use feedback, select, and stop>
+- Unexplained terms or relationships: <None or exact gaps>
 ```
 
 Allowed results are `PROCEED_EXPLORATORY`, `PROCEED_MODULAR`, `RESEARCH_REQUIRED`, `REDESIGN_REQUIRED`, `REFRAME_REQUIRED`, and `BLOCKED`.
@@ -218,7 +314,7 @@ Each nonpositive finding uses this schema:
 - Repair status: <open | complete | blocked>
 ```
 
-A positive result has no open finding. A nonpositive result has at least one finding with every field. `Reviewed` names the complete review surface. `Permitted` names exact modules and operations for modular scope. The reviewer owns result and finding text. The coordinator can update only repair status and writer metadata.
+A positive result has no open finding and says `None` for unexplained terms or relationships in its Cold-read reconstruction. A nonpositive result has at least one finding with every field. `Reviewed` names the complete review surface. `Permitted` names exact modules and operations for modular scope. The reviewer owns result, Cold-read reconstruction, and finding text. The coordinator can update only repair status and writer metadata.
 
 For a positive result, the reviewer sets `REPRESENTATION.md` and every reviewed normative detail or active module contract to `stable`. The reviewer adds current `verified` metadata and sets the core `review_scope` to `exploratory` or `modular`. The reviewer also sets `representation-review.md` to `stable`.
 
@@ -274,7 +370,7 @@ After a changed parent passes fresh problem review, copy its current epoch and `
 
 Meaningful changes include coverage, translation, redundancy, neighborhood, reachability, legality handling, module ownership, interfaces, composition, coupling, local-to-global claims, and search-state compatibility.
 
-Editorial changes, links that preserve meaning, repair-status updates, and verification metadata do not invalidate semantics.
+Small wording improvements that already pass the current understanding check, links that preserve meaning, repair-status updates, and verification metadata do not invalidate semantics. A rewrite needed because either Brief failed the understanding check keeps R1-R8 status and `representation_revision` when meaning is unchanged, but it invalidates review assurance and requires a fresh review.
 
 ## Continuity and recovery
 
@@ -290,6 +386,8 @@ After compaction or a new session:
 8. Otherwise, continue each `O` row and claim-limiting `~` row.
 9. Open only details needed for the next action.
 10. Confirm harness and baseline readiness before positive review.
+
+Before selecting work, read both main documents without opening optional details. Confirm that their Briefs tell one coherent story, both tables agree, Open decisions lists every unresolved decision, Known limits lists every remaining restriction, and the pair contains every fact needed for ordinary search and result decisions.
 
 If the last decision was not recorded, confirm only that decision. Do not reconstruct it from uncertain conversation context.
 
@@ -310,6 +408,7 @@ A positive handoff contains:
 - canonical evaluation representation;
 - each permitted search representation;
 - permitted operation set;
+- permitted feedback, selection, promotion, and stopping rules;
 - candidate coverage limits;
 - reachability status and material redundancy effects;
 - applicable module contracts;

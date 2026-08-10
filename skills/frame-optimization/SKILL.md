@@ -9,7 +9,7 @@ Build the durable contracts that make solution comparison and search work meanin
 
 ## Operating contract
 
-Act as the Primary Framing Agent for both preparation stages. Be the only coordinator and the only writer that can adopt normative Contract content. Own every A-H Contract cell, R1-R8 Contract cell, row status, adopted normative detail, task term, module contract, epoch, representation revision, lifecycle metadata, and downstream handoff.
+Act as the Primary Framing Agent for both preparation stages. Be the only coordinator and the only writer that can adopt normative Contract content. Own both core Briefs, both Open decisions lists, both Known limits lists, every A-H Contract cell, R1-R8 Contract cell, row status, adopted normative detail, task term, module contract, epoch, representation revision, lifecycle metadata, and downstream handoff.
 
 Use worker skills for bounded work:
 
@@ -42,7 +42,7 @@ After either worker writes a reviewed detail, assess staleness and materiality i
 
 Treat a mismatched, malformed, or boundary-violating record or packet as unavailable work. Keep the affected item open and record the exact missing valid output. Do not infer or reconstruct a worker result.
 
-Protected content for both workers includes core Contract cells, A-H and R1-R8 status, adopted normative rules, epochs, `representation_revision`, `status`, `verified`, `review_scope`, normative module-contract content, review files, logs, and handoffs.
+Protected content for both workers includes both core Briefs, both Open decisions lists, both Known limits lists, core Contract cells, A-H and R1-R8 status, adopted normative rules, epochs, `representation_revision`, `status`, `verified`, `review_scope`, normative module-contract content, review files, logs, and handoffs.
 
 ## 1. Recover one task from durable context
 
@@ -64,13 +64,19 @@ Treat the selected task directory as the source of truth. After compaction or in
 10. Open only the linked detail needed for the next action.
 11. Confirm the current-epoch harness and baseline before requesting a positive representation review.
 
+During problem framing, readers normally use `PROBLEM.md` to make decisions. Once search design begins, they normally use `PROBLEM.md` and `REPRESENTATION.md` together. Apply two separate checks. First, a new reader must understand the system or process, what can change, what the changed thing receives or faces, what it produces or controls, and how that affects the result. Second, the main document or pair must contain every fact needed for ordinary development, evaluation, acceptance, resource, feedback, reuse, and claim decisions. The Briefs tell the readable task-to-search story; the tables and lists decide exact rules. Require one Open decisions bullet for every `O` or `~` row and one Known limits bullet for every restriction carried by a decided row or evidence gap that affects several rows.
+
+Use this simple test for main-document content: if omitting a fact could make two reasonable readers or agents choose different work or fixed evaluation code and inputs, accept different results, exceed authorization, select or stop search differently, reuse incompatible work, or make different strength claims, summarize that fact in the main document that owns it. Name executable code, manifests, configs, or schemas when they remove a choice. Keep their exact contents and internal behavior, plus evidence history, derivations, exhaustive parameters, commands, and validation logs, in optional details.
+
+Repair an older table-only `PROBLEM.md` or `REPRESENTATION.md` before other work in that stage. Derive its Brief, Open decisions, and Known limits only from the current Contract and linked details that define rules. Apply the current main-document decision check before treating the migration as a format-only change. Do not preserve a pinned row or positive review when the old contract lacks a decision now required for ordinary work. Set the affected row open, name the missing decision, and apply the normal invalidation and lifecycle rules. A faithful structural migration is format-only only when every current required decision already exists and is summarized in the main document or pair.
+
 Stop when only a recorded blocker remains and its condition has not changed. If the last user answer or worker result is not durably recorded, confirm or repeat only that item. Do not reconstruct it from conversation history, a summary, or Git history.
 
 This step is complete when one safe canonical task exists and its durable state is known.
 
 ## 2. Validate review freshness and select the active stage
 
-Validate an applicable `review.md` or `representation-review.md` before using its result or starting repair. Require one allowed result, the complete reviewed-path manifest, a parseable recorded review time, the required finding schema, no open finding for a positive result, and at least one finding for a nonpositive result. Also require the parent binding, result, scope, and assurance metadata that apply to that review type.
+Validate an applicable `review.md` or `representation-review.md` before using its result or starting repair. Require one allowed result, the complete reviewed-path manifest, a parseable recorded review time, the required Cold-read reconstruction, the required finding schema, no unexplained term or open finding for a positive result, and at least one finding for a nonpositive result. Also require the parent binding, result, scope, and assurance metadata that apply to that review type.
 
 A review is stale when any Markdown document named in `Reviewed` lacks `generated.at` or has `generated.at` later than the recorded review time. A reviewed normative document omitted from the required review surface also makes the review unusable for readiness.
 
@@ -96,7 +102,11 @@ This step is complete when the coordinator has selected exactly one stage from d
 
 ## 3. Complete the problem-definition stage
 
-For a new frame or material reframe, read [references/slot-contracts.md](references/slot-contracts.md) completely. Draft Slots A through H and use the statuses from `task-documents.md`.
+For a new frame or material reframe, read [references/slot-contracts.md](references/slot-contracts.md) completely. Draft a readable Brief, Slots A through H, Open decisions, and Known limits. Use the statuses and writing rules from `task-documents.md`.
+
+Write the Brief in the order a new reader needs. Explain the system or process and one complete run in familiar words. State what this work can change, what that thing receives or faces, what it produces or controls, and how that output changes the observed result. Then explain how repeated results support the current success decision and how that differs from the real goal. Orient the reader to major resource, feedback, open-decision, and evidence limits only when they change this story. Let the Contract and lists carry exact values and complete coverage.
+
+At first use, explain each task-specific term as a familiar kind of thing and state its role before using its short name. Do not define one unexplained term with another. Use verbs to explain relationships that affect why a change can improve the result. If one sentence contains two terms that a new reader cannot explain, split or rewrite it. Do not use Slot letters, unexplained labels, or formal names for internal formats. Remove history, rejected alternatives, derivations, file hashes, and procedures unless a reader needs an item to make a normal decision. Remove repeated meaning, but never merge separate concepts only to shorten the document. Use A-H only after drafting to find omitted decisions or conflicts. The Contract table decides ordinary problem-level actions and conclusions; details supply extra precision and evidence without hiding a decision-changing rule.
 
 Inspect applicable repository evidence before asking questions. Select the first safe open review finding; otherwise select the first `O` or claim-limiting `~` row. Open only the linked detail needed for that item.
 
@@ -113,7 +123,7 @@ After research, validate the research record and packet, then make the semantic 
 
 Before changing a pinned contract with retained results, preserve both meanings and request the `comparability` branch of `review-optimization`. Continue only after `log.md`, the epoch, and affected results agree with the disposition.
 
-Request a fresh `readiness` review when every applicable A-H row is `P` or `-` and the current repair set meets Step 6. Repair a valid non-`PROCEED` result from its complete finding set. Apply Step 2 to every returned review.
+Request a fresh `readiness` review when every applicable A-H row is `P` or `-`, Open decisions says `None`, Known limits states every remaining evidence restriction, and the current repair set meets Step 6. Repair a valid non-`PROCEED` result from its complete finding set. Apply Step 2 to every returned review.
 
 This stage is complete only after durable `PROCEED`, an exact blocker, or one recorded user action remains.
 
@@ -123,15 +133,21 @@ On parent `PROCEED`, re-read `PROBLEM.md` and confirm `status: stable`, current 
 
 Inspect the executable Slot H path and current-epoch baseline before committing to decomposition. The coordinator can inspect or run an existing authorized harness. Use `grill-optimization` when creating or repairing the harness needs new authorization, then record its authorization packet before acting. When the harness or baseline is missing, keep R8 open and start or route that action before substantive R5-R7 or module-contract work continues. Core representation drafting can proceed concurrently.
 
+Draft the representation Brief even while R items remain open. Start by naming, in plain language, the thing from `PROBLEM.md` that search will change. Then explain the loop a worker will follow: start, propose a change, make it measurable, reject or evaluate it, use permitted feedback, select work, and stop. Include the reachable options, allowed changes, invalid-option handling, whole-versus-part search, budget, old-work reuse, remaining decisions, and known limits where they affect that loop. Do not repeat the complete problem Contract. `PROBLEM.md` retains the score, success, resource, information, and measurement meaning.
+
 This step is complete when the representation document is bound to the current parent and measurement readiness is known.
 
 ## 5. Draft and continue R1-R8
 
 Follow the recovered state from Steps 1 and 2. Do not create a parallel checkpoint, summary, or replacement representation file.
 
-If the review file has open findings, select the first safe open finding. Otherwise, select the first `O` row and each `~` row whose claim limit blocks the requested scope. Open only the linked detail needed for the selected work.
+If the review file has open findings, select the first safe open finding. Otherwise, select the first `O` row and each `~` row whose unresolved restriction blocks the requested work. Open only the linked detail needed for the selected work.
 
-Draft or repair every R1 through R8 row against `representation-contracts.md`. Keep problem semantics in `PROBLEM.md`. Create `representation/<item>.md` only when two Contract sentences cannot carry the rule. Create a module `PROBLEM.md` only for actual separate optimization, proof, review, or delegation.
+Draft or repair the Brief, every R1 through R8 row, Open decisions, and Known limits against `representation-contracts.md`. Keep problem rules in `PROBLEM.md`. Write one concise decision in each Contract cell and use a second short sentence only when its direct consequence would otherwise be unclear. Never write a request to fill in information. Put derivations, evidence, exhaustive parameters, validation logs, and multi-step procedures in `representation/<item>.md`, but summarize every decision-changing rule in one of the two main documents. Keep the Detail cell to one link.
+
+Keep R5-R7 at `-` while search treats the candidate as one whole. Do not prewrite modules, interfaces, or coupling for possible future decomposition. Create a module `PROBLEM.md` only for actual separate optimization, proof, review, or delegation.
+
+Before review, read both Briefs without their tables or details. Ask a new reader to restate the task without merely repeating its special labels: what exists, what can change, what the changed thing receives or faces, what it produces or controls, and how that affects the result. Then require the reader to restate the search loop from starting point through proposal, conversion, rejection or measurement, feedback, selection, and stopping. Only after both explanations pass, read the complete main documents without opening details and apply the decision check.
 
 This step is complete when every R row has a valid status, contract, and necessary detail, with no hidden assumption that changes permitted search claims.
 
@@ -155,7 +171,7 @@ After research, validate the research record and packet, then edit the normative
 
 For each current finding:
 
-1. Set each affected semantic row to `O` when the finding prevents the requested scope, and record its closing action. Keep a cross-cutting finding in the review file.
+1. Set each affected semantic row to `O` when its meaning is absent, conflicting, or undecided and the finding prevents the requested scope. For an explanation-only finding, keep existing row meaning and status, repair the Brief, and require fresh review. Keep a cross-cutting finding in the review file.
 2. Complete every independent safe action, including actions that do not depend on a remaining blocker.
 3. Update only `Repair status` and coordinator writer metadata in the review file. Do not change reviewer-owned result, scope, time, evidence, required action, or completion text.
 4. Mark a finding `complete` only after its `Complete when` condition holds. Mark it `blocked` only after recording the exact unavailable authority, fact, data, tool, access, or fresh context.
@@ -210,7 +226,7 @@ For either positive representation result, recover state in Step 1 again. Confir
 - On `PROCEED_MODULAR`, hand off bounded whole-candidate search plus only the modules and operations named in `Permitted`. Keep all pinned interfaces, coupling rules, resource partitions, coordination, and global evaluation requirements. Do not infer approval for another module or operation.
 - On `RESEARCH_REQUIRED`, `REDESIGN_REQUIRED`, `REFRAME_REQUIRED`, or `BLOCKED`, return the exact result, first next action or blocker, affected item, and canonical task path. Do not emit a positive search handoff.
 
-Copy the review's exact scope into the handoff; never broaden it. Include the canonical task path, parent epoch and `generated.at`, representation revision, positive result and exact `Permitted` value, canonical evaluation representation, each permitted search representation, permitted operations, coverage limits, reachability and redundancy effects, applicable module contracts, coordination and global evaluation rules, search-state compatibility rules, and Slot H harness and baseline identity.
+Copy the review's exact scope into the handoff; never broaden it. Include the canonical task path, parent epoch and `generated.at`, representation revision, positive result and exact `Permitted` value, canonical evaluation representation, each permitted search representation, permitted operations, feedback use, survivor selection, stopping rules, coverage limits, reachability and redundancy effects, applicable module contracts, coordination and global evaluation rules, search-state compatibility rules, and Slot H harness and baseline identity.
 
 Require the downstream workflow to acknowledge the canonical task path, parent epoch, parent `generated.at`, representation revision, and exact permitted scope before it records search state or results. A mismatch stops the handoff and returns to recovery.
 

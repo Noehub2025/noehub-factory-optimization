@@ -1,6 +1,6 @@
 # Noehub Factory Optimization
 
-Reusable Agent Skills for preparing optimization work before solution search begins. The workflow turns an ambiguous objective into an evidence-backed A-H comparison contract, then defines R1-R8 representations, operations, modules, and safe search scope through independent gates.
+Reusable Agent Skills for preparing optimization work before solution search begins. The workflow first explains the system, what can change, and how that change affects the result. It then turns the task into an evidence-backed A-H comparison contract and defines R1-R8 representations, operations, modules, and safe search scope through independent gates.
 
 The workflow defines how solutions will be compared. It does not search for, implement, or claim a winning solution.
 
@@ -73,6 +73,14 @@ frame-optimization
 ```
 
 The coordinator is the single owner of A-H and R1-R8 contracts. Worker Skills return evidence, decisions, or review results through stable interfaces; they do not take over the shared contract.
+
+## Core documents
+
+During problem framing, `PROBLEM.md` is the main document a reader or coding agent uses. During search design, `PROBLEM.md` and `REPRESENTATION.md` are used together. Their Briefs explain the task and search in familiar language. Their Contract tables state exact decisions. The Open decisions sections name unfinished choices, and the Known limits sections state what current work cannot establish.
+
+The main documents must contain every fact needed for ordinary development, evaluation, acceptance, resource, feedback, selection, stopping, reuse, and claim decisions. Linked Slot and representation documents hold evidence, derivations, complete parameter lists, commands, and fixed implementation details. They must not hide a decision that can change the work.
+
+Independent reviews begin with a cold read of only the Briefs. Each review record keeps a `Cold-read reconstruction` so a later reader can see whether the task and search were understandable before details were opened. A positive review created before this field existed is not a valid gate under the current workflow and must be run again. Rewriting a Brief for clarity does not change A-H status, epochs, R1-R8 status, or representation revisions when the underlying meaning is unchanged.
 
 ## Layout
 

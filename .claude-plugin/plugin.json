@@ -1,7 +1,7 @@
 {
   "name": "noehub-factory-optimization",
-  "version": "0.2.0",
-  "description": "Evidence-backed optimization problem framing and representation design with bounded research, user decisions, and independent readiness gates.",
+  "version": "0.3.0",
+  "description": "Readable, evidence-backed optimization framing and search design with bounded research, user decisions, and independent readiness gates.",
   "author": {
     "name": "Ken Chen"
   },

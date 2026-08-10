@@ -1,4 +1,4 @@
 interface:
   display_name: "Frame Optimization"
-  short_description: "Recover, repair, and hand off optimization contracts"
-  default_prompt: "Use $frame-optimization to recover one optimization task, repair stale reviews, manage representation search state, and produce only the reviewed handoff scope."
+  short_description: "Define an optimization task before search starts"
+  default_prompt: "Use $frame-optimization to recover one optimization task, resolve missing decisions, define how search may work, and hand off only work that passed an independent check."

@@ -2,6 +2,8 @@
 
 Read this reference completely when creating or materially reframing an R1-R8 contract. `PROBLEM.md` remains authoritative for problem semantics; these items define search strategy and its permitted claims.
 
+Write the two core Briefs and Contract tables with concrete task nouns. Use the PROBLEM Brief for the task story and the REPRESENTATION Brief for the search story. Say which rendered object the harness measures, what the optimizer proposes, how conversion works, and which actual configs, schedules, models, or decks are searched. Keep labels such as `C`, `E1`, `T1`, and `U` out of the Brief. Use them only in the Contract table or linked details after the underlying items have plain names. Each core Contract cell contains a concise decision, not a TODO; use a second short sentence only when needed for its direct consequence. Do not copy technical terms from this reference into a core document; use the plain-language rewrites in `representation-documents.md`.
+
 ## Contents
 
 - R1. Working representations and translation
@@ -11,7 +13,7 @@ Read this reference completely when creating or materially reframing an R1-R8 co
 - R5. Module decomposition
 - R6. Interfaces and composition
 - R7. Coupling
-- R8. Validation and search-state compatibility
+- R8. Search run, validation, and old-work compatibility
 - Exploratory and modular completion gates
 
 ## R1. Working representations and translation
@@ -100,6 +102,8 @@ Completion test: Every move has a cost, information boundary, legality mode, and
 
 A module is an optimization unit with owned decisions, a small interface, and independently changeable choices. A source directory or document section is not sufficient.
 
+Keep R5, R6, and R7 at `-` while search treats the candidate as one whole. Do not design modules, interfaces, or coupling rules for a decomposition that is not currently proposed.
+
 For each proposed module, record:
 
 - owned variables and operations;
@@ -174,9 +178,20 @@ Partition the parent Slot F search budget across modules and coordination. Paral
 
 Completion test: Every material crossing relation has evidence, handling, responsibility, and a local-to-global claim limit.
 
-## R8. Validation and search-state compatibility
+## R8. Search run, validation, and old-work compatibility
 
 Link the executable Slot H harness and current-epoch baseline.
+
+For the requested search scope, record:
+
+- starting options and total budget;
+- whether later proposals may use earlier proposal, validation, or evaluation results;
+- who or what selects the next proposal when that choice is delegated;
+- survivor ranking and tie handling;
+- confirmation, promotion, stopping, and scale-up rules;
+- whether old checkpoints, saved proposals, or cached scores may be reused.
+
+The representation does not need to choose a specific search algorithm when the person or agent doing the work may choose it. In that case, state what they may choose and the feedback, operation, budget, selection, confirmation, and stopping limits that still apply.
 
 Record applicable validation for:
 
@@ -193,21 +208,27 @@ Record applicable validation for:
 
 Distinguish a finite diagnostic from a proof. A finite test proves universal coverage, connectedness, or legality only when the tested space is exhaustive.
 
-For exploratory work, record the starting set, search budget, known coverage limits, and next actions for unresolved redundancy or reachability.
+For exploratory work, record the starting set, search budget, feedback policy, survivor-selection rule, stopping rule, known coverage limits, and next actions for unresolved redundancy or reachability.
 
 Unknown coverage, reachability, or redundancy permits candidate-level exploration. It prohibits exhaustion, convergence, and absence-of-better-solution claims.
 
-Completion test: Search can start from identified candidates under a fixed budget, run through the parent harness, and use only compatible retained state.
+Completion test: Two reasonable readers or agents using only the two main documents would follow the same search limits, feedback rules, survivor rule, stopping rule, problem harness, and old-work policy.
 
 ## Exploratory and modular completion gates
 
 Request exploratory review only when:
 
 - the parent is stable, verified, and matches the recorded binding;
+- the PROBLEM Brief explains the system or process, what can change, what the changed thing receives or faces, what it produces or controls, and how that affects the result without relying on unexplained task labels;
+- the REPRESENTATION Brief explains the search loop from starting point through proposal, conversion, rejection or measurement, feedback, selection, and stopping without opening a detail;
+- the complete `PROBLEM.md` and `REPRESENTATION.md`, read without optional details, contain every fact needed for ordinary legality, evaluation, success, resource, proposal, feedback, selection, stopping, reuse, and claim decisions;
+- every core Contract cell states a concise decision rather than a request to fill in information;
+- Open decisions lists every `O` or `~` row with its next action and closure condition;
+- Known limits lists every remaining restriction on search or conclusions, including restrictions carried by `P` rows;
 - R1 defines evaluation form, active decoders, searched subset, and coverage limit;
 - R2 records known, absent, or unknown redundancy with an action or claim limit;
 - R4 defines operation preconditions, legality handling, and reachability limit;
-- R8 identifies the executable harness, baseline, starting set, and budget;
+- R8 identifies the executable harness, baseline, starting set, budget, feedback policy, survivor-selection rule, stopping rule, and old-work policy;
 - every unresolved item has a next action or permitted-claim limit;
 - every retained search artifact has a compatibility disposition.
 

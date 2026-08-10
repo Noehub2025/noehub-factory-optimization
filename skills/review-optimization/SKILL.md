@@ -30,7 +30,44 @@ The preconditions are complete when one safe task path, one branch, a fresh cont
 
 ## Readiness branch
 
-### 1. Load the review surface
+### 1. Read the Brief for readability
+
+Read only the title and `## Brief` section of `PROBLEM.md`. Do not read its frontmatter, Contract table, Open decisions, Known limits, linked details, prior review, repository documents, or sources yet. Do not fill gaps from domain knowledge.
+
+Write a cold-read reconstruction using only facts introduced in the Brief. Use familiar categories and verbs; do not answer by copying a task-specific name or unexplained label.
+
+1. What system, process, or activity exists before optimization, and where does one complete run start and end?
+2. What can this work change?
+3. What information, input, or conditions does the changed thing receive, observe, or face?
+4. What does it produce, control, or decide?
+5. How does that output affect the observed result?
+6. What is one evaluation, what result is better, what counts as current success, and how does that differ from the real goal?
+7. Which relationship or term cannot be explained from the Brief itself?
+
+This step tests task understanding, not exact Contract coverage. Do not fail merely because an exact value or secondary restriction appears only in the table or lists. Fail when a reader cannot explain the task in the terms above, when a task name stands in for an explanation, when a key cause-and-effect relationship is hidden, or when an unexplained term blocks understanding. Preserve the reconstruction before loading more context; later evidence cannot turn a failed cold read into a pass.
+
+This step is complete when all seven questions have an answer or a finding based only on the Brief.
+
+### 2. Read the main problem document for decisions
+
+Read the complete `PROBLEM.md`, including frontmatter, Brief, Contract, Open decisions, Known limits, status key, and epoch rules. Do not open any linked detail, prior review, repository document, measurement asset, or source yet. Do not fill gaps from domain knowledge.
+
+Using only `PROBLEM.md`, answer:
+
+1. Which task cases, sizes, and operating conditions are covered?
+2. Which options are allowed, what makes one invalid, and when do two options count as the same?
+3. Which rules must hold, and what happens after a violation or failed run?
+4. How does one run produce a raw result, and how do cases, repetitions, randomness, or opponents become one comparison score?
+5. What is the baseline, what counts as success for the current work, and how does that differ from the real goal?
+6. Which data, feedback, time, money, hardware, and other resources may the work use?
+7. Which measurement code and important inputs produce the score, and when can results be compared or reused?
+8. What remains undecided, and what action or conclusion does each known limit prevent?
+
+An answer fails when it requires a detail or external file to choose an ordinary development action, fixed evaluation code or input, acceptance outcome, resource limit, reuse outcome, or supported claim. Do not fail because a named executable or fixed file keeps its complete seed list, formula derivation, serialization, command syntax, or validation order in a detail. Record a `reframe` finding when a choice or its limits exist only in a detail or are absent. Preserve these answers before opening more context; later evidence cannot turn a failed main-document decision check into a pass.
+
+This step is complete when all eight questions have an answer or a finding based only on `PROBLEM.md`.
+
+### 3. Load the review surface
 
 Read:
 
@@ -46,7 +83,9 @@ Resolve each relative path from its containing document. Record an inaccessible 
 
 This step is complete when every Contract detail link and load-bearing source is either inspected or identified as inaccessible.
 
-### 2. Check the document contract
+For each failed cold-read answer, now distinguish two cases. If the full review surface contains one consistent meaning and only the Brief failed to explain it, record a cross-cutting `reframe` finding that requires a Brief rewrite and fresh review; do not claim that an A-H decision is missing. If the meaning itself is absent, conflicting, or still requires a choice, assign the finding to the affected A-H row and require the applicable research, user decision, or semantic repair. Later detail never erases the original readability failure.
+
+### 4. Check the document contract
 
 Apply every applicable rule in [task-documents.md](../frame-optimization/references/task-documents.md). Also check:
 
@@ -54,7 +93,9 @@ Apply every applicable rule in [task-documents.md](../frame-optimization/referen
 - each row status is `P`, `~`, `O`, or `-`;
 - each Detail link exists and is necessary;
 - `epoch` is a positive integer;
-- `PROBLEM.md` has no more than 35 nonblank body lines;
+- `PROBLEM.md` contains Brief, Contract, Open decisions, Known limits, the status key, and the epoch rules;
+- every `O` or `~` row appears exactly once under Open decisions, and no `P` or `-` row appears there;
+- Known limits contains every restriction carried by a decided row or cross-cutting evidence gap;
 - each task concept document has nonempty `type` and `status` fields;
 - `log.md` follows the Open Knowledge Format date-and-entry structure.
 
@@ -62,7 +103,7 @@ Treat `draft` as the expected pre-review status. The review sets `stable` only a
 
 This step is complete when every listed rule has an explicit pass or finding.
 
-### 3. Check Slots A through H
+### 5. Check Slots A through H
 
 Read [../frame-optimization/references/slot-contracts.md](../frame-optimization/references/slot-contracts.md) completely. Mark each Slot `pass`, `not applicable`, or `finding` against every requirement and completion test in that reference.
 
@@ -70,7 +111,7 @@ A `-` row passes only when its reason proves that the Slot cannot affect the com
 
 This step is complete when all eight Slots have a result and every finding states the missing or conflicting semantic point.
 
-### 4. Check evidence and consistency
+### 6. Check evidence and consistency
 
 For each material factual claim:
 
@@ -97,7 +138,7 @@ For a `~` row with an evidence-backed agent default, record independent acceptan
 
 This step is complete when every load-bearing claim and every listed cross-check has an explicit pass or finding.
 
-### 5. Check epoch history
+### 7. Check epoch history
 
 Find retained results that name this task. Confirm that each result records the current epoch or is explicitly superseded or voided.
 
@@ -111,11 +152,11 @@ If retained results exist and a semantic pinned-contract change has no durable d
 
 This step is complete when all located retained results are comparable, superseded, voided, or named in a finding.
 
-### 6. Issue one verdict
+### 8. Issue one verdict
 
 Return `PROCEED` only when every applicable row is `P` or `-`, every material factual claim has applicable evidence, and no contract conflict can change comparison.
 
-Also require valid epoch history, identified agent defaults with prior independent acceptance, and passing trust, language, and Open Knowledge Format checks.
+Also require a passing task-understanding check, a passing main-document decision check, valid epoch history, identified agent defaults with prior independent acceptance, and passing trust, language, and Open Knowledge Format checks.
 
 Give each finding one work type: `research`, `grill`, `reframe`, or `blocker`. Then derive exactly one verdict:
 
@@ -126,7 +167,7 @@ Give each finding one work type: `research`, `grill`, `reframe`, or `blocker`. T
 
 Each non-`PROCEED` finding must contain the affected Slot or cross-cutting rule, work type, decisive evidence, required action, and checkable completion condition. Initialize `Repair status` to `open`. Do not repair A-H content during review.
 
-Write the verdict and findings to `review.md` using [task-documents.md](../frame-optimization/references/task-documents.md) before returning.
+Write the verdict, the preserved Cold-read reconstruction, and findings to `review.md` using [task-documents.md](../frame-optimization/references/task-documents.md) before returning.
 
 Before returning a non-`PROCEED` verdict, remove stale assurance: set `PROBLEM.md` and each affected contract document to `status: draft`, and remove their `verified` fields. Change no contract semantics.
 
@@ -137,7 +178,7 @@ For `PROCEED`:
 1. Re-read each contract document and restart the review if semantic content changed during the run.
 2. Set `PROBLEM.md` and each linked contract document to `status: stable`.
 3. Add `{ by: review-optimization/1, at: <current ISO-8601 datetime> }` to each `verified` field.
-4. Write `review.md` with `Verdict: PROCEED`, no open finding, and `status: stable`.
+4. Write `review.md` with `Verdict: PROCEED`, the passing Cold-read reconstruction, no open finding, and `status: stable`.
 5. Re-read the final documents and confirm that the metadata write changed no contract semantics.
 
 If a required metadata write fails, return `BLOCKED`; do not report `PROCEED`.
