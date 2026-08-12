@@ -1,0 +1,6 @@
+interface:
+  display_name: "Research Frontier"
+  short_description: "Research one Frontier landscape or question"
+  default_prompt: "Use $research-frontier for the Frontier coordinator's assigned route landscape or evidence question."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,44 @@
+fixture_kind: slice-7-acceptance-matrix
+scenarios:
+  - id: single-eligible-route
+    expected: one-real-T-no-fake-T-no-V
+  - id: simple-non-code
+    expected: no-W
+  - id: complex-non-code
+    expected: reasoned-not-applicable-design-row
+  - id: ready-design
+    expected: read-when-progressive-disclosure
+  - id: direct-code
+    expected: materialize-before-separate-measurement
+  - id: implementation-not-ready
+    expected: evaluation-blocked
+  - id: routine-reflection
+    expected: no-extra-research
+  - id: diagnostic-reflection
+    expected: cheapest-diagnostic-first
+  - id: strategic-reflection
+    expected: fresh-replan-ready
+  - id: nonpositive-claim-adoption
+    expected: cycle-continues-no-wording
+  - id: withdrawn-claim
+    expected: cycle-continues-no-wording
+  - id: compatible-parent-change-before-spend
+    expected: new-parent-fixture-and-rebind
+  - id: parent-change-after-spend
+    expected: forced-closeout
+  - id: packet-path-conflict
+    expected: blocked-before-authorization
+  - id: missing-W-destination
+    expected: blocked-before-authorization
+  - id: missing-recovery-lineage
+    expected: blocked-before-snapshot
+  - id: incomplete-execution-baseline
+    expected: blocked-before-execution-start
+  - id: invalid-materialization-result
+    expected: blocked-before-result-freeze
+  - id: candidate-recovery-identity-mismatch
+    expected: blocked-before-generation-artifacts
+  - id: post-closeout-package
+    expected: atomic-authority-neutral-package
+  - id: compacted-context
+    expected: same-persisted-state-same-next-action

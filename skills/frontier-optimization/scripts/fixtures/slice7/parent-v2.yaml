@@ -1,0 +1,6 @@
+fixture_kind: immutable-upstream-parent
+problem_epoch: 1
+representation_revision: 2
+representation_permitted: bounded whole-candidate search
+measurement_identity: slot-h-v1
+replacement_for: parent-v1

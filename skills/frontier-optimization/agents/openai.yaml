@@ -1,0 +1,6 @@
+interface:
+  display_name: "Frontier Optimization"
+  short_description: "Coordinate evidence-gated Frontier campaigns"
+  default_prompt: "Use $frontier-optimization to start, resume, close, recover, or package the canonical task's Frontier campaign."
+policy:
+  allow_implicit_invocation: false

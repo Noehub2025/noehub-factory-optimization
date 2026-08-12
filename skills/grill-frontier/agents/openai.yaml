@@ -1,0 +1,6 @@
+interface:
+  display_name: "Grill Frontier"
+  short_description: "Resolve one assigned user-owned choice"
+  default_prompt: "Use $grill-frontier to resolve the Frontier coordinator's assigned tradeoff or authorization question."
+policy:
+  allow_implicit_invocation: true

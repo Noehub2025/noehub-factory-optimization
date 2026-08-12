@@ -1,0 +1,6 @@
+interface:
+  display_name: "Review Frontier"
+  short_description: "Review Frontier plans, designs, candidates, and claims"
+  default_prompt: "Use $review-frontier to review an immutable Frontier Entry plan, strategic replan, technical design, candidate implementation or recovery reuse, or claim set."
+policy:
+  allow_implicit_invocation: true

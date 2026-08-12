@@ -1,7 +1,7 @@
 {
   "name": "noehub-factory-optimization",
-  "version": "0.3.0",
-  "description": "Readable, evidence-backed optimization framing and search design with bounded research, user decisions, and independent readiness gates.",
+  "version": "0.4.0",
+  "description": "Evidence-gated optimization framing and Frontier campaigns, from readable comparison contracts through bounded implementation, evaluation, closeout, and recovery.",
   "author": {
     "name": "Ken Chen"
   },
@@ -15,6 +15,8 @@
     "decision-making",
     "research",
     "review",
+    "frontier",
+    "experimentation",
     "workflow",
     "skills"
   ],
@@ -23,6 +25,11 @@
     "./skills/research-optimization",
     "./skills/grill-optimization",
     "./skills/review-optimization",
-    "./skills/review-representation"
+    "./skills/review-representation",
+    "./skills/frontier-optimization",
+    "./skills/research-frontier",
+    "./skills/grill-frontier",
+    "./skills/run-frontier-batch",
+    "./skills/review-frontier"
   ]
 }

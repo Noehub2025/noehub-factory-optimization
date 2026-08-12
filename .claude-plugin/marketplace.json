@@ -4,15 +4,16 @@
     "name": "Ken Chen",
     "url": "https://github.com/Noehub2025"
   },
-  "description": "Noehub Skills for readable optimization problem framing and search design, installable as a Claude Code plugin.",
+  "description": "Noehub Skills for readable optimization framing and evidence-gated Frontier campaigns, installable as a Claude Code plugin.",
   "metadata": {
-    "description": "Noehub Skills for readable optimization problem framing and search design, installable as a Claude Code plugin."
+    "description": "Noehub Skills for readable optimization framing and evidence-gated Frontier campaigns, installable as a Claude Code plugin."
   },
   "plugins": [
     {
       "name": "noehub-factory-optimization",
       "source": "./",
-      "description": "Explain and frame optimization problems, define search representations and decomposition, and gate exact search scope through independent review.",
+      "version": "0.4.0",
+      "description": "Frame optimization problems, approve an exact search scope, then run bounded implementation and evaluation campaigns with independent review, closeout, and recovery.",
       "category": "engineering",
       "keywords": [
         "optimization",
@@ -22,6 +23,8 @@
         "decision-making",
         "research",
         "review",
+        "frontier",
+        "experimentation",
         "workflow"
       ]
     }
