@@ -5,14 +5,34 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import posixpath
-import shutil
 import sys
-import tempfile
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from identity_bindings import (
+    TREE_PATH_SHA256_V1,
+    IdentityBindingError,
+    load_file_binding,
+    tree_inventory,
+)
+from post_adoption_state import (
+    PostAdoptionStateError,
+    expected_receipt,
+    load_reviewed_files,
+)
+from project_snapshot import (
+    SCHEMA as PROJECT_SNAPSHOT_SCHEMA,
+    ProjectSnapshotError,
+    capture as capture_project_snapshot,
+    member_bytes as project_member_bytes,
+    read_manifest as read_project_snapshot_manifest,
+    verify as verify_project_snapshot,
+)
 
 try:
     import yaml
@@ -20,7 +40,8 @@ except ImportError as exc:  # pragma: no cover
     raise SystemExit("PyYAML is required to freeze Frontier execution baselines") from exc
 
 
-MANIFEST_KIND = "frontier-execution-baseline/1"
+LIFECYCLE_CONTRACT = "frontier-lifecycle-transition/1"
+IDENTITY_CONTRACT = "frontier-dispatch-identity/2"
 
 
 class BaselineError(ValueError):
@@ -71,83 +92,14 @@ def declared_identity(entry: dict[str, Any], index: int) -> str:
 
 
 def subtree_inventory(source: Path) -> tuple[list[dict[str, str]], str]:
-    if not source.is_dir():
-        raise BaselineError(f"subtree source is not a directory: {source}")
-    members: list[dict[str, str]] = []
-    for member in sorted(source.rglob("*")):
-        if member.is_symlink():
-            raise BaselineError(f"baseline subtree contains a symbolic link: {member}")
-        if member.is_dir():
-            continue
-        if not member.is_file():
-            raise BaselineError(f"baseline subtree contains a non-regular file: {member}")
-        relative = member.relative_to(source).as_posix()
-        members.append({"path": relative, "sha256": sha256_bytes(member.read_bytes())})
-    payload = json.dumps(
-        members, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-    ).encode()
-    return members, f"sha256:{sha256_bytes(payload)}"
-
-
-def materialize_input(
-    entry: dict[str, Any], index: int, repo_root: Path, staging_root: Path
-) -> dict[str, Any]:
-    source_path, source = resolve_inside(
-        repo_root, entry.get("path"), f"post_transition_baseline[{index}].path"
+    try:
+        members, identity = tree_inventory(source, TREE_PATH_SHA256_V1)
+    except IdentityBindingError as exc:
+        raise BaselineError(str(exc)) from exc
+    return (
+        [{"path": member["path"], "sha256": member["sha256"]} for member in members],
+        identity,
     )
-    scope = entry.get("scope")
-    if scope not in {"file", "subtree"}:
-        raise BaselineError(
-            f"post_transition_baseline[{index}].scope must be file or subtree"
-        )
-    expected = declared_identity(entry, index)
-    snapshot_path = Path("inputs") / Path(source_path)
-    destination = staging_root / snapshot_path
-
-    if source.is_symlink():
-        raise BaselineError(f"baseline source is a symbolic link: {source_path}")
-    if scope == "file":
-        if not source.is_file():
-            raise BaselineError(f"baseline file is missing or not regular: {source_path}")
-        content = source.read_bytes()
-        computed = f"sha256:{sha256_bytes(content)}"
-        if computed != expected:
-            raise BaselineError(
-                f"baseline identity mismatch for {source_path}: declared {expected}, computed {computed}"
-            )
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_bytes(content)
-        return {
-            "source_path": source_path,
-            "scope": scope,
-            "declared_identity": expected,
-            "computed_identity": computed,
-            "snapshot_path": snapshot_path.as_posix(),
-        }
-
-    members, computed = subtree_inventory(source)
-    if computed != expected:
-        raise BaselineError(
-            f"baseline identity mismatch for {source_path}/: declared {expected}, computed {computed}"
-        )
-    for member in members:
-        source_member = source / member["path"]
-        destination_member = destination / member["path"]
-        destination_member.parent.mkdir(parents=True, exist_ok=True)
-        destination_member.write_bytes(source_member.read_bytes())
-    return {
-        "source_path": source_path,
-        "scope": scope,
-        "declared_identity": expected,
-        "computed_identity": computed,
-        "snapshot_path": snapshot_path.as_posix(),
-        "members": members,
-    }
-
-
-def compute_manifest_id(manifest: dict[str, Any]) -> str:
-    digest = sha256_bytes(canonical_yaml(manifest, "snapshot_id"))
-    return f"{manifest.get('batch_id', 'UNKNOWN')}-execution-baseline-sha256:{digest}"
 
 
 def compute_execution_start_id(document: dict[str, Any]) -> str:
@@ -165,6 +117,502 @@ def read_yaml(path: Path, label: str) -> dict[str, Any]:
     return document
 
 
+def load_validator(filename: str, module_name: str) -> Any:
+    path = Path(__file__).with_name(filename)
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:  # pragma: no cover
+        raise BaselineError(f"cannot load validator from {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def canonical_json_artifact(document: dict[str, Any]) -> bytes:
+    return (json.dumps(document, indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode()
+
+
+def compute_acknowledgment_id(document: dict[str, Any]) -> str:
+    digest = sha256_bytes(canonical_yaml(document, "acknowledgment_id"))
+    return f"{document.get('batch_id', 'UNKNOWN')}-acknowledgment-sha256:{digest}"
+
+
+def validate_post_adoption_live(
+    execution_start: dict[str, Any],
+    adoption: dict[str, Any],
+    repo_root: Path,
+) -> None:
+    """Match live repository bytes to the exact state reviewed before authorization."""
+    entry_binding = adoption.get("entry_packet")
+    if not isinstance(entry_binding, dict):
+        raise BaselineError("authorization adoption lacks its Entry packet binding")
+    try:
+        entry = load_file_binding(
+            repo_root,
+            {
+                "path": entry_binding.get("path"),
+                "identity_field": "packet_id",
+                "identity": entry_binding.get("packet_id"),
+                "file_sha256": entry_binding.get("file_sha256"),
+            },
+            "post-adoption Entry packet",
+            expected_identity_field="packet_id",
+        )
+        target = load_file_binding(
+            repo_root,
+            {
+                "path": adoption.get("authorization_target", {}).get("path"),
+                "identity_field": "target_id",
+                "identity": adoption.get("authorization_target", {}).get("target_id"),
+                "file_sha256": adoption.get("authorization_target", {}).get("file_sha256"),
+            },
+            "post-adoption authorization target",
+            expected_identity_field="target_id",
+        )
+    except IdentityBindingError as exc:
+        raise BaselineError(str(exc)) from exc
+    if entry.document is None or target.document is None:
+        raise BaselineError("post-adoption Entry packet and target must contain mappings")
+
+    manifest_binding = entry.document.get("snapshot_manifest")
+    if not isinstance(manifest_binding, dict):
+        raise BaselineError("post-adoption Entry packet lacks snapshot_manifest")
+    _, manifest_path = resolve_inside(
+        repo_root,
+        manifest_binding.get("path"),
+        "post-adoption snapshot manifest",
+    )
+    try:
+        manifest, _ = read_project_snapshot_manifest(manifest_path)
+        verify_project_snapshot(repo_root, manifest)
+    except ProjectSnapshotError as exc:
+        raise BaselineError(f"post-adoption project snapshot is invalid: {exc}") from exc
+    snapshot_inputs: dict[str, tuple[bytes, str]] = {}
+    for item in manifest.get("members", []):
+        source_path = item.get("path") if isinstance(item, dict) else None
+        digest = item.get("file_sha256") if isinstance(item, dict) else None
+        if not isinstance(source_path, str) or not isinstance(digest, str):
+            raise BaselineError("post-adoption project snapshot member is invalid")
+        try:
+            raw = project_member_bytes(repo_root, manifest, source_path)
+        except ProjectSnapshotError as exc:
+            raise BaselineError(str(exc)) from exc
+        snapshot_inputs[source_path] = (raw, digest)
+
+    def snapshot_bytes(path_value: str) -> bytes:
+        source = snapshot_inputs.get(path_value)
+        if source is None:
+            raise PostAdoptionStateError(
+                f"reviewed post-adoption source is missing from the snapshot: {path_value}"
+            )
+        raw = source[0]
+        if sha256_bytes(raw) != source[1]:
+            raise PostAdoptionStateError(
+                f"reviewed post-adoption snapshot bytes changed: {path_value}"
+            )
+        return raw
+
+    def snapshot_sha256(path_value: str) -> str:
+        source = snapshot_inputs.get(path_value)
+        if source is None:
+            raise PostAdoptionStateError(
+                f"reviewed post-adoption target is missing from the snapshot: {path_value}"
+            )
+        return source[1]
+
+    try:
+        reviewed_files = load_reviewed_files(
+            target.document.get("post_adoption_state"),
+            read_source=snapshot_bytes,
+            pre_sha256_for=snapshot_sha256,
+        )
+    except PostAdoptionStateError as exc:
+        raise BaselineError(str(exc)) from exc
+    reviewed_by_path = {item.path: item for item in reviewed_files}
+
+    for source_path, (snapshot_raw, digest) in snapshot_inputs.items():
+        _, live_path = resolve_inside(
+            repo_root,
+            source_path,
+            f"post-adoption live source {source_path}",
+        )
+        try:
+            live_raw = live_path.read_bytes()
+        except OSError as exc:
+            raise BaselineError(
+                f"post-adoption source is unreadable: {source_path}: {exc}"
+            ) from exc
+        if sha256_bytes(snapshot_raw) != digest:
+            raise BaselineError(f"post-adoption snapshot bytes changed: {source_path}")
+        reviewed = reviewed_by_path.get(source_path)
+        expected = reviewed.post_bytes if reviewed is not None else snapshot_raw
+        if live_raw != expected:
+            state = "reviewed post-state" if reviewed is not None else "unchanged snapshot"
+            raise BaselineError(
+                f"post-adoption live source does not equal its {state}: {source_path}"
+            )
+
+    user_result = adoption.get("user_result")
+    if not isinstance(user_result, dict):
+        raise BaselineError("authorization adoption lacks its user result binding")
+    receipt = expected_receipt(
+        reviewed_files,
+        target_id=target.identity,
+        adoption_id=str(adoption.get("adoption_id")),
+        user_result_id=str(user_result.get("identity")),
+    )
+    if execution_start.get("post_adoption_state") != receipt:
+        raise BaselineError(
+            "execution-start post_adoption_state does not equal the reviewed transition receipt"
+        )
+
+    baseline = execution_start.get("post_transition_baseline")
+    if not isinstance(baseline, list):
+        raise BaselineError("post_transition_baseline must be a list")
+    for reviewed in reviewed_files:
+        matches = [item for item in baseline if isinstance(item, dict) and item.get("path") == reviewed.path]
+        if len(matches) != 1 or matches[0].get("scope") != "file":
+            raise BaselineError(
+                f"reviewed post-adoption path must appear once as a file baseline: {reviewed.path}"
+            )
+        if matches[0].get("identity") != f"sha256:{reviewed.post_sha256}":
+            raise BaselineError(
+                f"reviewed post-adoption baseline identity is wrong: {reviewed.path}"
+            )
+
+
+def validate_dispatch_chain(
+    document: dict[str, Any], repo_root: Path, *, allow_legacy_audit: bool = False
+) -> None:
+    """Recompute every authority gate before minting or trusting execution-start."""
+    packet_relative, packet_path = resolve_inside(
+        repo_root, document.get("packet_path"), "packet_path"
+    )
+    packet = read_yaml(packet_path, f"packet {packet_relative}")
+    if packet.get("identity_contract") != IDENTITY_CONTRACT:
+        if allow_legacy_audit:
+            return
+        raise BaselineError(
+            "legacy packet may be audited but cannot mint a current execution-start"
+        )
+    if packet.get("packet_id") != document.get("packet_id"):
+        raise BaselineError("execution-start packet_id does not match the live packet")
+
+    packet_validator = load_validator(
+        "validate_batch_packet.py", "_frontier_batch_validator_for_execution"
+    )
+    recomputed_preflight = packet_validator.validate(packet, "frozen", repo_root)
+    if not recomputed_preflight.get("packet_structure_ready"):
+        raise BaselineError("live packet no longer passes its bound packet validator")
+    try:
+        preflight = load_file_binding(
+            repo_root,
+            document.get("packet_preflight"),
+            "packet_preflight",
+            expected_identity_field="preflight_id",
+            expected_identity=recomputed_preflight.get("preflight_id"),
+        )
+    except IdentityBindingError as exc:
+        raise BaselineError(str(exc)) from exc
+    if preflight.raw != canonical_json_artifact(recomputed_preflight):
+        raise BaselineError("stored packet preflight bytes do not equal current recomputation")
+
+    authority = document.get("execution_authority")
+    if not isinstance(authority, dict):
+        raise BaselineError("new execution-start requires structured execution_authority")
+    mode = authority.get("mode")
+    expected_mode = (
+        "authorization-adoption"
+        if packet.get("development_authorization_target") is not None
+        else "spend-readiness"
+    )
+    if mode != expected_mode:
+        raise BaselineError(
+            f"execution authority mode {mode!r} does not match packet-required {expected_mode!r}"
+        )
+    authority_identity: str
+    validation_identity: str
+    if mode == "authorization-adoption":
+        try:
+            adoption = load_file_binding(
+                repo_root,
+                authority.get("record"),
+                "execution_authority.record",
+                expected_identity_field="adoption_id",
+            )
+            validation = load_file_binding(
+                repo_root,
+                authority.get("validation"),
+                "execution_authority.validation",
+                expected_identity_field="validation_id",
+            )
+        except IdentityBindingError as exc:
+            raise BaselineError(str(exc)) from exc
+        if adoption.document is None or validation.document is None:
+            raise BaselineError("execution authority files must contain mappings")
+        adoption_validator = load_validator(
+            "validate_authorization_adoption.py",
+            "_frontier_adoption_validator_for_execution",
+        )
+        recomputed_adoption = adoption_validator.validate(
+            adoption.document,
+            "frozen",
+            repo_root,
+            reconcile_entry_live=False,
+        )
+        if not recomputed_adoption.get("authorization_adoption_valid"):
+            raise BaselineError("authorization adoption is not valid under the current validator")
+        if adoption.document.get("entry_result") != "ENTRY_READY":
+            raise BaselineError("authorization adoption does not grant ENTRY_READY")
+        if validation.raw != canonical_json_artifact(recomputed_adoption):
+            raise BaselineError("stored adoption validation bytes do not equal current recomputation")
+        validate_post_adoption_live(document, adoption.document, repo_root)
+        authority_identity = adoption.identity
+        validation_identity = validation.identity
+    elif mode == "spend-readiness":
+        if document.get("post_adoption_state") is not None:
+            raise BaselineError("spend-readiness execution-start requires post_adoption_state: null")
+        try:
+            entry = load_file_binding(
+                repo_root,
+                authority.get("entry_packet"),
+                "execution_authority.entry_packet",
+                expected_identity_field="packet_id",
+            )
+            review = load_file_binding(
+                repo_root,
+                authority.get("record"),
+                "execution_authority.record",
+                expected_identity_field=None,
+            )
+            validation = load_file_binding(
+                repo_root,
+                authority.get("validation"),
+                "execution_authority.validation",
+                expected_identity_field="entry_schema_id",
+            )
+        except IdentityBindingError as exc:
+            raise BaselineError(str(exc)) from exc
+        if entry.document is None or validation.document is None:
+            raise BaselineError("spend-readiness Entry files must contain mappings")
+        entry_validator = load_validator(
+            "validate_entry_packet.py", "_frontier_entry_validator_for_execution"
+        )
+        recomputed_entry = entry_validator.validate(entry.document, "frozen", repo_root)
+        if not recomputed_entry.get("entry_schema_ready"):
+            raise BaselineError("spend-readiness Entry packet is not source-valid")
+        if entry.document.get("review_stage") != "spend-readiness":
+            raise BaselineError("spend-readiness authority requires the matching Entry stage")
+        if validation.raw != canonical_json_artifact(recomputed_entry):
+            raise BaselineError("stored Entry validation bytes do not equal current recomputation")
+        frontmatter = read_frontmatter(review.raw, review.relative_path)
+        if (
+            frontmatter.get("review_result") != "ENTRY_READY"
+            or frontmatter.get("packet_id") != entry.identity
+            or frontmatter.get("snapshot_id") != entry.document.get("snapshot_id")
+        ):
+            raise BaselineError("spend-readiness review does not bind the Entry packet and snapshot")
+        authority_identity = review.identity
+        validation_identity = validation.identity
+    else:
+        raise BaselineError(
+            "execution_authority.mode must be authorization-adoption or spend-readiness"
+        )
+
+    try:
+        acknowledgment = load_file_binding(
+            repo_root,
+            document.get("acknowledgment"),
+            "acknowledgment",
+            expected_identity_field="acknowledgment_id",
+        )
+    except IdentityBindingError as exc:
+        raise BaselineError(str(exc)) from exc
+    if acknowledgment.document is None:
+        raise BaselineError("acknowledgment must contain a mapping")
+    ack = acknowledgment.document
+    expected_ack_fields = {
+        "batch_id": document.get("batch_id"),
+        "packet_id": document.get("packet_id"),
+        "packet_preflight_id": preflight.identity,
+        "authority_id": authority_identity,
+        "authority_validation_id": validation_identity,
+        "acknowledgment": "accepted",
+    }
+    if any(ack.get(field) != value for field, value in expected_ack_fields.items()):
+        raise BaselineError("acknowledgment does not bind the recomputed execution authority")
+    if ack.get("acknowledgment_id") != compute_acknowledgment_id(ack):
+        raise BaselineError("acknowledgment identity does not derive from its canonical bytes")
+
+
+def parse_utc_timestamp(value: Any, field: str) -> datetime:
+    if not isinstance(value, str) or not value.endswith("Z"):
+        raise BaselineError(f"{field} must be an RFC3339 UTC timestamp ending in Z")
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise BaselineError(f"{field} is not a valid RFC3339 timestamp") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() != timezone.utc.utcoffset(parsed):
+        raise BaselineError(f"{field} must identify a UTC instant")
+    return parsed
+
+
+def normalized_timestamp(value: Any) -> str | None:
+    if isinstance(value, datetime) and value.tzinfo is not None:
+        return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    return value if isinstance(value, str) else None
+
+
+def normalized_date(value: Any) -> str | None:
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+    return value if isinstance(value, str) else None
+
+
+def read_frontmatter(content: bytes, path: str) -> dict[str, Any]:
+    try:
+        text = content.decode()
+        if not text.startswith("---\n"):
+            raise ValueError("missing YAML frontmatter")
+        _, frontmatter_text, _ = text.split("---", 2)
+        frontmatter = yaml.safe_load(frontmatter_text)
+    except (UnicodeDecodeError, ValueError, yaml.YAMLError) as exc:
+        raise BaselineError(f"lifecycle target {path} has invalid frontmatter: {exc}") from exc
+    if not isinstance(frontmatter, dict):
+        raise BaselineError(f"lifecycle target {path} frontmatter must be a mapping")
+    return frontmatter
+
+
+def validate_lifecycle_record_structure(document: dict[str, Any]) -> dict[str, Any] | None:
+    transition = document.get("lifecycle_transition")
+    if transition is None:
+        return None
+    if not isinstance(transition, dict):
+        # Historical records used prose and remain governed by their frozen
+        # workflow bytes. New structured packets are rejected below unless they
+        # provide the versioned receipt.
+        return None
+    if transition.get("contract_version") != LIFECYCLE_CONTRACT:
+        # Historical execution-start records predate the structured contract and
+        # remain verifiable through their originally bound workflow bytes.
+        return None
+
+    required_strings = (
+        "path",
+        "transition_timestamp",
+        "derived_updated",
+        "pre_change_identity",
+        "post_change_identity",
+    )
+    for field in required_strings:
+        if not isinstance(transition.get(field), str) or not transition[field]:
+            raise BaselineError(f"lifecycle_transition.{field} must be a nonempty string")
+    if transition.get("timezone") != "UTC":
+        raise BaselineError("lifecycle_transition.timezone must be UTC")
+
+    transition_at = parse_utc_timestamp(
+        transition["transition_timestamp"], "lifecycle_transition.transition_timestamp"
+    )
+    recorded_at = parse_utc_timestamp(document.get("recorded_at"), "recorded_at")
+    if recorded_at < transition_at:
+        raise BaselineError("recorded_at must not precede the lifecycle transition")
+    expected_date = transition_at.date().isoformat()
+    if transition["derived_updated"] != expected_date:
+        raise BaselineError("derived_updated must be the UTC calendar date of transition_timestamp")
+
+    observed = transition.get("observed_field_diff")
+    expected_keys = {"campaign_status", "generated.at", "updated"}
+    if not isinstance(observed, dict) or set(observed) != expected_keys:
+        raise BaselineError("observed_field_diff must contain exactly the three authorized fields")
+    if observed.get("campaign_status") != {"from": "planned", "to": "running"}:
+        raise BaselineError("observed campaign_status diff must be planned to running")
+    generated = observed.get("generated.at")
+    updated = observed.get("updated")
+    if not isinstance(generated, dict) or generated.get("to") != transition["transition_timestamp"]:
+        raise BaselineError("observed generated.at must end at transition_timestamp")
+    if not isinstance(generated.get("from"), str) or not generated["from"]:
+        raise BaselineError("observed generated.at must record its prior value")
+    if not isinstance(updated, dict) or updated.get("to") != expected_date:
+        raise BaselineError("observed updated must end at the derived UTC date")
+    if not isinstance(updated.get("from"), str) or not updated["from"]:
+        raise BaselineError("observed updated must record its prior value")
+    for field in ("pre_change_identity", "post_change_identity"):
+        identity = transition[field]
+        digest = identity.removeprefix("sha256:")
+        if not identity.startswith("sha256:") or len(digest) != 64 or any(
+            character not in "0123456789abcdef" for character in digest
+        ):
+            raise BaselineError(f"lifecycle_transition.{field} must be a lowercase SHA-256")
+    return transition
+
+
+def validate_lifecycle_live(
+    document: dict[str, Any], baseline: list[Any], repo_root: Path
+) -> None:
+    packet_relative, packet_path = resolve_inside(
+        repo_root, document.get("packet_path"), "packet_path"
+    )
+    packet = read_yaml(packet_path, f"packet {packet_relative}")
+    if packet.get("packet_id") != document.get("packet_id"):
+        raise BaselineError("execution-start packet_id does not match the live packet")
+    contract = packet.get("coordinator_lifecycle_transition")
+    structured_contract = (
+        isinstance(contract, dict) and contract.get("contract_version") == LIFECYCLE_CONTRACT
+    )
+    raw_transition = document.get("lifecycle_transition")
+    if structured_contract and (
+        not isinstance(raw_transition, dict)
+        or raw_transition.get("contract_version") != LIFECYCLE_CONTRACT
+    ):
+        raise BaselineError("structured packet lifecycle contract requires a structured receipt")
+
+    transition = validate_lifecycle_record_structure(document)
+    if transition is None:
+        return
+    if not structured_contract:
+        raise BaselineError("structured lifecycle record requires the matching packet contract")
+    if contract.get("path") != transition["path"]:
+        raise BaselineError("lifecycle record path does not match the packet contract")
+    precondition = contract.get("precondition")
+    if not isinstance(precondition, dict) or precondition.get("file_identity") != transition[
+        "pre_change_identity"
+    ]:
+        raise BaselineError("lifecycle pre-change identity does not match the packet precondition")
+
+    target_relative, target = resolve_inside(
+        repo_root, transition["path"], "lifecycle_transition.path"
+    )
+    if not target.is_file() or target.is_symlink():
+        raise BaselineError(f"lifecycle target is missing or unsafe: {target_relative}")
+    content = target.read_bytes()
+    live_identity = f"sha256:{sha256_bytes(content)}"
+    if live_identity != transition["post_change_identity"]:
+        raise BaselineError("lifecycle post-change identity does not match the live target")
+
+    matching_baselines = [
+        item
+        for item in baseline
+        if isinstance(item, dict) and item.get("path") == target_relative
+    ]
+    if len(matching_baselines) != 1 or matching_baselines[0].get("scope") != "file":
+        raise BaselineError("lifecycle target must appear once as a file baseline entry")
+    if matching_baselines[0].get("identity") != live_identity:
+        raise BaselineError("lifecycle target baseline identity must equal its post-change identity")
+
+    frontmatter = read_frontmatter(content, target_relative)
+    generated = frontmatter.get("generated")
+    if frontmatter.get("campaign_status") != "running":
+        raise BaselineError("lifecycle target campaign_status is not running")
+    if not isinstance(generated, dict) or normalized_timestamp(generated.get("at")) != transition[
+        "transition_timestamp"
+    ]:
+        raise BaselineError("lifecycle target generated.at does not equal transition_timestamp")
+    if normalized_date(frontmatter.get("updated")) != transition["derived_updated"]:
+        raise BaselineError("lifecycle target updated does not equal the derived UTC date")
+
+
 def freeze(
     draft_path: Path, snapshot_base_value: str, output_path: Path, repo_root: Path
 ) -> dict[str, Any]:
@@ -173,9 +621,11 @@ def freeze(
         raise BaselineError("execution-start draft must not contain execution_start_id")
     if document.get("baseline_snapshot") is not None:
         raise BaselineError("execution-start draft must not contain baseline_snapshot")
+    validate_dispatch_chain(document, repo_root)
     baseline = document.get("post_transition_baseline")
     if not isinstance(baseline, list) or not baseline:
         raise BaselineError("post_transition_baseline must be a nonempty list")
+    validate_lifecycle_live(document, baseline, repo_root)
 
     output_relative, expected_output = resolve_inside(
         repo_root, document.get("execution_start_path"), "execution_start_path"
@@ -216,100 +666,80 @@ def freeze(
                 f"post_transition_baseline[{index}] subtree contains a Coordinator execution output"
             )
 
-    staging_parent = snapshot_base.parent
-    staging_parent.mkdir(parents=True, exist_ok=True)
-    staging = Path(tempfile.mkdtemp(prefix=".execution-baseline-", dir=staging_parent))
-    try:
-        inputs = [
-            materialize_input(entry, index, repo_root, staging)
-            for index, entry in enumerate(baseline)
-        ]
-        sources = [entry["source_path"] for entry in inputs]
-        if len(sources) != len(set(sources)):
-            raise BaselineError("post_transition_baseline source paths must be unique")
-
-        manifest: dict[str, Any] = {
-            "manifest_kind": MANIFEST_KIND,
-            "batch_id": document.get("batch_id"),
-            "campaign_generation": document.get("campaign_generation"),
-            "created_at": document.get("recorded_at"),
-            "created_by": "frontier-optimization/1",
-            "inputs": inputs,
-        }
-        snapshot_id = compute_manifest_id(manifest)
-        manifest = {"snapshot_id": snapshot_id, **manifest}
-        digest = snapshot_id.rsplit(":", 1)[-1]
-        final_root = snapshot_base / digest
-        manifest_path = final_root / "manifest.yaml"
-        (staging / "manifest.yaml").write_bytes(
-            yaml.safe_dump(manifest, sort_keys=False, allow_unicode=True).encode()
+    selected_paths: list[str] = []
+    closed_roots: list[dict[str, Any]] = []
+    seen_sources: set[str] = set()
+    for index, entry in enumerate(baseline):
+        source_path, source = resolve_inside(
+            repo_root, entry.get("path"), f"post_transition_baseline[{index}].path"
         )
+        if source_path in seen_sources:
+            raise BaselineError("post_transition_baseline source paths must be unique")
+        seen_sources.add(source_path)
+        scope = entry.get("scope")
+        expected = declared_identity(entry, index)
+        if scope == "file":
+            if not source.is_file() or source.is_symlink():
+                raise BaselineError(f"baseline file is missing or unsafe: {source_path}")
+            observed = f"sha256:{sha256_bytes(source.read_bytes())}"
+            if observed != expected:
+                raise BaselineError(
+                    f"baseline identity mismatch for {source_path}: declared {expected}, computed {observed}"
+                )
+            selected_paths.append(source_path)
+        elif scope == "subtree":
+            members, observed = subtree_inventory(source)
+            if observed != expected:
+                raise BaselineError(
+                    f"baseline identity mismatch for {source_path}/: declared {expected}, computed {observed}"
+                )
+            closed_roots.append(
+                {
+                    "path": source_path,
+                    "expected_members": [item["path"] for item in members],
+                }
+            )
+        else:
+            raise BaselineError(
+                f"post_transition_baseline[{index}].scope must be file or subtree"
+            )
 
-        snapshot_base.mkdir()
-        os.replace(staging, final_root)
-        document["baseline_snapshot"] = {
-            "root": final_root.relative_to(repo_root).as_posix(),
-            "manifest": manifest_path.relative_to(repo_root).as_posix(),
-            "snapshot_id": snapshot_id,
-            "input_count": len(inputs),
-        }
-        document["execution_start_id"] = compute_execution_start_id(document)
-        rendered = yaml.safe_dump(document, sort_keys=False, allow_unicode=True).encode()
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        temporary_output = output_path.with_name(f".{output_path.name}.tmp")
-        if temporary_output.exists():
-            raise BaselineError(f"temporary output already exists: {temporary_output}")
-        temporary_output.write_bytes(rendered)
-        os.replace(temporary_output, output_path)
-        return document
-    except Exception:
-        if staging.exists():
-            shutil.rmtree(staging)
-        raise
-
-
-def verify_manifest_input(
-    item: dict[str, Any], snapshot_root: Path, repo_root: Path, require_live: bool
-) -> None:
-    source_path, live_source = resolve_inside(repo_root, item.get("source_path"), "source_path")
-    scope = item.get("scope")
-    expected = item.get("computed_identity")
-    if item.get("declared_identity") != expected:
-        raise BaselineError(f"declared and computed identities differ for {source_path}")
-    snapshot_relative = normalize_repo_path(item.get("snapshot_path"), "snapshot_path")
-    snapshot_source = (snapshot_root / snapshot_relative).resolve()
+    manifest_path = snapshot_base / "project-snapshot.yaml"
     try:
-        snapshot_source.relative_to(snapshot_root)
-    except ValueError as exc:
-        raise BaselineError(f"snapshot_path escapes snapshot root: {snapshot_relative}") from exc
-
-    if scope == "file":
-        if not snapshot_source.is_file() or snapshot_source.is_symlink():
-            raise BaselineError(f"snapshot file is missing or unsafe: {snapshot_relative}")
-        observed = f"sha256:{sha256_bytes(snapshot_source.read_bytes())}"
-        if observed != expected:
-            raise BaselineError(f"snapshot identity mismatch for {source_path}")
-        if require_live:
-            if not live_source.is_file() or live_source.is_symlink():
-                raise BaselineError(f"live baseline file is missing or unsafe: {source_path}")
-            live_identity = f"sha256:{sha256_bytes(live_source.read_bytes())}"
-            if live_identity != expected:
-                raise BaselineError(f"live baseline drift for {source_path}")
-        return
-
-    if scope != "subtree" or not isinstance(item.get("members"), list):
-        raise BaselineError(f"invalid snapshot scope for {source_path}")
-    snapshot_members, observed = subtree_inventory(snapshot_source)
-    if snapshot_members != item["members"] or observed != expected:
-        raise BaselineError(f"snapshot subtree identity mismatch for {source_path}")
-    if require_live:
-        live_members, live_identity = subtree_inventory(live_source)
-        if live_members != item["members"] or live_identity != expected:
-            raise BaselineError(f"live baseline drift for {source_path}/")
+        manifest = capture_project_snapshot(
+            repo_root,
+            manifest_path=manifest_path,
+            paths=selected_paths,
+            closed_roots=closed_roots,
+            created_at=document.get("recorded_at"),
+        )
+    except ProjectSnapshotError as exc:
+        raise BaselineError(f"cannot freeze execution project snapshot: {exc}") from exc
+    document["baseline_snapshot"] = {
+        "root": snapshot_base.relative_to(repo_root).as_posix(),
+        "manifest": manifest_path.relative_to(repo_root).as_posix(),
+        "snapshot_id": manifest["snapshot_id"],
+        "input_count": len(baseline),
+    }
+    document["execution_start_id"] = compute_execution_start_id(document)
+    rendered = yaml.safe_dump(document, sort_keys=False, allow_unicode=True).encode()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_output = output_path.with_name(f".{output_path.name}.tmp")
+    if temporary_output.exists():
+        raise BaselineError(f"temporary output already exists: {temporary_output}")
+    temporary_output.write_bytes(rendered)
+    os.replace(temporary_output, output_path)
+    return document
 
 
 def verify(execution_start_path: Path, repo_root: Path, require_live: bool) -> dict[str, Any]:
     document = read_yaml(execution_start_path, "execution-start record")
+    validate_dispatch_chain(
+        document,
+        repo_root,
+        allow_legacy_audit=not require_live,
+    )
+    validate_lifecycle_record_structure(document)
     declared_start_id = document.get("execution_start_id")
     computed_start_id = compute_execution_start_id(document)
     if declared_start_id != computed_start_id:
@@ -326,58 +756,85 @@ def verify(execution_start_path: Path, repo_root: Path, require_live: bool) -> d
     if manifest_path.parent != snapshot_root:
         raise BaselineError("baseline manifest must be inside the declared snapshot root")
     manifest = read_yaml(manifest_path, "execution-baseline manifest")
-    if manifest.get("manifest_kind") != MANIFEST_KIND:
-        raise BaselineError("execution-baseline manifest kind is invalid")
-    computed_snapshot_id = compute_manifest_id(manifest)
-    if manifest.get("snapshot_id") != computed_snapshot_id:
-        raise BaselineError("execution-baseline manifest identity mismatch")
-    if snapshot.get("snapshot_id") != computed_snapshot_id:
-        raise BaselineError("execution-start and manifest bind different snapshot identities")
-    if snapshot_root.name != computed_snapshot_id.rsplit(":", 1)[-1]:
-        raise BaselineError("snapshot root does not use the content-addressed digest")
-    inputs = manifest.get("inputs")
-    baseline = document.get("post_transition_baseline")
-    if not isinstance(inputs, list) or not isinstance(baseline, list):
-        raise BaselineError("baseline inputs must be lists")
-    if snapshot.get("input_count") != len(inputs) or len(inputs) != len(baseline):
-        raise BaselineError("baseline input count mismatch")
-    expected_snapshot_files: set[str] = set()
-    for index, (baseline_entry, manifest_entry) in enumerate(zip(baseline, inputs, strict=True)):
-        if not isinstance(baseline_entry, dict) or not isinstance(manifest_entry, dict):
-            raise BaselineError(f"baseline entry {index} must be a mapping")
-        expected_binding = {
-            "path": manifest_entry.get("source_path"),
-            "scope": manifest_entry.get("scope"),
-            "identity": manifest_entry.get("declared_identity"),
+    if manifest.get("schema") == PROJECT_SNAPSHOT_SCHEMA:
+        try:
+            project_result = verify_project_snapshot(
+                repo_root,
+                manifest,
+                require_live=require_live,
+            )
+        except ProjectSnapshotError as exc:
+            if require_live and (
+                "live project member drift" in str(exc)
+                or "closed project root" in str(exc)
+            ):
+                raise BaselineError(f"live baseline drift: {exc}") from exc
+            raise BaselineError(f"execution project snapshot is invalid: {exc}") from exc
+        if snapshot.get("snapshot_id") != manifest.get("snapshot_id"):
+            raise BaselineError("execution-start and project snapshot bind different identities")
+        baseline = document.get("post_transition_baseline")
+        if not isinstance(baseline, list) or snapshot.get("input_count") != len(baseline):
+            raise BaselineError("baseline input count mismatch")
+        member_by_path = {
+            item.get("path"): item
+            for item in manifest.get("members", [])
+            if isinstance(item, dict)
         }
-        if {key: baseline_entry.get(key) for key in expected_binding} != expected_binding:
-            raise BaselineError(f"baseline entry {index} does not match snapshot manifest")
-        verify_manifest_input(manifest_entry, snapshot_root, repo_root, require_live)
-        snapshot_path = normalize_repo_path(
-            manifest_entry.get("snapshot_path"), "snapshot_path"
-        )
-        if manifest_entry.get("scope") == "file":
-            expected_snapshot_files.add(snapshot_path)
-        else:
-            for member in manifest_entry.get("members", []):
-                expected_snapshot_files.add(
-                    (Path(snapshot_path) / member["path"]).as_posix()
-                )
-    actual_snapshot_files: set[str] = set()
-    for member in snapshot_root.rglob("*"):
-        if member.is_symlink():
-            raise BaselineError(f"snapshot contains a symbolic link: {member}")
-        if member.is_file() and member != manifest_path:
-            actual_snapshot_files.add(member.relative_to(snapshot_root).as_posix())
-    if actual_snapshot_files != expected_snapshot_files:
-        raise BaselineError("snapshot contains missing or undeclared input files")
-    return {
-        "execution_start_id": computed_start_id,
-        "baseline_snapshot_id": computed_snapshot_id,
-        "input_count": len(inputs),
-        "snapshot_verified": True,
-        "live_baseline_matched": require_live,
-    }
+        closed_by_path = {
+            item.get("path"): item
+            for item in manifest.get("closed_roots", [])
+            if isinstance(item, dict)
+        }
+        covered_members: set[str] = set()
+        for index, entry in enumerate(baseline):
+            if not isinstance(entry, dict):
+                raise BaselineError(f"baseline entry {index} must be a mapping")
+            source_path = normalize_repo_path(
+                entry.get("path"), f"post_transition_baseline[{index}].path"
+            )
+            expected = declared_identity(entry, index)
+            scope = entry.get("scope")
+            if scope == "file":
+                member = member_by_path.get(source_path)
+                if member is None or f"sha256:{member.get('file_sha256')}" != expected:
+                    raise BaselineError(f"project snapshot identity mismatch for {source_path}")
+                covered_members.add(source_path)
+                continue
+            if scope != "subtree":
+                raise BaselineError(f"invalid snapshot scope for {source_path}")
+            closed = closed_by_path.get(source_path)
+            if closed is None or not isinstance(closed.get("members"), list):
+                raise BaselineError(f"project snapshot closed root is missing: {source_path}")
+            payload: list[dict[str, str]] = []
+            for relative in closed["members"]:
+                path = f"{source_path}/{relative}"
+                member = member_by_path.get(path)
+                if member is None:
+                    raise BaselineError(f"project snapshot subtree member is missing: {path}")
+                payload.append({"path": relative, "sha256": member["file_sha256"]})
+                covered_members.add(path)
+            observed = f"sha256:{sha256_bytes(json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode())}"
+            if observed != expected:
+                raise BaselineError(f"project snapshot subtree identity mismatch for {source_path}")
+        if covered_members != set(member_by_path):
+            raise BaselineError("project snapshot contains undeclared baseline members")
+        actual_root_members = {
+            path.relative_to(snapshot_root).as_posix()
+            for path in snapshot_root.rglob("*")
+            if path.is_file()
+        }
+        if actual_root_members != {manifest_path.name}:
+            raise BaselineError("execution baseline root must contain only its project snapshot manifest")
+        return {
+            "execution_start_id": computed_start_id,
+            "baseline_snapshot_id": manifest["snapshot_id"],
+            "input_count": len(baseline),
+            "snapshot_verified": project_result["snapshot_verified"],
+            "live_baseline_matched": require_live,
+        }
+    raise BaselineError(
+        "legacy copied execution baselines are audit records and cannot verify new authority"
+    )
 
 
 def parse_args() -> argparse.Namespace:

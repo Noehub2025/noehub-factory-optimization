@@ -6,6 +6,8 @@ from __future__ import annotations
 import copy
 import hashlib
 import importlib.util
+import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -33,23 +35,140 @@ BASELINE = load_module("freeze_execution_baseline")
 RESULT = load_module("validate_batch_result")
 RECOVERY = load_module("validate_candidate_recovery")
 PACKAGE = load_module("package_frontier_handoff")
+CANDIDATE_PACKAGE = load_module("validate_candidate_package")
+PROJECT_SNAPSHOT = load_module("project_snapshot")
 
 
 def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def file_binding(
+    root: Path, path: Path, identity_field: str | None, identity: str
+) -> dict:
+    return {
+        "path": path.relative_to(root).as_posix(),
+        "identity_field": identity_field,
+        "identity": identity,
+        "file_sha256": sha256_file(path),
+    }
+
+
 class Slice7EndToEndTests(unittest.TestCase):
     def test_materialize_close_recover_and_package_from_persisted_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
             source = root / "src/input.txt"
             source.parent.mkdir(parents=True)
             source.write_text("source base\n")
+            source_identity = f"sha256:{sha256_file(source)}"
+            campaign_state = root / "docs/task/frontier/ledger.md"
+            campaign_state.parent.mkdir(parents=True)
+            campaign_state.write_text("status: planned\n")
+            proposed_campaign_state = root / "artifacts/frontier/B900/proposed-campaign-state.md"
+            proposed_campaign_state.parent.mkdir(parents=True)
+            proposed_campaign_state.write_text("status: running\n")
+            pre_current_state = {
+                "campaign_generation": 2,
+                "campaign_status": "running",
+                "primary_batch": None,
+                "parallel_batches": [],
+                "decision_id": "V900",
+                "authorization_state": "pending",
+                "execution_batch": "B900",
+                "execution_state": "not-authorized",
+            }
+            post_current_state = {
+                **pre_current_state,
+                "primary_batch": "B900",
+                "authorization_state": "adopted",
+                "execution_state": "awaiting-acknowledgment",
+            }
+
+            def frontier_bytes(state: dict) -> bytes:
+                return (
+                    b"---\n"
+                    + yaml.safe_dump(
+                        {
+                            "campaign_generation": state["campaign_generation"],
+                            "campaign_status": state["campaign_status"],
+                            "current_state": state,
+                        },
+                        sort_keys=False,
+                    ).encode()
+                    + b"---\n\n# FRONTIER\n"
+                )
+
+            frontier_state = root / "docs/task/FRONTIER.md"
+            frontier_state.write_bytes(frontier_bytes(pre_current_state))
+            proposed_frontier_state = root / "artifacts/frontier/B900/proposed-FRONTIER.md"
+            proposed_frontier_state.write_bytes(frontier_bytes(post_current_state))
+            proposed_transition = {
+                "budget": "reserve B900",
+                "selection": "B900 Primary",
+                "lifecycle": "FIRST_BATCH_PLANNED",
+            }
+            direct_identity = f"sha256:{sha256_file(source)}"
+            source_base_identity = direct_identity
+            target_scope = "one direct materialization"
+            target_spend = "one proposal attempt"
+            target_stop = "materialized-stopped"
+            target_result_path = "artifacts/frontier/B900/result.yaml"
+            user_result_path = "artifacts/frontier/V900-result.yaml"
+            post_adoption_paths = [
+                "docs/task/FRONTIER.md",
+                "docs/task/frontier/ledger.md",
+            ]
+            decision_record_path = "docs/task/frontier/ledger.md"
+            authorization_question = "Authorize exactly the reviewed B900 materialization?"
+            authorize_consequence = "dispatch exact B900"
+            decline_consequence = "keep B900 undispatched"
+            conditional_consequence = "require a fresh target and Entry review"
+            target_spec_payload = {
+                "contract_version": "frontier-authorization-target-specification/1",
+                "decision_id": "V900",
+                "batch_id": "B900",
+                "target_path": "artifacts/frontier/V900-target.yaml",
+                "user_result_path": user_result_path,
+                "decision_record_path": decision_record_path,
+                "design_contract_identity": direct_identity,
+                "source_base_identity": source_base_identity,
+                "scope": target_scope,
+                "maximum_spend": target_spend,
+                "stop_boundary": target_stop,
+                "result_path": target_result_path,
+                "proposed_state_transition": proposed_transition,
+                "post_adoption_paths": post_adoption_paths,
+                "authorization_question": authorization_question,
+                "authorize_consequence": authorize_consequence,
+                "decline_consequence": decline_consequence,
+                "conditional_consequence": conditional_consequence,
+            }
+            target_spec_payload_raw = yaml.safe_dump(
+                target_spec_payload, sort_keys=False
+            ).encode()
+            target_spec_id = (
+                "V900-target-spec-sha256:"
+                + hashlib.sha256(target_spec_payload_raw).hexdigest()
+            )
+            target_spec_path = root / "artifacts/frontier/V900-target-spec.yaml"
+            target_spec_path.write_bytes(
+                f"target_spec_id: {target_spec_id}\n".encode()
+                + target_spec_payload_raw
+            )
+            target_specification = {
+                "contract_version": "frontier-authorization-target-specification/1",
+                "path": "artifacts/frontier/V900-target-spec.yaml",
+                "identity_field": "target_spec_id",
+                "identity": target_spec_id,
+                "file_sha256": sha256_file(target_spec_path),
+            }
 
             packet = {
                 "packet_path": "artifacts/frontier/B900/packet.yaml",
                 "packet_preflight_path": "artifacts/frontier/B900/packet-preflight.json",
+                "task_path": "docs/task",
                 "batch_id": "B900",
                 "campaign_generation": 2,
                 "route_id": "T900",
@@ -58,7 +177,35 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "problem_epoch": 3,
                 "representation_revision": 4,
                 "changes_executable_candidate": True,
+                "executor": "Agent",
+                "required_inputs": [],
+                "identity_contract": BATCH.IDENTITY_CONTRACT,
                 "design_profile": "direct",
+                "design_contract_identity": source_identity,
+                "design_contract_binding": {
+                    "path": "src/input.txt",
+                    "identity_field": None,
+                    "identity": source_identity,
+                    "file_sha256": sha256_file(source),
+                },
+                "development_authorization_target": target_specification,
+                "source_base_identity": source_identity,
+                "source_base_binding": {
+                    "path": "src/input.txt",
+                    "identity_field": None,
+                    "identity": source_identity,
+                    "file_sha256": sha256_file(source),
+                },
+                "maximum_spend": "one proposal attempt",
+                "authorization_gate": "finding-free Entry adoption",
+                "authorization_boundary": {
+                    "scope": "one direct materialization",
+                    "maximum_spend": "one proposal attempt",
+                    "stop_boundary": "materialized-stopped",
+                    "result_path": "artifacts/frontier/B900/result.yaml",
+                },
+                "stop_conditions": ["stop after materialization"],
+                "forced_halts": [],
                 "allowed_code_paths": ["candidates/B900-example/"],
                 "worker_forbidden_paths": [
                     "artifacts/frontier/B900/packet.yaml",
@@ -77,10 +224,34 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "coordinator_lifecycle_transition": None,
                 "execution_baseline_root": "artifacts/frontier/B900/execution-baseline/",
                 "execution_start_path": "artifacts/frontier/B900/execution-start.yaml",
+                "candidate_root_path": "candidates/B900-example/",
+                "candidate_package_inventory_path": "artifacts/frontier/B900/package-inventory.yaml",
                 "candidate_manifest_path": "artifacts/frontier/B900/candidate-manifest.yaml",
+                "engineering_check_plan": {
+                    "contract_version": BATCH.ENGINEERING_CHECK_PLAN_CONTRACT,
+                    "checks": [
+                        {
+                            "id": "bounded-unit-check",
+                            "command": ["python", "-m", "unittest", "tests.test_unit"],
+                            "selection": "exact",
+                            "selected_units": ["tests.test_unit"],
+                            "declared_effects": ["local-code-execution"],
+                            "effect_evidence": [
+                                {
+                                    "path": "src/input.txt",
+                                    "file_sha256": sha256_file(source),
+                                }
+                            ],
+                        }
+                    ],
+                    "effect_limits": {"local-code-execution": 1},
+                    "evidence_use": "engineering-only",
+                },
                 "artifact_paths": [
                     "candidates/B900-example/",
+                    "artifacts/frontier/B900/package-inventory.yaml",
                     "artifacts/frontier/B900/candidate-manifest.yaml",
+                    "artifacts/frontier/B900/engineering/",
                     "artifacts/frontier/B900/result-validation.json",
                     "artifacts/frontier/B900/result.yaml",
                 ],
@@ -93,6 +264,95 @@ class Slice7EndToEndTests(unittest.TestCase):
             self.assertTrue(packet_draft["packet_structure_ready"], packet_draft["findings"])
             packet["packet_id"] = packet_draft["computed_packet_id"]
             self.assertTrue(BATCH.validate(packet, "frozen", root)["packet_structure_ready"])
+            live_packet_path = root / packet["packet_path"]
+            live_packet_path.parent.mkdir(parents=True, exist_ok=True)
+            live_packet_path.write_text(yaml.safe_dump(packet, sort_keys=False))
+            live_preflight_path = root / packet["packet_preflight_path"]
+            live_preflight_path.write_text(
+                json.dumps(packet_draft, indent=2, sort_keys=True) + "\n"
+            )
+
+            post_adoption_state = {
+                "contract_version": "frontier-post-adoption-state/1",
+                "files": [
+                    {
+                        "path": "docs/task/FRONTIER.md",
+                        "pre_sha256": sha256_file(frontier_state),
+                        "post_source": {
+                            "path": "artifacts/frontier/B900/proposed-FRONTIER.md",
+                            "file_sha256": sha256_file(proposed_frontier_state),
+                        },
+                    },
+                    {
+                        "path": "docs/task/frontier/ledger.md",
+                        "pre_sha256": sha256_file(campaign_state),
+                        "post_source": {
+                            "path": "artifacts/frontier/B900/proposed-campaign-state.md",
+                            "file_sha256": sha256_file(proposed_campaign_state),
+                        },
+                    }
+                ],
+            }
+
+            entry_reviewed_bindings = [
+                {
+                    "role": "direct_profile",
+                    "path": "src/input.txt",
+                    "identity": direct_identity,
+                    "identity_field": None,
+                    "file_sha256": sha256_file(source),
+                    "batch_scoped": False,
+                },
+                {
+                    "role": "source_base",
+                    "path": "src/input.txt",
+                    "identity": source_base_identity,
+                    "identity_field": None,
+                    "file_sha256": sha256_file(source),
+                    "batch_scoped": False,
+                },
+            ]
+
+            target_payload = {
+                "identity_rule": "exact UTF-8 bytes with the complete target_id line omitted",
+                "decision_id": "V900",
+                "target_specification": target_specification,
+                "batch_id": "B900",
+                "preflight_id": packet_draft["preflight_id"],
+                "design_contract_identity": direct_identity,
+                "source_base_identity": source_base_identity,
+                "scope": target_scope,
+                "maximum_spend": target_spend,
+                "stop_boundary": target_stop,
+                "result_path": target_result_path,
+                "user_result_path": user_result_path,
+                "decision_record_path": decision_record_path,
+                "proposed_state_transition": proposed_transition,
+                "post_adoption_state": post_adoption_state,
+                "post_adoption_paths": post_adoption_paths,
+                "authorization_question": authorization_question,
+                "exact_object": {
+                    "batch_id": "B900",
+                    "packet": {
+                        "path": packet["packet_path"],
+                        "packet_id": packet["packet_id"],
+                        "file_sha256": sha256_file(live_packet_path),
+                    },
+                    "structural_preflight": {
+                        "path": packet["packet_preflight_path"],
+                        "preflight_id": packet_draft["preflight_id"],
+                        "file_sha256": sha256_file(live_preflight_path),
+                    },
+                    "reviewed_bindings": entry_reviewed_bindings,
+                },
+                "authorize_consequence": authorize_consequence,
+                "decline_consequence": decline_consequence,
+                "conditional_consequence": conditional_consequence,
+            }
+            target_payload_raw = yaml.safe_dump(target_payload, sort_keys=False).encode()
+            target_id = f"V900-target-sha256:{hashlib.sha256(target_payload_raw).hexdigest()}"
+            target_path = root / "artifacts/frontier/V900-target.yaml"
+            target_path.write_bytes(f"target_id: {target_id}\n".encode() + target_payload_raw)
 
             entry = {
                 "review_kind": "entry",
@@ -103,9 +363,8 @@ class Slice7EndToEndTests(unittest.TestCase):
                     "draft": "frontier/reviews/entry-R900-draft.json",
                     "frozen": "frontier/reviews/entry-R900-frozen.json",
                 },
-                "snapshot_root": "frontier/reviews/entry-R900-snapshot/",
-                "snapshot_manifest": "frontier/reviews/entry-R900-snapshot/manifest.yaml",
-                "snapshot_id": "entry-R900-sha256:example",
+                "snapshot_manifest": None,
+                "snapshot_id": None,
                 "task_path": "docs/task",
                 "problem_epoch": 3,
                 "problem_generated_at": "2026-01-01T00:00:00Z",
@@ -125,83 +384,259 @@ class Slice7EndToEndTests(unittest.TestCase):
                 },
                 "repository_structure_disposition": "existing-integrated",
                 "repository_layout_approval": None,
-                "design_gate": "direct profile evidence",
-                "dispatch_contract": packet["packet_id"],
-                "authorization_target": {
-                    "target_id": "authorization-target-sha256:example",
+                "design_gate": {
+                    "mode": "direct",
+                    "bindings": entry_reviewed_bindings,
+                },
+                "dispatch_contract": {
                     "batch_id": "B900",
                     "packet_path": packet["packet_path"],
                     "packet_id": packet["packet_id"],
+                    "preflight_path": packet["packet_preflight_path"],
                     "preflight_id": packet_draft["preflight_id"],
-                    "design_contract_identity": None,
-                    "source_base_identity": "source-sha256:example",
-                    "scope": "one direct materialization",
-                    "maximum_spend": "one proposal attempt",
-                    "stop_boundary": "materialized-stopped",
-                    "result_path": "artifacts/frontier/V900-result.yaml",
-                    "proposed_state_transition": {
-                        "budget": "reserve B900",
-                        "selection": "B900 Primary",
-                        "lifecycle": "FIRST_BATCH_PLANNED",
-                    },
+                    "preflight_file_sha256": sha256_file(live_preflight_path),
+                    "design_contract_identity": direct_identity,
+                    "source_base_identity": source_base_identity,
+                    "scope": target_scope,
+                    "maximum_spend": target_spend,
+                    "stop_boundary": target_stop,
+                    "result_path": target_result_path,
+                },
+                "authorization_target": {
+                    "target_path": "artifacts/frontier/V900-target.yaml",
+                    "target_id": target_id,
+                    "target_file_sha256": sha256_file(target_path),
+                    "batch_id": "B900",
+                    "decision_id": "V900",
+                    "target_specification": target_specification,
+                    "packet_path": packet["packet_path"],
+                    "packet_id": packet["packet_id"],
+                    "preflight_id": packet_draft["preflight_id"],
+                    "design_contract_identity": direct_identity,
+                    "source_base_identity": source_base_identity,
+                    "scope": target_scope,
+                    "maximum_spend": target_spend,
+                    "stop_boundary": target_stop,
+                    "result_path": target_result_path,
+                    "user_result_path": user_result_path,
+                    "decision_record_path": decision_record_path,
+                    "proposed_state_transition": proposed_transition,
+                    "post_adoption_state": post_adoption_state,
+                    "post_adoption_paths": post_adoption_paths,
+                    "authorization_question": authorization_question,
+                    "authorize_consequence": authorize_consequence,
+                    "decline_consequence": decline_consequence,
+                    "conditional_consequence": conditional_consequence,
                 },
                 "authorization_state": "pending",
+                "campaign_state_projection": {
+                    "contract_version": ENTRY.CAMPAIGN_STATE_PROJECTION_CONTRACT,
+                    "live_path": "docs/task/FRONTIER.md",
+                    "post_source_path": "artifacts/frontier/B900/proposed-FRONTIER.md",
+                    "pre": pre_current_state,
+                    "post": post_current_state,
+                },
                 "authorization_adoption_path": "frontier/reviews/entry-R900-adoption.yaml",
                 "authorization_adoption_preflight_path": "frontier/reviews/entry-R900-adoption.json",
                 "selected_batches": ["B900"],
                 "actual_spend": "zero",
-                "snapshot_inputs": "frontier/reviews/entry-R900-snapshot/manifest.yaml#inputs",
                 "assigned_review_path": "frontier/reviews/entry-R900.md",
                 "completion_check": "full authorization readiness",
             }
-            entry_result = ENTRY.validate(entry, "frozen")
+            project_paths = [
+                "src/input.txt",
+                packet["packet_path"],
+                packet["packet_preflight_path"],
+                "artifacts/frontier/V900-target-spec.yaml",
+                "artifacts/frontier/V900-target.yaml",
+                "docs/task/FRONTIER.md",
+                "docs/task/frontier/ledger.md",
+                "artifacts/frontier/B900/proposed-FRONTIER.md",
+                "artifacts/frontier/B900/proposed-campaign-state.md",
+            ]
+            snapshot_manifest_relative = "frontier/reviews/entry-R900-project-snapshot.yaml"
+            snapshot_manifest_path = root / snapshot_manifest_relative
+            snapshot_manifest = PROJECT_SNAPSHOT.capture(
+                root,
+                manifest_path=snapshot_manifest_path,
+                paths=project_paths,
+                created_at="2026-08-16T00:00:00Z",
+            )
+            entry["snapshot_id"] = snapshot_manifest["snapshot_id"]
+            entry["snapshot_manifest"] = {
+                "path": snapshot_manifest_relative,
+                "snapshot_id": entry["snapshot_id"],
+                "file_sha256": sha256_file(snapshot_manifest_path),
+            }
+            entry_result = ENTRY.validate(entry, "frozen", root)
             entry["packet_id"] = entry_result["computed_packet_id"]
-            self.assertTrue(ENTRY.validate(entry, "frozen")["entry_schema_ready"])
+            frozen_entry = ENTRY.validate(entry, "frozen", root)
+            self.assertTrue(frozen_entry["entry_schema_ready"], frozen_entry["findings"])
+
+            live_entry_path = root / entry["packet_path"]
+            live_entry_path.parent.mkdir(parents=True, exist_ok=True)
+            live_entry_path.write_text(yaml.safe_dump(entry, sort_keys=False))
+            review_path = root / entry["assigned_review_path"]
+            review_path.write_text(
+                "---\n"
+                "review_id: R900\n"
+                "review_result: AUTHORIZATION_READY\n"
+                f"packet_id: {entry['packet_id']}\n"
+                f"snapshot_id: {entry['snapshot_id']}\n"
+                "---\n\n# Review\n"
+            )
+            user_result_file = root / user_result_path
+            user_result_file.parent.mkdir(parents=True, exist_ok=True)
+            user_result_payload = {
+                "target_id": target_id,
+                "answer": "authorize",
+                "conditions": [],
+            }
+            user_result_payload_raw = yaml.safe_dump(
+                user_result_payload, sort_keys=False
+            ).encode()
+            user_result_id = (
+                "V900-result-sha256:"
+                + hashlib.sha256(user_result_payload_raw).hexdigest()
+            )
+            user_result_file.write_bytes(
+                f"result_id: {user_result_id}\n".encode()
+                + user_result_payload_raw
+            )
 
             adoption = {
                 "adoption_path": "frontier/reviews/entry-R900-adoption.yaml",
-                "entry_packet_id": entry["packet_id"],
+                "entry_packet": {
+                    "path": entry["packet_path"],
+                    "packet_id": entry["packet_id"],
+                    "file_sha256": sha256_file(live_entry_path),
+                },
                 "readiness_review": {
                     "review_id": "R900",
                     "review_result": "AUTHORIZATION_READY",
                     "review_artifact": "frontier/reviews/entry-R900.md",
-                    "review_artifact_identity": "sha256:review",
+                    "review_artifact_identity": f"sha256:{sha256_file(review_path)}",
                     "snapshot_id": entry["snapshot_id"],
                     "entry_packet_id": entry["packet_id"],
                 },
-                "authorization_target": {"target_id": "authorization-target-sha256:example"},
+                "authorization_target": {
+                    "path": "artifacts/frontier/V900-target.yaml",
+                    "target_id": target_id,
+                    "file_sha256": sha256_file(target_path),
+                    "batch_id": "B900",
+                    "packet_id": packet["packet_id"],
+                },
                 "user_result": {
-                    "path": "artifacts/frontier/V900-result.yaml",
-                    "identity": "sha256:user-result",
-                    "target_id": "authorization-target-sha256:example",
+                    "path": user_result_path,
+                    "identity": user_result_id,
+                    "identity_field": "result_id",
+                    "file_sha256": sha256_file(user_result_file),
+                    "target_id": target_id,
                     "answer": "authorize",
                 },
-                "binding_checks": [
-                    {
-                        "name": "batch packet",
-                        "reviewed_identity": packet["packet_id"],
-                        "observed_identity": packet["packet_id"],
-                        "status": "matched",
-                    }
-                ],
+                "adopted_v": {
+                    "decision_id": "V900",
+                    "record_path": decision_record_path,
+                    "result_path": user_result_path,
+                    "result_identity": user_result_id,
+                    "target_id": target_id,
+                },
                 "answer_fidelity": "exact authorize",
-                "reviewed_state_transition": "reserve B900 and select it",
+                "reviewed_state_transition": proposed_transition,
                 "entry_result": "ENTRY_READY",
                 "maximum_consequence": "dispatch exact B900",
             }
-            adoption_result = ADOPTION.validate(adoption, "draft")
+            adoption_result = ADOPTION.validate(adoption, "draft", root)
             self.assertTrue(adoption_result["authorization_adoption_valid"])
+            adoption["adoption_id"] = adoption_result["computed_adoption_id"]
+            adoption_path = root / adoption["adoption_path"]
+            adoption_path.write_text(yaml.safe_dump(adoption, sort_keys=False))
+            adoption_validation = ADOPTION.validate(adoption, "frozen", root)
+            self.assertTrue(adoption_validation["authorization_adoption_valid"])
+            adoption_validation_path = root / "frontier/reviews/entry-R900-adoption.json"
+            adoption_validation_path.write_text(
+                json.dumps(adoption_validation, indent=2, sort_keys=True) + "\n"
+            )
+            frontier_state.write_bytes(proposed_frontier_state.read_bytes())
+            campaign_state.write_bytes(proposed_campaign_state.read_bytes())
+            acknowledgment = {
+                "batch_id": "B900",
+                "packet_id": packet["packet_id"],
+                "packet_preflight_id": packet_draft["preflight_id"],
+                "authority_id": adoption["adoption_id"],
+                "authority_validation_id": adoption_validation["validation_id"],
+                "acknowledgment": "accepted",
+            }
+            acknowledgment["acknowledgment_id"] = BASELINE.compute_acknowledgment_id(
+                acknowledgment
+            )
+            acknowledgment_path = root / packet["acknowledgment_path"]
+            acknowledgment_path.write_text(yaml.safe_dump(acknowledgment, sort_keys=False))
 
             start_draft = {
                 "execution_start_path": packet["execution_start_path"],
                 "packet_path": packet["packet_path"],
                 "packet_id": packet["packet_id"],
+                "packet_preflight": file_binding(
+                    root,
+                    live_preflight_path,
+                    "preflight_id",
+                    packet_draft["preflight_id"],
+                ),
+                "execution_authority": {
+                    "mode": "authorization-adoption",
+                    "record": file_binding(
+                        root, adoption_path, "adoption_id", adoption["adoption_id"]
+                    ),
+                    "validation": file_binding(
+                        root,
+                        adoption_validation_path,
+                        "validation_id",
+                        adoption_validation["validation_id"],
+                    ),
+                },
+                "acknowledgment": file_binding(
+                    root,
+                    acknowledgment_path,
+                    "acknowledgment_id",
+                    acknowledgment["acknowledgment_id"],
+                ),
                 "batch_id": "B900",
                 "campaign_generation": 2,
                 "recorded_by": "frontier-optimization/1",
                 "recorded_at": "2026-08-12T08:00:00Z",
                 "lifecycle_transition": None,
-                "post_transition_baseline": packet["execution_frozen_inputs"],
+                "post_adoption_state": {
+                    "contract_version": "frontier-post-adoption-state/1",
+                    "target_id": target_id,
+                    "adoption_id": adoption["adoption_id"],
+                    "user_result_id": user_result_id,
+                    "files": [
+                        {
+                            "path": "docs/task/FRONTIER.md",
+                            "pre_sha256": post_adoption_state["files"][0]["pre_sha256"],
+                            "post_sha256": sha256_file(frontier_state),
+                        },
+                        {
+                            "path": "docs/task/frontier/ledger.md",
+                            "pre_sha256": post_adoption_state["files"][1]["pre_sha256"],
+                            "post_sha256": sha256_file(campaign_state),
+                        }
+                    ],
+                },
+                "post_transition_baseline": packet["execution_frozen_inputs"]
+                + [
+                    {
+                        "path": "docs/task/FRONTIER.md",
+                        "scope": "file",
+                        "identity": f"sha256:{sha256_file(frontier_state)}",
+                    },
+                    {
+                        "path": "docs/task/frontier/ledger.md",
+                        "scope": "file",
+                        "identity": f"sha256:{sha256_file(campaign_state)}",
+                    }
+                ],
                 "unchanged_authority_check": "matched",
                 "worker_may_start": "yes",
                 "blocker": None,
@@ -217,7 +652,28 @@ class Slice7EndToEndTests(unittest.TestCase):
             (candidate / "main.py").write_text("def agent(observation, configuration):\n    return {}\n")
             members, package_sha256 = RECOVERY.package_inventory(candidate)
             candidate_id = f"B900-example-sha256:{package_sha256}"
+            inventory = CANDIDATE_PACKAGE.write_candidate_inventory(
+                root,
+                packet["candidate_root_path"],
+                packet["candidate_package_inventory_path"],
+                candidate_id,
+            )
+            engineering_path = root / "artifacts/frontier/B900/engineering/evidence.json"
+            engineering_path.parent.mkdir(parents=True, exist_ok=True)
+            engineering_path.write_text(
+                json.dumps(
+                    {
+                        "inventory_id": inventory["inventory_id"],
+                        "check": "unit",
+                        "result": "pass",
+                    },
+                    sort_keys=True,
+                )
+                + "\n"
+            )
             manifest = {
+                "manifest_contract": CANDIDATE_PACKAGE.FINAL_MANIFEST_CONTRACT,
+                "manifest_state": "final",
                 "candidate_id": candidate_id,
                 "campaign_generation": 2,
                 "candidate_interface": "main.py agent(observation, configuration)",
@@ -230,6 +686,24 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "dependency_identity": "explicit-none",
                 "runtime_factors": ["deterministic=true"],
                 "generated_assets": [],
+                "package_inventory": {
+                    "path": packet["candidate_package_inventory_path"],
+                    "inventory_id": inventory["inventory_id"],
+                    "file_sha256": inventory["inventory_sha256"],
+                },
+                "engineering_evidence": [
+                    {
+                        "path": engineering_path.relative_to(root).as_posix(),
+                        "file_sha256": sha256_file(engineering_path),
+                    }
+                ],
+                "recovery_artifacts": [
+                    {
+                        "role": "source-base",
+                        "path": source.relative_to(root).as_posix(),
+                        "file_sha256": sha256_file(source),
+                    }
+                ],
             }
             manifest_path = root / packet["candidate_manifest_path"]
             manifest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -239,9 +713,14 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "result_packet_path": packet["result_packet_path"],
                 "packet_path": packet["packet_path"],
                 "packet_id": packet["packet_id"],
-                "packet_preflight": packet_draft["preflight_id"],
-                "acknowledgment": "B900-acknowledgment-sha256:example",
-                "execution_start": yaml.safe_load(start_path.read_text())["execution_start_id"],
+                "packet_preflight": copy.deepcopy(start_draft["packet_preflight"]),
+                "acknowledgment": copy.deepcopy(start_draft["acknowledgment"]),
+                "execution_start": file_binding(
+                    root,
+                    start_path,
+                    "execution_start_id",
+                    yaml.safe_load(start_path.read_text())["execution_start_id"],
+                ),
                 "batch_id": "B900",
                 "campaign_generation": 2,
                 "route_id": "T900",
@@ -290,32 +769,56 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "possible_follow_up": None,
                 "scope_deviation": "None",
             }
-            result_packet = {
-                key: packet[key]
-                for key in (
-                    "packet_path",
-                    "packet_id",
-                    "batch_id",
-                    "campaign_generation",
-                    "route_id",
-                    "parallel_set",
-                    "work_kind",
-                    "problem_epoch",
-                    "representation_revision",
-                    "changes_executable_candidate",
-                    "result_packet_path",
-                )
-            }
-            result_validation = RESULT.validate(result, "draft", result_packet)
+            result_packet = packet
+            result_validation = RESULT.validate(result, "draft", result_packet, repo_root=root)
             self.assertTrue(result_validation["result_structure_ready"], result_validation["findings"])
             result["result_packet_id"] = result_validation["computed_result_packet_id"]
-            self.assertTrue(RESULT.validate(result, "frozen", result_packet)["result_structure_ready"])
+            self.assertTrue(
+                RESULT.validate(result, "frozen", result_packet, repo_root=root)[
+                    "result_structure_ready"
+                ]
+            )
             result_path = root / packet["result_packet_path"]
             result_path.write_text(yaml.safe_dump(result, sort_keys=False))
 
             closeout = root / "docs/task/log.md"
-            closeout.parent.mkdir(parents=True)
-            closeout.write_text("CLOSEOUT_COMPLETE generation 2; spend 1; no authority\n")
+            closeout.parent.mkdir(parents=True, exist_ok=True)
+            closeout.write_text(
+                yaml.safe_dump(
+                    {
+                        "event": "CLOSEOUT_COMPLETE",
+                        "campaign_generation": 2,
+                        "campaign_status": "halted",
+                        "unresolved_claims": [],
+                        "active_workers": [],
+                        "handoff_complete": True,
+                    },
+                    sort_keys=False,
+                )
+            )
+            budget_path = root / "docs/task/budget.yaml"
+            budget_path.write_text(
+                yaml.safe_dump(
+                    {
+                        "proposal_attempt_ceiling": 20,
+                        "actual_spend": 1,
+                        "unknown_spend": 0,
+                        "active_reservations": [],
+                    },
+                    sort_keys=False,
+                )
+            )
+            closeout_binding = file_binding(
+                root, closeout, None, f"sha256:{sha256_file(closeout)}"
+            )
+            budget_binding = file_binding(
+                root, budget_path, None, f"sha256:{sha256_file(budget_path)}"
+            )
+            lineage_sources = {
+                "closeout": copy.deepcopy(closeout_binding),
+                "handoff": copy.deepcopy(closeout_binding),
+                "budget": copy.deepcopy(budget_binding),
+            }
             recovery = {
                 "recovery_preflight_path": "artifacts/frontier/recovery/G003/B900.yaml",
                 "prior_campaign_generation": 2,
@@ -324,8 +827,8 @@ class Slice7EndToEndTests(unittest.TestCase):
                     "event": "CLOSEOUT_COMPLETE",
                     "campaign_generation": 2,
                     "campaign_status": "halted",
-                    "closeout_identity": "X900-sha256:example",
-                    "final_handoff_identity": f"sha256:{sha256_file(closeout)}",
+                    "closeout_identity": closeout_binding["identity"],
+                    "final_handoff_identity": closeout_binding["identity"],
                     "unresolved_claims": [],
                     "active_workers": [],
                 },
@@ -334,8 +837,9 @@ class Slice7EndToEndTests(unittest.TestCase):
                     "actual_spend": 1,
                     "unknown_spend": 0,
                     "active_reservations": [],
-                    "budget_identity": "budget-sha256:example",
+                    "budget_identity": budget_binding["identity"],
                 },
+                "lineage_sources": lineage_sources,
                 "candidate_root": "candidates/B900-example/",
                 "candidate_manifest_path": packet["candidate_manifest_path"],
                 "requested_candidate_id": candidate_id,
@@ -351,9 +855,11 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "package_plan_path": "artifacts/frontier/packages/G002/plan.yaml",
                 "campaign_generation": 2,
                 "campaign_status": "halted",
-                "closeout_identity": "X900-sha256:example",
-                "final_handoff_identity": f"sha256:{sha256_file(closeout)}",
-                "final_budget_identity": "budget-sha256:example",
+                "closeout_identity": closeout_binding["identity"],
+                "final_handoff_identity": closeout_binding["identity"],
+                "final_budget_identity": budget_binding["identity"],
+                "lineage_sources": copy.deepcopy(lineage_sources),
+                "subtree_identity_algorithm": PACKAGE.PACKAGE_PATH_SIZE_SHA256_V1,
                 "authority_effect": "none",
                 "entries": [
                     {
@@ -362,6 +868,13 @@ class Slice7EndToEndTests(unittest.TestCase):
                         "identity": f"sha256:{sha256_file(closeout)}",
                         "destination": "task/log.md",
                         "role": "final-handoff",
+                    },
+                    {
+                        "source": "docs/task/budget.yaml",
+                        "scope": "file",
+                        "identity": f"sha256:{sha256_file(budget_path)}",
+                        "destination": "task/budget.yaml",
+                        "role": "final-budget",
                     },
                     {
                         "source": packet["candidate_manifest_path"],
@@ -408,7 +921,8 @@ class Slice7ContractTests(unittest.TestCase):
         self.assert_contract_contains(
             "campaign-cycle.md",
             "Do not reload `technical-design.md` to execute a `ready` design",
-            "without adopted unchanged `IMPLEMENTATION_READY` cannot be selected for evaluation",
+            "without adopted unchanged `IMPLEMENTATION_READY` cannot be selected for Slot H evaluation",
+            "exact diagnostic-only exception in `candidate-lifecycle.md`",
         )
 
     def test_reflection_claim_and_parent_change_routes(self) -> None:
@@ -442,6 +956,40 @@ class Slice7ContractTests(unittest.TestCase):
             "same package bytes must produce the same handoff and next router result",
         )
 
+    def test_first_batch_transition_authorizes_a_rule_not_a_date_literal(self) -> None:
+        self.assert_contract_contains(
+            "batch-interface.md",
+            "frontier-lifecycle-transition/1",
+            "capture: once_after_accepted_acknowledgment",
+            "updated: {derive: calendar_date, source: transition_time, timezone: UTC}",
+            "A runtime-derived timestamp or date is never a packet literal",
+        )
+
+    def test_user_facing_handoff_exposes_each_real_decision(self) -> None:
+        self.assert_contract_contains(
+            "frontier-core.md",
+            "## User-facing handoff",
+            "one evidence-supported recommended next action",
+            "Legal availability does not make actions equally advisable",
+            "Lead with `Recommended next action`, then `Why`",
+            "only decision-relevant alternatives, each with the condition",
+            "give the evidence-supported conditional recommendation and ask one exact tradeoff question",
+            "If the current request already supplies a qualifying reopening request",
+            "do not invent an identifier or ask the user to authorize one",
+            "Lead with the response recommended by the unchanged Selection",
+            "Use $frame-optimization. Review <exact conflicting parent fields and identities>",
+            "Suggest no command",
+            "reduce a known recovery path to only `BLOCKED` or `no authority`",
+            "present legal alternatives as equally recommended",
+        )
+        coordinator = (SCRIPT_ROOT.parent / "SKILL.md").read_text()
+        closeout = (SCRIPT_ROOT.parent / "references/closeout-and-claims.md").read_text()
+        self.assertIn("references/frontier-core.md#user-facing-handoff", coordinator)
+        self.assertIn("frontier-core.md#user-facing-handoff", closeout)
+        self.assertIn("evidence-supported recommendation omitted", coordinator)
+        self.assertIn("flat list of legal actions does not satisfy", coordinator)
+        self.assertIn("attach switching conditions to material alternatives", closeout)
+
     def test_parent_change_uses_a_new_immutable_fixture_identity(self) -> None:
         fixtures = SCRIPT_ROOT / "fixtures/slice7"
         old_path = fixtures / "parent-v1.yaml"
@@ -461,10 +1009,23 @@ class Slice7ContractTests(unittest.TestCase):
             (SCRIPT_ROOT / "fixtures/slice7/scenarios.yaml").read_bytes()
         )
         scenario_ids = {item["id"] for item in matrix["scenarios"]}
-        self.assertEqual(len(scenario_ids), 21)
+        self.assertEqual(len(scenario_ids), 38)
         self.assertIn("candidate-recovery-identity-mismatch", scenario_ids)
         self.assertIn("post-closeout-package", scenario_ids)
         self.assertIn("compacted-context", scenario_ids)
+        self.assertIn("known-vacuous-ceiling", scenario_ids)
+        self.assertIn("unknown-noise-resolution", scenario_ids)
+        self.assertIn("diagnostic-before-implementation-review", scenario_ids)
+        self.assertIn("formal-evaluation-before-implementation-review", scenario_ids)
+        self.assertIn("high-risk-diagnostic-experiment", scenario_ids)
+        self.assertIn("measurement-protocol-change", scenario_ids)
+        self.assertIn("first-b-crosses-utc-midnight", scenario_ids)
+        self.assertIn("handoff-known-recovery", scenario_ids)
+        self.assertIn("handoff-authorization-ready", scenario_ids)
+        self.assertIn("handoff-current-request-already-qualifies", scenario_ids)
+        self.assertIn("handoff-parent-review-required", scenario_ids)
+        self.assertIn("handoff-no-legal-continuation", scenario_ids)
+        self.assertIn("handoff-genuine-user-tradeoff", scenario_ids)
 
 
 if __name__ == "__main__":

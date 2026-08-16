@@ -38,7 +38,10 @@ def create_candidate(root: Path) -> tuple[str, str]:
         "campaign_generation": 2,
         "candidate_interface": "main.py agent(observation, configuration)",
         "source_base_identity": "source-sha256:example",
-        "source_result_identity": {"package_sha256": package_sha256},
+        "source_result_identity": {
+            "package_sha256": package_sha256,
+            "members": members,
+        },
         "code_paths": [
             {"path": member["path"], "sha256": member["sha256"]}
             for member in members
@@ -54,7 +57,36 @@ def create_candidate(root: Path) -> tuple[str, str]:
     return candidate_id, sha256_file(manifest_path)
 
 
-def base_preflight(candidate_id: str, manifest_sha256: str) -> dict:
+def base_preflight(root: Path, candidate_id: str, manifest_sha256: str) -> dict:
+    sources = {}
+    for role in ("closeout", "handoff", "budget"):
+        path = root / f"lineage/{role}.yaml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if role == "closeout":
+            source_record = {
+                "event": "CLOSEOUT_COMPLETE",
+                "campaign_generation": 2,
+                "campaign_status": "halted",
+                "unresolved_claims": [],
+                "active_workers": [],
+            }
+        elif role == "budget":
+            source_record = {
+                "proposal_attempt_ceiling": 20,
+                "actual_spend": 3,
+                "unknown_spend": 0,
+                "active_reservations": [],
+            }
+        else:
+            source_record = {"handoff_complete": True}
+        path.write_text(yaml.safe_dump(source_record, sort_keys=False))
+        digest = sha256_file(path)
+        sources[role] = {
+            "path": path.relative_to(root).as_posix(),
+            "identity_field": None,
+            "identity": f"sha256:{digest}",
+            "file_sha256": digest,
+        }
     return {
         "recovery_preflight_path": "artifacts/frontier/recovery/G003/B900-preflight.yaml",
         "prior_campaign_generation": 2,
@@ -63,8 +95,8 @@ def base_preflight(candidate_id: str, manifest_sha256: str) -> dict:
             "event": "CLOSEOUT_COMPLETE",
             "campaign_generation": 2,
             "campaign_status": "halted",
-            "closeout_identity": "X025-sha256:example",
-            "final_handoff_identity": "handoff-sha256:example",
+            "closeout_identity": sources["closeout"]["identity"],
+            "final_handoff_identity": sources["handoff"]["identity"],
             "unresolved_claims": [],
             "active_workers": [],
         },
@@ -73,8 +105,9 @@ def base_preflight(candidate_id: str, manifest_sha256: str) -> dict:
             "actual_spend": 3,
             "unknown_spend": 0,
             "active_reservations": [],
-            "budget_identity": "budget-sha256:example",
+            "budget_identity": sources["budget"]["identity"],
         },
+        "lineage_sources": sources,
         "candidate_root": "candidates/B900-example/",
         "candidate_manifest_path": "artifacts/frontier/B900/candidate-manifest.yaml",
         "requested_candidate_id": candidate_id,
@@ -90,7 +123,7 @@ class CandidateRecoveryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             candidate_id, manifest_sha256 = create_candidate(root)
-            draft = base_preflight(candidate_id, manifest_sha256)
+            draft = base_preflight(root, candidate_id, manifest_sha256)
             draft_result = MODULE.validate(draft, "draft", root)
             self.assertTrue(draft_result["recovery_ready"], draft_result["findings"])
             frozen = copy.deepcopy(draft)
@@ -106,7 +139,7 @@ class CandidateRecoveryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             candidate_id, manifest_sha256 = create_candidate(root)
-            preflight = base_preflight(candidate_id.replace("example", "wrong"), manifest_sha256)
+            preflight = base_preflight(root, candidate_id.replace("example", "wrong"), manifest_sha256)
             result = MODULE.validate(preflight, "draft", root)
             self.assertFalse(result["recovery_ready"])
             self.assertIn(
@@ -119,7 +152,7 @@ class CandidateRecoveryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             candidate_id, manifest_sha256 = create_candidate(root)
-            preflight = base_preflight(candidate_id, "0" * 64)
+            preflight = base_preflight(root, candidate_id, "0" * 64)
             result = MODULE.validate(preflight, "draft", root)
             finding = next(
                 item
@@ -136,7 +169,7 @@ class CandidateRecoveryTests(unittest.TestCase):
             candidate_id, manifest_sha256 = create_candidate(root)
             (root / "candidates/B900-example/main.py").write_text("changed\n")
             result = MODULE.validate(
-                base_preflight(candidate_id, manifest_sha256), "draft", root
+                base_preflight(root, candidate_id, manifest_sha256), "draft", root
             )
             codes = {item["code"] for item in result["findings"]}
             self.assertIn("REQUESTED_CANDIDATE_IDENTITY_MISMATCH", codes)
@@ -147,7 +180,7 @@ class CandidateRecoveryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             candidate_id, manifest_sha256 = create_candidate(root)
-            preflight = base_preflight(candidate_id, manifest_sha256)
+            preflight = base_preflight(root, candidate_id, manifest_sha256)
             preflight["prior_closeout"]["active_workers"] = ["B901-worker"]
             preflight["inherited_budget"]["active_reservations"] = ["B901"]
             result = MODULE.validate(preflight, "draft", root)
@@ -155,15 +188,86 @@ class CandidateRecoveryTests(unittest.TestCase):
             self.assertIn("ACTIVE_WORKERS", codes)
             self.assertIn("ACTIVE_RESERVATIONS", codes)
 
+    def test_handoff_completion_must_derive_from_bound_source(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            candidate_id, manifest_sha256 = create_candidate(root)
+            preflight = base_preflight(root, candidate_id, manifest_sha256)
+            binding = preflight["lineage_sources"]["handoff"]
+            handoff_path = root / binding["path"]
+            handoff_path.write_text("handoff_complete: false\n")
+            digest = sha256_file(handoff_path)
+            binding["identity"] = f"sha256:{digest}"
+            binding["file_sha256"] = digest
+            preflight["prior_closeout"]["final_handoff_identity"] = binding["identity"]
+            result = MODULE.validate(preflight, "draft", root)
+            self.assertIn(
+                "HANDOFF_FACTS_NOT_DERIVED",
+                {item["code"] for item in result["findings"]},
+            )
+
     def test_manifest_identity_recomputes_from_preserved_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             candidate_id, manifest_sha256 = create_candidate(root)
             result = MODULE.validate(
-                base_preflight(candidate_id, manifest_sha256), "draft", root
+                base_preflight(root, candidate_id, manifest_sha256), "draft", root
             )
             self.assertTrue(result["recovery_ready"], result["findings"])
             self.assertEqual(result["recomputed_candidate_id"], candidate_id)
+
+    def test_copied_lineage_identity_is_rejected_even_when_locally_consistent(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            candidate_id, manifest_sha256 = create_candidate(root)
+            preflight = base_preflight(root, candidate_id, manifest_sha256)
+            preflight["prior_closeout"]["closeout_identity"] = "sha256:" + "0" * 64
+            result = MODULE.validate(preflight, "draft", root)
+            self.assertIn(
+                "CLOSEOUT_LINEAGE_NOT_DERIVED",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_candidate_symlink_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            candidate_id, manifest_sha256 = create_candidate(root)
+            (root / "outside.py").write_text("outside\n")
+            (root / "candidates/B900-example/link.py").symlink_to(root / "outside.py")
+            result = MODULE.validate(
+                base_preflight(root, candidate_id, manifest_sha256), "draft", root
+            )
+            self.assertIn(
+                "CANDIDATE_RECOVERY_UNREADABLE",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_recomputed_claims_cannot_replace_bound_closeout_and_budget_facts(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            candidate_id, manifest_sha256 = create_candidate(root)
+            preflight = base_preflight(root, candidate_id, manifest_sha256)
+            preflight["prior_closeout"]["campaign_status"] = "stopped"
+            preflight["inherited_budget"]["actual_spend"] = 4
+            result = MODULE.validate(preflight, "draft", root)
+            codes = {item["code"] for item in result["findings"]}
+            self.assertIn("CLOSEOUT_FACTS_NOT_DERIVED", codes)
+            self.assertIn("BUDGET_FACTS_NOT_DERIVED", codes)
+
+    def test_candidate_root_symlink_is_rejected_before_resolution(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            candidate_id, manifest_sha256 = create_candidate(root)
+            real = root / "candidates/B900-real"
+            (root / "candidates/B900-example").rename(real)
+            (root / "candidates/B900-example").symlink_to(real, target_is_directory=True)
+            result = MODULE.validate(
+                base_preflight(root, candidate_id, manifest_sha256), "draft", root
+            )
+            self.assertIn(
+                "CANDIDATE_RECOVERY_UNREADABLE",
+                {item["code"] for item in result["findings"]},
+            )
 
 
 if __name__ == "__main__":

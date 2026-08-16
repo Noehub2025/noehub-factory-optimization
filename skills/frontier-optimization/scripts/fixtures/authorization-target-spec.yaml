@@ -1,0 +1,25 @@
+target_spec_id: V900-target-spec-sha256:ec994ef5740d34a98f8ccaff198dd0229cb62f155a5ad9f7c6496dcacd61916a
+contract_version: frontier-authorization-target-specification/1
+decision_id: V900
+batch_id: B900
+target_path: artifacts/frontier/V900-target.yaml
+user_result_path: artifacts/frontier/V900-result.yaml
+decision_record_path: docs/skills/optimization/example/frontier/ledger.md
+design_contract_identity: sha256:b27f5d41e998845cc86b0d9d81b65e13a9bff3ca04767c3cfa5d41902449f51e
+source_base_identity: sha256:b27f5d41e998845cc86b0d9d81b65e13a9bff3ca04767c3cfa5d41902449f51e
+scope: one bounded implementation
+maximum_spend: one proposal attempt
+stop_boundary: materialized-stopped
+result_path: artifacts/frontier/B900/result.yaml
+proposed_state_transition:
+  budget: reserve one proposal attempt for B900
+  selection: adopt B900 as Primary
+  lifecycle: FIRST_BATCH_PLANNED after adoption
+post_adoption_paths:
+- docs/skills/optimization/example/FRONTIER.md
+- docs/skills/optimization/example/frontier/ledger.md
+- docs/skills/optimization/example/log.md
+authorization_question: Authorize exactly the reviewed B900 materialization?
+authorize_consequence: dispatch B900 within reviewed budget
+decline_consequence: keep B900 undispatched
+conditional_consequence: require a fresh target and Entry review

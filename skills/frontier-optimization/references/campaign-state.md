@@ -25,6 +25,15 @@ representation_reviewed_at: "<ISO-8601 datetime>"
 representation_permitted: "<exact reviewed Permitted text>"
 campaign_generation: <positive integer; legacy omission means 1>
 campaign_status: <planned | running | stopped | halted>
+current_state:
+  campaign_generation: <same generation>
+  campaign_status: <same status>
+  primary_batch: <B identifier or null>
+  parallel_batches: [<B identifiers>]
+  decision_id: <current execution V identifier or null>
+  authorization_state: <pending | adopted | not-required | closed>
+  execution_batch: <current B identifier or null>
+  execution_state: <not-authorized | awaiting-acknowledgment | acknowledged | released | reported | terminal>
 updated: <ISO-8601 date>
 generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 ---
@@ -59,11 +68,15 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 
 `St`: `P` decided; `~` usable with a stated limit; `O` blocks affected spend; `-` not relevant.
 
-The first-B lifecycle transition is a bounded status patch, not a general `FRONTIER.md` rewrite. After accepted acknowledgment and before execution start, change `campaign_status` from `planned` to `running`, advance `generated.at` to the transition time, update `updated` only when needed to equal that date, and leave `campaign_generation` plus every other field and body byte unchanged. Copy the exact post-change bytes into the execution-baseline snapshot, then record the exact pre- and post-change identities plus snapshot identity in the execution-start artifact from `batch-interface.md`.
+`current_state` is the sole machine-readable owner of current Selection, authorization, and dispatch state. Ledger records own the decisions and evidence that justify it; `log.md` owns event order. The Brief and F table explain those records but grant no authority independently. For every authorization-readiness Entry, freeze a `frontier-current-state-projection/1` with exact pre- and post-adoption mappings from the live and proposed `FRONTIER.md` files. `validate_entry_packet.py` must reject a missing, extra, stale, or contradictory mapping before snapshot creation. Authorization adoption preserves `campaign_status`, changes `authorization_state` from `pending` to `adopted`, changes execution only from `not-authorized` to `awaiting-acknowledgment`, and makes the reviewed Primary and Parallel list equal `selected_batches`. The later first-B lifecycle rule remains separate.
+
+Generate the Brief and F-table status wording from `current_state` and its cited ledger decision before presentation. When those typed owners agree, stale explanatory wording is `NARRATIVE_STATE_STALE` advisory under [Finding effects](frontier-core.md#finding-effects), not a new B, V, snapshot, or review. A disagreement among typed owners, or wording that is itself the user-facing authorization scope, spend, stop, or consequence, remains blocking.
+
+The first-B lifecycle transition is a bounded status patch, not a general `FRONTIER.md` rewrite. Use the structured [first-B lifecycle contract](batch-interface.md#batch-packet): after accepted acknowledgment, capture one RFC3339 UTC transition instant, change `campaign_status` from `planned` to `running`, set `generated.at` to that instant, derive `updated` from its UTC calendar date, and preserve `campaign_generation` plus every other byte. Freeze the complete post-change bytes and record the structured transition receipt before execution start. A packet fixes this derivation rule and the pre-transition identity; it never predicts the runtime timestamp or date.
 
 Pin F1-F4, F7, and F8 before first B spend. F1 copies exact `Permitted`; F8 copies every claim ceiling. E001 resolves the current-epoch reference-baseline identity and existing Slot H evidence from the handoff. Frontier does not create or repair that evidence. Selection keeps the replaceable campaign baseline in F3 and T/V/W/B; it enters F4 only after valid measurement creates E and Slots D, E, H, and R8 retain it.
 
-The Brief passes only when a fresh reader can identify the baselines, project integration when relevant, allowed work, next action, review authorities, first performance check, protected reserve, remaining budget, success and comparison rules, latest decisive learning, stopping rules, and claim limits without reading the table.
+The Brief passes only when a fresh reader can identify the baselines, project integration when relevant, allowed work, first performance check, protected reserve, remaining budget, success and comparison rules, latest decisive learning, stopping rules, and claim limits without reading the table. Read current Selection, authorization, and dispatch state from `current_state`; keep historical chronology in ledger and log references instead of restating every superseded repair chain.
 
 ## Budget update
 
@@ -102,11 +115,13 @@ Selection:
 - Recovery lineage: <prior CLOSEOUT_COMPLETE, recovery V and X identities, reused objects and limits; or None for generation 1>
 - Evidence-state identity: <immutable identity of controlling terminal outcomes, E, reflections, Q, V, D, X, Budget, W, and reviews>
 - Outcome reflections applied: <every controlling reflection, or None before the first B>
+- Route-set state: <complete for this decision | incomplete | reopened, with Q, T, peer-source basis, shared assumptions, exclusions, deferrals, prerequisites, and reopening evidence>
+- Direction resolution: <local R8 | local diagnostic | focused Q | route-landscape Q | strategic replan | stop | halt | blocked, with the first applicable rule>
 - Terminal and join coverage: <terminal selected B identifiers, E coverage, joined X identity, or exact blocker>
 - Route research: <route landscape Q and coverage conclusion>
-- Campaign-baseline candidates: <eligible T identifiers and plain-language approaches>
-- Eligible: <B and T identifiers>
-- Ineligible or blocked: <identifiers and reasons>
+- Campaign-baseline candidates: <eligible T identifiers, plain-language mechanisms, and route-generation basis>
+- Eligible: <B and T identifiers with satisfied prerequisites or prerequisite-first limit>
+- Ineligible or blocked: <identifiers, evidence-backed reasons, failed or unavailable prerequisites, and reopening events when one exists>
 - Mandatory decision work: <identifier or None>
 - Campaign-baseline choice: <chosen T, recommendation, V identifier, and decisive tradeoff; or sole eligible T and evidence>
 - Repository structure: <existing structure and integration recommendation; or absent structure, user-approved V, and approved layout>
@@ -130,7 +145,9 @@ Selection:
 - First performance check: <parent-approved comparison or decision result>
 - Preparation budget limit: <maximum cumulative allocation before that check>
 - Required follow-up reserve: <amount and mandatory confirmation or recovery purpose, or None with governing rule>
-- Deferred: <identifiers, reasons, and reconsideration events>
+- Deferred: <identifiers, reasons, unresolved or unavailable prerequisite consequences, and observable reconsideration events>
 ```
+
+Selection applies the reviewed Entry evidence or latest controlling reflection; it does not reinterpret route eligibility to make a proposed B pass. `complete for this decision` supports the current allocation only and makes no exhaustive-search, originality, or optimality claim. A sole eligible route is sufficient when every material decision-relevant mechanism class is dispositioned. When a load-bearing prerequisite is unresolved, the only eligible route-related B is its smallest sufficient prerequisite-first check; dependent implementation remains ineligible until passing evidence is adopted through the applicable Entry or Replan gate.
 
 The same evidence-state identity must produce the same deterministic resolution. If multiple technically eligible actions remain and R8 does not choose among them, require the exact missing Q or V instead of selecting by preference or conversation context. No later spend authority exists until the Selection cites every required reflection, V, join, and applicable positive review.

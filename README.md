@@ -71,7 +71,7 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 ## How the workflow protects the result
 
 - One coordinator owns the task definition and search design; another owns the later campaign. Worker Skills cannot silently change either contract.
-- Research, user choices, implementation, measurement, and independent review are separate actions with separate authority.
+- Planning, user authorization, worker acknowledgment, execution start, implementation review, measurement, result adoption, and claims are separate gates. Each gate applies only to the exact files and identities it names.
 - Candidate creation and performance evaluation are separate steps. Passing engineering checks does not prove improvement.
 - Results identify the problem and representation versions under which they were produced, so incompatible results are not compared.
 - Budget, stopping rules, known limits, and permitted claims remain visible in the main campaign document.
@@ -107,7 +107,9 @@ Define the problem
   -> decide how candidates can be represented and searched
   -> independently approve an exact search scope
   -> choose a starting approach and budget
-  -> run one bounded batch
+  -> review and authorize one exact bounded batch when required
+  -> acknowledge the packet and freeze its execution baseline
+  -> start and run the batch
   -> review implementations before measuring them
   -> measure under the approved comparison rules
   -> record what was learned and select the next action

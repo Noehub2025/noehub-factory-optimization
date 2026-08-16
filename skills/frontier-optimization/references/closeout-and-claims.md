@@ -168,6 +168,8 @@ Write the final handoff to `log.md` and update the `FRONTIER.md` Brief and F2-F8
 
 Record `CLOSEOUT_COMPLETE` only when the surviving files reproduce all final state and no active campaign authority, unresolved claim branch, or unclassified retained artifact remains. Campaign completion does not imply optimality, publication, deployment, submission, integration, or further-spend permission. Preserve all cited artifacts. On a later explicit request, use [Packaging and durable recovery](packaging-and-recovery.md); packaging and cleanup never occur implicitly during closeout.
 
+Before returning control, apply the canonical [User-facing handoff](frontier-core.md#user-facing-handoff). A complete closeout reply must surface every recorded recovery or reopening condition, lead with one evidence-supported recommendation and its copyable instruction, attach switching conditions to material alternatives, and distinguish planning authority from a later exact B authorization.
+
 ## Slice 6 acceptance scenarios
 
 | Scenario | Required durable outcome |

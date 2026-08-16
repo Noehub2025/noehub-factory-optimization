@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Regression tests for the Frontier five-Skill bundle validator."""
+"""Regression tests for the repository-local Optimization workflow validator."""
 
 from __future__ import annotations
 
 import importlib.util
+import re
 import shutil
 import sys
 import tempfile
@@ -18,9 +19,141 @@ MODULE = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
 
+PHASE2_FIELDS = (
+    "Comparable history",
+    "Governing progress rule",
+    "Progress finding",
+    "Constraint finding",
+)
+PHASE2_FINDINGS = {
+    "on-course",
+    "weak-under-prospective-rule",
+    "emergent-warning",
+    "validity-unresolved",
+    "insufficient-compatible-evidence",
+    "not-applicable",
+}
+PHASE2_REQUIRED_MARKERS = {
+    "planning-records.md": (
+        "adaptive-exposure lineage across attempts and B/E records",
+        "complete parent-owned value or vector",
+        "every parent-owned hard constraint and guardrail",
+        "E records one evaluated result, not a trend or route verdict",
+        "An improved proxy or aggregate does not establish route progress",
+    ),
+    "learning-loop.md": (
+        "Establish validity in this order: implementation, measurement, then comparison validity",
+        "a single departure is an anomaly, not persistence",
+        "movement within measurement noise or resolution is not a plateau or underperformance finding",
+        "an expected slowdown that remains inside the prospective rule is `on-course`",
+        "pre-specified underperformance is `weak-under-prospective-rule`",
+        "unexpected compatible change without a governing consequence is `emergent-warning`",
+        "never a post-hoc plateau",
+        "system-level effect on the parent objective",
+        "`demonstrated` only when an intervention or discriminating test shows that changing the factor changes the parent objective",
+        "`shifted` only when evidence shows that an intervention changed which factor limits the parent objective",
+        "It adds no spend authority, investment resolver",
+        "Selection must copy its compatible history, progress finding, constraint finding, and maximum conclusion without reinterpretation",
+        "Keep every earlier Outcome Reflection immutable and valid under its bound source",
+        "This creates no additional Q, research, review, repeated B, synthetic E, metric, or trajectory artifact",
+    ),
+    "campaign-cycle.md": (
+        "construct `Comparable history` from compatible E",
+        "Incompatible, stale, invalid, or unresolved E remains campaign evidence but cannot form an ordered trajectory",
+        "A single proxy improvement cannot establish route success",
+        "Selection applies the reflection; it cannot rebuild the evidence sequence",
+        "This interpretation step creates no trajectory record, investment resolver, research task, review, or authority",
+        "One-shot work uses `not-applicable` and proceeds through the existing R8 and Selection rules without extra process",
+        "Older OR records remain immutable under their source",
+    ),
+    "campaign-state.md": (
+        "Selection applies the reviewed Entry evidence or latest controlling reflection; it does not reinterpret route eligibility",
+    ),
+}
+
+
+def phase2_contract_findings(skills_root: Path) -> list[str]:
+    references = skills_root / "frontier-optimization/references"
+    documents = {
+        name: (references / name).read_text()
+        for name in PHASE2_REQUIRED_MARKERS
+    }
+    findings: list[str] = []
+    all_markdown = [path.read_text() for path in skills_root.rglob("*.md")]
+    for field in PHASE2_FIELDS:
+        count = sum(text.count(f"- {field}: <") for text in all_markdown)
+        if count != 1:
+            findings.append(f"{field} has {count} canonical template owners")
+
+    learning = documents["learning-loop.md"]
+    anchor = "```markdown\nOutcome Reflection:\n"
+    if anchor not in learning:
+        findings.append("Outcome Reflection template is missing")
+    else:
+        template = learning.split(anchor, 1)[1].split("```", 1)[0]
+        for field in PHASE2_FIELDS:
+            if f"- {field}: <" not in template:
+                findings.append(f"Outcome Reflection omits {field}")
+        match = re.search(r"^- Progress finding: <([^>]+)>$", template, re.MULTILINE)
+        observed = {value.strip() for value in match.group(1).split("|")} if match else set()
+        if observed != PHASE2_FINDINGS:
+            findings.append(f"progress findings are {sorted(observed)}")
+
+    for name, markers in PHASE2_REQUIRED_MARKERS.items():
+        for marker in markers:
+            if marker not in documents[name]:
+                findings.append(f"{name} omits {marker}")
+    combined = documents["learning-loop.md"] + documents["campaign-cycle.md"]
+    for prohibited in ("review_kind: trajectory", "Trajectory record:"):
+        if prohibited in combined:
+            findings.append(f"new trajectory process found: {prohibited}")
+    return findings
+
 
 class FrontierSkillBundleTests(unittest.TestCase):
-    def test_live_five_skill_bundle_is_valid_and_content_addressed(self) -> None:
+    def test_phase2_outcome_reflection_has_one_canonical_owner_and_six_findings(self) -> None:
+        skills_root = SCRIPT.parents[2]
+        self.assertEqual([], phase2_contract_findings(skills_root))
+
+    def test_phase2_interpretation_is_ordered_bounded_and_backward_compatible(self) -> None:
+        skills_root = SCRIPT.parents[2]
+        mutations = (
+            (
+                "frontier-optimization/references/learning-loop.md",
+                "a single departure is an anomaly, not persistence",
+                "a single departure proves a persistent trend",
+            ),
+            (
+                "frontier-optimization/references/learning-loop.md",
+                "`demonstrated` only when an intervention or discriminating test shows that changing the factor changes the parent objective",
+                "`demonstrated` when a local proxy improves",
+            ),
+            (
+                "frontier-optimization/references/campaign-cycle.md",
+                "One-shot work uses `not-applicable` and proceeds through the existing R8 and Selection rules without extra process",
+                "One-shot work requires a new trajectory review",
+            ),
+            (
+                "frontier-optimization/references/campaign-state.md",
+                "",
+                "\n".join(f"- {field}: <duplicate>" for field in PHASE2_FIELDS),
+            ),
+        )
+        for relative, old, new in mutations:
+            with self.subTest(relative=relative, replacement=new):
+                with tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory) / "skills"
+                    shutil.copytree(
+                        skills_root,
+                        root,
+                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+                    )
+                    path = root / relative
+                    text = path.read_text()
+                    path.write_text(text.replace(old, new, 1) if old else text + new)
+                    self.assertNotEqual([], phase2_contract_findings(root))
+
+    def test_live_ten_skill_bundle_is_valid_and_content_addressed(self) -> None:
         skills_root = SCRIPT.parents[2]
         result = MODULE.validate(skills_root)
         self.assertTrue(result["bundle_ready"], result["findings"])
@@ -28,16 +161,75 @@ class FrontierSkillBundleTests(unittest.TestCase):
         self.assertEqual(len(result["bundle_sha256"]), 64)
         self.assertGreater(len(result["source_manifest"]), 20)
 
+    def test_finding_effect_owner_cannot_fail_open_or_create_identity_churn(self) -> None:
+        live_root = SCRIPT.parents[2]
+        mutations = (
+            (
+                "frontier-optimization/scripts/finding_effects.py",
+                "return BLOCK",
+                "return ADVISORY",
+            ),
+            (
+                "frontier-optimization/references/frontier-core.md",
+                "create no replacement identity, B, V, review, or authorization",
+                "create a replacement B and review for every advisory",
+            ),
+        )
+        for relative, old, new in mutations:
+            with self.subTest(relative=relative):
+                with tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory) / "skills"
+                    shutil.copytree(
+                        live_root,
+                        root,
+                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+                    )
+                    path = root / relative
+                    path.write_text(path.read_text().replace(old, new, 1))
+                    result = MODULE.validate(root)
+                    self.assertIn(
+                        "FINDING_EFFECT_CONTRACT_INVALID",
+                        {item["code"] for item in result["findings"]},
+                    )
+
+    def test_missing_framing_coordinator_is_rejected(self) -> None:
+        live_root = SCRIPT.parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "skills"
+            shutil.copytree(
+                live_root,
+                root,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
+            shutil.rmtree(root / "frame-optimization")
+            result = MODULE.validate(root)
+            self.assertIn(
+                {
+                    "code": "SKILL_MISSING",
+                    "effect": "block",
+                    "detail": "frame-optimization",
+                },
+                result["findings"],
+            )
+
     def test_sixth_claim_reviewer_is_rejected(self) -> None:
         live_root = SCRIPT.parents[2]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "skills"
-            shutil.copytree(live_root, root, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+            shutil.copytree(
+                live_root,
+                root,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
             extra = root / "review-frontier-claims"
             extra.mkdir()
             result = MODULE.validate(root)
             self.assertIn(
                 "EXTRA_REVIEWER_SKILL",
+                {item["code"] for item in result["findings"]},
+            )
+            self.assertIn(
+                "UNEXPECTED_SKILL",
                 {item["code"] for item in result["findings"]},
             )
 
@@ -48,6 +240,19 @@ class FrontierSkillBundleTests(unittest.TestCase):
             shutil.copytree(live_root, root, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
             metadata = root / "run-frontier-batch/agents/openai.yaml"
             metadata.write_text(metadata.read_text().replace("true", "false"))
+            result = MODULE.validate(root)
+            self.assertIn(
+                "INVOCATION_POLICY_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_framing_coordinator_cannot_enable_implicit_invocation(self) -> None:
+        live_root = SCRIPT.parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "skills"
+            shutil.copytree(live_root, root, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+            metadata = root / "frame-optimization/agents/openai.yaml"
+            metadata.write_text(metadata.read_text().replace("false", "true"))
             result = MODULE.validate(root)
             self.assertIn(
                 "INVOCATION_POLICY_INVALID",
@@ -66,6 +271,240 @@ class FrontierSkillBundleTests(unittest.TestCase):
                 "HOST_PATH_NOT_PORTABLE",
                 {item["code"] for item in result["findings"]},
             )
+
+    def test_dispatch_callers_must_use_the_shared_state_machine(self) -> None:
+        live_root = SCRIPT.parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "skills"
+            shutil.copytree(live_root, root, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+            cycle = root / "frontier-optimization/references/campaign-cycle.md"
+            cycle.write_text(cycle.read_text().replace("batch-interface.md#dispatch-state-machine", "batch-interface.md"))
+            result = MODULE.validate(root)
+            self.assertIn(
+                "DISPATCH_INTERFACE_POINTER_MISSING",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_campaign_router_must_expose_result_adoption(self) -> None:
+        live_root = SCRIPT.parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "skills"
+            shutil.copytree(live_root, root, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+            coordinator = root / "frontier-optimization/SKILL.md"
+            coordinator.write_text(coordinator.read_text().replace("references/result-adoption.md", "references/campaign-cycle.md"))
+            result = MODULE.validate(root)
+            self.assertIn(
+                "CAMPAIGN_ACTION_ROUTER_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_reviewer_must_use_the_shared_branch_registry(self) -> None:
+        live_root = SCRIPT.parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "skills"
+            shutil.copytree(live_root, root, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+            reviewer = root / "review-frontier/SKILL.md"
+            reviewer.write_text(reviewer.read_text().replace(MODULE.REVIEW_BRANCH_POINTER, ""))
+            result = MODULE.validate(root)
+            self.assertIn(
+                "REVIEW_BRANCH_REGISTRY_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_branch_registry_must_cover_every_review_kind(self) -> None:
+        live_root = SCRIPT.parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "skills"
+            shutil.copytree(live_root, root, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+            registry = root / "frontier-optimization/references/review-branches.md"
+            registry.write_text(registry.read_text().replace("claim-review.md", "learning-loop.md"))
+            result = MODULE.validate(root)
+            self.assertIn(
+                "REVIEW_BRANCH_REGISTRY_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_both_coordinators_must_use_the_shared_handoff(self) -> None:
+        live_root = SCRIPT.parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "skills"
+            shutil.copytree(live_root, root, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+            coordinator = root / "frontier-optimization/SKILL.md"
+            coordinator.write_text(coordinator.read_text().replace("../frame-optimization/references/frontier-handoff.md", "references/frontier-core.md"))
+            result = MODULE.validate(root)
+            self.assertIn(
+                "STAGE_HANDOFF_POINTER_MISSING",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_boundary_preserving_continuation_callers_use_one_contract(self) -> None:
+        live_root = SCRIPT.parents[2]
+        result = MODULE.validate(live_root)
+        self.assertTrue(result["bundle_ready"], result["findings"])
+        for relative, pointer in MODULE.BOUNDARY_CONTINUATION_REQUIREMENTS.items():
+            with self.subTest(relative=relative):
+                self.assertIn(pointer, (live_root / relative).read_text())
+
+    def test_missing_boundary_preserving_continuation_pointer_is_rejected(self) -> None:
+        live_root = SCRIPT.parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "skills"
+            shutil.copytree(
+                live_root,
+                root,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
+            worker = root / "run-frontier-batch/SKILL.md"
+            pointer = MODULE.BOUNDARY_CONTINUATION_REQUIREMENTS[
+                "run-frontier-batch/SKILL.md"
+            ]
+            worker.write_text(worker.read_text().replace(pointer, ""))
+            result = MODULE.validate(root)
+            self.assertIn(
+                "BOUNDARY_CONTINUATION_POINTER_MISSING",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_entry_identity_chain_is_one_source_derived_contract(self) -> None:
+        live_root = SCRIPT.parents[2]
+        result = MODULE.validate(live_root)
+        self.assertTrue(result["bundle_ready"], result["findings"])
+        for relative, markers in MODULE.ENTRY_IDENTITY_CONTRACT_REQUIREMENTS.items():
+            text = (live_root / relative).read_text()
+            for marker in markers:
+                with self.subTest(relative=relative, marker=marker):
+                    self.assertIn(marker, text)
+
+    def test_packet_and_result_share_one_experiment_contract(self) -> None:
+        live_root = SCRIPT.parents[2]
+        result = MODULE.validate(live_root)
+        self.assertTrue(result["bundle_ready"], result["findings"])
+        for relative, markers in MODULE.RESULT_CONTRACT_REQUIREMENTS.items():
+            text = (live_root / relative).read_text()
+            for marker in markers:
+                with self.subTest(relative=relative, marker=marker):
+                    self.assertIn(marker, text)
+
+    def test_missing_packet_to_result_preflight_is_rejected(self) -> None:
+        live_root = SCRIPT.parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "skills"
+            shutil.copytree(
+                live_root,
+                root,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
+            validator = root / "frontier-optimization/scripts/validate_batch_packet.py"
+            validator.write_text(
+                validator.read_text().replace(
+                    '"result_contract_compatibility": (',
+                    '"removed_result_contract_check": (',
+                )
+            )
+            result = MODULE.validate(root)
+            self.assertIn(
+                "RESULT_CONTRACT_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_self_declared_binding_contract_cannot_replace_source_derivation(self) -> None:
+        live_root = SCRIPT.parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "skills"
+            shutil.copytree(
+                live_root,
+                root,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+            )
+            adoption = root / "frontier-optimization/scripts/validate_authorization_adoption.py"
+            adoption.write_text(adoption.read_text().replace("AUTHORIZATION_TARGET_NOT_DERIVED", "DECLARED_BINDING_ACCEPTED"))
+            result = MODULE.validate(root)
+            self.assertIn(
+                "ENTRY_IDENTITY_CONTRACT_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_boundary_preserving_continuation_is_task_neutral_and_fail_closed(self) -> None:
+        skills_root = SCRIPT.parents[2]
+        batch_interface = (
+            skills_root / "frontier-optimization/references/batch-interface.md"
+        ).read_text()
+        section = batch_interface.split("## Boundary-preserving continuation", 1)[1].split(
+            "## Batch packet", 1
+        )[0]
+        semantic_markers = (
+            "A B is one bounded objective, authority, evidence, and spend envelope",
+            "authorized objective and substantive target identity are unchanged",
+            "acceptance, evaluation, comparison, and expected-observation semantics are unchanged",
+            "frozen inputs and the resolved dependency and runtime identity are unchanged",
+            (
+                "allowed operations, write paths, access, external effects, "
+                "and the spend ceiling are unchanged"
+            ),
+            "creates no additional sampling or selection opportunity",
+            (
+                "every failed try, repair, and later observation is preserved "
+                "at a distinct assigned evidence path"
+            ),
+            "mechanically verifies evidence under the already authorized acceptance rule",
+            "does not produce or select substantive observations or redefine their interpretation",
+            "Changing a candidate or other work product",
+            "Do not add a universal retry count",
+            "a prior external effect is unknown",
+            (
+                "After the authoritative result exists, any continuation requires "
+                "a new immutable B packet"
+            ),
+        )
+        for marker in semantic_markers:
+            with self.subTest(marker=marker):
+                self.assertIn(marker, section)
+        for task_specific_term in ("pytest", "JUnit", "Kaggle", "B027", "B028"):
+            with self.subTest(task_specific_term=task_specific_term):
+                self.assertNotIn(task_specific_term, section)
+
+    def test_measurement_use_and_vacuity_rules_are_consistent_across_gates(self) -> None:
+        skills_root = SCRIPT.parents[2]
+        canonical = (
+            skills_root / "frame-optimization/references/representation-contracts.md"
+        ).read_text()
+        problem_review = (skills_root / "review-optimization/SKILL.md").read_text()
+        representation_review = (skills_root / "review-representation/SKILL.md").read_text()
+        planning = (
+            skills_root
+            / "frontier-optimization/references/entry-and-planning.md"
+        ).read_text()
+        entry_review = (
+            skills_root / "frontier-optimization/references/entry-review.md"
+        ).read_text()
+        lifecycle = (
+            skills_root / "frontier-optimization/references/candidate-lifecycle.md"
+        ).read_text()
+        adoption = (
+            skills_root / "frontier-optimization/references/result-adoption.md"
+        ).read_text()
+
+        canonical_rule = (
+            "every legal result maps to the same allowed next action"
+        )
+        for document in (canonical, problem_review, planning, entry_review):
+            with self.subTest(document=document[:80]):
+                self.assertIn(canonical_rule, document)
+
+        self.assertIn("canonical R8 vacuity definition", representation_review)
+        self.assertIn("headroom, noise, resolution", canonical)
+        self.assertIn("keep formal Slot H measurement, E", planning)
+        self.assertIn("Diagnostic-only exception", lifecycle)
+        self.assertIn("create no E", adoption)
+        for prohibited_consequence in (
+            "integration",
+            "incumbent use",
+            "promotion",
+            "submission",
+            "strength",
+        ):
+            with self.subTest(prohibited_consequence=prohibited_consequence):
+                self.assertIn(prohibited_consequence, lifecycle)
 
 
 if __name__ == "__main__":

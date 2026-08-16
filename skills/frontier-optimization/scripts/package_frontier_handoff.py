@@ -14,13 +14,22 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from identity_bindings import (
+    PACKAGE_PATH_SIZE_SHA256_V1,
+    IdentityBindingError,
+    load_file_binding,
+    reject_symlink_components,
+    tree_inventory,
+)
+from finding_effects import add_finding, finalize_findings
+
 try:
     import yaml
 except ImportError as exc:  # pragma: no cover
     raise SystemExit("PyYAML is required to package Frontier handoffs") from exc
 
 
-VALIDATOR = "frontier-handoff-package/1"
+VALIDATOR = "frontier-handoff-package/3"
 FORBIDDEN_PARTS = {".git", ".venv", "__pycache__"}
 FORBIDDEN_SUFFIXES = {".pyc", ".pyo"}
 REQUIRED_FIELDS = {
@@ -30,6 +39,8 @@ REQUIRED_FIELDS = {
     "closeout_identity",
     "final_handoff_identity",
     "final_budget_identity",
+    "lineage_sources",
+    "subtree_identity_algorithm",
     "entries",
     "authority_effect",
 }
@@ -75,28 +86,15 @@ def safe_relative(raw: Any, field: str) -> str:
 
 
 def subtree_inventory(root: Path) -> tuple[list[dict[str, Any]], str]:
-    files: list[dict[str, Any]] = []
-    for path in sorted(root.rglob("*")):
-        if not path.is_file():
-            continue
-        relative = path.relative_to(root)
-        if any(part in FORBIDDEN_PARTS for part in relative.parts) or path.suffix in FORBIDDEN_SUFFIXES:
-            continue
-        files.append(
-            {
-                "path": relative.as_posix(),
-                "size": path.stat().st_size,
-                "sha256": sha256_file(path),
-            }
-        )
-    if not files:
-        raise PackageError(f"empty package subtree: {root}")
-    return files, f"sha256:{hashlib.sha256(canonical_json(files)).hexdigest()}"
+    try:
+        return tree_inventory(root, PACKAGE_PATH_SIZE_SHA256_V1)
+    except IdentityBindingError as exc:
+        raise PackageError(str(exc)) from exc
 
 
 def source_identity(path: Path, scope: str) -> tuple[list[dict[str, Any]], str]:
     if scope == "file":
-        if not path.is_file():
+        if not path.is_file() or path.is_symlink():
             raise PackageError(f"package source file is missing: {path}")
         record = {"path": path.name, "size": path.stat().st_size, "sha256": sha256_file(path)}
         return [record], f"sha256:{record['sha256']}"
@@ -105,12 +103,6 @@ def source_identity(path: Path, scope: str) -> tuple[list[dict[str, Any]], str]:
             raise PackageError(f"package source subtree is missing: {path}")
         return subtree_inventory(path)
     raise PackageError("package entry scope must be file or subtree")
-
-
-def add_finding(findings: list[dict[str, str]], code: str, detail: str) -> None:
-    finding = {"code": code, "detail": detail}
-    if finding not in findings:
-        findings.append(finding)
 
 
 def validate_plan(document: dict[str, Any], phase: str, repo_root: Path) -> dict[str, Any]:
@@ -132,9 +124,115 @@ def validate_plan(document: dict[str, Any], phase: str, repo_root: Path) -> dict
             "PACKAGE_CREATED_AUTHORITY",
             "packaging must have authority_effect: none",
         )
+    if document.get("subtree_identity_algorithm") != PACKAGE_PATH_SIZE_SHA256_V1:
+        add_finding(
+            findings,
+            "SUBTREE_IDENTITY_ALGORITHM_INVALID",
+            f"subtree_identity_algorithm must be {PACKAGE_PATH_SIZE_SHA256_V1}",
+        )
+    lineage = document.get("lineage_sources")
+    observed_lineage: dict[str, str] = {}
+    lineage_documents: dict[str, dict[str, Any]] = {}
+    if not isinstance(lineage, dict):
+        add_finding(
+            findings,
+            "LINEAGE_SOURCES_INVALID",
+            "lineage_sources must bind closeout, handoff, and budget files",
+        )
+    else:
+        for role in ("closeout", "handoff", "budget"):
+            try:
+                binding = load_file_binding(
+                    repo_root,
+                    lineage.get(role),
+                    f"lineage_sources.{role}",
+                    expected_identity_field=None,
+                )
+                observed_lineage[role] = binding.identity
+                try:
+                    parsed = yaml.safe_load(binding.raw)
+                except yaml.YAMLError as exc:
+                    raise IdentityBindingError(
+                        f"lineage_sources.{role} is not valid YAML: {exc}"
+                    ) from exc
+                if not isinstance(parsed, dict):
+                    raise IdentityBindingError(
+                        f"lineage_sources.{role} must contain a source record mapping"
+                    )
+                lineage_documents[role] = parsed
+            except IdentityBindingError as exc:
+                add_finding(findings, "LINEAGE_SOURCE_INVALID", str(exc))
     for field in ("closeout_identity", "final_handoff_identity", "final_budget_identity"):
         if not isinstance(document.get(field), str) or not document[field].strip():
             add_finding(findings, "CLOSEOUT_BINDING_MISSING", field)
+    expected_lineage = {
+        "closeout_identity": observed_lineage.get("closeout"),
+        "final_handoff_identity": observed_lineage.get("handoff"),
+        "final_budget_identity": observed_lineage.get("budget"),
+    }
+    if observed_lineage and any(
+        document.get(field) != identity for field, identity in expected_lineage.items()
+    ):
+        add_finding(
+            findings,
+            "LINEAGE_IDENTITY_NOT_DERIVED",
+            "package lineage identities must derive from their bound source bytes",
+        )
+    closeout_source = lineage_documents.get("closeout")
+    if closeout_source is not None and (
+        closeout_source.get("event") != "CLOSEOUT_COMPLETE"
+        or closeout_source.get("campaign_generation") != generation
+        or closeout_source.get("campaign_status") != document.get("campaign_status")
+        or closeout_source.get("unresolved_claims") != []
+        or closeout_source.get("active_workers") != []
+    ):
+        add_finding(
+            findings,
+            "CLOSEOUT_FACTS_NOT_DERIVED",
+            "package generation and status require a complete bound closeout record with no open claim or worker",
+        )
+    handoff_source = lineage_documents.get("handoff")
+    if handoff_source is not None and handoff_source.get("handoff_complete") is not True:
+        add_finding(
+            findings,
+            "HANDOFF_FACTS_NOT_DERIVED",
+            "bound handoff record must report handoff_complete: true",
+        )
+    budget_source = lineage_documents.get("budget")
+    if budget_source is not None:
+        required_budget_facts = {
+            "proposal_attempt_ceiling",
+            "actual_spend",
+            "unknown_spend",
+            "active_reservations",
+        }
+        budget_values = tuple(
+            budget_source.get(field)
+            for field in (
+                "proposal_attempt_ceiling",
+                "actual_spend",
+                "unknown_spend",
+            )
+        )
+        budget_values_valid = all(
+            isinstance(value, int) and not isinstance(value, bool) and value >= 0
+            for value in budget_values
+        )
+        spend_within_ceiling = (
+            budget_values_valid
+            and budget_values[1] + budget_values[2] <= budget_values[0]
+        )
+        if (
+            required_budget_facts - budget_source.keys()
+            or budget_source.get("active_reservations") != []
+            or not budget_values_valid
+            or not spend_within_ceiling
+        ):
+            add_finding(
+                findings,
+                "BUDGET_FACTS_NOT_DERIVED",
+                "bound budget record must contain nonnegative integer spend facts within the ceiling and no active reservation",
+            )
 
     expanded_entries: list[dict[str, Any]] = []
     destination_files: set[str] = set()
@@ -158,6 +256,9 @@ def validate_plan(document: dict[str, Any], phase: str, repo_root: Path) -> dict
                     raise PackageError(f"entries[{index}].role is required")
                 if not isinstance(expected_identity, str) or not expected_identity.startswith("sha256:"):
                     raise PackageError(f"entries[{index}].identity must be sha256:<digest>")
+                reject_symlink_components(
+                    repo_root, source_value, f"entries[{index}].source"
+                )
                 source = (repo_root / source_value).resolve()
                 if repo_root not in source.parents:
                     raise PackageError(f"entries[{index}].source escapes the repository")
@@ -193,8 +294,27 @@ def validate_plan(document: dict[str, Any], phase: str, repo_root: Path) -> dict
                         "members": mapped,
                     }
                 )
-            except (OSError, PackageError) as exc:
+            except (OSError, PackageError, IdentityBindingError) as exc:
                 add_finding(findings, "PACKAGE_ENTRY_INVALID", str(exc))
+
+    if isinstance(lineage, dict) and expanded_entries:
+        for role, binding in lineage.items():
+            lineage_path = binding.get("path") if isinstance(binding, dict) else None
+            covered = any(
+                lineage_path == entry["source"]
+                or (
+                    entry["scope"] == "subtree"
+                    and isinstance(lineage_path, str)
+                    and lineage_path.startswith(entry["source"].rstrip("/") + "/")
+                )
+                for entry in expanded_entries
+            )
+            if isinstance(binding, dict) and not covered:
+                add_finding(
+                    findings,
+                    "LINEAGE_SOURCE_NOT_PACKAGED",
+                    f"lineage_sources.{role}.path must be included as an exact package entry",
+                )
 
     plan_sha256 = hashlib.sha256(canonical_payload(document)).hexdigest()
     expected_id = f"frontier-package-sha256:{plan_sha256}"
@@ -213,14 +333,18 @@ def validate_plan(document: dict[str, Any], phase: str, repo_root: Path) -> dict
     elif phase not in {"draft", "frozen", "audit"}:
         add_finding(findings, "PHASE_INVALID", "phase must be draft, frozen, or audit")
 
-    findings.sort(key=lambda item: (item["code"], item["detail"]))
+    finding_summary = finalize_findings(findings)
     return {
         "validator": VALIDATOR,
         "campaign_generation": generation,
         "computed_package_id": expected_id,
-        "package_ready": not findings,
+        "package_ready": finding_summary["ready"],
         "expanded_entries": expanded_entries,
-        "findings": findings,
+        "findings": finding_summary["findings"],
+        "blocking_findings": finding_summary["blocking_findings"],
+        "repair_findings": finding_summary["repair_findings"],
+        "advisories": finding_summary["advisories"],
+        "finding_effect_counts": finding_summary["finding_effect_counts"],
     }
 
 
@@ -274,6 +398,7 @@ def build(plan_path: Path, output_parent: Path, repo_root: Path) -> Path:
             "final_handoff_identity": document["final_handoff_identity"],
             "final_budget_identity": document["final_budget_identity"],
             "authority_effect": "none",
+            "subtree_identity_algorithm": document["subtree_identity_algorithm"],
             "files": sorted(manifest_files, key=lambda item: item["path"]),
         }
         (stage / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
@@ -304,6 +429,22 @@ def verify(package_root: Path) -> dict[str, Any]:
         raise PackageError("frozen package plan identity mismatch")
     if manifest.get("package_id") != expected_package_id:
         raise PackageError("package manifest and frozen plan bind different package identities")
+    top_level_bindings = (
+        "validator",
+        "campaign_generation",
+        "closeout_identity",
+        "final_handoff_identity",
+        "final_budget_identity",
+        "authority_effect",
+        "subtree_identity_algorithm",
+    )
+    expected_top_level = {
+        "validator": VALIDATOR,
+        **{field: plan.get(field) for field in top_level_bindings if field != "validator"},
+    }
+    observed_top_level = {field: manifest.get(field) for field in top_level_bindings}
+    if observed_top_level != expected_top_level:
+        raise PackageError("package manifest top-level provenance differs from the frozen plan")
     if package_root.name != package_directory_name(expected_package_id):
         raise PackageError("package root is not the content-addressed package identity")
 
@@ -352,6 +493,8 @@ def verify(package_root: Path) -> dict[str, Any]:
         for path in package_root.rglob("*")
         if path.is_file()
     }
+    if any(path.is_symlink() for path in package_root.rglob("*")):
+        raise PackageError("package contains a symbolic link")
     if observed_paths != expected_paths:
         raise PackageError(
             f"package file set mismatch: expected {sorted(expected_paths)}, observed {sorted(observed_paths)}"

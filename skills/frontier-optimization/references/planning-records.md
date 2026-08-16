@@ -20,23 +20,30 @@ Create T for each technically eligible campaign-baseline candidate. Later direct
 
 - Recorded at: <ISO-8601 datetime>
 - Campaign-baseline role: <candidate | not applicable>
-- Produced by: <Q, E, D, failure evidence, or explicit reasoning>
-- Starting records: <identifiers>
+- Produced by: <established approach, Q, repository evidence, E, D, failure finding, functional transfer or recombination, migration or reorganization, new mechanism reasoning, or a combination; sources are peers>
+- Starting records: <decision-relevant observations, constraints, source mechanisms, and identifiers>
 - Reviewed scope: <forms, operations, or modules>
-- Improvement mechanism: <how later work can affect the parent objective or constraints>
-- Why it can carry optimization: <usable optimization surfaces, feedback path, and known headroom or limits>
-- Tradeoffs: <implementation burden, reversibility, maintenance, dependencies, and user-owned consequences>
-- Assumptions: <Q identifiers or None>
-- Depends on: <identifiers or None>
+- Improvement mechanism: <proposed limiting or enabling mechanism, permitted change, and expected causal path to the parent objective>
+- Why it can carry optimization: <expected behavior, usable optimization surfaces, feedback path, and known headroom or limits>
+- Iteration shape: <one-shot | repeated comparable evidence expected | repeated evidence not comparable, with reason>
+- Prospective progress rule: <expectation envelope, meaningful threshold, mechanism checkpoint, reachability condition, or not applicable with reason>
+- Progress-rule source: <parent, R8, D, Q, measurement resolution, or explicit reasoning fixed before the governed spend>
+- Tradeoffs: <implementation burden, reversibility, maintenance, dependencies, transfer mismatch, and user-owned consequences>
+- Assumptions: <each load-bearing data, coverage, label, feedback, evaluator, compute, access, dependency, or other feasibility prerequisite, with satisfied evidence, a bounded prerequisite-first path and pass/fail observation, or unavailable disposition>
+- Depends on: <identifiers, including prerequisite checks that must pass before dependent work, or None>
 - Maximum allocation: <amount and unit>
-- Next checkpoint: <bounded output or test>
+- Next checkpoint: <earliest affordable bounded output or discriminating test>
 - First performance check: <comparison or decision result and parent-approved feedback>
-- Replacement boundary: <parts that may improve or be replaced, and measurement or evidence interfaces that remain stable>
-- Disqualifying evidence: <observable result that makes this route ineligible or not worth continuing>
+- Replacement boundary: <exact mechanism boundary beyond which a new T and strategic Replan are required; parts that may improve or be replaced; stable measurement or evidence interfaces>
+- Disqualifying evidence: <competing explanation, transfer mismatch, failed prerequisite, or other observable result that falsifies the causal path or makes the route ineligible or not worth continuing>
 - Continue when: <observable result>
 - Stop or combine when: <condition and affected routes>
 - Status: <proposed | active>
 ```
+
+The T fields must preserve one evidence-bounded chain: observation or constraint -> mechanism -> permitted change -> causal path -> competing explanation or transfer mismatch -> disconfirming observation -> earliest affordable discriminating check. A transferred or recombined route must map the source function and expected behavior to the target constraint and name where the transfer fails. Surface resemblance is insufficient.
+
+Technical conceivability is not eligibility. Every load-bearing prerequisite must be satisfied by cited current evidence, assigned one bounded and funded prerequisite-first path, or dispositioned as unavailable within current scope, Budget, authority, or decision horizon. While a prerequisite remains unresolved, no dependent candidate development, general tuning, evaluation, integration, or performance claim may be planned. A failed prerequisite activates the T disqualifying consequence until new evidence passes the applicable Entry or Replan gate.
 
 ## V: user decision
 
@@ -46,17 +53,20 @@ Create T for each technically eligible campaign-baseline candidate. Later direct
 - Recorded at: <ISO-8601 datetime>
 - Campaign generation: <positive integer>
 - Decision kind: <tradeoff | authorization>
+- Authorization class: <campaign-opening | execution | not applicable for tradeoff>
 - Decision: <exact user-owned choice>
 - Evidence presented: <identifiers or stable links>
-- Alternatives: <technically eligible options for tradeoff; authorize, decline, and conditional authorization for authorization>
+- Alternatives: <technically eligible options for tradeoff; authorize, decline, and conditional authorization for execution; current explicit request for campaign-opening>
 - Recommendation presented: <recommended option and evidence-bounded reason or None>
 - Applies to: <routes, batches, resources, or campaign choice>
-- Bound object: <exact authorization target and AUTHORIZATION_READY identity; reviewed design contract and scope; immutable direct packet, preflight, and source; layout; resource; or None for a general tradeoff>
+- Bound object: <prior closeout, unchanged parents, next generation, inherited Budget, and planning-only zero-spend boundary for campaign-opening; exact AUTHORIZATION_READY target, reviewed design contract and scope, immutable direct packet, preflight and source, layout, or resource for execution; or None for tradeoff>
 - Effective conditions: <facts and limits>
 - Reconsider when: <new evidence or event>
 - Consequence: <allocation, exclusion, priority, risk, or authorization effect>
 - Supersedes: <V identifier or None>
 ```
+
+A `campaign-opening` V records an explicit current post-closeout reopen request. Bind it to the prior closeout, unchanged parent identities, proposed next generation, inherited Budget, and `planning only; zero B spend`. It records the answer already present in the request, needs no `AUTHORIZATION_READY`, and cannot present the Coordinator-derived technical objective as a user choice. A later user-owned route tradeoff uses a separate V. An `execution` V retains the exact immutable target and readiness rules. Its canonical ledger row is the reviewed authorize-branch record at `decision_record_path`; before the answer, that row may bind the stable target specification and assigned result path but not a future target or answer identity. The byte-derived user-result file binds the final target and exact answer. A finding-free adoption joins the ledger path, decision identifier, result identity, and target identity; together they are the one execution V.
 
 ## B: batch plan
 
@@ -96,18 +106,21 @@ Create T for each technically eligible campaign-baseline candidate. Later direct
 - Execution-frozen inputs: <path, identity, and exact scope that no actor may change after execution start; or not applicable>
 - Packet preflight: <Coordinator-owned path, finding-free preflight identity, computed packet identity, validator identity, and created-before-authorization evidence>
 - Authorization readiness: <Entry schema identities, AUTHORIZATION_READY review identity, exact target, Coordinator adoption state, and adoption-validation identity>
+- Candidate package inventory: <assigned immutable pre-execution path and byte-derived identity rule, or not applicable>
 - Candidate manifest: <assigned stable path and identity rule, or not applicable>
-- Implementation review gate: <required before first performance measurement, integration, or incumbent use; reusable prior review with exact unchanged identity; or not applicable>
-- Evaluation target: <immutable candidate identity, manifest, adopted IMPLEMENTATION_READY, planned experiment identity, and Slot H contract for a separate evaluation B; or not applicable>
+- Engineering check plan: <exact selected units, argument vectors, content-addressed effect evidence, positive effect limits, and engineering-only consequence; or not applicable>
+- Implementation review gate: <required before first Slot H measurement, integration, or incumbent use; exact diagnostic-only exception under candidate-lifecycle.md; reusable prior review with exact unchanged identity; or not applicable>
+- Evaluation target: <for Slot H measurement, immutable candidate identity, manifest, adopted IMPLEMENTATION_READY, planned experiment identity, and Slot H contract; for diagnostic-only measurement, immutable candidate and experiment identities plus the candidate-lifecycle evidence and consequence boundary; or not applicable>
 - Preparation role: <why this work is necessary to establish the baseline or reach a decision, or not applicable>
 - Decision hypothesis: <mechanism or assumption this B tests or advances>
 - Expected observation: <observable result and direction, including what would contradict the hypothesis>
+- Trajectory contribution: <ordered comparison to named prior E under the T progress rule | first observation in the route | not applicable with reason>
 - Output contract: <one independently verifiable slice or design artifact and its observable behavior>
 - Implementation validation: <checks or exact WORK.md section>
 - Implementation definition of done: <conditions or exact WORK.md section>
 - Planned spend: <amount and unit>
 - Actual spend: pending
-- Authorization gate: <AUTHORIZATION_READY followed by exact user V and Coordinator ENTRY_READY adoption; direct ENTRY_READY when no user authorization applies; adopted REPLAN_READY for a strategic later change; adopted implementation review before first measurement, integration, or incumbent use; or exact later Selection authority>
+- Authorization gate: <AUTHORIZATION_READY followed by exact user V and Coordinator ENTRY_READY adoption; direct ENTRY_READY when no user authorization applies; adopted REPLAN_READY for a strategic later change; adopted implementation review before first Slot H measurement, integration, or incumbent use; exact diagnostic-only path under candidate-lifecycle.md; or exact later Selection authority>
 - Baseline-establishment checkpoint: <usable artifact and completion check or not applicable>
 - First performance check: <comparison or decision result, and whether this B or a later B runs it>
 - Preparation budget limit: <maximum allocation before that check>
@@ -115,10 +128,16 @@ Create T for each technically eligible campaign-baseline candidate. Later direct
 - Decision after checkpoint: <deepen, revise, abandon, or select by observable evidence>
 - Comparison-validity checks: <measurement identity, comparable conditions, data quality, drift, confounding, and execution checks required when this B measures a result>
 - Measurement and promotion: <Slot H and R8 path>
-- Artifacts: <assigned stable paths>
+- Artifacts: <assigned stable paths, including distinct attempt-evidence paths or one exclusive evidence subtree>
 - Resume when: <available input, event, or immediate>
 - Outcome: planned
 ```
+
+A B authorizes one bounded objective, authority, evidence, and spend envelope rather than one command. Before authority or effects, deterministic draft repair stays in the same B while the target specification and every substantive, measurement, spend, effect, stop, and consequence field remain unchanged; failed draft bytes are diagnostic rather than a new B or review record. A later workflow-version migration may also stay in the same B and pending V only under the narrower preserved-history rule in Entry Review: no answer or effect, no semantic boundary change, new exclusive lifecycle paths, all current validators, and fresh independent review. During execution, its packet applies [Boundary-preserving continuation](batch-interface.md#boundary-preserving-continuation): preserve support-tool failures inside the same B while every invariant holds, and require a new B after a substantive boundary changes or an immutable result exists. Do not make the first support failure a terminal condition by default or add an unbounded retry path.
+
+When B is the bounded path for an unresolved prerequisite, its work, allowed paths, output contract, spend, and decision after checkpoint must stop at the prerequisite observation. Its `Depends on` and `Authorization gate` must make every dependent implementation or evaluation B ineligible until the Coordinator adopts evidence that the prerequisite passed through the applicable Entry or Replan gate.
+
+Apply the canonical R8 vacuity definition before selecting B. Known-vacuous work is ineligible. An unknown measurement property may instead be the bounded first observation when its possible results lead to different permitted next actions. A diagnostic-only experiment follows `candidate-lifecycle.md`, remains B evidence, and cannot create E or any promotion, integration, incumbent, or strength consequence.
 
 ## B terminal outcome
 
@@ -152,14 +171,16 @@ B terminal outcome:
 - Epoch: <integer>
 - Representation revision: <integer>
 - Measurement: <Slot H identity and evidence link>
-- Comparison validity: <measurement identity, comparable conditions, data quality, drift or confound checks, and conclusion; or not yet applicable for an unpaired reference>
-- Result: <value or vector with required uncertainty>
-- Constraints: <legal outcome and checks>
+- Comparison validity: <measurement identity, comparable conditions, data quality, drift or confound checks, adaptive-exposure lineage across attempts and B/E records, selection mechanism, shared evaluator/data/seeds, material omitted negative attempts, independent-confirmation status, and conclusion; or not yet applicable for an unpaired reference>
+- Result: <complete parent-owned value or vector with required uncertainty, including every mandatory segment, tail, and delayed confirmation>
+- Constraints: <every parent-owned hard constraint and guardrail with legal outcome and checks>
 - Operating cost: <value or not applicable>
 - Retained as: <reference baseline, incumbent, parent-defined set role, or not retained>
 ```
 
-Append E only after Coordinator validation establishes valid Slot H measurement and comparison validity. An implementation B, engineering check, invalid experiment, or worker result cannot create E. A recovery measurement uses a new E identifier and cites the generation that ran it; it never edits the reference E or creates a retroactive result for the closed generation. Retention and promotion remain separate R8 and Selection decisions.
+Append E only after Coordinator validation establishes valid Slot H measurement and comparison validity. An implementation B, engineering check, diagnostic-only experiment, invalid experiment, or worker result cannot create E. A recovery measurement uses a new E identifier and cites the generation that ran it; it never edits the reference E or creates a retroactive result for the closed generation. Retention and promotion remain separate R8 and Selection decisions.
+
+E records one evaluated result, not a trend or route verdict. Outcome Reflection is the only canonical owner of the ordered comparable history and progress interpretation. Combine E records only when their parent objective, measurement meaning, comparator role, protocol, workload, data scope, uncertainty, validity, and result directions remain comparable or have an explicit equivalence argument. Preserve excluded E with the reason. An improved proxy or aggregate does not establish route progress while any parent-owned metric, hard constraint, guardrail, required segment, tail condition, delayed confirmation, or operating-cost boundary fails or remains unresolved.
 
 ## Q: research finding
 

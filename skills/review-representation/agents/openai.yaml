@@ -2,3 +2,5 @@ interface:
   display_name: "Review Search Setup"
   short_description: "Check whether a search setup is ready"
   default_prompt: "Use $review-representation in a fresh context to check how the selected search works and state which search work, if any, may start."
+policy:
+  allow_implicit_invocation: true

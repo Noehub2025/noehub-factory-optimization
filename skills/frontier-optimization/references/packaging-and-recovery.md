@@ -7,7 +7,7 @@
 - Verify recovery without live context
 - Optional cleanup
 - Post-closeout candidate reuse
-- Five-Skill release and regression rule
+- Ten-Skill release and regression rule
 - Acceptance scenarios
 
 Load this stage only when the recorded-state router selects an explicit packaging request after a complete closeout. Packaging preserves evidence and makes recovery portable; it creates no campaign, spend, measurement, integration, incumbent, promotion, or claim authority.
@@ -24,12 +24,13 @@ Create a package plan outside the final package root. Bind:
 
 - campaign generation and stopped or halted status;
 - closeout, final handoff, and final Budget identities;
+- `lineage_sources` bindings that derive those three identities from exact source files, plus `subtree_identity_algorithm: frontier-package-path-size-sha256/1`;
 - every retained candidate, manifest, result, E, D, X, C, A, review, Outcome Reflection, design contract, authorization, packet lifecycle, execution-baseline snapshot, engineering artifact, measurement artifact, and recovery instruction required by the final handoff;
 - each source path, `file | subtree` scope, exact content identity, package destination, and evidence role;
 - explicit exclusions for credentials, private input not authorized for retention, version-control metadata, environments, caches, and reconstructible intermediates; and
 - `authority_effect: none`.
 
-Run `scripts/package_frontier_handoff.py validate` in draft mode before freezing the plan. Insert only its computed `package_id`, freeze the plan, and require finding-free frozen validation. A source identity mismatch, missing byte, path escape, forbidden cache or version-control path, duplicate destination, or changed closeout binding blocks publication.
+Run `scripts/package_frontier_handoff.py validate` in draft mode before freezing the plan. Insert only its computed `package_id`, freeze the plan, and require finding-free frozen validation. The bound closeout record supplies generation, status, unresolved claims, and active workers; the handoff record supplies `handoff_complete`; the Budget record supplies ceiling, actual and unknown spend, and active reservations. Each lineage source must also be covered by a package entry. A source identity mismatch, missing semantic field, missing byte, symbolic link at any source component, path escape, forbidden cache or version-control path, duplicate destination, or changed closeout binding blocks publication. Offline verification compares every top-level provenance field with the frozen plan; a self-consistent manifest cannot replace that source.
 
 Run `scripts/package_frontier_handoff.py build` only on the frozen plan. The tool must stage under the destination filesystem, copy exact bytes, write the frozen plan and content manifest, verify the complete file set and every hash, and publish the content-addressed directory atomically. Never reuse or overwrite an existing package root.
 
@@ -57,7 +58,7 @@ Record what was removed, why it is reconstructible, and whether recovery is poss
 
 Candidate reuse is a separate Entry action selected only by an explicit current recovery request. Before writing a new-generation V, X, review packet, Entry snapshot, or `RECOVERY_CAMPAIGN_STARTED` event:
 
-1. Build a temporary recovery preflight containing the prior closeout and final handoff identities, inherited Budget, requested candidate and manifest identities, candidate root, source generation, proposed next generation, `review_mode: recovery-reuse`, `candidate_mutation: prohibited`, and `new_proposal_attempts: 0`.
+1. Build a temporary recovery preflight containing the prior closeout and final handoff identities, inherited Budget, requested candidate and manifest identities, candidate root, source generation, proposed next generation, `review_mode: recovery-reuse`, `candidate_mutation: prohibited`, and `new_proposal_attempts: 0`. Add `lineage_sources.closeout`, `.handoff`, and `.budget` as exact `{path, identity_field: null, identity, file_sha256}` bindings. Parse those source records and derive the closeout event, generation, status, unresolved claims, active workers, Budget ceiling, actual and unknown spend, and active reservations; copied summary fields cannot replace them.
 2. Run `scripts/validate_candidate_recovery.py` in draft mode against canonical repository artifacts. Derive member and package identities from bytes; never trust a conversation-copied digest.
 3. If draft validation fails, return `BLOCKED` with the exact path, requested identity, and recomputed identity. Write no new-generation artifact and spend nothing.
 4. If it passes, insert only the computed preflight identity, freeze the preflight at a new stable path, and reproduce finding-free frozen validation.
@@ -65,35 +66,13 @@ Candidate reuse is a separate Entry action selected only by an explicit current 
 
 An identity mismatch never authorizes normalization, copying, regeneration, or repair. Any candidate-byte or behavior change leaves recovery reuse and requires a new code-bearing B, current development authorization, candidate identity, and proposal charge.
 
-## Five-Skill release and regression rule
+## Workflow release check
 
-Before releasing the workflow bundle, run every deterministic validator test, the end-to-end Slice 7 suite, `scripts/validate_frontier_skill_bundle.py`, and Skill `quick_validate.py` for exactly `frontier-optimization`, `research-frontier`, `grill-frontier`, `run-frontier-batch`, and `review-frontier`. Reject a sixth claims reviewer, unresolved internal link, host-specific absolute path, missing required script, changed invocation policy, or unmanifested source file.
+This check applies only while developing or releasing the workflow. It is outside campaigns, B packets, Entry snapshots, and ordinary Entry completion checks. Before releasing the workflow bundle, run every deterministic validator test, the end-to-end Slice 7 suite, `scripts/validate_frontier_skill_bundle.py`, and Skill `quick_validate.py` for exactly the five framing Skills and five Frontier Skills. Require `frame-optimization` and `frontier-optimization` to be explicit user-invoked Coordinators, require their eight workers to permit implicit invocation, and require both Coordinators to use the same framing-to-Frontier handoff. Reject an eleventh Skill, a separate claims reviewer, unresolved internal link, host-specific absolute path, missing required script, changed invocation policy, or unmanifested source file.
 
-Freeze one content manifest for the reviewed source, exact spec bindings, immutable fixtures, and produced validation artifacts. A source-control commit alone is insufficient when the worktree contains reviewed bytes outside that commit.
+Produce one source manifest and one fresh release review for the current workflow bytes and fixtures. Do not copy those bytes into any project snapshot or ask a project reviewer to reproduce this release check.
 
-When a later Slice changes a shared template, packet or result schema, router, authority rule, identity rule, validator, or review contract, append an impact analysis naming every earlier Slice review. Mark each affected review `regression-required` for the new source snapshot before using it as release authority. Append a fresh regression review over the new source and fixture manifests. List an unaffected review only with a concrete compatibility reason. Preserve every historical PASS as true only for its bound source snapshot; never edit it to imply current applicability.
-
-Use this review record shape:
-
-```markdown
-## <review ID>: <Slice and scope>
-
-- Source snapshot: <content manifest and identity>
-- Spec bindings: <exact spec paths and identities>
-- Fixture snapshot: <immutable fixture manifest and identity>
-- Artifact manifest: <exact paths and identities>
-- Review packet: <path and identity>
-- Reviewer context: <fresh context identity and isolation evidence>
-- Result: <PASS | CHANGES_REQUIRED>
-- Blocking findings: <findings or None>
-- Checks performed: <checks>
-- Depends on: <exact earlier review identities or None>
-- Regression triggered by: <later change identity or None>
-- Rechecks: <affected review identities or None>
-- Supersedes: <earlier attempt or None>
-- Current applicability: <current | regression-required | historical>
-- Consequence: <next Slice or release permitted or blocked>
-```
+When a later workflow change affects a shared contract or validator, rerun the current release suite and replace the prior release review with one new current review record. Preserve prior review artifacts as history; do not create per-Slice regression reviews or propagate them into project state.
 
 `Depends on` records original dependency, `Regression triggered by` records the later change, `Rechecks` records conclusions covered again, and `Supersedes` applies only to an earlier attempt. The same immutable source and fixture manifests must produce the same package validation result.
 
@@ -109,4 +88,4 @@ Use this review record shape:
 | Candidate byte changes during recovery validation | Zero-cost reuse ends; no old review, B, or authorization transfers. |
 | Context is compacted after acknowledgment, execution-start, result, closeout, or package publication | A fresh Coordinator reconstructs the same next action or blocker from stable artifacts only. |
 
-Slice 7 passes only when package publication is atomic and authority-neutral, exact candidate recovery fails before mutation on any identity mismatch, fresh-context reconstruction needs neither conversation nor Git history, the five-Skill bundle validates, and every affected earlier Slice contract has current regression coverage.
+Slice 7 passes only when package publication is atomic and authority-neutral, exact candidate recovery fails before mutation on any identity mismatch, a portable package contains the project bytes or Git bundle it claims to carry, and the ten-Skill workflow bundle validates. This release result is never a project-strength or Entry-readiness claim.

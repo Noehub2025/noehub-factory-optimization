@@ -12,7 +12,7 @@
     {
       "name": "noehub-factory-optimization",
       "source": "./",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "description": "Frame optimization problems, approve an exact search scope, then run bounded implementation and evaluation campaigns with independent review, closeout, and recovery.",
       "category": "engineering",
       "keywords": [

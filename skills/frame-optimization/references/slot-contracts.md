@@ -32,19 +32,23 @@ State what to minimize or maximize. Define whether the task uses one objective o
 
 For multiple objectives, define weights, lexicographic order, Pareto dominance, or thresholds. Define the baseline and success test.
 
+Separate the real objective from any measurement used only for diagnosis, search, or local comparison. For each success or promotion decision, state the exact consequence it permits. A proxy with an unknown relationship to the real objective may still support bounded exploration when its local meaning and stronger unsupported consequences are explicit.
+
 For approximate success, state whether error is additive or multiplicative. For Pareto order, define the front as the deliverable.
 
-Completion test: A reader can compare any two legal solutions or explain why neither dominates.
+Completion test: A reader can compare any two legal solutions or explain why neither dominates, and can tell which concrete consequence each comparison may support.
 
 ## E. Evaluation and quantifiers
 
 Define aggregation over instances and randomness. Separate algorithm randomness, measurement noise, and seed variation.
 
+Define the observation unit, evaluation cases, repetitions or samples, sources of variation, aggregation, and the population or fixed set to which uncertainty refers. A fixed evaluation set supports conclusions about that set unless the contract supplies an applicable wider-scope argument.
+
 Define finite or asymptotic scope. State quantifier order, uniformity across scale, and whether a solution can vary with scale.
 
 Define the adversary scope. Include inputs, tie-breaking, scheduling, and adaptation when applicable.
 
-Completion test: The evaluation gives one unambiguous mathematical meaning to the comparison in Slot D.
+Completion test: The evaluation gives one unambiguous mathematical meaning to the comparison in Slot D, including the conditions and inferential target covered by the result.
 
 ## F. Resources
 
@@ -66,6 +70,6 @@ Completion test: Every information advantage and feedback timing rule is explici
 
 Define evaluation data, repetitions, statistics, confidence requirements, and measurement code. Pin executable measurement code to a commit.
 
-State whether each measured value is the real objective or a proxy. Record known proxy error and Goodhart risk.
+State whether each measured value is the real objective, a proxy, or a diagnostic. Record the concrete decision it may inform, stronger unsupported conclusions, known proxy error, and Goodhart risk. Unknown noise, resolution, representativeness, or proxy usefulness may be the subject of the first bounded check; known contradictions or known measurement limits remain explicit inputs to R8.
 
-Completion test: Another agent can reproduce the measurement and interpret its difference from the real objective.
+Completion test: Another agent can reproduce the measurement, interpret its difference from the real objective, and state its allowed decision use and claim limit.

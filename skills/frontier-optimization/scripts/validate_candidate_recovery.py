@@ -11,18 +11,29 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from identity_bindings import (
+    PACKAGE_PATH_SIZE_SHA256_V1,
+    IdentityBindingError,
+    load_file_binding,
+    reject_symlink_components,
+    tree_inventory,
+)
+from finding_effects import add_finding, finalize_findings
+from validate_candidate_package import validate_candidate_package
+
 try:
     import yaml
 except ImportError as exc:  # pragma: no cover
     raise SystemExit("PyYAML is required to validate candidate recovery") from exc
 
 
-VALIDATOR = "frontier-candidate-recovery-preflight/1"
+VALIDATOR = "frontier-candidate-recovery-preflight/3"
 REQUIRED_FIELDS = {
     "recovery_preflight_path",
     "prior_campaign_generation",
     "campaign_generation",
     "prior_closeout",
+    "lineage_sources",
     "inherited_budget",
     "candidate_root",
     "candidate_manifest_path",
@@ -67,29 +78,8 @@ def safe_relative(raw: Any, field: str) -> str:
 
 
 def package_inventory(root: Path) -> tuple[list[dict[str, Any]], str]:
-    members: list[dict[str, Any]] = []
-    for path in sorted(root.rglob("*")):
-        if not path.is_file():
-            continue
-        relative = path.relative_to(root)
-        if "__pycache__" in relative.parts or path.suffix in {".pyc", ".pyo"}:
-            continue
-        members.append(
-            {
-                "path": relative.as_posix(),
-                "size": path.stat().st_size,
-                "sha256": sha256_file(path),
-            }
-        )
-    if not members:
-        raise ValueError("candidate package is empty")
-    return members, hashlib.sha256(canonical_json(members)).hexdigest()
-
-
-def add_finding(findings: list[dict[str, str]], code: str, detail: str) -> None:
-    finding = {"code": code, "detail": detail}
-    if finding not in findings:
-        findings.append(finding)
+    members, identity = tree_inventory(root, PACKAGE_PATH_SIZE_SHA256_V1)
+    return members, identity.removeprefix("sha256:")
 
 
 def validate(
@@ -98,6 +88,39 @@ def validate(
     findings: list[dict[str, str]] = []
     for field in sorted(REQUIRED_FIELDS - document.keys()):
         add_finding(findings, "REQUIRED_FIELD_MISSING", field)
+
+    lineage = document.get("lineage_sources")
+    bound_lineage: dict[str, str] = {}
+    lineage_documents: dict[str, dict[str, Any]] = {}
+    if not isinstance(lineage, dict):
+        add_finding(
+            findings,
+            "LINEAGE_SOURCES_INVALID",
+            "lineage_sources must bind closeout, handoff, and budget files",
+        )
+    else:
+        for role in ("closeout", "handoff", "budget"):
+            try:
+                bound = load_file_binding(
+                    repo_root,
+                    lineage.get(role),
+                    f"lineage_sources.{role}",
+                    expected_identity_field=None,
+                )
+                bound_lineage[role] = bound.identity
+                try:
+                    parsed = yaml.safe_load(bound.raw)
+                except yaml.YAMLError as exc:
+                    raise IdentityBindingError(
+                        f"lineage_sources.{role} is not valid YAML: {exc}"
+                    ) from exc
+                if not isinstance(parsed, dict):
+                    raise IdentityBindingError(
+                        f"lineage_sources.{role} must contain a source record mapping"
+                    )
+                lineage_documents[role] = parsed
+            except IdentityBindingError as exc:
+                add_finding(findings, "LINEAGE_SOURCE_INVALID", str(exc))
 
     prior_generation = document.get("prior_campaign_generation")
     generation = document.get("campaign_generation")
@@ -154,6 +177,39 @@ def validate(
                     "CLOSEOUT_LINEAGE_INVALID",
                     f"prior_closeout requires {field}",
                 )
+        if bound_lineage and (
+            closeout.get("closeout_identity") != bound_lineage.get("closeout")
+            or closeout.get("final_handoff_identity") != bound_lineage.get("handoff")
+        ):
+            add_finding(
+                findings,
+                "CLOSEOUT_LINEAGE_NOT_DERIVED",
+                "closeout and handoff identities must derive from bound source bytes",
+            )
+        closeout_source = lineage_documents.get("closeout")
+        closeout_facts = (
+            "event",
+            "campaign_generation",
+            "campaign_status",
+            "unresolved_claims",
+            "active_workers",
+        )
+        if closeout_source is not None and any(
+            closeout.get(field) != closeout_source.get(field)
+            for field in closeout_facts
+        ):
+            add_finding(
+                findings,
+                "CLOSEOUT_FACTS_NOT_DERIVED",
+                "closeout state, generation, claims, and workers must derive from the bound closeout record",
+            )
+        handoff_source = lineage_documents.get("handoff")
+        if handoff_source is not None and handoff_source.get("handoff_complete") is not True:
+            add_finding(
+                findings,
+                "HANDOFF_FACTS_NOT_DERIVED",
+                "bound handoff record must report handoff_complete: true",
+            )
 
     budget = document.get("inherited_budget")
     if not isinstance(budget, dict):
@@ -189,6 +245,27 @@ def validate(
                 "BUDGET_LINEAGE_INVALID",
                 "inherited_budget requires budget_identity",
             )
+        elif bound_lineage and budget.get("budget_identity") != bound_lineage.get("budget"):
+            add_finding(
+                findings,
+                "BUDGET_LINEAGE_NOT_DERIVED",
+                "budget identity must derive from the bound budget source bytes",
+            )
+        budget_source = lineage_documents.get("budget")
+        budget_facts = (
+            "proposal_attempt_ceiling",
+            "actual_spend",
+            "unknown_spend",
+            "active_reservations",
+        )
+        if budget_source is not None and any(
+            budget.get(field) != budget_source.get(field) for field in budget_facts
+        ):
+            add_finding(
+                findings,
+                "BUDGET_FACTS_NOT_DERIVED",
+                "budget ceiling, spend, unknown spend, and reservations must derive from the bound budget record",
+            )
 
     if document.get("review_mode") != "recovery-reuse":
         add_finding(
@@ -209,97 +286,55 @@ def validate(
             "byte-identical recovery validation requires zero new proposal attempts",
         )
 
+    package_validation = validate_candidate_package(
+        repo_root,
+        document.get("candidate_root"),
+        document.get("candidate_manifest_path"),
+        expected_candidate_id=document.get("requested_candidate_id"),
+        expected_manifest_sha256=document.get("requested_manifest_sha256"),
+    )
+    manifest_sha256 = package_validation["manifest_sha256"]
+    members = package_validation["members"]
+    canonical_candidate_id = package_validation["candidate_id"]
+    code_map = {
+        "CANDIDATE_PACKAGE_UNREADABLE": "CANDIDATE_RECOVERY_UNREADABLE",
+        "CANDIDATE_MANIFEST_UNREADABLE": "CANDIDATE_RECOVERY_UNREADABLE",
+        "CANDIDATE_MANIFEST_IDENTITY_MISMATCH": "REQUESTED_MANIFEST_IDENTITY_MISMATCH",
+        "EXPECTED_CANDIDATE_IDENTITY_MISMATCH": "REQUESTED_CANDIDATE_IDENTITY_MISMATCH",
+    }
+    for finding in package_validation["findings"]:
+        detail = finding["detail"]
+        if finding["code"] == "CANDIDATE_MANIFEST_IDENTITY_MISMATCH":
+            detail = detail.replace("declared", "requested").replace(
+                "observed", "recomputed"
+            )
+        add_finding(
+            findings,
+            code_map.get(finding["code"], finding["code"]),
+            detail,
+        )
+    for advisory in package_validation.get("advisories", []):
+        add_finding(findings, advisory["code"], advisory["detail"])
+
     manifest: dict[str, Any] | None = None
-    manifest_sha256: str | None = None
-    members: list[dict[str, Any]] = []
-    package_sha256: str | None = None
     try:
-        candidate_root_value = safe_relative(document.get("candidate_root"), "candidate_root")
         manifest_value = safe_relative(
             document.get("candidate_manifest_path"), "candidate_manifest_path"
         )
-        candidate_root = (repo_root / candidate_root_value).resolve()
         manifest_path = (repo_root / manifest_value).resolve()
-        if repo_root not in candidate_root.parents or repo_root not in manifest_path.parents:
-            raise ValueError("candidate or manifest path escapes the repository")
-        if not candidate_root.is_dir():
-            raise ValueError(f"candidate root is missing: {candidate_root_value}")
-        if not manifest_path.is_file():
-            raise ValueError(f"candidate manifest is missing: {manifest_value}")
-        manifest_sha256 = sha256_file(manifest_path)
         parsed = yaml.safe_load(manifest_path.read_bytes())
-        if not isinstance(parsed, dict):
-            raise ValueError("candidate manifest must contain a YAML mapping")
-        manifest = parsed
-        members, package_sha256 = package_inventory(candidate_root)
-    except (OSError, ValueError, yaml.YAMLError) as exc:
-        add_finding(findings, "CANDIDATE_RECOVERY_UNREADABLE", str(exc))
+        if isinstance(parsed, dict):
+            manifest = parsed
+    except (OSError, ValueError, yaml.YAMLError):
+        pass
 
-    requested_manifest = document.get("requested_manifest_sha256")
-    if manifest_sha256 is not None and requested_manifest != manifest_sha256:
-        add_finding(
-            findings,
-            "REQUESTED_MANIFEST_IDENTITY_MISMATCH",
-            f"requested {requested_manifest!r}; recomputed {manifest_sha256!r}",
-        )
-
-    canonical_candidate_id: str | None = None
-    if manifest is not None and package_sha256 is not None:
-        manifest_candidate_id = manifest.get("candidate_id")
-        if isinstance(manifest_candidate_id, str) and ":" in manifest_candidate_id:
-            canonical_candidate_id = f"{manifest_candidate_id.rsplit(':', 1)[0]}:{package_sha256}"
-        else:
-            add_finding(
-                findings,
-                "MANIFEST_CANDIDATE_ID_INVALID",
-                "candidate manifest requires a namespaced candidate_id",
-            )
-        if manifest_candidate_id != canonical_candidate_id:
-            add_finding(
-                findings,
-                "MANIFEST_CANDIDATE_IDENTITY_MISMATCH",
-                f"manifest records {manifest_candidate_id!r}; recomputed {canonical_candidate_id!r}",
-            )
-        requested_candidate = document.get("requested_candidate_id")
-        if requested_candidate != canonical_candidate_id:
-            add_finding(
-                findings,
-                "REQUESTED_CANDIDATE_IDENTITY_MISMATCH",
-                f"requested {requested_candidate!r}; recomputed {canonical_candidate_id!r}",
-            )
+    if manifest is not None:
         if manifest.get("campaign_generation") != prior_generation:
             add_finding(
                 findings,
                 "CANDIDATE_GENERATION_MISMATCH",
                 "candidate manifest generation does not match the closed source generation",
             )
-
-        recorded_paths = manifest.get("code_paths")
-        if not isinstance(recorded_paths, list):
-            add_finding(
-                findings,
-                "MANIFEST_MEMBER_SCHEMA_INVALID",
-                "candidate manifest code_paths must be a list",
-            )
-        else:
-            recorded: list[dict[str, str]] = []
-            for item in recorded_paths:
-                if not isinstance(item, dict) or not isinstance(item.get("path"), str) or not isinstance(item.get("sha256"), str):
-                    add_finding(
-                        findings,
-                        "MANIFEST_MEMBER_SCHEMA_INVALID",
-                        "each code_paths entry requires path and sha256 strings",
-                    )
-                    continue
-                recorded.append({"path": item["path"], "sha256": item["sha256"].removeprefix("sha256:")})
-            observed = [{"path": item["path"], "sha256": item["sha256"]} for item in members]
-            if recorded != observed:
-                add_finding(
-                    findings,
-                    "CANDIDATE_MEMBER_MISMATCH",
-                    f"manifest members {recorded!r}; recomputed {observed!r}",
-                )
-
         for field in (
             "candidate_interface",
             "source_base_identity",
@@ -336,7 +371,7 @@ def validate(
     elif phase not in {"draft", "frozen", "audit"}:
         add_finding(findings, "PHASE_INVALID", "phase must be draft, frozen, or audit")
 
-    findings.sort(key=lambda item: (item["code"], item["detail"]))
+    finding_summary = finalize_findings(findings)
     return {
         "validator": VALIDATOR,
         "recovery_preflight_path": document.get("recovery_preflight_path"),
@@ -347,8 +382,12 @@ def validate(
         "recomputed_candidate_id": canonical_candidate_id,
         "recomputed_members": members,
         "computed_recovery_preflight_id": expected_id,
-        "recovery_ready": not findings,
-        "findings": findings,
+        "recovery_ready": finding_summary["ready"],
+        "findings": finding_summary["findings"],
+        "blocking_findings": finding_summary["blocking_findings"],
+        "repair_findings": finding_summary["repair_findings"],
+        "advisories": finding_summary["advisories"],
+        "finding_effect_counts": finding_summary["finding_effect_counts"],
     }
 
 

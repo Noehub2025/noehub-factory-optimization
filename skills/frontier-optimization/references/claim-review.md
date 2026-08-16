@@ -10,15 +10,14 @@ Return exactly `CLAIMS_SUPPORTED`, `CLAIMS_DOWNGRADED`, `EVIDENCE_REQUIRED`, `PA
 
 ## Packet
 
-Supply the canonical task path; snapshot root, manifest, and identity; exact C identifiers, wording, and intended use; current parent bindings and Frontier scope; `FRONTIER.md`; cited Outcome Reflections and replans; Q/E/D/X and earlier applicable A records; cited W and B; design-review and authorization lineage; candidate manifests and implementation reviews; engineering and measurement evidence; exact F8 and R8 sources; applicable Slots D, E, and H; module contracts; search-state dispositions; and one exclusive review path. Every cited input must appear in the snapshot manifest and remain immutable during review.
+Supply the canonical task path; project-snapshot manifest and identity; exact C identifiers, wording, and intended use; current parent bindings and Frontier scope; `FRONTIER.md`; cited Outcome Reflections and replans; Q/E/D/X and earlier applicable A records; cited W and B; design-review and authorization lineage; candidate manifests and implementation reviews; engineering and measurement evidence; exact F8 and R8 sources; applicable Slots D, E, and H; module contracts; search-state dispositions; and one exclusive review path. Every cited project input must appear in the snapshot manifest and remain immutable during review.
 
 ```yaml
 review_kind: claims
 review_id: <unique identifier>
 packet_path: <frontier/reviews/claims-<review-id>-packet.yaml>
 packet_id: <review kind and id plus SHA-256 of canonical packet bytes with this field omitted>
-snapshot_root: <frontier/reviews/claims-<review-id>-snapshot/>
-snapshot_manifest: <snapshot_root/manifest.yaml and identity>
+snapshot_manifest: <frontier/reviews/claims-<review-id>-project-snapshot.yaml and identity>
 snapshot_id: <immutable snapshot identity>
 task_path: <canonical task path>
 problem_epoch: <integer>
@@ -30,7 +29,6 @@ claim_branch_mode: <claim-only | full-closeout>
 campaign_status_at_trigger: <planned | running | stopped | halted>
 claims: [<C identifier, immutable identity, exact wording, intended use, and scope>]
 supporting_evidence: [<reflection, replan, Q, E, D, X, A, W, B, design, authorization, candidate, implementation, engineering, measurement, Slot, or module-contract identity>]
-snapshot_inputs: <exact snapshot_manifest#inputs reference; do not duplicate the array>
 assigned_review_path: <exclusive immutable claims-review artifact path>
 completion_check: <every C receives an allowed result and every finding cites immutable snapshot evidence>
 ```

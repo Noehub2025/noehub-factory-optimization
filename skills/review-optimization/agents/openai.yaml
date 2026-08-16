@@ -2,3 +2,5 @@ interface:
   display_name: "Review Optimization"
   short_description: "Check whether solution comparison can start"
   default_prompt: "Use $review-optimization in a fresh context to check the selected optimization task and state whether comparison can start or what remains missing."
+policy:
+  allow_implicit_invocation: true

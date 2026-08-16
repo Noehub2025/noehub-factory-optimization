@@ -42,3 +42,37 @@ scenarios:
     expected: atomic-authority-neutral-package
   - id: compacted-context
     expected: same-persisted-state-same-next-action
+  - id: known-vacuous-ceiling
+    expected: blocked-before-candidate-or-evaluation-spend
+  - id: known-vacuous-floor
+    expected: blocked-before-candidate-or-evaluation-spend
+  - id: unknown-noise-resolution
+    expected: bounded-first-diagnostic-allowed
+  - id: binary-benchmark-screen
+    expected: diagnostic-signal-allowed-claim-limited
+  - id: human-rating-calibration
+    expected: small-panel-diagnostic-allowed
+  - id: simulator-proxy-unknown-transfer
+    expected: local-screening-allowed-transfer-claim-closed
+  - id: diagnostic-before-implementation-review
+    expected: local-b-evidence-no-E-no-promotion
+  - id: formal-evaluation-before-implementation-review
+    expected: blocked-before-Slot-H-measurement
+  - id: high-risk-diagnostic-experiment
+    expected: diagnostic-exception-ineligible
+  - id: measurement-protocol-change
+    expected: comparability-disposition-before-reuse
+  - id: first-b-crosses-utc-midnight
+    expected: derive-runtime-date-from-one-authorized-utc-instant
+  - id: handoff-known-recovery
+    expected: recommend-exact-recovery-no-flat-legal-menu
+  - id: handoff-authorization-ready
+    expected: preferred-response-plus-conditional-alternatives
+  - id: handoff-current-request-already-qualifies
+    expected: route-request-without-repeat-prompt
+  - id: handoff-parent-review-required
+    expected: exact-frame-optimization-instruction
+  - id: handoff-no-legal-continuation
+    expected: exact-reopening-event-no-false-command
+  - id: handoff-genuine-user-tradeoff
+    expected: conditional-recommendation-one-exact-question

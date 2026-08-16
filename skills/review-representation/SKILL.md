@@ -60,7 +60,7 @@ Using only the two main documents, answer:
 4. Which changes may search make, how are invalid options handled, and what is known about repeated-change coverage?
 5. Does search change the option as one whole or through named parts, and how are active parts joined and checked?
 6. Where does search start, what budget and measurement code does it use, and which checks must pass?
-7. May later proposals use earlier results, who or what selects survivors, how are ties handled, and what confirms, promotes, stops, or expands search?
+7. May later proposals use earlier results, what is the first result that can change the next action, who or what selects survivors, how are ties handled, and what confirms, promotes, stops, or expands search?
 8. Which old checkpoints, saved proposals, and cached scores may be reused?
 9. What remains undecided, and what action or conclusion does each known limit prevent?
 
@@ -122,7 +122,9 @@ Cross-check the representation against the parent contract:
 - check R5 ownership and budgets against Slots A, C, F, and G;
 - check R6 composition against parent legality and Slot H evaluation;
 - check R7 coupling against Slots C through G and its local-to-global claim limits;
-- check R8 harness, baseline, budget, feedback use, selection, stopping, old-work policy, and measurement identity against Slots F through H and the current epoch.
+- check R8 harness, baseline, budget, feedback use, first decision-changing check, selection, stopping, old-work policy, measurement identity, permitted decision use, and vacuity decision against Slots D through H and the current epoch.
+
+Apply the canonical R8 vacuity definition from `representation-contracts.md`. Require a nonpositive finding only when current evidence proves that every legal result of the planned check maps to the same allowed next action. Unknown headroom, noise, resolution, representativeness, or proxy usefulness may instead be the explicit target of a bounded first check. Record a finding when engineering evidence is used as strength or when a proxy controls a consequence that Slots D and H do not permit.
 
 For each material factual claim, confirm that its labeled evidence supports the claim and applies to the current version, scale, distribution, and operating conditions. Keep conflicts, user reports, agent defaults, finite diagnostics, and unknowns visible.
 
@@ -132,11 +134,11 @@ This step is complete when all eight R items and every listed cross-check have a
 
 ## 6. Apply the requested scope gate
 
-For `exploratory`, apply every exploratory completion condition in `representation-contracts.md`. Require an executable current-epoch harness and an identified current baseline. Run the smallest safe existing harness check only when durable task evidence authorizes execution.
+For `exploratory`, apply every exploratory completion condition in `representation-contracts.md`. Require an executable current-epoch harness, an identified current baseline, and a first check whose result branches or diagnostic purpose are explicit. Run the smallest safe existing harness check only when durable task evidence authorizes execution.
 
 Do not create, repair, or run an unauthorized harness. Record a blocker when execution lacks authority. Record the applicable factual or redesign finding when the harness or baseline is incomplete.
 
-Permit unresolved coverage, redundancy, or reachability only when each unknown has a next action and an exact claim limit. Permit only bounded whole-candidate search. Prohibit independent module optimization, unsupported local-to-global claims, and non-discovery claims beyond recorded coverage.
+Permit unresolved coverage, redundancy, reachability, headroom, noise, resolution, representativeness, or proxy usefulness only when each unknown has a bounded first check, next action, or exact claim limit. Permit only bounded whole-candidate search. Prohibit independent module optimization, unsupported local-to-global claims, and non-discovery claims beyond recorded coverage.
 
 For `modular`, require every exploratory condition plus every modular completion condition. Name the exact modules and operations that passed. Require global evaluation when coupling is empirical, unknown, or non-separable.
 

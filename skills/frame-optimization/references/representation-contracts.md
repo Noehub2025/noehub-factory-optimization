@@ -191,6 +191,10 @@ For the requested search scope, record:
 - confirmation, promotion, stopping, and scale-up rules;
 - whether old checkpoints, saved proposals, or cached scores may be reused.
 
+For the first planned check, name every result branch that would change the next allowed action. A check is **vacuous** only when current evidence proves that every legal result maps to the same allowed next action. Reject known-vacuous candidate or evaluation work before spend. When headroom, noise, resolution, representativeness, or proxy usefulness is unknown, the first bounded check may measure that unknown instead of presupposing its answer.
+
+Use each measurement only for the decision consequence permitted by Slots D and H. An unknown proxy-to-objective relationship may permit bounded diagnosis, screening, or local comparison while stronger promotion, transfer, safety, reliability, or real-objective claims remain unavailable. Recheck vacuity and permitted use when the baseline, measurement meaning, comparison conditions, or decision rule changes.
+
 The representation does not need to choose a specific search algorithm when the person or agent doing the work may choose it. In that case, state what they may choose and the feedback, operation, budget, selection, confirmation, and stopping limits that still apply.
 
 Record applicable validation for:
@@ -212,7 +216,7 @@ For exploratory work, record the starting set, search budget, feedback policy, s
 
 Unknown coverage, reachability, or redundancy permits candidate-level exploration. It prohibits exhaustion, convergence, and absence-of-better-solution claims.
 
-Completion test: Two reasonable readers or agents using only the two main documents would follow the same search limits, feedback rules, survivor rule, stopping rule, problem harness, and old-work policy.
+Completion test: Two reasonable readers or agents using only the two main documents would follow the same search limits, feedback rules, first decision-changing check, survivor rule, stopping rule, problem harness, measurement-use limits, vacuity decision, and old-work policy.
 
 ## Exploratory and modular completion gates
 
@@ -228,7 +232,7 @@ Request exploratory review only when:
 - R1 defines evaluation form, active decoders, searched subset, and coverage limit;
 - R2 records known, absent, or unknown redundancy with an action or claim limit;
 - R4 defines operation preconditions, legality handling, and reachability limit;
-- R8 identifies the executable harness, baseline, starting set, budget, feedback policy, survivor-selection rule, stopping rule, and old-work policy;
+- R8 identifies the executable harness, baseline, starting set, budget, feedback policy, first decision-changing check, survivor-selection rule, stopping rule, measurement-use limits, vacuity decision, and old-work policy;
 - every unresolved item has a next action or permitted-claim limit;
 - every retained search artifact has a compatibility disposition.
 

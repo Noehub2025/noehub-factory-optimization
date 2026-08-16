@@ -23,8 +23,7 @@ review_kind: design
 review_id: <unique identifier>
 packet_path: <frontier/reviews/design-<review-id>-packet.yaml>
 packet_id: <review kind and id plus SHA-256 of canonical packet bytes with this field omitted>
-snapshot_root: <frontier/reviews/design-<review-id>-snapshot/>
-snapshot_manifest: <snapshot_root/manifest.yaml and identity>
+snapshot_manifest: <frontier/reviews/design-<review-id>-project-snapshot.yaml and identity>
 snapshot_id: <immutable snapshot identity>
 task_path: <canonical task path>
 problem_epoch: <integer>
@@ -39,7 +38,6 @@ design_traceability: <exact traceability path, normalized identity, batches, req
 design_choice_records: [<V identifiers and identities, or none>]
 planned_slices: [<Delivery rows with B identifiers, observable delivery, blocking edges, and design inputs>]
 repository_evidence: [<paths and identities>]
-snapshot_inputs: <exact snapshot_manifest#inputs reference; do not duplicate the array>
 assigned_review_path: <frontier/reviews/design-<review-id>.md>
 completion_check: <every applicable design requirement receives a verdict and every finding cites immutable evidence>
 ```

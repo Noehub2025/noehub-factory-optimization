@@ -220,14 +220,8 @@ This step is complete only with durable `PROCEED_EXPLORATORY`, `PROCEED_MODULAR`
 
 ## 9. Produce only the reviewed handoff scope
 
-For either positive representation result, recover state in Step 1 again. Confirm that the review follows the latest semantic change, every reviewed document is fresh, the parent binding is current, the harness and baseline match the parent epoch, every reviewed contract has matching stable and verified metadata, and every retained search artifact has a disposition.
+For either positive representation result, recover state in Step 1 again and apply the [Framing-to-Frontier handoff](references/frontier-handoff.md). Confirm that the review follows the latest semantic change, every reviewed document is fresh, the parent binding is current, the harness and baseline match the parent epoch, every reviewed contract has matching stable and verified metadata, and every retained search artifact has a disposition.
 
-- On `PROCEED_EXPLORATORY`, hand off bounded whole-candidate search only. Prohibit independent module optimization, unsupported local-to-global claims, and non-discovery claims beyond recorded coverage, reachability, and redundancy.
-- On `PROCEED_MODULAR`, hand off bounded whole-candidate search plus only the modules and operations named in `Permitted`. Keep all pinned interfaces, coupling rules, resource partitions, coordination, and global evaluation requirements. Do not infer approval for another module or operation.
-- On `RESEARCH_REQUIRED`, `REDESIGN_REQUIRED`, `REFRAME_REQUIRED`, or `BLOCKED`, return the exact result, first next action or blocker, affected item, and canonical task path. Do not emit a positive search handoff.
-
-Copy the review's exact scope into the handoff; never broaden it. Include the canonical task path, parent epoch and `generated.at`, representation revision, positive result and exact `Permitted` value, canonical evaluation representation, each permitted search representation, permitted operations, feedback use, survivor selection, stopping rules, coverage limits, reachability and redundancy effects, applicable module contracts, coordination and global evaluation rules, search-state compatibility rules, and Slot H harness and baseline identity.
-
-Require the downstream workflow to acknowledge the canonical task path, parent epoch, parent `generated.at`, representation revision, and exact permitted scope before it records search state or results. A mismatch stops the handoff and returns to recovery.
+For a nonpositive result, return the exact result, first next action or blocker, affected item, and canonical task path. Do not emit a handoff.
 
 Keep candidate implementation, open-ended search, experiments, and production changes outside this skill. A positive result defines permitted search work; it does not predict optimization success.

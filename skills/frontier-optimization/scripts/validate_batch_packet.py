@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import posixpath
 import re
@@ -13,14 +14,146 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from identity_bindings import (
+    IdentityBindingError,
+    load_file_binding,
+    require_digest,
+    resolve_repo_file,
+    sha256_bytes,
+)
+from authorization_target_contract import (
+    AuthorizationTargetContractError,
+    TARGET_SPEC_BINDING_FIELDS,
+    TARGET_SPEC_CONTRACT,
+    load_target_specification,
+    validate_specification_against_packet,
+)
+from finding_effects import add_finding, finalize_findings
+
 try:
     import yaml
 except ImportError as exc:  # pragma: no cover - exercised by the CLI environment
     raise SystemExit("PyYAML is required to validate Frontier batch packets") from exc
 
 
-VALIDATOR = "frontier-batch-packet-preflight/1"
+VALIDATOR = "frontier-batch-packet-preflight/8"
 WRITE_VERBS = re.compile(r"\b(edit|write|create|modify|overwrite|change)\b", re.I)
+LIFECYCLE_CONTRACT = "frontier-lifecycle-transition/1"
+IDENTITY_CONTRACT = "frontier-dispatch-identity/2"
+ENGINEERING_CHECK_PLAN_CONTRACT = "frontier-engineering-check-plan/1"
+SHA256_IDENTITY = re.compile(r"^sha256:[0-9a-f]{64}$")
+EXPERIMENT_IDENTITY = re.compile(
+    r"\b[A-Za-z0-9._-]+-experiment-sha256:[0-9a-f]{64}\b"
+)
+PACKET_REQUIRED_FIELDS = {
+    "packet_path",
+    "packet_preflight_path",
+    "task_path",
+    "batch_id",
+    "campaign_generation",
+    "work_kind",
+    "changes_executable_candidate",
+    "executor",
+    "required_inputs",
+    "identity_contract",
+    "design_profile",
+    "design_contract_identity",
+    "design_contract_binding",
+    "development_authorization_target",
+    "source_base_identity",
+    "source_base_binding",
+    "maximum_spend",
+    "authorization_gate",
+    "authorization_boundary",
+    "stop_conditions",
+    "forced_halts",
+    "allowed_code_paths",
+    "worker_forbidden_paths",
+    "execution_frozen_inputs",
+    "execution_baseline_root",
+    "execution_start_path",
+    "candidate_root_path",
+    "artifact_paths",
+    "acknowledgment_path",
+    "result_validation_path",
+    "result_packet_path",
+    "prohibited_actions",
+}
+PACKET_ALLOWED_FIELDS = PACKET_REQUIRED_FIELDS | {
+    "packet_id",
+    "route_id",
+    "campaign_baseline",
+    "work_plan",
+    "work_plan_revision",
+    "required_design_inputs",
+    "design_traceability",
+    "design_review",
+    "parallel_set",
+    "problem_epoch",
+    "problem_generated_at",
+    "representation_revision",
+    "representation_generated_at",
+    "permitted_scope",
+    "starting_artifacts",
+    "supporting_evidence",
+    "work",
+    "human_input_request",
+    "human_input_schema",
+    "human_input_provenance_requirements",
+    "human_input_quality_checks",
+    "human_input_confidentiality",
+    "human_input_acceptance",
+    "repository_structure_disposition",
+    "repository_structure_evidence",
+    "repository_layout_approval",
+    "workspace_identity",
+    "candidate_interface",
+    "candidate_package_inventory_path",
+    "candidate_manifest_path",
+    "engineering_check_plan",
+    "implementation_review_gate",
+    "evaluation_target",
+    "preparation_role",
+    "decision_hypothesis",
+    "expected_observation",
+    "output_contract",
+    "implementation_validation",
+    "implementation_definition_of_done",
+    "permitted_operations",
+    "allowed_feedback",
+    "accounting_source",
+    "baseline_establishment_checkpoint",
+    "first_performance_check",
+    "preparation_budget_limit",
+    "required_follow_up_reserve",
+    "decision_after_checkpoint",
+    "measurement",
+    "comparison_validity_checks",
+    "candidate_identity_rule",
+    "constraints",
+    "resume_when",
+    "coordinator_lifecycle_transition",
+}
+PROJECT_EXTERNAL_TEXT = re.compile(
+    r"(?:^|[\s'\"`(])(?:\.agents|\.codex)/|"
+    r"(?:^|/)\S*-snapshot/inputs(?:/|$)|"
+    r"\bworkflow[-_ ]sha256\b|"
+    r"\b(?:slice\s*7|quick_validate(?:\.py)?|validate_frontier_skill_bundle(?:\.py)?|frontier\s+validator\s+tests?)\b",
+    re.I,
+)
+def load_result_contract_validator() -> Any:
+    script = Path(__file__).with_name("validate_batch_result.py")
+    spec = importlib.util.spec_from_file_location(
+        "frontier_validate_batch_result_contract", script
+    )
+    if spec is None or spec.loader is None:  # pragma: no cover
+        raise RuntimeError(f"cannot load result contract validator from {script}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+RESULT_CONTRACT_VALIDATOR = load_result_contract_validator()
 
 
 @dataclass(frozen=True, order=True)
@@ -111,10 +244,521 @@ def covers(container: PathSpec, target: PathSpec) -> bool:
     return container.subtree and target.path.startswith(container.path + "/")
 
 
-def add_finding(findings: list[dict[str, str]], code: str, detail: str) -> None:
-    finding = {"code": code, "detail": detail}
-    if finding not in findings:
-        findings.append(finding)
+def strings_with_paths(
+    value: Any, path: tuple[str, ...] = ()
+) -> list[tuple[tuple[str, ...], str]]:
+    if isinstance(value, str):
+        return [(path, value)]
+    if isinstance(value, list):
+        return [
+            item
+            for index, child in enumerate(value)
+            for item in strings_with_paths(child, (*path, str(index)))
+        ]
+    if isinstance(value, dict):
+        return [
+            item
+            for key, child in value.items()
+            for item in strings_with_paths(child, (*path, str(key)))
+        ]
+    return []
+
+
+def validate_project_only_packet(
+    document: dict[str, Any], phase: str, findings: list[dict[str, str]]
+) -> None:
+    if phase == "audit":
+        return
+    for field in sorted(set(document) - PACKET_ALLOWED_FIELDS):
+        add_finding(
+            findings,
+            "UNKNOWN_PACKET_FIELD",
+            f"{field} is not part of the closed project batch schema",
+        )
+    for path, value in strings_with_paths(document):
+        if PROJECT_EXTERNAL_TEXT.search(value):
+            add_finding(
+                findings,
+                "NON_PROJECT_PACKET_INPUT",
+                f"{'.'.join(path)} refers to workflow, Skill, validator, or retired copied-snapshot state",
+            )
+
+
+def validate_canonical_identity_ownership(
+    document: dict[str, Any], phase: str, findings: list[dict[str, str]]
+) -> None:
+    if phase == "audit" or document.get("work_kind") != "experiment":
+        return
+    canonical_path = ("evaluation_target", "experiment", "experiment_id")
+    for path, value in strings_with_paths(document):
+        if path == canonical_path:
+            continue
+        duplicate = EXPERIMENT_IDENTITY.search(value)
+        if duplicate:
+            add_finding(
+                findings,
+                "DUPLICATE_EXPERIMENT_IDENTITY",
+                f"{'.'.join(path)} must refer to evaluation_target.experiment without copying experiment identity {duplicate.group(0)}",
+            )
+
+
+def validate_engineering_check_plan(
+    document: dict[str, Any],
+    phase: str,
+    repo_root: Path | None,
+    findings: list[dict[str, str]],
+) -> None:
+    if phase == "audit" or document.get("changes_executable_candidate") is not True:
+        return
+    plan = document.get("engineering_check_plan")
+    if not isinstance(plan, dict):
+        add_finding(
+            findings,
+            "ENGINEERING_CHECK_PLAN_REQUIRED",
+            "code-bearing work requires a structured engineering_check_plan",
+        )
+        return
+    if set(plan) != {"contract_version", "checks", "effect_limits", "evidence_use"}:
+        add_finding(
+            findings,
+            "ENGINEERING_CHECK_PLAN_INVALID",
+            "engineering_check_plan must contain exactly contract_version, checks, effect_limits, and evidence_use",
+        )
+    if plan.get("contract_version") != ENGINEERING_CHECK_PLAN_CONTRACT:
+        add_finding(
+            findings,
+            "ENGINEERING_CHECK_PLAN_INVALID",
+            f"engineering_check_plan.contract_version must be {ENGINEERING_CHECK_PLAN_CONTRACT}",
+        )
+    if plan.get("evidence_use") != "engineering-only":
+        add_finding(
+            findings,
+            "ENGINEERING_CHECK_PLAN_INVALID",
+            "engineering_check_plan.evidence_use must be engineering-only",
+        )
+    limits = plan.get("effect_limits")
+    if not isinstance(limits, dict) or not limits:
+        add_finding(
+            findings,
+            "ENGINEERING_EFFECT_LIMIT_INVALID",
+            "engineering_check_plan.effect_limits must be a nonempty effect-to-maximum mapping",
+        )
+        limits = {}
+    else:
+        for effect, maximum in limits.items():
+            if (
+                not isinstance(effect, str)
+                or not effect.strip()
+                or not isinstance(maximum, int)
+                or isinstance(maximum, bool)
+                or maximum < 0
+            ):
+                add_finding(
+                    findings,
+                    "ENGINEERING_EFFECT_LIMIT_INVALID",
+                    f"effect_limits[{effect!r}] must be a nonnegative integer",
+                )
+    checks = plan.get("checks")
+    if not isinstance(checks, list) or not checks:
+        add_finding(
+            findings,
+            "ENGINEERING_CHECK_PLAN_INVALID",
+            "engineering_check_plan.checks must be a nonempty list",
+        )
+        return
+    seen_ids: set[str] = set()
+    root = repo_root.resolve() if repo_root is not None else None
+    for index, check in enumerate(checks):
+        prefix = f"engineering_check_plan.checks[{index}]"
+        expected_fields = {
+            "id",
+            "command",
+            "selection",
+            "selected_units",
+            "declared_effects",
+            "effect_evidence",
+        }
+        if not isinstance(check, dict) or set(check) != expected_fields:
+            add_finding(
+                findings,
+                "ENGINEERING_CHECK_SCHEMA_INVALID",
+                f"{prefix} must contain exactly {', '.join(sorted(expected_fields))}",
+            )
+            continue
+        check_id = check.get("id")
+        if not isinstance(check_id, str) or not check_id.strip() or check_id in seen_ids:
+            add_finding(
+                findings,
+                "ENGINEERING_CHECK_SCHEMA_INVALID",
+                f"{prefix}.id must be a unique nonempty string",
+            )
+        else:
+            seen_ids.add(check_id)
+        command = check.get("command")
+        if not isinstance(command, list) or not command or not all(
+            isinstance(part, str) and part for part in command
+        ):
+            add_finding(
+                findings,
+                "ENGINEERING_CHECK_SCHEMA_INVALID",
+                f"{prefix}.command must be a nonempty argument list",
+            )
+        if check.get("selection") not in {"full-repository", "exact", "other"}:
+            add_finding(
+                findings,
+                "ENGINEERING_CHECK_SCHEMA_INVALID",
+                f"{prefix}.selection must be full-repository, exact, or other",
+            )
+        units = check.get("selected_units")
+        if not isinstance(units, list) or not units or not all(
+            isinstance(unit, str) and unit for unit in units
+        ):
+            add_finding(
+                findings,
+                "ENGINEERING_CHECK_SCHEMA_INVALID",
+                f"{prefix}.selected_units must freeze every selected test or check unit",
+            )
+        effects = check.get("declared_effects")
+        if not isinstance(effects, list) or not effects or len(effects) != len(set(effects)) or not all(
+            isinstance(effect, str) and effect for effect in effects
+        ):
+            add_finding(
+                findings,
+                "ENGINEERING_CHECK_SCHEMA_INVALID",
+                f"{prefix}.declared_effects must be a nonempty unique string list",
+            )
+            effects = []
+        for effect in effects:
+            if not isinstance(limits.get(effect), int) or limits.get(effect, 0) <= 0:
+                add_finding(
+                    findings,
+                    "ENGINEERING_EFFECT_CONFLICT",
+                    f"{prefix} declares effect {effect!r} but its authorized maximum is absent or zero",
+                )
+        evidence = check.get("effect_evidence")
+        if not isinstance(evidence, list) or not evidence:
+            add_finding(
+                findings,
+                "ENGINEERING_EFFECT_EVIDENCE_INVALID",
+                f"{prefix}.effect_evidence must bind the sources used to classify effects",
+            )
+            continue
+        for evidence_index, binding in enumerate(evidence):
+            label = f"{prefix}.effect_evidence[{evidence_index}]"
+            if not isinstance(binding, dict) or set(binding) != {"path", "file_sha256"}:
+                add_finding(
+                    findings,
+                    "ENGINEERING_EFFECT_EVIDENCE_INVALID",
+                    f"{label} must contain exactly path and file_sha256",
+                )
+                continue
+            try:
+                digest = require_digest(binding.get("file_sha256"), f"{label}.file_sha256")
+                if root is not None:
+                    _, path = resolve_repo_file(root, binding.get("path"), f"{label}.path")
+                    observed = sha256_bytes(path.read_bytes())
+                    if observed != digest:
+                        raise IdentityBindingError(
+                            f"{label} SHA-256 mismatch: declared {digest}, observed {observed}"
+                        )
+            except (IdentityBindingError, OSError) as exc:
+                add_finding(findings, "ENGINEERING_EFFECT_EVIDENCE_INVALID", str(exc))
+
+
+def validate_identity_contract(
+    document: dict[str, Any],
+    phase: str,
+    repo_root: Path | None,
+    findings: list[dict[str, str]],
+) -> None:
+    validate_project_only_packet(document, phase, findings)
+    if phase != "audit":
+        for field in sorted(PACKET_REQUIRED_FIELDS - document.keys()):
+            add_finding(findings, "REQUIRED_FIELD_MISSING", field)
+    if phase != "audit" and document.get("identity_contract") != IDENTITY_CONTRACT:
+        add_finding(
+            findings,
+            "IDENTITY_CONTRACT_INVALID",
+            f"identity_contract must be {IDENTITY_CONTRACT}",
+        )
+
+    generation = document.get("campaign_generation")
+    if phase != "audit" and (
+        not isinstance(generation, int) or isinstance(generation, bool) or generation < 1
+    ):
+        add_finding(
+            findings,
+            "PACKET_FIELD_INVALID",
+            "campaign_generation must be a positive integer",
+        )
+    if phase != "audit" and not isinstance(document.get("changes_executable_candidate"), bool):
+        add_finding(
+            findings,
+            "PACKET_FIELD_INVALID",
+            "changes_executable_candidate must be a boolean",
+        )
+    for field in ("required_inputs", "stop_conditions", "forced_halts"):
+        value = document.get(field)
+        if phase != "audit" and (not isinstance(value, list) or (field == "stop_conditions" and not value)):
+            add_finding(
+                findings,
+                "PACKET_FIELD_INVALID",
+                f"{field} must be {'a nonempty' if field == 'stop_conditions' else 'a'} list",
+            )
+    for field in ("executor", "maximum_spend", "authorization_gate"):
+        if phase != "audit" and (
+            not isinstance(document.get(field), str) or not document[field].strip()
+        ):
+            add_finding(findings, "PACKET_FIELD_INVALID", f"{field} must be a nonempty string")
+
+    boundary = document.get("authorization_boundary")
+    boundary_fields = {"scope", "maximum_spend", "stop_boundary", "result_path"}
+    if not isinstance(boundary, dict) or set(boundary) != boundary_fields:
+        add_finding(
+            findings,
+            "AUTHORIZATION_BOUNDARY_INVALID",
+            "authorization_boundary must contain exactly scope, maximum_spend, stop_boundary, and result_path",
+        )
+    else:
+        for field in boundary_fields:
+            if not isinstance(boundary.get(field), str) or not boundary[field].strip():
+                add_finding(
+                    findings,
+                    "AUTHORIZATION_BOUNDARY_INVALID",
+                    f"authorization_boundary.{field} must be a nonempty string",
+                )
+        if boundary.get("maximum_spend") != document.get("maximum_spend"):
+            add_finding(
+                findings,
+                "AUTHORIZATION_BOUNDARY_INVALID",
+                "authorization_boundary.maximum_spend must equal packet maximum_spend",
+            )
+        if boundary.get("result_path") != document.get("result_packet_path"):
+            add_finding(
+                findings,
+                "AUTHORIZATION_BOUNDARY_INVALID",
+                "authorization_boundary.result_path must equal result_packet_path",
+            )
+
+    if phase != "audit" and "workflow_contracts" in document:
+        add_finding(
+            findings,
+            "WORKFLOW_CONTRACTS_RETIRED",
+            "project batch packets contain project facts only; omit workflow and Skill bindings",
+        )
+
+    changes_candidate = document.get("changes_executable_candidate") is True
+    source_identity = document.get("source_base_identity")
+    source_binding = document.get("source_base_binding")
+    if changes_candidate and (not isinstance(source_identity, str) or not source_identity.strip()):
+        add_finding(
+            findings,
+            "SOURCE_BASE_IDENTITY_INVALID",
+            "code-bearing work requires source_base_identity",
+        )
+    if changes_candidate and not isinstance(source_binding, dict):
+        add_finding(
+            findings,
+            "SOURCE_BASE_BINDING_REQUIRED",
+            "code-bearing work requires a structured source_base_binding",
+        )
+    elif isinstance(source_binding, dict) and repo_root is not None:
+        try:
+            load_file_binding(
+                repo_root,
+                source_binding,
+                "source_base_binding",
+                expected_identity=source_identity if isinstance(source_identity, str) else None,
+            )
+        except IdentityBindingError as exc:
+            add_finding(findings, "SOURCE_BASE_BINDING_INVALID", str(exc))
+
+    profile = document.get("design_profile")
+    if phase != "audit" and profile not in {"direct", "module", "system", "not-applicable"}:
+        add_finding(findings, "DESIGN_PROFILE_INVALID", "design_profile is not recognized")
+    design_identity = document.get("design_contract_identity")
+    design_binding = document.get("design_contract_binding")
+    if profile in {"direct", "module", "system"}:
+        if not isinstance(design_identity, str) or not design_identity.strip():
+            add_finding(
+                findings,
+                "DESIGN_CONTRACT_IDENTITY_INVALID",
+                f"{profile} work requires design_contract_identity",
+            )
+        if not isinstance(design_binding, dict):
+            add_finding(
+                findings,
+                "DESIGN_CONTRACT_BINDING_REQUIRED",
+                f"{profile} work requires design_contract_binding",
+            )
+        elif repo_root is not None:
+            try:
+                load_file_binding(
+                    repo_root,
+                    design_binding,
+                    "design_contract_binding",
+                    expected_identity=design_identity if isinstance(design_identity, str) else None,
+                )
+            except IdentityBindingError as exc:
+                add_finding(findings, "DESIGN_CONTRACT_BINDING_INVALID", str(exc))
+    elif profile == "not-applicable" and (design_identity is not None or design_binding is not None):
+        add_finding(
+            findings,
+            "DESIGN_CONTRACT_BINDING_INVALID",
+            "not-applicable design profile requires null design identity and binding",
+        )
+
+    authorization_target = document.get("development_authorization_target")
+    if changes_candidate and authorization_target is None:
+        add_finding(
+            findings,
+            "DEVELOPMENT_AUTHORIZATION_TARGET_INVALID",
+            "code-bearing work requires a structured pre-packet authorization-target specification binding",
+        )
+    elif authorization_target is not None and not isinstance(authorization_target, dict):
+        add_finding(
+            findings,
+            "DEVELOPMENT_AUTHORIZATION_TARGET_INVALID",
+            "a pending user authorization requires a structured pre-packet authorization-target specification binding",
+        )
+    elif isinstance(authorization_target, dict):
+        missing = TARGET_SPEC_BINDING_FIELDS - authorization_target.keys()
+        unexpected = authorization_target.keys() - TARGET_SPEC_BINDING_FIELDS
+        if missing or unexpected or authorization_target.get("contract_version") != TARGET_SPEC_CONTRACT:
+            add_finding(
+                findings,
+                "DEVELOPMENT_AUTHORIZATION_TARGET_INVALID",
+                "development_authorization_target must contain exactly contract_version, path, identity_field, identity, and file_sha256 for the current target specification",
+            )
+        elif repo_root is not None:
+            try:
+                specification = load_target_specification(repo_root, authorization_target)
+            except AuthorizationTargetContractError as exc:
+                add_finding(
+                    findings,
+                    "DEVELOPMENT_AUTHORIZATION_TARGET_INVALID",
+                    str(exc),
+                )
+            else:
+                for difference in validate_specification_against_packet(
+                    specification, document
+                ):
+                    add_finding(
+                        findings,
+                        "DEVELOPMENT_AUTHORIZATION_TARGET_MISMATCH",
+                        difference,
+                    )
+
+
+def validate_lifecycle_transition(
+    lifecycle: Any,
+    phase: str,
+    findings: list[dict[str, str]],
+) -> PathSpec | None:
+    """Validate the machine-addressable first-B lifecycle transition contract."""
+    if lifecycle is None:
+        return None
+    if phase == "audit" and not isinstance(lifecycle, dict):
+        return None
+    if not isinstance(lifecycle, dict):
+        add_finding(
+            findings,
+            "LIFECYCLE_SCHEMA_INVALID",
+            "coordinator_lifecycle_transition must be null or a structured mapping",
+        )
+        return None
+
+    lifecycle_path: PathSpec | None = None
+    try:
+        lifecycle_path = parse_path_entry(
+            lifecycle.get("path"), "coordinator_lifecycle_transition.path"
+        )
+    except ValueError as exc:
+        add_finding(findings, "INVALID_PATH_SCHEMA", f"coordinator_lifecycle_transition.path: {exc}")
+
+    if phase == "audit" and lifecycle.get("contract_version") != LIFECYCLE_CONTRACT:
+        return lifecycle_path
+
+    if lifecycle.get("contract_version") != LIFECYCLE_CONTRACT:
+        add_finding(
+            findings,
+            "LIFECYCLE_SCHEMA_INVALID",
+            f"coordinator_lifecycle_transition.contract_version must be {LIFECYCLE_CONTRACT}",
+        )
+    for field in ("prerequisite", "deadline"):
+        if not isinstance(lifecycle.get(field), str) or not lifecycle[field].strip():
+            add_finding(
+                findings,
+                "LIFECYCLE_SCHEMA_INVALID",
+                f"coordinator_lifecycle_transition.{field} must be a nonempty string",
+            )
+
+    precondition = lifecycle.get("precondition")
+    if not isinstance(precondition, dict):
+        add_finding(
+            findings,
+            "LIFECYCLE_PRECONDITION_INVALID",
+            "lifecycle precondition must bind planned status and the exact pre-transition file identity",
+        )
+    else:
+        if precondition.get("campaign_status") != "planned":
+            add_finding(
+                findings,
+                "LIFECYCLE_PRECONDITION_INVALID",
+                "lifecycle precondition campaign_status must be planned",
+            )
+        if not isinstance(precondition.get("file_identity"), str) or not SHA256_IDENTITY.fullmatch(
+            precondition["file_identity"]
+        ):
+            add_finding(
+                findings,
+                "LIFECYCLE_PRECONDITION_INVALID",
+                "lifecycle precondition file_identity must be an exact lowercase sha256 identity",
+            )
+
+    transition_time = lifecycle.get("transition_time")
+    expected_time = {
+        "capture": "once_after_accepted_acknowledgment",
+        "format": "RFC3339",
+        "timezone": "UTC",
+    }
+    if transition_time != expected_time:
+        add_finding(
+            findings,
+            "LIFECYCLE_TIME_RULE_INVALID",
+            "transition_time must capture once after accepted acknowledgment using RFC3339 UTC",
+        )
+
+    allowed_diff = lifecycle.get("allowed_field_diff")
+    expected_diff = {
+        "campaign_status": {"from": "planned", "to": "running"},
+        "generated.at": {"derive": "transition_time"},
+        "updated": {
+            "derive": "calendar_date",
+            "source": "transition_time",
+            "timezone": "UTC",
+        },
+    }
+    if allowed_diff != expected_diff:
+        add_finding(
+            findings,
+            "LIFECYCLE_DIFF_INVALID",
+            "allowed_field_diff must contain only planned-to-running status, generated.at from transition_time, and updated as the UTC date of the same transition_time",
+        )
+
+    if lifecycle.get("all_other_bytes") != "unchanged":
+        add_finding(
+            findings,
+            "LIFECYCLE_DIFF_INVALID",
+            "all_other_bytes must be unchanged",
+        )
+    if lifecycle.get("on_failure") != "block_before_work_and_spend":
+        add_finding(
+            findings,
+            "LIFECYCLE_FAILURE_RULE_INVALID",
+            "on_failure must be block_before_work_and_spend",
+        )
+    return lifecycle_path
 
 
 def path_like_frozen_entries(
@@ -387,6 +1031,10 @@ def validate(
     findings: list[dict[str, str]] = []
     parse_errors: list[str] = []
 
+    validate_identity_contract(document, phase, repo_root, findings)
+    validate_canonical_identity_ownership(document, phase, findings)
+    validate_engineering_check_plan(document, phase, repo_root, findings)
+
     allowed_code, errors = parse_path_list(document, "allowed_code_paths")
     parse_errors.extend(errors)
     artifacts, errors = parse_path_list(document, "artifact_paths")
@@ -412,6 +1060,30 @@ def validate(
         required=bool(document.get("changes_executable_candidate")),
     )
     parse_errors.extend(errors)
+    package_inventory, errors = parse_single_path(
+        document,
+        "candidate_package_inventory_path",
+        required=bool(document.get("changes_executable_candidate")),
+    )
+    parse_errors.extend(errors)
+    candidate_root, errors = parse_single_path(
+        document,
+        "candidate_root_path",
+        required=bool(document.get("changes_executable_candidate")),
+    )
+    parse_errors.extend(errors)
+    if candidate_root is not None:
+        candidate_root = PathSpec(candidate_root.path, True)
+    if (
+        phase != "audit"
+        and not document.get("changes_executable_candidate")
+        and document.get("candidate_root_path") is not None
+    ):
+        add_finding(
+            findings,
+            "CANDIDATE_ROOT_OUTSIDE_MATERIALIZATION",
+            "candidate_root_path must be null when changes_executable_candidate is false",
+        )
     packet, errors = parse_single_path(document, "packet_path")
     parse_errors.extend(errors)
     execution_start, errors = parse_single_path(document, "execution_start_path")
@@ -435,10 +1107,21 @@ def validate(
         add_finding(findings, "INVALID_PATH_SCHEMA", error)
 
     worker_paths = list(allowed_code) + list(artifacts)
-    for path in (acknowledgment, result_validation, result, manifest):
+    if candidate_root is not None:
+        worker_paths.append(candidate_root)
+    for path in (acknowledgment, result_validation, result, manifest, package_inventory):
         if path is not None:
             worker_paths.append(path)
     worker_paths = sorted(set(worker_paths))
+
+    if candidate_root is not None and not any(
+        covers(artifact, candidate_root) for artifact in artifacts
+    ):
+        add_finding(
+            findings,
+            "CANDIDATE_ROOT_NOT_ASSIGNED",
+            "candidate_root_path must be covered by artifact_paths",
+        )
     coordinator_paths = [
         path
         for path in (packet, execution_baseline_root, execution_start, preflight)
@@ -507,19 +1190,9 @@ def validate(
                 )
 
     lifecycle = document.get("coordinator_lifecycle_transition")
-    lifecycle_path: PathSpec | None = None
-    if isinstance(lifecycle, dict) and lifecycle.get("path"):
-        try:
-            lifecycle_path = parse_path_entry(lifecycle["path"], "coordinator_lifecycle_transition.path")
-            coordinator_paths.append(lifecycle_path)
-        except ValueError as exc:
-            add_finding(findings, "INVALID_PATH_SCHEMA", f"coordinator_lifecycle_transition.path: {exc}")
-    elif lifecycle is not None and phase != "audit":
-        add_finding(
-            findings,
-            "INVALID_PATH_SCHEMA",
-            "coordinator_lifecycle_transition must be null or a mapping with path",
-        )
+    lifecycle_path = validate_lifecycle_transition(lifecycle, phase, findings)
+    if lifecycle_path is not None:
+        coordinator_paths.append(lifecycle_path)
 
     if lifecycle_path is not None:
         for worker in worker_paths:
@@ -565,6 +1238,7 @@ def validate(
         "result_validation_path": ("result validation", "result preflight"),
         "result_packet_path": ("result packet",),
         "candidate_manifest_path": ("candidate manifest",),
+        "candidate_package_inventory_path": ("candidate package inventory", "package inventory"),
     }
     prohibited = document.get("prohibited_actions", [])
     if not isinstance(prohibited, list):
@@ -584,6 +1258,16 @@ def validate(
 
     payload_sha256 = hashlib.sha256(canonical_payload(document)).hexdigest()
     expected_packet_id = computed_packet_id(document, payload_sha256)
+    result_contract_packet = dict(document)
+    result_contract_packet["packet_id"] = expected_packet_id
+    result_contract = RESULT_CONTRACT_VALIDATOR.validate_packet_result_contract(
+        result_contract_packet, repo_root
+    )
+    for finding in result_contract["findings"]:
+        add_finding(findings, finding["code"], finding["detail"])
+    for advisory in result_contract.get("advisories", []):
+        add_finding(findings, advisory["code"], advisory["detail"])
+
     declared_packet_id = document.get("packet_id")
     if phase == "draft" and declared_packet_id is not None:
         add_finding(findings, "DRAFT_ALREADY_FROZEN", "draft preflight requires packet_id to be absent")
@@ -603,8 +1287,9 @@ def validate(
             f"declared {declared_packet_id} does not equal computed {expected_packet_id}",
         )
 
-    findings.sort(key=lambda item: (item["code"], item["detail"]))
-    finding_codes = {item["code"] for item in findings}
+    finding_summary = finalize_findings(findings)
+    actionable_findings = finding_summary["findings"]
+    finding_codes = {item["code"] for item in actionable_findings}
     coordinator_worker_codes = {
         "EXECUTION_START_WORKER_OVERLAP",
         "EXECUTION_BASELINE_WORKER_OVERLAP",
@@ -617,13 +1302,24 @@ def validate(
         "PACKET_ID_MISSING",
         "PACKET_ID_MISMATCH",
     }
+    lifecycle_contract_codes = {
+        "LIFECYCLE_SCHEMA_INVALID",
+        "LIFECYCLE_PRECONDITION_INVALID",
+        "LIFECYCLE_TIME_RULE_INVALID",
+        "LIFECYCLE_DIFF_INVALID",
+        "LIFECYCLE_FAILURE_RULE_INVALID",
+    }
     result_document: dict[str, Any] = {
         "validator": VALIDATOR,
         "batch_id": document.get("batch_id"),
         "packet_path": document.get("packet_path"),
         "packet_payload_sha256": payload_sha256,
         "computed_packet_id": expected_packet_id,
-        "packet_structure_ready": not findings,
+        "packet_structure_ready": finding_summary["ready"],
+        "result_contract_probe": {
+            "validator": result_contract["validator"],
+            "validation_id": result_contract["probe_validation_id"],
+        },
         "checks": {
             "worker_write_vs_forbidden": (
                 "FAIL" if "WORKER_FORBIDDEN_OVERLAP" in finding_codes else "PASS"
@@ -653,6 +1349,46 @@ def validate(
             ),
             "path_schema": (
                 "FAIL" if "INVALID_PATH_SCHEMA" in finding_codes else "PASS"
+            ),
+            "lifecycle_transition_contract": (
+                "FAIL" if finding_codes & lifecycle_contract_codes else "PASS"
+            ),
+            "result_contract_compatibility": (
+                "PASS" if result_contract["result_contract_ready"] else "FAIL"
+            ),
+            "identity_and_authority_contract": (
+                "FAIL"
+                if finding_codes
+                & {
+                    "REQUIRED_FIELD_MISSING",
+                    "IDENTITY_CONTRACT_INVALID",
+                    "PACKET_FIELD_INVALID",
+                    "WORKFLOW_CONTRACTS_RETIRED",
+                    "SOURCE_BASE_IDENTITY_INVALID",
+                    "SOURCE_BASE_BINDING_REQUIRED",
+                    "SOURCE_BASE_BINDING_INVALID",
+                    "DESIGN_PROFILE_INVALID",
+                    "DESIGN_CONTRACT_IDENTITY_INVALID",
+                    "DESIGN_CONTRACT_BINDING_REQUIRED",
+                    "DESIGN_CONTRACT_BINDING_INVALID",
+                    "DEVELOPMENT_AUTHORIZATION_TARGET_INVALID",
+                    "DEVELOPMENT_AUTHORIZATION_TARGET_MISMATCH",
+                    "AUTHORIZATION_BOUNDARY_INVALID",
+                }
+                else "PASS"
+            ),
+            "engineering_execution_contract": (
+                "FAIL"
+                if finding_codes
+                & {
+                    "ENGINEERING_CHECK_PLAN_REQUIRED",
+                    "ENGINEERING_CHECK_PLAN_INVALID",
+                    "ENGINEERING_CHECK_SCHEMA_INVALID",
+                    "ENGINEERING_EFFECT_LIMIT_INVALID",
+                    "ENGINEERING_EFFECT_CONFLICT",
+                    "ENGINEERING_EFFECT_EVIDENCE_INVALID",
+                }
+                else "PASS"
             ),
             "work_plan_traceability": (
                 "FAIL"
@@ -684,7 +1420,11 @@ def validate(
             "coordinator_paths": [path.render() for path in sorted(set(coordinator_paths))],
             "execution_frozen_paths": [path.render() for path in sorted(set(frozen))],
         },
-        "findings": findings,
+        "findings": actionable_findings,
+        "blocking_findings": finding_summary["blocking_findings"],
+        "repair_findings": finding_summary["repair_findings"],
+        "advisories": finding_summary["advisories"],
+        "finding_effect_counts": finding_summary["finding_effect_counts"],
     }
     canonical = json.dumps(result_document, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
     preflight_sha256 = hashlib.sha256(canonical).hexdigest()

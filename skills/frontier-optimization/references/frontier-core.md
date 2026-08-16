@@ -7,7 +7,9 @@ Load this file for every Frontier invocation. It defines authority, canonical pa
 - Authority and upstream handoff
 - Canonical task paths
 - Document rules and core terms
+- Finding effects
 - Recorded-state router
+- User-facing handoff
 
 ## Authority and upstream handoff
 
@@ -62,6 +64,8 @@ docs/skills/optimization/<task-slug>/
 | Candidate manifest | assigned stable artifact path under repository convention or user-approved layout |
 | Return token, reason, cited identities | `log.md` |
 
+For an exact execution V, `frontier/ledger.md` remains the canonical record. Its reviewed authorize-branch bytes are prepared before the final target and identify the decision, target specification, scope, and result path without copying a future target or answer identity. The later user-result file contains the exact byte-derived answer and final-target binding; the validated adoption record joins that result identity to the canonical ledger path. These files form one V and do not create a second record prefix.
+
 When first creating `log.md`, a Frontier Markdown container, or `frontier/details/research.md`, use:
 
 ```yaml
@@ -98,6 +102,22 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 - **Pre-spend parent rebind:** a new positive parent identity replaces an older binding before any B spend, candidate materialization, external action, or accepted claim. It is allowed only when the problem epoch, representation revision, exact `Permitted` scope, measurement meaning, budget authority, stop meaning, and claim ceilings remain compatible; a current upstream disposition explicitly permits every retained evidence or decision record; and the Coordinator replaces every stale downstream authority.
 - **Campaign generation:** one append-only Frontier campaign under the canonical task. Generation 1 is implied for legacy records without this field. A later generation never rewrites, reopens, or resets an earlier generation.
 - **Post-closeout recovery:** a new campaign generation opened only by an explicit current user request after an adopted complete closeout. It carries prior spend against the same parent ceiling, uses new identifiers, and requires exact reuse dispositions and fresh gates.
+
+## Finding effects
+
+This section is the sole semantic owner of finding effects. Validators derive the effect from a stable code through `finding_effects.py`; callers and reviewers cannot supply or weaken it. An unknown code defaults to `block`.
+
+Apply one decision-impact test: could ignoring the issue change the candidate or source bytes, data, evaluator, sampling, comparison or acceptance semantics, parent scope, user authority, access, spend, stop boundary, external effect, sealed evidence exposure, result interpretation, claim, or the ability to reconstruct any of them? `Yes` or `unknown` is `block`.
+
+- `block`: the current action is unsafe or ambiguous. Preserve evidence and stop the affected transition. Use a new target, authorization, or B only when the semantic object or a prior answer or effect must change.
+- `repair`: the current serialization, derived field, or transient realization is unusable, but the authoritative objective, evidence, and maximum consequence are unchanged and mechanically provable. Readiness remains false until correction. Repair inside the same semantic B and V before review or through an already authorized boundary-preserving continuation; rerun only the affected deterministic checks. A changed reviewed semantic input still requires the applicable fresh review.
+- `advisory`: the canonical structured owner and every authority-bearing byte pass, while only a non-authoritative display timestamp, historical description, redundant prose hash, or generated narrative is stale. Readiness remains true. Preserve immutable records, report the advisory in validator or review output, and create no replacement identity, B, V, review, or authorization.
+
+A timestamp that controls a deadline, ordering, lifecycle transition, or authorization is never advisory. A digest that binds candidate, evaluator, evidence, target, authority, or reproducibility is never advisory. A narrative disagreement is advisory only when `current_state`, its cited ledger decision, and every typed authority projection agree; otherwise it is `block`. Keep advisories out of strength, validity, progress, and constraint conclusions.
+
+Historical artifacts retain their original validator and review meaning. Apply this contract prospectively; do not rewrite or mass-migrate old B, V, R, E, OR, or X records merely because finding output gained effects.
+
+Throughout Frontier, `finding-free` means zero `block` or `repair` findings. Advisories are reported separately and do not make a ready object nonpositive.
 
 ## Recorded-state router
 
@@ -138,6 +158,37 @@ The packaging row and post-closeout recovery row are mutually exclusive. Packagi
 When the recovery objective names an existing candidate, run the bound candidate-recovery validator against canonical manifest and member bytes before appending the new V, X, or generation event. A requested or recorded digest mismatch returns `BLOCKED` with zero new-generation artifacts and zero spend. After a match, freeze and bind the finding-free recovery preflight; never recompute identity from conversation text.
 
 If the user requests recovery but any prerequisite above is missing or conflicting, return `BLOCKED` with the exact field. Do not fall through to the completed-closeout handoff and do not silently reactivate old authority.
+
+## User-facing handoff
+
+Apply this contract whenever control returns to the user, including a block, wait, authorization question, parent conflict, or completed closeout. Durable records do not replace the handoff reply. The reply is complete only when it states:
+
+1. the current durable outcome and controlling evidence;
+2. the current authority boundary;
+3. one evidence-supported recommended next action, or the exact unresolved Q, V, evidence, or event that prevents a recommendation;
+4. why that action is preferred under the recorded objective, latest Selection, controlling Outcome Reflection, adopted reviews, Budget, and user values;
+5. one copyable instruction for the recommendation, with its effect and next stop;
+6. only decision-relevant alternatives, each with the condition that would make it preferable; and
+7. the action the Coordinator will take after the user's instruction.
+
+Legal availability does not make actions equally advisable. Lead with `Recommended next action`, then `Why`, its copyable instruction, conditional alternatives when material, and `Authority boundary`. When one action is the deterministic resolution or best-supported way to advance the recorded objective, recommend it plainly; do not flatten it beside packaging, general reopening, decline, or other legal but currently inferior actions. A recommendation is advice only: it grants no authority and creates no record until the user sends the instruction as a current request.
+
+Offer only real decisions. When an unresolved user-owned value, cost, risk, reversibility, maintenance, or timing tradeoff prevents one unconditional recommendation, give the evidence-supported conditional recommendation and ask one exact tradeoff question. Say what preference would switch the recommendation. Do not claim technical evidence resolved a user-owned value. If the current request already supplies a qualifying reopening request, tradeoff answer, exact authorization, or input, apply it through the normal router and gates instead of asking the user to repeat it.
+
+Use the applicable row below. Replace every placeholder with recorded identities and concrete task language; omit rows that are not legal in the current state.
+
+| Current decision | Copyable instruction to suggest | Effect and required next stop |
+|---|---|---|
+| Open a new campaign after closeout without a user-named technical objective | `Use $frontier-optimization. Open a new campaign from <closeout identity>. Preserve <closed generation and retained evidence>. Plan only, derive the proposed objective from the recorded handoff, and stop before any exact B authorization, execution, or spend.` | Grants campaign-opening planning only; the Coordinator derives the objective and stops at the next user-owned tradeoff or finding-free authorization-readiness gate. |
+| Recover one named object or outcome after closeout | `Use $frontier-optimization. Open the next campaign generation in exact-recovery mode for <object or outcome>. Preserve <closed records>. Verify <reuse identities and prerequisites>, prepare a new reviewed target, and stop after finding-free AUTHORIZATION_READY to present the exact authorization target. Do not execute, mutate, rerun, reserve, or spend before my exact authorization.` | Grants planning and recovery preflight only; it creates no B execution authority. If no exact B exists yet, do not invent an identifier or ask the user to authorize one. |
+| Package a completed closeout without reopening it | `Use $frontier-optimization. Package <closeout identity> as an authority-neutral durable handoff. Preserve the closed generation and do not start recovery or spend.` | Permits packaging only and returns the package identity and verification result. |
+| Choose among reviewed user-owned alternatives | `Choose <option> for <exact tradeoff and V target>. Preserve the stated limits and do not treat this choice as B authorization.` | Records only the tradeoff answer, then stops at the next unresolved tradeoff or exact authorization gate. |
+| Decide one exact target after finding-free `AUTHORIZATION_READY` | Lead with the response recommended by the unchanged Selection, objective, evidence, reviews, Budget, and recorded user values: `Authorize exactly <reviewed target, scope, spend, and stop boundary>.`; `Decline <reviewed target>; preserve the reviewed evidence and grant no execution or spend authority.`; or `Do not authorize <reviewed target>. Prepare a revised target with <requested condition> and obtain fresh AUTHORIZATION_READY before asking again.` Include another response only with its switching condition. | An exact affirmative answer may enter adoption; decline closes that target's authority; a condition or revision requires a new immutable target and fresh review. |
+| Resolve a parent or Representation conflict | `Use $frame-optimization. Review <exact conflicting parent fields and identities>. Preserve the Frontier campaign and return a new positive handoff or an explicit non-reuse disposition.` | Grants no Frontier continuation; the Coordinator waits for a current compatible parent handoff. |
+| Supply a missing private fact, access grant, resource, or artifact | `Provide <exact missing input> for <bound decision>. Treat it as evidence only and stop before any later authorization or spend.` | Re-evaluates the blocked gate without implying a route choice or execution authority. |
+| No legal user action exists yet | Suggest no command. State the exact evidence, event, worker result, or external change that must occur before the user can decide. | Preserves the blocker and prevents a false continuation path. |
+
+Every authorization suggestion must come from the unchanged reviewed object. Every reopening or recovery suggestion must name planning-only authority and its next stop. Never present a planning instruction as execution permission, reduce a known recovery path to only `BLOCKED` or `no authority`, or present legal alternatives as equally recommended when recorded evidence supports a preference.
 
 The pre-spend rebind row requires all of these checks:
 

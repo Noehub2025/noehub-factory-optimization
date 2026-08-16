@@ -4,7 +4,7 @@ Load only when an eligible Entry B may create or change executable candidate cod
 
 ## Assess repository fit
 
-Inspect the existing project structure, build and dependency conventions, candidate interface, source base, tests, exclusive worker write surfaces, worker-forbidden paths, execution-frozen inputs, the Coordinator lifecycle transition, exclusive execution-baseline root, execution-start path, result-validation path, and workspace isolation.
+Inspect the existing project structure, build and dependency conventions, candidate interface, source base, tests, every selected test or check unit and its possible execution effects, exclusive worker write surfaces, worker-forbidden paths, execution-frozen inputs, the Coordinator lifecycle transition, exclusive execution-baseline root, execution-start path, package-inventory path, final-manifest path, result-validation path, and workspace isolation.
 
 Record one disposition:
 
@@ -41,9 +41,9 @@ Design preference, Coordinator design adoption, `DESIGN_READY`, and packet struc
 
 ## Plan candidate identity and review
 
-Load [Candidate lifecycle](candidate-lifecycle.md). Give every materialized implementation an immutable candidate identity, pinned source base, assigned workspace, allowed paths, interface, configuration space, manifest path, engineering checks, and recovery point.
+Load [Candidate lifecycle](candidate-lifecycle.md). Give every materialized implementation an immutable candidate identity, pinned source base, assigned workspace, allowed paths, interface, configuration space, package-inventory path, final-manifest path, engineering checks, and recovery point. Freeze every selected check unit, exact argument vector, content-addressed effect-classification source, and positive effect maximum. A full or opaque suite is eligible only when that evidence bounds every possible effect. Keep local engineering fixtures separate from candidate performance measurement and limit their consequence to engineering evidence.
 
-Every materially changed executable candidate must stop for fresh implementation review before its first performance measurement or mainline integration. Record this checkpoint, review packet path, and protected follow-up budget in B and Selection. Keep integration, promotion, and claim use as later Coordinator decisions.
+Every materially changed executable candidate must stop for fresh implementation review before its first Slot H measurement or mainline integration. A separate diagnostic-only experiment may precede that review only through every condition in [Candidate lifecycle](candidate-lifecycle.md#diagnostic-only-exception); record its distinct B, exact result branches, local isolation, prohibited consequences, and stop boundary. Record the implementation-review checkpoint, review packet path, and protected follow-up budget in B and Selection. Keep E, integration, incumbent use, promotion, and claim use as later Coordinator decisions.
 
 Before freezing a first code B, run `scripts/validate_batch_packet.py` and require every ownership, W evidence-destination, frozen-subtree, required-output, prohibition, path-schema, and identity check to pass. Also prove that acknowledgment returns before any work or spend, the only required post-acknowledgment campaign edit is the exact `planned -> running` transition, the Coordinator freezes every post-transition input byte under the assigned execution-baseline root, and the worker starts only from the execution-start record that binds that snapshot. Require draft and frozen `validate_batch_result.py` before the final result path. Do not freeze the whole W. Do not put the lifecycle edit, packet preflight, execution-baseline root, execution-start record, or any worker output under an execution-frozen directory. A worker-forbidden campaign path may remain Coordinator-owned; it is not globally immutable unless listed separately with an exact execution-frozen identity.
 
