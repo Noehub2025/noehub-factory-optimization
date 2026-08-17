@@ -87,18 +87,17 @@ A malformed, stale, underfunded, unauthorized, contradictory, or path-conflictin
 
 After the terminal outcome and any eligible E are adopted, apply [Learning loop](learning-loop.md) before writing the next Selection:
 
-1. verify that the intended implementation was realized;
-2. verify measurement validity;
-3. verify comparison validity, including adaptive evaluator exposure when it can limit the conclusion;
-4. decide whether cross-B interpretation can affect the next decision;
-5. construct `Comparable history` from compatible E and their controlling OR identities only, preserving every exclusion;
-6. apply the prospective rule and the complete parent-owned result vector;
-7. record exactly one progress finding and one bounded constraint finding; and
-8. write Selection only after the reflection is complete.
+1. recover the exact technical hypothesis and expected observation fixed before work;
+2. verify implementation, measurement, and comparison validity in that order;
+3. judge the hypothesis `supported`, `contradicted`, `inconclusive`, or `not-applicable`;
+4. infer the strongest useful whole-package, component, or mediated-pathway mechanism supported by the evidence;
+5. record what the design cannot attribute and the resulting R&D implication without creating follow-up authority;
+6. interpret progress, constraints, or measurement properties only when they can change the addressed or next concrete decision; and
+7. write Selection only after the reflection is complete.
 
-Stop interpretation at the first unresolved validity layer. Incompatible, stale, invalid, or unresolved E remains campaign evidence but cannot form an ordered trajectory. A single proxy improvement cannot establish route success, and a local mechanism effect cannot establish a bottleneck without system-level evidence on the parent objective. Selection applies the reflection; it cannot rebuild the evidence sequence, change the finding, invent a post-hoc plateau rule, or soften a failed guardrail.
+Stop inference at the first unresolved validity layer. A valid controlled whole-package comparison may support that the bounded package caused the local result without ablation; claiming that a component was active, necessary, dominant, or numerically responsible needs separating evidence. Incompatible, stale, invalid, or unresolved E remains campaign evidence but cannot form an ordered trajectory. A single proxy improvement cannot establish route success, and a local mechanism effect cannot establish a bottleneck without system-level evidence on the parent objective. Selection applies the reflection; it cannot rebuild the evidence sequence, strengthen the mechanism granularity, invent a post-hoc plateau rule, or soften a failed guardrail.
 
-This interpretation step creates no trajectory record, investment resolver, research task, review, or authority. One-shot work uses `not-applicable` and proceeds through the existing R8 and Selection rules without extra process. Older OR records remain immutable under their source; a new controlling reflection may cite their E and identities when compatibility is established.
+This interpretation step creates no trajectory record, investment resolver, diagnosis, research task, review, B, spend, or authority. An attribution limit is non-blocking unless the pending decision depends on distinguishing the internal explanations. A measurement limitation matters only when it changes a concrete decision; saturation of one comparator-derived score does not prove evaluator exhaustion. One-shot, administrative, and implementation-only work use the applicable `not-applicable` fields and proceed through existing R8 and Selection rules without extra process. Older OR records remain immutable under their source; a new controlling reflection may cite their E and identities when compatibility is established.
 
 ## Route the current action
 
@@ -123,20 +122,22 @@ Routing is complete only when exactly one row owns the action and its completion
 
 | Scenario | Required durable outcome |
 |---|---|
-| Expected valid result and a unique R8 next step | Routine reflection, no extra research, and Selection cites the exact R8 branch. |
-| Surprising result that may be an implementation or measurement problem | Diagnostic reflection and the cheapest distinguishing local check before research or promotion. |
+| Expected valid result and a unique R8 next step | Routine reflection states the hypothesis result, strongest supported mechanism, R&D implication, and exact R8 branch without extra diagnosis. |
+| Surprising result that may be an implementation or measurement problem | Diagnostic reflection compares a direct attempt, local check, protocol adjustment, focused research, or stop by expected decision information and cost. |
 | Result changes campaign baseline, route, or major allocation | Targeted evidence, applicable V, immutable replan snapshot, fresh `REPLAN_READY`, then authoritative Selection. |
 | Code implementation followed by performance evaluation | Separate implementation B and Slot H evaluation B; evaluation is blocked before unchanged `IMPLEMENTATION_READY`. |
 | Newly materialized candidate needs one cheap local signal before implementation review | A separate diagnostic-only experiment may run only under the candidate-lifecycle exception; it creates no E and grants no integration, incumbent, promotion, submission, or strength consequence. |
 | Parallel selected B records | Terminal reconciliation and reflection for every member, then one joined X before dependent Selection. |
 | E contradicts an active applicable bound | No promotion, incumbent use, claim strengthening, or dependent spend until the contradiction is resolved and dispositioned. |
 | Two E use different evaluator, comparator, protocol, workload, epoch, or parent meaning | Exclude the incompatible E with its reason; do not form a trajectory from them. |
-| Positive proxy movement accompanies a failed guardrail or required segment | Preserve the full parent-owned vector; progress is not `on-course` and the route is not established. |
-| Increments shrink but no prospective negligible-progress rule governed the spend | Record only supported `emergent-warning` or `insufficient-compatible-evidence`; do not declare a plateau retroactively. |
-| Progress is below a rule fixed before spend | Record `weak-under-prospective-rule` and its exact governing T/B fields; do not infer permanent exhaustion. |
-| A factor has only local or proxy evidence | Record `suspected` at most; do not call it the bottleneck. |
-| Changing a factor changes the parent objective under the named conditions | `demonstrated` is available; after intervention, check whether the limiting constraint shifted. |
-| One-shot or implementation-only work has no cross-B performance meaning | Record `not-applicable` with reason and create no extra research, review, metric, E, or trajectory artifact. |
+| Valid whole-package comparison with no ablation | Support the bounded package-level effect; record component contribution as unresolved without creating diagnosis or research. |
+| Source and behavior checks prove component pathways exist, but performance evidence is aggregate | Describe the pathways as present and consistent; do not call any one active, necessary, dominant, or numerically responsible. |
+| Positive proxy movement accompanies a failed guardrail or required segment | Preserve the full parent-owned vector; the route is not established. |
+| Increments shrink but no prospective negligible-progress rule governed the spend | Record only the supported observation; do not declare a plateau retroactively. |
+| A factor has only local or proxy evidence | Record a suspected constraint only when it changes the decision; do not call it the bottleneck. |
+| Changing a factor changes the parent objective under the named conditions | A demonstrated constraint is available; after intervention, check whether the limiting constraint shifted. |
+| One-shot, administrative, or implementation-only work has no cross-B performance meaning | Use the applicable `not-applicable` fields and create no extra diagnosis, research, review, metric, E, or trajectory artifact. |
+| A comparator-derived score saturates after resolving its addressed decision | Preserve the completed decision; record a future-use measurement implication only if a concrete successor decision would need more discrimination. |
 | A new reflection cites compatible E covered by OR records from an older source | Preserve the old OR bytes and validity; the new OR owns only its current interpretation. |
 | Mid-campaign external wording request | C plus `CLAIM_REVIEW_REQUIRED`; no claim-review completion or A in this slice. |
 

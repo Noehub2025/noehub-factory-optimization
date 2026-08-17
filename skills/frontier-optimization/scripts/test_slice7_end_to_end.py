@@ -928,9 +928,10 @@ class Slice7ContractTests(unittest.TestCase):
     def test_reflection_claim_and_parent_change_routes(self) -> None:
         self.assert_contract_contains(
             "learning-loop.md",
-            "For routine evidence",
-            "For diagnostic evidence",
+            "Routine evidence with a unique R8 branch receives no extra work",
+            "a direct reversible candidate attempt may be more useful than mechanism diagnosis",
             "For strategic evidence",
+            "A valid whole-treatment comparison may support that the bounded package caused the observed local effect",
             "REPLAN_READY",
         )
         self.assert_contract_contains(

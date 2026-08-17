@@ -73,6 +73,7 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 - One coordinator owns the task definition and search design; another owns the later campaign. Worker Skills cannot silently change either contract.
 - Planning, user authorization, worker acknowledgment, execution start, implementation review, measurement, result adoption, and claims are separate gates. Each gate applies only to the exact files and identities it names.
 - Candidate creation and performance evaluation are separate steps. Passing engineering checks does not prove improvement.
+- After each completed batch, the agent compares the result with the hypothesis fixed before the work, records the strongest mechanism the evidence supports, and keeps unresolved component attribution separate from the proven whole-package effect.
 - Results identify the problem and representation versions under which they were produced, so incompatible results are not compared.
 - Budget, stopping rules, known limits, and permitted claims remain visible in the main campaign document.
 - Independent reviews use fixed copies of the evidence and an agent that has not seen the drafting conversation. If that independent review is unavailable, the workflow reports a blocker instead of readiness.
@@ -112,7 +113,7 @@ Define the problem
   -> start and run the batch
   -> review implementations before measuring them
   -> measure under the approved comparison rules
-  -> record what was learned and select the next action
+  -> compare the result with the precommitted hypothesis, record supported mechanisms and limits, and select the next action
   -> close the campaign with final evidence, limits, and files needed to resume later
 ```
 

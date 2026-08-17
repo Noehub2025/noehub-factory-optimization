@@ -19,51 +19,61 @@ MODULE = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
 
-PHASE2_FIELDS = (
-    "Comparable history",
-    "Governing progress rule",
-    "Progress finding",
-    "Constraint finding",
+REFLECTION_FIELDS = (
+    "Decision addressed",
+    "Technical hypothesis",
+    "Hypothesis result",
+    "Evidence validity",
+    "Mechanism inference",
+    "Attribution limit",
+    "R&D implication",
+    "Measurement implication",
+    "Progress interpretation",
+    "Constraint inference",
+    "Maximum supported conclusion",
+    "Claim boundary",
 )
-PHASE2_FINDINGS = {
-    "on-course",
-    "weak-under-prospective-rule",
-    "emergent-warning",
-    "validity-unresolved",
-    "insufficient-compatible-evidence",
-    "not-applicable",
-}
-PHASE2_REQUIRED_MARKERS = {
+REFLECTION_REQUIRED_MARKERS = {
     "planning-records.md": (
+        "`Decision hypothesis` and `Expected observation` are the pre-spend owners",
+        "An upstream T or W provides only mechanism context explicitly inherited by B and cannot replace the B-level decision",
+        "The reflection cannot replace either source with a result-shaped story",
         "adaptive-exposure lineage across attempts and B/E records",
         "complete parent-owned value or vector",
         "every parent-owned hard constraint and guardrail",
-        "E records one evaluated result, not a trend or route verdict",
+        "E records one evaluated result, not a technical hypothesis, mechanism conclusion, trend, or route verdict",
+        "evidence-bounded mechanism inference",
         "An improved proxy or aggregate does not establish route progress",
     ),
     "learning-loop.md": (
         "Establish validity in this order: implementation, measurement, then comparison validity",
-        "a single departure is an anomaly, not persistence",
-        "movement within measurement noise or resolution is not a plateau or underperformance finding",
-        "an expected slowdown that remains inside the prospective rule is `on-course`",
-        "pre-specified underperformance is `weak-under-prospective-rule`",
-        "unexpected compatible change without a governing consequence is `emergent-warning`",
-        "never a post-hoc plateau",
-        "system-level effect on the parent objective",
-        "`demonstrated` only when an intervention or discriminating test shows that changing the factor changes the parent objective",
-        "`shifted` only when evidence shows that an intervention changed which factor limits the parent objective",
+        "do not invent a post-result hypothesis",
+        "For a terminal B, recover the controlling decision hypothesis from that B",
+        "A valid whole-treatment comparison may support that the bounded package caused the observed local effect",
+        "Component contribution",
+        "needs a separating intervention, ablation, trace, or equivalent evidence",
+        "does not invalidate a valid package-level result or block another bounded reversible attempt",
+        "Diagnose it only when the pending decision depends on choosing among those internal explanations",
+        "A limitation that does not prevent the addressed decision remains a future-use note",
+        "Distinguish a saturated comparator-derived score from exhaustion of the evaluator itself",
+        "a direct reversible candidate attempt may be more useful than mechanism diagnosis",
+        "it has no mandatory finding enum",
         "It adds no spend authority, investment resolver",
-        "Selection must copy its compatible history, progress finding, constraint finding, and maximum conclusion without reinterpretation",
+        "Selection must apply its hypothesis result, mechanism inference, attribution limit, R&D implication, measurement implication, and maximum conclusion without strengthening or reinterpretation",
         "Keep every earlier Outcome Reflection immutable and valid under its bound source",
-        "This creates no additional Q, research, review, repeated B, synthetic E, metric, or trajectory artifact",
+        "These forms create no additional Q, research, review, repeated B, synthetic E, metric, or trajectory artifact",
     ),
     "campaign-cycle.md": (
-        "construct `Comparable history` from compatible E",
+        "recover the exact technical hypothesis and expected observation fixed before work",
+        "A valid controlled whole-package comparison may support that the bounded package caused the local result without ablation",
+        "claiming that a component was active, necessary, dominant, or numerically responsible needs separating evidence",
         "Incompatible, stale, invalid, or unresolved E remains campaign evidence but cannot form an ordered trajectory",
         "A single proxy improvement cannot establish route success",
-        "Selection applies the reflection; it cannot rebuild the evidence sequence",
-        "This interpretation step creates no trajectory record, investment resolver, research task, review, or authority",
-        "One-shot work uses `not-applicable` and proceeds through the existing R8 and Selection rules without extra process",
+        "Selection applies the reflection; it cannot rebuild the evidence sequence, strengthen the mechanism granularity",
+        "This interpretation step creates no trajectory record, investment resolver, diagnosis, research task, review, B, spend, or authority",
+        "An attribution limit is non-blocking unless the pending decision depends on distinguishing the internal explanations",
+        "saturation of one comparator-derived score does not prove evaluator exhaustion",
+        "One-shot, administrative, and implementation-only work use the applicable `not-applicable` fields",
         "Older OR records remain immutable under their source",
     ),
     "campaign-state.md": (
@@ -72,15 +82,15 @@ PHASE2_REQUIRED_MARKERS = {
 }
 
 
-def phase2_contract_findings(skills_root: Path) -> list[str]:
+def reflection_contract_findings(skills_root: Path) -> list[str]:
     references = skills_root / "frontier-optimization/references"
     documents = {
         name: (references / name).read_text()
-        for name in PHASE2_REQUIRED_MARKERS
+        for name in REFLECTION_REQUIRED_MARKERS
     }
     findings: list[str] = []
     all_markdown = [path.read_text() for path in skills_root.rglob("*.md")]
-    for field in PHASE2_FIELDS:
+    for field in REFLECTION_FIELDS:
         count = sum(text.count(f"- {field}: <") for text in all_markdown)
         if count != 1:
             findings.append(f"{field} has {count} canonical template owners")
@@ -91,15 +101,16 @@ def phase2_contract_findings(skills_root: Path) -> list[str]:
         findings.append("Outcome Reflection template is missing")
     else:
         template = learning.split(anchor, 1)[1].split("```", 1)[0]
-        for field in PHASE2_FIELDS:
+        for field in REFLECTION_FIELDS:
             if f"- {field}: <" not in template:
                 findings.append(f"Outcome Reflection omits {field}")
-        match = re.search(r"^- Progress finding: <([^>]+)>$", template, re.MULTILINE)
+        match = re.search(r"^- Hypothesis result: <([^,>]+)", template, re.MULTILINE)
         observed = {value.strip() for value in match.group(1).split("|")} if match else set()
-        if observed != PHASE2_FINDINGS:
-            findings.append(f"progress findings are {sorted(observed)}")
+        expected = {"supported", "contradicted", "inconclusive", "not-applicable"}
+        if observed != expected:
+            findings.append(f"hypothesis results are {sorted(observed)}")
 
-    for name, markers in PHASE2_REQUIRED_MARKERS.items():
+    for name, markers in REFLECTION_REQUIRED_MARKERS.items():
         for marker in markers:
             if marker not in documents[name]:
                 findings.append(f"{name} omits {marker}")
@@ -111,32 +122,32 @@ def phase2_contract_findings(skills_root: Path) -> list[str]:
 
 
 class FrontierSkillBundleTests(unittest.TestCase):
-    def test_phase2_outcome_reflection_has_one_canonical_owner_and_six_findings(self) -> None:
+    def test_outcome_reflection_has_one_hypothesis_centered_canonical_owner(self) -> None:
         skills_root = SCRIPT.parents[2]
-        self.assertEqual([], phase2_contract_findings(skills_root))
+        self.assertEqual([], reflection_contract_findings(skills_root))
 
-    def test_phase2_interpretation_is_ordered_bounded_and_backward_compatible(self) -> None:
+    def test_reflection_inference_is_useful_bounded_and_non_blocking(self) -> None:
         skills_root = SCRIPT.parents[2]
         mutations = (
             (
                 "frontier-optimization/references/learning-loop.md",
-                "a single departure is an anomaly, not persistence",
-                "a single departure proves a persistent trend",
+                "A valid whole-treatment comparison may support that the bounded package caused the observed local effect",
+                "A valid whole-treatment comparison cannot support a package effect without ablation",
             ),
             (
                 "frontier-optimization/references/learning-loop.md",
-                "`demonstrated` only when an intervention or discriminating test shows that changing the factor changes the parent objective",
-                "`demonstrated` when a local proxy improves",
+                "does not invalidate a valid package-level result or block another bounded reversible attempt",
+                "invalidates the package result and blocks another attempt",
             ),
             (
                 "frontier-optimization/references/campaign-cycle.md",
-                "One-shot work uses `not-applicable` and proceeds through the existing R8 and Selection rules without extra process",
-                "One-shot work requires a new trajectory review",
+                "An attribution limit is non-blocking unless the pending decision depends on distinguishing the internal explanations",
+                "An attribution limit always requires diagnosis before later work",
             ),
             (
                 "frontier-optimization/references/campaign-state.md",
                 "",
-                "\n".join(f"- {field}: <duplicate>" for field in PHASE2_FIELDS),
+                "\n".join(f"- {field}: <duplicate>" for field in REFLECTION_FIELDS),
             ),
         )
         for relative, old, new in mutations:
@@ -151,7 +162,7 @@ class FrontierSkillBundleTests(unittest.TestCase):
                     path = root / relative
                     text = path.read_text()
                     path.write_text(text.replace(old, new, 1) if old else text + new)
-                    self.assertNotEqual([], phase2_contract_findings(root))
+                    self.assertNotEqual([], reflection_contract_findings(root))
 
     def test_live_ten_skill_bundle_is_valid_and_content_addressed(self) -> None:
         skills_root = SCRIPT.parents[2]

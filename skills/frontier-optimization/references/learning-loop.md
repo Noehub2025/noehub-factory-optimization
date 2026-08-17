@@ -5,8 +5,9 @@
 - [Reflection levels](#reflection-levels)
 - [Coverage and spend gate](#coverage-and-spend-gate)
 - [Close the loop](#close-the-loop)
+- [Build the evidence chain](#build-the-evidence-chain)
 - [Outcome Reflection](#outcome-reflection)
-- [Progress and constraint interpretation](#progress-and-constraint-interpretation)
+- [Hypothesis and mechanism interpretation](#hypothesis-and-mechanism-interpretation)
 - [Historical compatibility](#historical-compatibility)
 - [Strategic replan review method](#strategic-replan-review-method)
 - [Strategic replan packet](#strategic-replan-packet)
@@ -16,8 +17,8 @@ Load after a terminal B, after an uncovered E, or when a strategic replan is pen
 
 ## Reflection levels
 
-- **Routine:** valid expected evidence changes no route, baseline, design, budget policy, stop rule, or claim limit. Proceed without research only when R8 already determines the next action.
-- **Diagnostic:** surprising, failed, ambiguous, validity-limited, or measurement-property evidence needs the cheapest local check, focused Q, isolated non-candidate prototype, or authorized diagnostic-only experiment that can distinguish material explanations.
+- **Routine:** valid expected evidence resolves the addressed decision without changing a route, baseline, design, budget policy, stop rule, or claim limit. Record the technical learning and apply R8 without extra diagnosis.
+- **Diagnostic:** surprising, failed, ambiguous, validity-limited, or decision-limiting measurement evidence may justify a direct attempt, local check, focused Q, isolated prototype, or authorized diagnostic-only experiment. Choose among them by expected decision information relative to time, compute, risk, and opportunity cost.
 - **Strategic:** evidence may change campaign baseline, route family, budget policy, stop rule, design profile, irreversible behavior, or claim limit. It needs sufficient evidence, applicable V, and adopted fresh-context replan review before dependent spend.
 
 ## Coverage and spend gate
@@ -30,17 +31,41 @@ Before acknowledging any later B, enumerate terminal B records and E records fro
 
 1. Reconcile result packet, W state, artifacts, spend, reservations, recovery, E, and X. Preserve negative, failed, ambiguous, and invalid evidence.
 2. Establish validity in this order: implementation, measurement, then comparison validity. Stop the inference at the first unresolved layer.
-3. Compare the precommitted hypothesis and observation with the complete parent-owned result vector. Reconstruct only compatible E and their controlling reflections; preserve every exclusion and adaptive-exposure limit.
-4. Append the reflection below and bound the conclusion. Engineering and diagnostic-only evidence remains B evidence and creates no E.
-5. For routine evidence, record why research cannot change the R8 decision.
-6. For diagnostic evidence, run the cheapest distinguishing local check before focused research.
-7. For strategic evidence, technically filter alternatives, resolve user tradeoffs, prepare proposed F2-F4, Budget, Selection, and B state, then freeze that proposal in the replan snapshot.
-8. Adopt a finding-free unchanged `REPLAN_READY`, then append the authoritative F2-F4, Budget, Selection, and B records exactly as reviewed.
-9. Before later spend, require a latest Selection citing every controlling reflection and classifying each unknown as answered, deferred with an event, or blocking.
+3. Build the evidence chain below. Recover the exact technical hypothesis and expected observation fixed before work. The terminal B controls the addressed decision; an exact candidate lineage supplies the originating mechanism when the B evaluates or confirms already implemented behavior. Judge the controlling B hypothesis `supported`, `contradicted`, `inconclusive`, or `not-applicable`; do not invent a post-result hypothesis.
+4. Infer the strongest useful mechanism supported by the implementation, behavior, and outcome evidence. Distinguish a whole-package effect from evidence that a component was active, necessary, dominant, or numerically responsible.
+5. Record the attribution limit and the R&D implication. An attribution limit creates no diagnosis, research, review, B, or spend by itself.
+6. Interpret comparable history, progress, constraints, or measurement properties only when they can change the addressed or next concrete decision. Preserve every exclusion, adaptive-exposure limit, parent-owned metric, and guardrail that the interpretation uses.
+7. Append the reflection below and bound the conclusion. Engineering and diagnostic-only evidence remains B evidence and creates no E.
+8. For strategic evidence, technically filter alternatives, resolve user tradeoffs, prepare proposed F2-F4, Budget, Selection, and B state, then freeze that proposal in the replan snapshot.
+9. Adopt a finding-free unchanged `REPLAN_READY`, then append the authoritative F2-F4, Budget, Selection, and B records exactly as reviewed.
+10. Before later spend, require a latest Selection citing every controlling reflection and classifying each decision-relevant unknown as answered, deferred with an event, or blocking.
 
-Research is justified only when its answer can change eligibility, route, allocation, stopping, promotion, or claim limit and cheaper local evidence cannot answer it. Routine evidence with a unique R8 branch receives no extra research. Diagnostic evidence starts with the cheapest distinguishing check. A reflection without an explicit next decision, deferral, stop, halt, or blocker is incomplete.
+Research or diagnosis is justified only when its answer can change eligibility, route, allocation, stopping, promotion, or claim limit. Prefer the available action with the highest expected decision information relative to its cost and risk; a direct reversible candidate attempt may be more useful than mechanism diagnosis. Routine evidence with a unique R8 branch receives no extra work. A reflection without an explicit next decision, deferral, stop, halt, or blocker is incomplete.
 
 Use specialized gates in addition to replan review: changed design needs design review and authorization; changed candidate needs implementation review; changed claim needs claim review; parent-scope conflict needs parent review.
+
+## Build the evidence chain
+
+Write a Reflection from adopted evidence; do not rerun the candidate, evaluator, engineering checks, repository tests, or workflow tests. Do not create a new snapshot or review merely to interpret evidence that is already valid.
+
+Read the smallest complete evidence chain in this order:
+
+1. **Current decision:** read the terminal B's `Decision hypothesis`, `Expected observation`, result, terminal outcome, related E, and the R8 rule, parent metrics, guardrails, and decision boundary that govern its consequence.
+2. **Originating mechanism:** when B evaluates, confirms, or reuses an executable candidate, follow the exact candidate identity to the originating T or W, the design or implementation B that changed behavior, the executable-difference description or source manifest, the adopted implementation review, and the engineering or behavior evidence. Use identity-bound lineage rather than topic similarity. For a reference measurement, administrative B, or work with no technical mechanism, record `not-applicable` instead of inventing one.
+3. **Comparison meaning:** read the adopted evaluator, protocol, comparator, workload or data scope, uncertainty, and result direction from E and its result. Add prior E and their controlling OR only when the comparability rule below permits the exact interpretation being made. Read lower-level measurement artifacts only when the adopted result does not already establish a decision-relevant property; never repeat the measurement.
+4. **R&D decision:** read the applicable replacement boundary, disqualifying evidence, known limits, current Selection, and only those traces, route alternatives, or design surfaces already supported by persisted evidence. Budget and authority determine what may happen next, not what the evidence means.
+
+Synthesize that chain rather than summarizing each record:
+
+1. State the current B decision and the originating technical mechanism as separate layers. `Hypothesis result` judges the current B hypothesis; `Mechanism inference` explains what the complete lineage supports about the implemented mechanism.
+2. Connect the evidence explicitly: what behavior-bearing difference was introduced, what implementation evidence shows that its pathways exist, and what valid outcome evidence supports at whole-package level.
+3. Name component activity, necessity, dominance, mediation, or numerical contribution only at the grain supported by separating evidence. Otherwise keep the package conclusion and state the attribution limit.
+4. Identify the defect, assumption, or local question that the evidence resolves. Do not keep a supported issue open merely because its internal contributions were not decomposed.
+5. Turn the learning into R&D direction: state what later work should preserve or stop repeating, and name a next technical surface only when current traces, known limits, route evidence, or the replacement boundary supports it. A plausible list without evidence is not a conclusion.
+6. State whether the measurement remains fit for the next concrete decision. A completed decision stays complete even when its comparator would be too coarse for a future successor decision.
+7. Make `Maximum supported conclusion` include the strongest bounded mechanism conclusion as well as the resolved B decision; do not reduce it to a gate label such as `admit`, `reject`, or `completed`.
+
+The Reflection is complete when a fresh Coordinator can answer from it: what was hypothesized, why the result supports or contradicts it, which mechanism is supported at what grain, what is now resolved, what remains decision-relevant, and what later work should preserve, change, defer, or stop. This interpretation creates no test, experiment, diagnosis, research task, review, B, spend, or authority.
 
 ## Outcome Reflection
 
@@ -53,20 +78,19 @@ Outcome Reflection:
 - Targets: <B identifier, terminal-outcome identity, and result identity; related E identifier and experiment identity when applicable>
 - Evidence-state identity: <immutable identity of the terminal outcome, related E, applicable reviews, active D and X, Budget, and W state used>
 - Level: <routine | diagnostic | strategic>
-- Planned mechanism and expected observation: <exact B hypothesis and precommitted observation>
-- Validity: <implementation, measurement, and comparison validity, each with evidence or not applicable>
-- Comparable history: <ordered E identities and their controlling OR identities, exclusions with reasons, insufficient-compatible-evidence with reason, or not-applicable with reason>
-- Governing progress rule: <T and B field identities fixed before spend, or None>
-- Progress finding: <on-course | weak-under-prospective-rule | emergent-warning | validity-unresolved | insufficient-compatible-evidence | not-applicable>
-- Constraint finding: <not-assessed | suspected | demonstrated | shifted, with exact evidence and affected parent objective>
-- Observed versus expected: <agreement, deviation, failure, or unresolved difference with evidence>
-- Belief update: <supported, weakened, contradicted, and untouched assumptions>
-- Competing explanations: <ranked evidence-bounded explanations or None>
+- Decision addressed: <the decision this work was intended to answer>
+- Technical hypothesis: <exact terminal B Decision hypothesis and Expected observation, plus the identity-bound originating mechanism when this B evaluates, confirms, or reuses implemented behavior; or not-applicable with reason>
+- Hypothesis result: <supported | contradicted | inconclusive | not-applicable, with the shortest sufficient evidence chain>
+- Evidence validity: <implementation, measurement, and comparison validity in that order, each with evidence or not-applicable>
+- Mechanism inference: <strongest useful whole-package, component, or mediated-pathway conclusion supported by the evidence>
+- Attribution limit: <what the current design cannot separate or quantify; this field creates no follow-up work>
+- R&D implication: <what later work should preserve, stop repeating, investigate, or defer, without creating authority>
+- Measurement implication: <only a property that changes a concrete addressed or next decision, or not-applicable with reason>
+- Progress interpretation: <compatible history, prospective rule, complete parent vector, and bounded interpretation only when they affect the decision; otherwise not-applicable>
+- Constraint inference: <suspected, demonstrated, or shifted system-level constraint only when supported and decision-relevant; otherwise not-applicable>
 - Maximum supported conclusion: <exact conclusion>
-- Unsupported conclusions: <claims the result does not support>
+- Claim boundary: <important unsupported extensions>
 - Decision-relevant unknowns: <unknowns that can still change eligibility, route, allocation, stopping, promotion, or claims>
-- Smallest distinguishing test: <local check, focused research question, isolated prototype, comparison, or None>
-- Research disposition: <none with reason | local diagnosis | focused Q | route landscape refresh | isolated prototype | parent review>
 - User decision: <required V and exact tradeoff or authorization, or None>
 - Review consequences: <REPLAN_READY and any required design, implementation, claim, or parent review; or none>
 - Decision consequence: <continue, revise, abandon, promote, stop, halt, or defer; name affected records>
@@ -74,48 +98,40 @@ Outcome Reflection:
 - Later-spend gate: <open only after named V, join, evidence, Selection, and reviews; or blocked with exact missing identity>
 ```
 
-For a bound contradiction, name the D, assumptions, tolerance, E, and experiment identity. For a known-vacuous measurement, cite the current evidence proving that every legal result maps to the same action. Until resolved, the reflection cannot select promotion, incumbent use, claim strengthening, or dependent spend. It may select only the smallest authorized diagnostic unless the contradiction changes parent legality or authority.
+For a bound contradiction, name the D, assumptions, tolerance, E, and experiment identity. For a known-vacuous measurement, cite the current evidence proving that every legal result maps to the same action. Until resolved, the reflection cannot select promotion, incumbent use, claim strengthening, or dependent spend. Choose the highest-information authorized response rather than automatically creating a diagnostic batch.
 
-## Progress and constraint interpretation
+## Hypothesis and mechanism interpretation
 
-Use exactly one `Progress finding` value:
+`Hypothesis result` answers the precommitted technical question:
 
-- `on-course`: compatible valid evidence remains within the prospective rule, every parent-owned mandatory boundary passes, and the next required check remains reachable;
-- `weak-under-prospective-rule`: compatible valid evidence crosses a progress rule fixed before the governed spend;
-- `emergent-warning`: compatible evidence is decision-relevantly surprising but no earlier rule determines its consequence;
-- `validity-unresolved`: implementation, measurement, or comparison validity remains unresolved;
-- `insufficient-compatible-evidence`: trajectory interpretation matters, but the compatible evidence cannot yet establish an ordered conclusion; or
-- `not-applicable`: cross-B progress cannot affect this decision.
+- `supported` when valid evidence matches the predicted observable effect within the named scope;
+- `contradicted` when valid evidence violates it;
+- `inconclusive` when validity, resolution, or coverage cannot answer it; and
+- `not-applicable` for work with no technical hypothesis.
 
-Keep the fields internally consistent. `not-applicable` has no ordered history and uses `Governing progress rule: None`. `insufficient-compatible-evidence` names excluded or missing observations and cannot claim on-course or weak progress. Every other finding names the ordered compatible E and controlling OR identities. `on-course` and `weak-under-prospective-rule` cite the governing T and B fields fixed before spend. `emergent-warning` may use `None` when no sufficiently specific prospective rule existed. A later rule may govern later authorized work, never the evidence that motivated it.
+Support is scoped evidence, not universal proof. For a terminal B, recover the controlling decision hypothesis from that B. When the B evaluates, confirms, or reuses an existing candidate, recover the originating mechanism through its exact candidate, T or W, design or implementation B, and adopted implementation evidence; this mechanism context cannot replace the B-level decision. Preserve both layers, the expected observation, contradiction, and decision boundary. Implementation-only evidence may support implementation of the pathway but cannot support its performance effect. A valid whole-treatment comparison may support that the bounded package caused the observed local effect when the treatment is the only executable difference and evaluator, protocol, and comparison integrity remain fixed.
 
-Classify the observed pattern without promoting it beyond its evidence:
+Infer mechanisms at the strongest supported grain:
 
-- a single departure is an anomaly, not persistence; use `emergent-warning` only when compatible history makes it decision-relevant, otherwise use `insufficient-compatible-evidence`;
-- movement within measurement noise or resolution is not a plateau or underperformance finding;
-- an expected slowdown that remains inside the prospective rule is `on-course` when every mandatory boundary passes and the next check is reachable;
-- pre-specified underperformance is `weak-under-prospective-rule`;
-- an unexpected compatible change without a governing consequence is `emergent-warning`, not a retrospective stop rule; and
-- a bounded plateau requires compatible valid evidence plus a prospective definition of negligible progress under named conditions. Without that rule, record only the supported warning or evidence insufficiency, never a post-hoc plateau.
+- **Whole package:** a valid controlled comparison plus exact executable differences can support the package-level causal effect without ablation.
+- **Component present:** source and behavior evidence can show that a component pathway exists and behaves as designed.
+- **Component contribution:** necessity, dominance, mediation, or numerical contribution needs a separating intervention, ablation, trace, or equivalent evidence.
 
-Apply the complete parent-owned result vector. A proxy, aggregate, or leading indicator may support its local mechanism claim, but cannot establish overall route progress when a required metric, hard constraint, guardrail, segment, tail condition, delayed confirmation, or operating-cost boundary fails or remains unresolved. Pareto-incomparable valid results retain the full vector and use an existing parent rule; Outcome Reflection creates no post-result weights.
+An unexplained component contribution limits attribution but does not invalidate a valid package-level result or block another bounded reversible attempt. Diagnose it only when the pending decision depends on choosing among those internal explanations. `R&D implication` must turn the supported learning into useful direction: preserve a supported local mechanism as a default hypothesis, stop repeating a resolved local question, name an evidence-backed next surface, or defer when the evidence does not discriminate. It cannot confer incumbent status, reuse permission, or spend.
 
-Use `Constraint finding` independently from progress:
+Write `Progress interpretation` in evidence-bounded prose only when cross-B history can change the decision; it has no mandatory finding enum. Combine only E with compatible parent objective, measurement meaning, comparator role, protocol, workload, data scope, uncertainty, validity, and result direction, or an explicit equivalence argument. Apply the complete parent-owned vector. A single departure is not persistence; movement within noise or resolution is not a plateau; a bounded plateau or underperformance finding needs a prospective rule. A proxy cannot establish route progress while a required metric, hard constraint, guardrail, segment, tail, delayed confirmation, or operating-cost boundary fails or remains unresolved.
 
-- `not-assessed` when no constraint conclusion is supported or needed;
-- `suspected` when evidence identifies a plausible limiting factor but has not shown a system-level effect on the parent objective;
-- `demonstrated` only when an intervention or discriminating test shows that changing the factor changes the parent objective under the named conditions; and
-- `shifted` only when evidence shows that an intervention changed which factor limits the parent objective.
+Write `Constraint inference` only when it affects the decision. `suspected` identifies a plausible limiting factor without system-level effect evidence. `demonstrated` needs an intervention or discriminating test showing that changing the factor changes the parent objective under the named conditions. `shifted` needs evidence that the intervention changed which factor limits that objective. Local difficulty, eliminated alternatives, or movement in a proxy does not establish a bottleneck.
 
-Local difficulty, eliminated alternatives, or improvement in the suspected factor's proxy is insufficient for a bottleneck claim. After a bottleneck intervention, reconsider constraint migration before assigning more work to the former factor. `Maximum supported conclusion` must keep every constraint statement within these bounds.
+Write `Measurement implication` only when a measurement property changes a concrete decision. Distinguish a saturated comparator-derived score from exhaustion of the evaluator itself. A limitation that does not prevent the addressed decision remains a future-use note; it creates no protocol-repair requirement. If the limitation prevents the current decision, record `inconclusive` and let Selection compare a direct candidate attempt, direct incumbent comparison, protocol adjustment, diagnosis, research, or stop by decision information and cost.
 
-Outcome Reflection explains adopted evidence. It adds no spend authority, investment resolver, research requirement, review kind, or user decision. Selection must copy its compatible history, progress finding, constraint finding, and maximum conclusion without reinterpretation, then apply the existing R8, Budget, replan, and specialized gates.
+Outcome Reflection explains adopted evidence. It adds no spend authority, investment resolver, research requirement, review kind, or user decision. Selection must apply its hypothesis result, mechanism inference, attribution limit, R&D implication, measurement implication, and maximum conclusion without strengthening or reinterpretation, then apply the existing R8, Budget, replan, and specialized gates.
 
 ## Historical compatibility
 
-Keep every earlier Outcome Reflection immutable and valid under its bound source. The first controlling reflection written under this source may cite compatible old E and their coverage-complete old OR identities without adding the new fields to those records. When no prospective rule governed earlier spend, the new reflection may record an `emergent-warning` or evidence insufficiency, but cannot retroactively declare underperformance or plateau.
+Keep every earlier Outcome Reflection immutable and valid under its bound source. The first controlling reflection written under this source may cite compatible old E and their coverage-complete old OR identities without adding the new fields to those records. A later reflection may recover the original pre-spend hypothesis but cannot invent one or retroactively declare underperformance or plateau.
 
-For one-shot work, simple non-code work without repeated performance meaning, implementation-only materialization, or unrelated research, record `not-applicable` with a reason. This creates no additional Q, research, review, repeated B, synthetic E, metric, or trajectory artifact.
+For identity recovery, record repair, administrative work, or other work that produces no technical evidence, use `Technical hypothesis: not-applicable`, `Hypothesis result: not-applicable`, and `R&D implication: none; no technical evidence was produced`. For one-shot work without repeated performance meaning, use `Progress interpretation: not-applicable`. Implementation-only work judges the implementation hypothesis and keeps measurement and comparison `not-applicable`. These forms create no additional Q, research, review, repeated B, synthetic E, metric, or trajectory artifact.
 
 ## Strategic replan review method
 
@@ -124,8 +140,8 @@ Before writing a verdict, the reviewer must:
 1. verify every snapshot identity and current parent authority;
 2. reconstruct the reflection from the planned B, result, W outcome, E, X, and cited artifacts;
 3. check implementation, measurement, and comparison validity in that order;
-4. verify the exact compatible E sequence, controlling OR identities, governing prospective rule, complete parent-owned vector, and bounded progress and constraint findings;
-5. require the smallest sufficient local diagnosis before broader research;
+4. verify the precommitted hypothesis, hypothesis result, evidence-bounded mechanism inference, attribution limit, R&D implication, and complete parent-owned vector;
+5. verify that any diagnosis or research can change the affected strategic decision and is preferable to a cheaper direct source of decision information;
 6. require sufficient current research only for the affected strategic decision;
 7. check technical eligibility before every V and preserve the user's actual choice;
 8. reconcile Budget, protected reserves, Selection, B, and F2-F4 as one decision;
@@ -189,9 +205,9 @@ Reviewed at: <ISO-8601 datetime>
 
 - Parent bindings, permitted scope, and authority: <pass or findings>
 - Result, implementation, measurement, and comparison validity: <pass or findings>
-- Comparable history, governing rule, full parent result vector, and progress and constraint findings: <pass or findings>
-- Expected observation, deviation, and evidence-bound belief update: <pass or findings>
-- Unknowns and smallest distinguishing test: <pass or findings>
+- Technical hypothesis, hypothesis result, and evidence-bound mechanism inference: <pass or findings>
+- Attribution limit, R&D implication, measurement implication, and full parent result vector: <pass or findings>
+- Decision-relevant unknowns and selected information source: <pass or findings>
 - Research coverage and stop rule: <pass or findings>
 - Technical eligibility, V records, and recommendation fidelity: <pass or findings>
 - Budget, reserve, Selection, B, and stop rules: <pass or findings>
