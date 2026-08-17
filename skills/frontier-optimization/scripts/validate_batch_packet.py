@@ -29,6 +29,7 @@ from authorization_target_contract import (
     validate_specification_against_packet,
 )
 from finding_effects import add_finding, finalize_findings
+from workflow_source_binding import WorkflowSourceBindingError, validate_binding
 
 try:
     import yaml
@@ -40,6 +41,7 @@ VALIDATOR = "frontier-batch-packet-preflight/8"
 WRITE_VERBS = re.compile(r"\b(edit|write|create|modify|overwrite|change)\b", re.I)
 LIFECYCLE_CONTRACT = "frontier-lifecycle-transition/1"
 IDENTITY_CONTRACT = "frontier-dispatch-identity/2"
+RESULT_CONTRACT_V1 = "frontier-batch-result/1"
 ENGINEERING_CHECK_PLAN_CONTRACT = "frontier-engineering-check-plan/1"
 SHA256_IDENTITY = re.compile(r"^sha256:[0-9a-f]{64}$")
 EXPERIMENT_IDENTITY = re.compile(
@@ -56,6 +58,10 @@ PACKET_REQUIRED_FIELDS = {
     "executor",
     "required_inputs",
     "identity_contract",
+    "result_contract_version",
+    "workflow_source_binding",
+    "workflow_source_identity",
+    "worker_source_member",
     "design_profile",
     "design_contract_identity",
     "design_contract_binding",
@@ -481,6 +487,33 @@ def validate_identity_contract(
             "IDENTITY_CONTRACT_INVALID",
             f"identity_contract must be {IDENTITY_CONTRACT}",
         )
+    if phase != "audit" and document.get("result_contract_version") != RESULT_CONTRACT_V1:
+        add_finding(
+            findings,
+            "RESULT_CONTRACT_INVALID",
+            f"result_contract_version must be {RESULT_CONTRACT_V1}",
+        )
+    if phase != "audit":
+        try:
+            observed_workflow = validate_binding(
+                document.get("workflow_source_binding"), repo_root
+            )
+            if document.get("workflow_source_identity") != observed_workflow.get(
+                "source_snapshot"
+            ):
+                add_finding(
+                    findings,
+                    "WORKFLOW_SOURCE_IDENTITY_MISMATCH",
+                    "workflow_source_identity must equal the bound source snapshot identity",
+                )
+            if document.get("worker_source_member") != "workers/run-frontier-batch/SKILL.md":
+                add_finding(
+                    findings,
+                    "WORKFLOW_SOURCE_MEMBER_INVALID",
+                    "worker_source_member must be workers/run-frontier-batch/SKILL.md",
+                )
+        except WorkflowSourceBindingError as exc:
+            add_finding(findings, "WORKFLOW_SOURCE_BINDING_INVALID", str(exc))
 
     generation = document.get("campaign_generation")
     if phase != "audit" and (
@@ -1443,6 +1476,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.phase != "audit":
+        print("legacy packet writer is closed; use frontier_provenance_cli.py", file=sys.stderr)
+        return 2
     try:
         document = yaml.safe_load(args.packet.read_text())
     except (OSError, yaml.YAMLError) as exc:

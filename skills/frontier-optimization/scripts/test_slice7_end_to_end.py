@@ -15,6 +15,8 @@ from pathlib import Path
 
 import yaml
 
+from test_validate_entry_packet import write_workflow_source_binding
+
 
 SCRIPT_ROOT = Path(__file__).parent
 
@@ -63,6 +65,7 @@ class Slice7EndToEndTests(unittest.TestCase):
             source.parent.mkdir(parents=True)
             source.write_text("source base\n")
             source_identity = f"sha256:{sha256_file(source)}"
+            workflow_source_binding = write_workflow_source_binding(root)
             campaign_state = root / "docs/task/frontier/ledger.md"
             campaign_state.parent.mkdir(parents=True)
             campaign_state.write_text("status: planned\n")
@@ -180,6 +183,10 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "executor": "Agent",
                 "required_inputs": [],
                 "identity_contract": BATCH.IDENTITY_CONTRACT,
+                "result_contract_version": BATCH.RESULT_CONTRACT_V1,
+                "workflow_source_binding": copy.deepcopy(workflow_source_binding),
+                "workflow_source_identity": workflow_source_binding["source_snapshot"]["identity"],
+                "worker_source_member": "workers/run-frontier-batch/SKILL.md",
                 "design_profile": "direct",
                 "design_contract_identity": source_identity,
                 "design_contract_binding": {
@@ -372,6 +379,7 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "representation_generated_at": "2026-01-01T00:00:00Z",
                 "representation_review_result": "PROCEED_EXPLORATORY",
                 "representation_permitted": "bounded scope",
+                "workflow_source_binding": workflow_source_binding,
                 "campaign_generation": 2,
                 "recovery_lineage": {
                     "prior_closeout": "X899",
@@ -511,6 +519,7 @@ class Slice7EndToEndTests(unittest.TestCase):
                     "packet_id": entry["packet_id"],
                     "file_sha256": sha256_file(live_entry_path),
                 },
+                "workflow_source_binding": copy.deepcopy(workflow_source_binding),
                 "readiness_review": {
                     "review_id": "R900",
                     "review_result": "AUTHORIZATION_READY",
@@ -562,6 +571,7 @@ class Slice7EndToEndTests(unittest.TestCase):
             acknowledgment = {
                 "batch_id": "B900",
                 "packet_id": packet["packet_id"],
+                "workflow_source_identity": workflow_source_binding["source_snapshot"]["identity"],
                 "packet_preflight_id": packet_draft["preflight_id"],
                 "authority_id": adoption["adoption_id"],
                 "authority_validation_id": adoption_validation["validation_id"],
@@ -577,6 +587,7 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "execution_start_path": packet["execution_start_path"],
                 "packet_path": packet["packet_path"],
                 "packet_id": packet["packet_id"],
+                "workflow_source_identity": workflow_source_binding["source_snapshot"]["identity"],
                 "packet_preflight": file_binding(
                     root,
                     live_preflight_path,
@@ -643,6 +654,25 @@ class Slice7EndToEndTests(unittest.TestCase):
             }
             start_draft_path = root / "start-draft.yaml"
             start_draft_path.write_text(yaml.safe_dump(start_draft, sort_keys=False))
+            rollout = root / ".frontier/provenance-rollout.yaml"
+            rollout.parent.mkdir(parents=True, exist_ok=True)
+            rollout.write_text(
+                yaml.safe_dump(
+                    {
+                        "contract_version": "frontier-v1-completion-inventory/1",
+                        "rollout_cutoff": "2026-08-17T00:00:00Z",
+                        "active_authorities": [
+                            {
+                                "authority_root": adoption["adoption_id"],
+                                "contract_version": packet["identity_contract"],
+                                "state": "acknowledged",
+                                "scope_root": packet["packet_id"],
+                            }
+                        ],
+                    },
+                    sort_keys=False,
+                )
+            )
             start_path = root / packet["execution_start_path"]
             BASELINE.freeze(start_draft_path, packet["execution_baseline_root"], start_path, root)
             self.assertTrue(BASELINE.verify(start_path, root, True)["snapshot_verified"])
@@ -728,6 +758,8 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "work_kind": "code",
                 "problem_epoch": 3,
                 "representation_revision": 4,
+                "result_contract_version": BATCH.RESULT_CONTRACT_V1,
+                "workflow_source_identity": workflow_source_binding["source_snapshot"]["identity"],
                 "started_at": "2026-08-12T08:01:00Z",
                 "ended_at": "2026-08-12T08:02:00Z",
                 "outcome": "completed",
@@ -859,6 +891,24 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "final_handoff_identity": closeout_binding["identity"],
                 "final_budget_identity": budget_binding["identity"],
                 "lineage_sources": copy.deepcopy(lineage_sources),
+                "final_direction_state": {
+                    "compatible_evidence": ["E900"],
+                    "controlling_reflections": ["OR900"],
+                    "progress_meaning": "bounded local effect under tested conditions",
+                    "constraint_meaning": "the remaining constraint is unresolved",
+                    "route_set_state": "decision-complete at closeout",
+                    "reopening_events": [],
+                    "diagnostic_dominance": "no diagnostic selected at closeout",
+                    "resolver": {
+                        "evidence_state_identity": "sha256:final-evidence-state",
+                        "row": 11,
+                        "direction_resolution": "stop",
+                        "exact_action": "full-closeout",
+                    },
+                    "budget_reachability": "no funded path reaches another meaningful check",
+                    "workflow_source_identity": workflow_source_binding["source_snapshot"]["identity"],
+                },
+                "workflow_source_bindings": [copy.deepcopy(workflow_source_binding)],
                 "subtree_identity_algorithm": PACKAGE.PACKAGE_PATH_SIZE_SHA256_V1,
                 "authority_effect": "none",
                 "entries": [
@@ -890,16 +940,30 @@ class Slice7EndToEndTests(unittest.TestCase):
                         "destination": "candidate/bytes",
                         "role": "candidate-bytes",
                     },
+                    {
+                        "source": workflow_source_binding["source_manifest"]["path"],
+                        "scope": "file",
+                        "identity": workflow_source_binding["source_manifest"]["identity"],
+                        "destination": "workflow/R900/source-manifest.yaml",
+                        "role": "workflow-source-manifest",
+                    },
+                    {
+                        "source": workflow_source_binding["source_snapshot"]["path"],
+                        "scope": "file",
+                        "identity": workflow_source_binding["source_snapshot"]["identity"],
+                        "destination": "workflow/R900/source-snapshot.yaml",
+                        "role": "workflow-source-snapshot",
+                    },
                 ],
             }
-            package_draft = PACKAGE.validate_plan(package_plan, "draft", root)
-            self.assertTrue(package_draft["package_ready"], package_draft["findings"])
-            package_plan["package_id"] = package_draft["computed_package_id"]
+            package_audit = PACKAGE.validate_plan(package_plan, "audit", root)
+            self.assertTrue(package_audit["package_ready"], package_audit["findings"])
+            package_plan["package_id"] = package_audit["computed_package_id"]
             plan_path = root / "package-plan.yaml"
             plan_path.write_text(yaml.safe_dump(package_plan, sort_keys=False))
-            package_root = PACKAGE.build(plan_path, root / "packages", root)
-            source.write_text("live state changed after closeout\n")
-            self.assertTrue(PACKAGE.verify(package_root)["package_verified"])
+            with self.assertRaisesRegex(PACKAGE.PackageError, "build is closed"):
+                PACKAGE.build(plan_path, root / "packages", root)
+            self.assertFalse((root / "packages").exists())
 
 
 class Slice7ContractTests(unittest.TestCase):
@@ -928,21 +992,28 @@ class Slice7ContractTests(unittest.TestCase):
     def test_reflection_claim_and_parent_change_routes(self) -> None:
         self.assert_contract_contains(
             "learning-loop.md",
-            "Routine evidence with a unique R8 branch receives no extra work",
-            "a direct reversible candidate attempt may be more useful than mechanism diagnosis",
+            "Routine evidence with a unique R8 branch receives no extra research, diagnosis, or review",
+            "a direct reversible candidate attempt may dominate mechanism diagnosis",
             "For strategic evidence",
             "A valid whole-treatment comparison may support that the bounded package caused the observed local effect",
+            "This section is the only direction resolver",
+            "Apply the rows from 1 through 13 exactly once",
             "REPLAN_READY",
         )
         self.assert_contract_contains(
             "closeout-and-claims.md",
             "do not starve the campaign",
             "A withdrawing X likewise blocks only that wording",
+            "Preserve final direction state",
+            "Do not rewrite an older Outcome Reflection",
+            "each surviving project decision root, parent chain",
         )
         self.assert_contract_contains(
             "frontier-core.md",
             "pre-spend parent-rebind",
             "forced closeout",
+            "Project provenance",
+            "Any workflow update, including a changed decision rule",
         )
 
     def test_recovery_never_uses_conversation_or_git_history(self) -> None:
@@ -953,8 +1024,10 @@ class Slice7ContractTests(unittest.TestCase):
         )
         self.assert_contract_contains(
             "packaging-and-recovery.md",
-            "without repository `.git` data, conversation history",
-            "same package bytes must produce the same handoff and next router result",
+            "Copy or mount only the finished handoff",
+            "The same handoff bytes must reproduce the same project root chain",
+            "workflow release roots",
+            "next action or blocker",
         )
 
     def test_first_batch_transition_authorizes_a_rule_not_a_date_literal(self) -> None:

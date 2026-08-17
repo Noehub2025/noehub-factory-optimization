@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import yaml
@@ -39,6 +40,8 @@ def base_packet() -> dict:
         "work_kind": "code",
         "problem_epoch": 3,
         "representation_revision": 4,
+        "result_contract_version": MODULE.RESULT_CONTRACT_V1,
+        "workflow_source_identity": "sha256:" + HASH,
         "changes_executable_candidate": True,
         "candidate_root_path": "candidates/B900/",
         "candidate_package_inventory_path": "artifacts/frontier/B900/package-inventory.yaml",
@@ -63,6 +66,8 @@ def base_result() -> dict:
         "work_kind": "code",
         "problem_epoch": 3,
         "representation_revision": 4,
+        "result_contract_version": MODULE.RESULT_CONTRACT_V1,
+        "workflow_source_identity": "sha256:" + HASH,
         "started_at": "2026-08-12T08:01:00Z",
         "ended_at": "2026-08-12T08:02:00Z",
         "outcome": "completed",
@@ -151,6 +156,7 @@ def seed_evaluation_sources(root: Path, target: dict) -> None:
     candidate_id = f"B900-candidate-sha256:{package_sha256}"
     manifest = {
         "candidate_id": candidate_id,
+        "workflow_source_identity": "sha256:" + HASH,
         "source_result_identity": {
             "package_sha256": package_sha256,
             "members": members,
@@ -382,6 +388,45 @@ class BatchResultValidationTests(unittest.TestCase):
             packet, result, _ = bound_result_workspace(root)
             validation = MODULE.validate(result, "draft", packet, repo_root=root)
             self.assertTrue(validation["result_structure_ready"], validation["findings"])
+
+    def test_released_source_bound_packet_keeps_versioned_result_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, _ = bound_result_workspace(root)
+            released_baseline = MODULE.load_baseline_tool()
+            released_baseline.IDENTITY_CONTRACT = "frontier-dispatch-identity/3"
+            released_baseline.SUPPORTED_IDENTITY_CONTRACTS = {
+                "frontier-dispatch-identity/2",
+                "frontier-dispatch-identity/3",
+            }
+            released_baseline.load_validator = mock.Mock(
+                side_effect=AssertionError(
+                    "historical result publication must not load live validators"
+                )
+            )
+            with (
+                mock.patch.object(
+                    MODULE,
+                    "IDENTITY_CONTRACT",
+                    "frontier-dispatch-identity/3",
+                ),
+                mock.patch.object(
+                    MODULE,
+                    "SUPPORTED_IDENTITY_CONTRACTS",
+                    {
+                        "frontier-dispatch-identity/2",
+                        "frontier-dispatch-identity/3",
+                    },
+                ),
+                mock.patch.object(
+                    MODULE,
+                    "load_baseline_tool",
+                    return_value=released_baseline,
+                ),
+            ):
+                validation = MODULE.validate(result, "draft", packet, repo_root=root)
+            self.assertTrue(validation["result_structure_ready"], validation["findings"])
+            released_baseline.load_validator.assert_not_called()
 
     def test_new_result_rejects_execution_start_byte_drift(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -807,7 +852,7 @@ class BatchResultValidationTests(unittest.TestCase):
             self.assertEqual(completed.returncode, 1, completed.stderr)
             validation = json.loads(validation_path.read_text())
             self.assertIn(
-                "LEGACY_PACKET_NOT_AUTHORIZABLE",
+                "DISPATCH_CONTRACT_UNSUPPORTED",
                 {finding["code"] for finding in validation["findings"]},
             )
             self.assertFalse((root / "artifacts/frontier/B900/result.yaml").exists())

@@ -13,6 +13,8 @@ from pathlib import Path
 
 import yaml
 
+from test_validate_entry_packet import write_workflow_source_binding
+
 
 SCRIPT = Path(__file__).with_name("package_frontier_handoff.py")
 SPEC = importlib.util.spec_from_file_location("package_frontier_handoff", SCRIPT)
@@ -29,6 +31,7 @@ def file_identity(path: Path) -> str:
 def create_sources(root: Path) -> dict:
     task = root / "docs/task"
     evidence = root / "artifacts/frontier/B900"
+    workflow = root / "artifacts/frontier/workflow/R900"
     task.mkdir(parents=True)
     evidence.mkdir(parents=True)
     (task / "FRONTIER.md").write_text(
@@ -55,6 +58,12 @@ def create_sources(root: Path) -> dict:
             sort_keys=False,
         )
     )
+    workflow_source_binding = write_workflow_source_binding(root)
+    workflow_source_binding["governs"] = [
+        "Selection-final",
+        "B900",
+        "Outcome Reflection-final",
+    ]
     lineage_paths = {
         "closeout": task / "FRONTIER.md",
         "handoff": task / "log.md",
@@ -77,6 +86,24 @@ def create_sources(root: Path) -> dict:
         "final_handoff_identity": lineage_sources["handoff"]["identity"],
         "final_budget_identity": lineage_sources["budget"]["identity"],
         "lineage_sources": lineage_sources,
+        "final_direction_state": {
+            "compatible_evidence": ["E900"],
+            "controlling_reflections": ["OR900"],
+            "progress_meaning": "bounded diminishing returns under tested conditions",
+            "constraint_meaning": "the tested route remains locally constrained",
+            "route_set_state": "decision-complete; no reopening event observed",
+            "reopening_events": [],
+            "diagnostic_dominance": "no diagnostic selected at closeout",
+            "resolver": {
+                "evidence_state_identity": "sha256:final-evidence-state",
+                "row": 11,
+                "direction_resolution": "stop",
+                "exact_action": "full-closeout",
+            },
+            "budget_reachability": "no permitted work reaches another meaningful check",
+            "workflow_source_identity": workflow_source_binding["source_snapshot"]["identity"],
+        },
+        "workflow_source_bindings": [workflow_source_binding],
         "subtree_identity_algorithm": MODULE.PACKAGE_PATH_SIZE_SHA256_V1,
         "authority_effect": "none",
         "entries": [
@@ -101,42 +128,54 @@ def create_sources(root: Path) -> dict:
                 "destination": "evidence/B900",
                 "role": "terminal-result",
             },
+            {
+                "source": "artifacts/frontier/workflow/R900/source-manifest.yaml",
+                "scope": "file",
+                "identity": file_identity(workflow / "source-manifest.yaml"),
+                "destination": "workflow/R900/source-manifest.yaml",
+                "role": "workflow-source-manifest",
+            },
+            {
+                "source": "artifacts/frontier/workflow/R900/source-snapshot.yaml",
+                "scope": "file",
+                "identity": file_identity(workflow / "source-snapshot.yaml"),
+                "destination": "workflow/R900/source-snapshot.yaml",
+                "role": "workflow-source-snapshot",
+            },
         ],
     }
 
 
 class HandoffPackageTests(unittest.TestCase):
-    def test_valid_plan_builds_atomic_content_addressed_package(self) -> None:
+    def test_legacy_plan_is_audit_only_and_build_is_closed(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
-            draft = create_sources(root)
-            draft_result = MODULE.validate_plan(draft, "draft", root)
-            self.assertTrue(draft_result["package_ready"], draft_result["findings"])
-            frozen = copy.deepcopy(draft)
-            frozen["package_id"] = draft_result["computed_package_id"]
+            plan_document = create_sources(root)
+            audit = MODULE.validate_plan(plan_document, "audit", root)
+            self.assertTrue(audit["package_ready"], audit["findings"])
+            draft = MODULE.validate_plan(plan_document, "draft", root)
+            self.assertFalse(draft["package_ready"])
+            self.assertIn(
+                "LEGACY_PACKAGER_READ_ONLY",
+                {item["code"] for item in draft["findings"]},
+            )
+            frozen = copy.deepcopy(plan_document)
+            frozen["package_id"] = audit["computed_package_id"]
             plan = root / "plan.yaml"
             plan.write_text(yaml.safe_dump(frozen, sort_keys=False))
-            output_parent = root / "packages"
-            package_root = MODULE.build(plan, output_parent, root)
-            result = MODULE.verify(package_root)
-            self.assertTrue(result["package_verified"])
-            self.assertEqual(result["file_count"], 3)
-            self.assertEqual(package_root.parent, output_parent)
+            with self.assertRaisesRegex(MODULE.PackageError, "build is closed"):
+                MODULE.build(plan, root / "packages", root)
+            self.assertFalse((root / "packages").exists())
 
-    def test_source_change_after_plan_validation_blocks_publication(self) -> None:
+    def test_legacy_audit_detects_source_change_without_publishing(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
-            draft = create_sources(root)
-            frozen = copy.deepcopy(draft)
-            frozen["package_id"] = MODULE.validate_plan(draft, "draft", root)["computed_package_id"]
-            plan = root / "plan.yaml"
-            plan.write_text(yaml.safe_dump(frozen, sort_keys=False))
+            plan = create_sources(root)
+            self.assertTrue(MODULE.validate_plan(plan, "audit", root)["package_ready"])
             (root / "docs/task/FRONTIER.md").write_text("changed\n")
-            output_parent = root / "packages"
-            with self.assertRaisesRegex(MODULE.PackageError, "identity mismatch"):
-                MODULE.build(plan, output_parent, root)
-            self.assertFalse(output_parent.exists())
-
+            result = MODULE.validate_plan(plan, "audit", root)
+            self.assertFalse(result["package_ready"])
+            self.assertFalse((root / "packages").exists())
     def test_duplicate_destination_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
@@ -159,32 +198,15 @@ class HandoffPackageTests(unittest.TestCase):
             self.assertIn("excluded cache or version-control", details)
             self.assertIn("escapes", details)
 
-    def test_package_remains_recoverable_after_live_sources_change(self) -> None:
+    def test_closed_build_api_never_reuses_or_creates_a_destination(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
-            draft = create_sources(root)
-            frozen = copy.deepcopy(draft)
-            frozen["package_id"] = MODULE.validate_plan(draft, "draft", root)["computed_package_id"]
             plan = root / "plan.yaml"
-            plan.write_text(yaml.safe_dump(frozen, sort_keys=False))
-            package_root = MODULE.build(plan, root / "packages", root)
-            (root / "docs/task/FRONTIER.md").write_text("later generation\n")
-            (root / "artifacts/frontier/B900/result.yaml").unlink()
-            self.assertTrue(MODULE.verify(package_root)["package_verified"])
-
-    def test_existing_package_root_is_never_reused(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory).resolve()
-            draft = create_sources(root)
-            frozen = copy.deepcopy(draft)
-            frozen["package_id"] = MODULE.validate_plan(draft, "draft", root)["computed_package_id"]
-            plan = root / "plan.yaml"
-            plan.write_text(yaml.safe_dump(frozen, sort_keys=False))
+            plan.write_text("{}\n")
             output_parent = root / "packages"
-            MODULE.build(plan, output_parent, root)
-            with self.assertRaisesRegex(MODULE.PackageError, "refusing to reuse"):
+            with self.assertRaisesRegex(MODULE.PackageError, "build is closed"):
                 MODULE.build(plan, output_parent, root)
-
+            self.assertFalse(output_parent.exists())
     def test_budget_source_requires_numeric_nonnegative_spend_within_ceiling(self) -> None:
         invalid_records = (
             {
@@ -229,44 +251,11 @@ class HandoffPackageTests(unittest.TestCase):
                     {item["code"] for item in result["findings"]},
                 )
 
-    def test_tampered_frozen_plan_or_manifest_blocks_offline_verification(self) -> None:
+    def test_legacy_verify_rejects_an_unrecognized_directory(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
-            draft = create_sources(root)
-            frozen = copy.deepcopy(draft)
-            frozen["package_id"] = MODULE.validate_plan(draft, "draft", root)["computed_package_id"]
-            plan = root / "plan.yaml"
-            plan.write_text(yaml.safe_dump(frozen, sort_keys=False))
-            package_root = MODULE.build(plan, root / "packages", root)
-            packaged_plan = package_root / "package-plan.yaml"
-            original_plan = packaged_plan.read_bytes()
-            changed_plan = yaml.safe_load(original_plan)
-            changed_plan["final_budget_identity"] = "budget-sha256:changed"
-            packaged_plan.write_text(yaml.safe_dump(changed_plan, sort_keys=False))
-            with self.assertRaisesRegex(MODULE.PackageError, "plan identity mismatch"):
-                MODULE.verify(package_root)
-            packaged_plan.write_bytes(original_plan)
-            manifest = package_root / "manifest.json"
-            manifest.write_text(manifest.read_text().replace("final-state", "other-role"))
-            with self.assertRaisesRegex(MODULE.PackageError, "does not reproduce"):
-                MODULE.verify(package_root)
-
-    def test_manifest_top_level_provenance_is_verified(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory).resolve()
-            draft = create_sources(root)
-            frozen = copy.deepcopy(draft)
-            frozen["package_id"] = MODULE.validate_plan(draft, "draft", root)["computed_package_id"]
-            plan = root / "plan.yaml"
-            plan.write_text(yaml.safe_dump(frozen, sort_keys=False))
-            package_root = MODULE.build(plan, root / "packages", root)
-            manifest_path = package_root / "manifest.json"
-            manifest = __import__("json").loads(manifest_path.read_text())
-            manifest["campaign_generation"] = 999
-            manifest_path.write_text(__import__("json").dumps(manifest, indent=2, sort_keys=True) + "\n")
-            with self.assertRaisesRegex(MODULE.PackageError, "top-level provenance"):
-                MODULE.verify(package_root)
-
+            with self.assertRaisesRegex(MODULE.PackageError, "missing manifest"):
+                MODULE.verify(root)
     def test_symlinked_source_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
@@ -292,6 +281,35 @@ class HandoffPackageTests(unittest.TestCase):
             result = MODULE.validate_plan(draft, "draft", root)
             self.assertIn(
                 "PACKAGE_ENTRY_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_package_requires_final_direction_state(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            draft = create_sources(root)
+            draft.pop("final_direction_state")
+
+            result = MODULE.validate_plan(draft, "draft", root)
+
+            codes = {item["code"] for item in result["findings"]}
+            self.assertIn("REQUIRED_FIELD_MISSING", codes)
+            self.assertIn("FINAL_DIRECTION_STATE_INVALID", codes)
+
+    def test_every_workflow_source_byte_must_be_packaged(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            draft = create_sources(root)
+            draft["entries"] = [
+                entry
+                for entry in draft["entries"]
+                if entry["role"] != "workflow-source-snapshot"
+            ]
+
+            result = MODULE.validate_plan(draft, "draft", root)
+
+            self.assertIn(
+                "WORKFLOW_SOURCE_NOT_PACKAGED",
                 {item["code"] for item in result["findings"]},
             )
 

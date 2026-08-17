@@ -16,6 +16,7 @@ from authorization_target_contract import (
     omitted_top_level_field_digest,
 )
 from finding_effects import add_finding, finalize_findings, has_actionable_findings
+from workflow_source_binding import WorkflowSourceBindingError, validate_binding
 
 try:
     import yaml
@@ -27,6 +28,7 @@ VALIDATOR = "frontier-authorization-adoption/6"
 REQUIRED_FIELDS = {
     "adoption_path",
     "entry_packet",
+    "workflow_source_binding",
     "readiness_review",
     "authorization_target",
     "user_result",
@@ -237,6 +239,36 @@ def validate(
                     )
                 for item in entry_validation.get("advisories", []):
                     add_finding(findings, item["code"], item["detail"])
+
+    adopted_workflow_source = document.get("workflow_source_binding")
+    if entry_document is not None:
+        entry_workflow_source = entry_document.get("workflow_source_binding")
+        if adopted_workflow_source != entry_workflow_source:
+            add_finding(
+                findings,
+                "WORKFLOW_SOURCE_BINDING_NOT_COPIED",
+                "adoption must copy the exact workflow_source_binding from the frozen Entry packet",
+            )
+        else:
+            try:
+                validate_binding(
+                    adopted_workflow_source,
+                    root,
+                    expected_adoption_mode="entry",
+                )
+                source_identity = str(
+                    entry_workflow_source.get("source_snapshot", {}).get("identity")
+                )
+                derived_checks.append(
+                    {
+                        "name": "workflow_source_binding_from_entry",
+                        "reviewed_identity": source_identity,
+                        "observed_identity": source_identity,
+                        "status": "matched",
+                    }
+                )
+            except WorkflowSourceBindingError as exc:
+                add_finding(findings, "WORKFLOW_SOURCE_BINDING_INVALID", str(exc))
 
     readiness = document.get("readiness_review")
     if not isinstance(readiness, dict):
@@ -596,6 +628,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.phase != "audit":
+        print("legacy authority writer is closed; use frontier_provenance_cli.py", file=sys.stderr)
+        return 2
     try:
         document = yaml.safe_load(args.record.read_text())
     except (OSError, yaml.YAMLError) as exc:

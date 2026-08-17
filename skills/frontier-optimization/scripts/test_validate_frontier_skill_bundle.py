@@ -32,6 +32,8 @@ REFLECTION_FIELDS = (
     "Constraint inference",
     "Maximum supported conclusion",
     "Claim boundary",
+    "Diagnostic alternatives considered",
+    "Diagnostic dominance",
 )
 REFLECTION_REQUIRED_MARKERS = {
     "planning-records.md": (
@@ -56,11 +58,16 @@ REFLECTION_REQUIRED_MARKERS = {
         "Diagnose it only when the pending decision depends on choosing among those internal explanations",
         "A limitation that does not prevent the addressed decision remains a future-use note",
         "Distinguish a saturated comparator-derived score from exhaustion of the evaluator itself",
-        "a direct reversible candidate attempt may be more useful than mechanism diagnosis",
+        "a direct reversible candidate attempt may dominate mechanism diagnosis",
         "it has no mandatory finding enum",
-        "It adds no spend authority, investment resolver",
-        "Selection must apply its hypothesis result, mechanism inference, attribution limit, R&D implication, measurement implication, and maximum conclusion without strengthening or reinterpretation",
-        "Keep every earlier Outcome Reflection immutable and valid under its bound source",
+        "This section is the only direction resolver",
+        "Apply the rows from 1 through 13 exactly once",
+        "Perform no additional research, diagnosis, or review",
+        "Research before a formal direction choice",
+        "industrial implementations, academic evidence, community reports or artifacts",
+        "BLOCKED: non-unique technical diagnostic decision",
+        "Selection must apply its hypothesis result, mechanism inference, attribution limit, R&D implication, measurement implication, maximum conclusion, diagnostic alternatives, and dominance result without strengthening or reinterpretation",
+        "Keep every earlier Outcome Reflection immutable under its recorded project evidence",
         "These forms create no additional Q, research, review, repeated B, synthetic E, metric, or trajectory artifact",
     ),
     "campaign-cycle.md": (
@@ -70,14 +77,20 @@ REFLECTION_REQUIRED_MARKERS = {
         "Incompatible, stale, invalid, or unresolved E remains campaign evidence but cannot form an ordered trajectory",
         "A single proxy improvement cannot establish route success",
         "Selection applies the reflection; it cannot rebuild the evidence sequence, strengthen the mechanism granularity",
-        "This interpretation step creates no trajectory record, investment resolver, diagnosis, research task, review, B, spend, or authority",
+        "This interpretation step creates no trajectory record, diagnosis, research task, review, B, spend, or authority by itself",
         "An attribution limit is non-blocking unless the pending decision depends on distinguishing the internal explanations",
         "saturation of one comparator-derived score does not prove evaluator exhaustion",
         "One-shot, administrative, and implementation-only work use the applicable `not-applicable` fields",
         "Older OR records remain immutable under their source",
+        "Use only [Integrated direction resolver](learning-loop.md#integrated-direction-resolver)",
+        "another evidence round is permitted only when resolver row 7 or row 8 selects it",
+        "Until an unchanged review is adopted as `REPLAN_READY`",
     ),
     "campaign-state.md": (
-        "Selection applies the reviewed Entry evidence or latest controlling reflection; it does not reinterpret route eligibility",
+        "Selection applies the reviewed Entry evidence or latest controlling reflection; it does not reinterpret validity, technical learning, route eligibility",
+        "exactly one persisted first applicable resolver row and deterministic resolution",
+        "Routine row 13 may not add research, diagnosis, or review",
+        "no Selection may consume protected reserve for routine work",
     ),
 }
 
@@ -118,6 +131,106 @@ def reflection_contract_findings(skills_root: Path) -> list[str]:
     for prohibited in ("review_kind: trajectory", "Trajectory record:"):
         if prohibited in combined:
             findings.append(f"new trajectory process found: {prohibited}")
+    return findings
+
+
+RESOLVER_ROW_MARKERS = {
+    1: "Parent or handoff mismatch",
+    2: "safety, legality, authority, accounting, unconditional F7 stop, or halt",
+    3: "terminal B or E lacks coverage",
+    4: "parent-owned objective, Representation, Slot H measurement meaning, R8 rule, permitted scope, or claim ceiling",
+    5: "without consuming a protected reserve",
+    6: "Implementation, measurement, or comparison validity",
+    7: "plausible route set is incomplete",
+    8: "one named external or repository fact",
+    9: "more than one live causal explanation",
+    10: "spend outside the unchanged reviewed route allocation",
+    11: "Existing valid evidence and R8",
+    12: "crosses another recorded B, T replacement boundary, checkpoint, integration, promotion",
+    13: "No route, progress, Budget, parent, context, or decision-window condition above applies",
+}
+
+
+def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
+    references = skills_root / "frontier-optimization/references"
+    markdown = {path.name: path.read_text() for path in references.glob("*.md")}
+    learning = markdown["learning-loop.md"]
+    findings: list[str] = []
+
+    heading = "## Integrated direction resolver"
+    owners = [name for name, text in markdown.items() if heading in text]
+    if owners != ["learning-loop.md"]:
+        findings.append(f"direction resolver owners are {owners}")
+        return findings
+
+    section = learning.split(heading, 1)[1].split("### Research before a formal direction choice", 1)[0]
+    rows = {
+        int(match.group(1)): match.group(0)
+        for match in re.finditer(r"^\| (\d+) \| .* \|$", section, re.MULTILINE)
+    }
+    if list(sorted(rows)) != list(range(1, 14)):
+        findings.append(f"resolver priorities are {sorted(rows)}")
+    for priority, marker in RESOLVER_ROW_MARKERS.items():
+        if marker not in rows.get(priority, ""):
+            findings.append(f"resolver row {priority} omits {marker}")
+
+    required = {
+        "learning-loop.md": (
+            "Apply the rows from 1 through 13 exactly once",
+            "The first applicable row governs; no later row may override it",
+            "Unknown cost is not affordable",
+            "Do not ask the user to choose a technical diagnostic",
+            "The same diagnostic class cannot repeat from the same evidence-state identity",
+            "Make no trajectory, route, or parent inference",
+            "one additional evidence-completion round only through row 7 or row 8",
+            "further retrieval is unlikely to change the current allocation",
+            "Entry adoption fixes one project decision root",
+            "Selected, authorized, acknowledged, or execution-started B records continue under their exact project chain",
+        ),
+        "campaign-state.md": (
+            "first applicable row from learning-loop.md",
+            "exact non-unique technical diagnostic blocker",
+            "Routine row 13 may not add research, diagnosis, or review",
+            "does not reinterpret validity, technical learning, route eligibility, progress, constraint meaning, diagnostic alternatives, or dominance",
+            "Project provenance",
+        ),
+        "campaign-cycle.md": (
+            "This file adds no direction table, fallback priority, research-first exception, or post-resolver R8 override",
+            "another evidence round is permitted only when resolver row 7 or row 8 selects it",
+            "Until an unchanged review is adopted as `REPLAN_READY`",
+            "apply its persisted row, exact next action, and later-spend gates without running the resolver again",
+        ),
+        "frontier-core.md": (
+            "Semantic parent challenge",
+            "Project provenance",
+            "An unresolved or unaffordable validity, implementation, or local-mechanism diagnostic is not a semantic parent challenge",
+            "Any workflow update, including a changed decision rule",
+        ),
+        "entry-review.md": (
+            "reject automatic research at every selection",
+            "Reject routine research, any routine use of protected reserve",
+            "`project-decision` content root and an empty payload",
+            "Every section, rule, field, and example after this heading applies only to the historical version 1 packet",
+        ),
+        "closeout-and-claims.md": (
+            "Preserve final direction state",
+            "Do not rewrite an older Outcome Reflection",
+            "latest first applicable direction-resolver row",
+            "each surviving project decision root, parent chain",
+        ),
+        "packaging-and-recovery.md": (
+            "The same handoff bytes must reproduce the same project root chain",
+            "workflow release roots",
+            "Missing project bytes are a recovery blocker",
+        ),
+    }
+    for name, markers in required.items():
+        for marker in markers:
+            if marker not in markdown[name]:
+                findings.append(f"{name} omits {marker}")
+
+    if learning.count("BLOCKED: non-unique technical diagnostic decision") != 1:
+        findings.append("non-unique diagnostic blocker is not canonical")
     return findings
 
 
@@ -163,6 +276,42 @@ class FrontierSkillBundleTests(unittest.TestCase):
                     text = path.read_text()
                     path.write_text(text.replace(old, new, 1) if old else text + new)
                     self.assertNotEqual([], reflection_contract_findings(root))
+
+    def test_direction_resolver_has_one_complete_total_order(self) -> None:
+        skills_root = SCRIPT.parents[2]
+        self.assertEqual([], direction_resolver_contract_findings(skills_root))
+
+    def test_direction_resolver_rejects_priority_drift_overresearch_and_reserve_leakage(self) -> None:
+        live_root = SCRIPT.parents[2]
+        mutations = (
+            (
+                "frontier-optimization/references/learning-loop.md",
+                "| 5 | The least-cost sufficient action",
+                "| 15 | The least-cost sufficient action",
+            ),
+            (
+                "frontier-optimization/references/campaign-state.md",
+                "Routine row 13 may not add research, diagnosis, or review",
+                "Routine row 13 may add research for confidence",
+            ),
+            (
+                "frontier-optimization/references/entry-review.md",
+                "Reject routine research, any routine use of protected reserve",
+                "Permit routine research and routine use of protected reserve",
+            ),
+        )
+        for relative, old, new in mutations:
+            with self.subTest(relative=relative):
+                with tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory) / "skills"
+                    shutil.copytree(
+                        live_root,
+                        root,
+                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+                    )
+                    path = root / relative
+                    path.write_text(path.read_text().replace(old, new, 1))
+                    self.assertNotEqual([], direction_resolver_contract_findings(root))
 
     def test_live_ten_skill_bundle_is_valid_and_content_addressed(self) -> None:
         skills_root = SCRIPT.parents[2]

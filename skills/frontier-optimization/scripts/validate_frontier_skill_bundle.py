@@ -12,6 +12,11 @@ from pathlib import Path
 from typing import Any
 
 from finding_effects import add_finding, finalize_findings
+from frontier_provenance import ProvenanceError
+from frontier_provenance.source_modules import (
+    audit_python_dependencies,
+    validate_source_modules,
+)
 
 try:
     import yaml
@@ -40,6 +45,7 @@ REQUIRED_COORDINATOR_SCRIPTS = {
     "package_frontier_handoff.py",
     "post_adoption_state.py",
     "project_snapshot.py",
+    "frontier_provenance_cli.py",
     "validate_authorization_adoption.py",
     "validate_batch_packet.py",
     "validate_batch_result.py",
@@ -173,6 +179,7 @@ RESULT_CONTRACT_REQUIREMENTS = {
         "DUPLICATE_EXPERIMENT_IDENTITY",
         "result_contract_compatibility",
         "frontier-dispatch-identity/2",
+        "RESULT_CONTRACT_V1",
     ),
     "frontier-optimization/scripts/validate_batch_result.py": (
         'VALIDATOR = "frontier-batch-result-preflight/6"',
@@ -191,16 +198,19 @@ RESULT_CONTRACT_REQUIREMENTS = {
         "FORMAL_EVALUATION_INTEGRATION_INVALID",
         "normalized_nested_keys",
         "validate_dispatch_bindings",
-        "LEGACY_PACKET_NOT_AUTHORIZABLE",
+        "SUPPORTED_RESULT_CONTRACTS",
+        "RESULT_CONTRACT_UNSUPPORTED",
     ),
     "frontier-optimization/scripts/freeze_execution_baseline.py": (
         "validate_dispatch_chain",
         "authorization-adoption",
         "spend-readiness",
-        "legacy packet may be audited",
+        "SUPPORTED_IDENTITY_CONTRACTS",
+        "source_member_bytes",
+        "archived-source dispatch",
     ),
     "frontier-optimization/scripts/validate_candidate_recovery.py": (
-        'VALIDATOR = "frontier-candidate-recovery-preflight/3"',
+        'VALIDATOR = "frontier-candidate-recovery-preflight/5"',
         "CLOSEOUT_FACTS_NOT_DERIVED",
         "HANDOFF_FACTS_NOT_DERIVED",
         "BUDGET_FACTS_NOT_DERIVED",
@@ -477,6 +487,21 @@ def validate(skills_root: Path) -> dict[str, Any]:
     observed_scripts = {path.name for path in scripts_root.glob("*.py") if not path.name.startswith("test_")}
     for name in sorted(REQUIRED_COORDINATOR_SCRIPTS - observed_scripts):
         add_finding(findings, "REQUIRED_SCRIPT_MISSING", name)
+
+    source_module_manifest = (
+        skills_root
+        / "frontier-optimization/references/source-modules.yaml"
+    )
+    try:
+        source_modules = yaml.safe_load(source_module_manifest.read_text())
+        validate_source_modules(source_modules, skills_root)
+        audit_python_dependencies(source_modules, skills_root)
+    except (OSError, yaml.YAMLError, ProvenanceError) as exc:
+        add_finding(
+            findings,
+            "SOURCE_MODULE_MANIFEST_INVALID",
+            str(exc),
+        )
 
     for skill_name in EXPECTED_SKILLS:
         skill_root = skills_root / skill_name

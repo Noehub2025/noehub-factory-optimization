@@ -75,9 +75,12 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 - Candidate creation and performance evaluation are separate steps. Passing engineering checks does not prove improvement.
 - After each completed batch, the agent compares the result with the hypothesis fixed before the work, records the strongest mechanism the evidence supports, and keeps unresolved component attribution separate from the proven whole-package effect.
 - Results identify the problem and representation versions under which they were produced, so incompatible results are not compared.
+- Project evidence and workflow releases use separate identities. Updating an installed Skill does not rewrite or invalidate an existing project decision, review, authorization, result, or handoff.
 - Budget, stopping rules, known limits, and permitted claims remain visible in the main campaign document.
+- One ordered direction resolver selects the first applicable next action or blocker, so research, diagnosis, direct attempts, budget limits, and parent escalation do not compete through separate decision paths.
 - Independent reviews use fixed copies of the evidence and an agent that has not seen the drafting conversation. If that independent review is unavailable, the workflow reports a blocker instead of readiness.
 - Campaign state is recovered from repository files and their recorded versions, not from conversation history.
+- Portable project handoffs can be verified offline from exact project bytes and their typed provenance chain; they do not depend on copied workflow implementation files.
 
 ## Skills
 
@@ -113,7 +116,8 @@ Define the problem
   -> start and run the batch
   -> review implementations before measuring them
   -> measure under the approved comparison rules
-  -> compare the result with the precommitted hypothesis, record supported mechanisms and limits, and select the next action
+  -> compare the result with the precommitted hypothesis and record supported mechanisms and limits
+  -> apply one ordered direction resolver to select the next action or blocker
   -> close the campaign with final evidence, limits, and files needed to resume later
 ```
 

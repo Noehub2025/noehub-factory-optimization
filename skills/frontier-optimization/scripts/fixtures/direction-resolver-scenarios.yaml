@@ -1,0 +1,262 @@
+contract_version: frontier-direction-resolver-fixtures/2
+scenarios:
+  - id: parent-no-frontier-record
+    evidence_state: sha256:parent-no-record
+    facts: {parent_mismatch: no-frontier-record, route_set: incomplete}
+    expected: {row: 1, direction: blocked, action: PARENT_REVIEW_REQUIRED}
+  - id: parent-compatible-zero-spend-rebind
+    evidence_state: sha256:parent-rebind
+    facts: {parent_mismatch: eligible-zero-spend-rebind, route_set: incomplete}
+    expected: {row: 1, direction: blocked, action: entry-rebind}
+  - id: parent-recorded-forced-halt-handoff
+    evidence_state: sha256:parent-recorded-handoff
+    facts: {parent_mismatch: adopted-forced-halt-closeout, hard_block: halt}
+    expected: {row: 1, direction: halt, action: recorded-parent-handoff}
+  - id: parent-mismatch-after-frontier-work
+    evidence_state: sha256:parent-forced-closeout
+    facts: {parent_mismatch: after-frontier-record, route_set: incomplete}
+    expected: {row: 1, direction: halt, action: forced-halt-closeout}
+  - id: hard-authority-stop-dominates-validity
+    evidence_state: sha256:hard-stop-validity
+    facts: {hard_block: authority, validity: unresolved-funded}
+    expected: {row: 2, direction: halt, action: authority-halt-closeout}
+  - id: unconditional-f7-stop
+    evidence_state: sha256:unconditional-f7
+    facts: {hard_block: unconditional-f7, route_set: incomplete}
+    expected: {row: 2, direction: stop, action: full-closeout}
+  - id: coverage-gap-dominates-budget
+    evidence_state: sha256:coverage-budget
+    facts: {coverage_blocker: uncovered-E008, budget_block: exact-blocker}
+    expected: {row: 3, direction: blocked, action: uncovered-E008}
+  - id: semantic-parent-challenge
+    evidence_state: sha256:semantic-parent
+    facts: {semantic_parent_challenge: slot-h-no-longer-tracks-objective, route_set: incomplete}
+    expected: {row: 4, direction: halt, action: semantic-parent-forced-closeout}
+  - id: protected-reserve-exact-blocker
+    evidence_state: sha256:reserve-blocker
+    facts: {budget_block: exact-blocker, validity: unresolved-funded}
+    expected: {row: 5, direction: blocked, action: budget-or-reserve-blocker}
+  - id: protected-reserve-unique-stop
+    evidence_state: sha256:reserve-stop
+    facts: {budget_block: unique-stop, route_set: incomplete}
+    expected: {row: 5, direction: stop, action: full-closeout}
+  - id: protected-reserve-zero-spend-replan
+    evidence_state: sha256:reserve-replan
+    facts: {budget_block: zero-spend-replan, outside_allocation: true}
+    expected: {row: 5, direction: strategic replan, action: prepare-replan-no-spend}
+  - id: funded-validity-diagnostic
+    evidence_state: sha256:funded-validity
+    facts:
+      validity: unresolved-funded
+      validity_diagnostic:
+        sufficient: true
+        affordable: true
+        reachable: true
+        non_dominated: [D-validity]
+        selected: D-validity
+    expected: {row: 6, direction: local diagnostic, action: selected-validity-diagnostic}
+  - id: non-unique-validity-diagnostic
+    evidence_state: sha256:nonunique-validity
+    facts:
+      validity: unresolved-non-unique
+      validity_diagnostic:
+        sufficient: true
+        affordable: true
+        reachable: true
+        non_dominated: [D-validity-a, D-validity-b]
+    expected: {row: 6, direction: blocked, action: non-unique-technical-diagnostic}
+  - id: reopened-route-landscape
+    evidence_state: sha256:reopened-route
+    facts: {route_set: reopened-route-landscape, local_diagnostic: unique}
+    expected: {row: 7, direction: route-landscape Q, action: route-landscape-Q}
+  - id: incomplete-route-landscape
+    evidence_state: sha256:incomplete-route
+    facts: {route_set: incomplete, local_diagnostic: unique}
+    expected: {row: 7, direction: route-landscape Q, action: route-landscape-Q}
+  - id: unresolved-prerequisite-first
+    evidence_state: sha256:prerequisite-first
+    facts: {route_set: prerequisite-check}
+    expected: {row: 7, direction: local diagnostic, action: prerequisite-first-check}
+  - id: shared-assumption-first
+    evidence_state: sha256:shared-assumption
+    facts: {route_set: assumption-check}
+    expected: {row: 7, direction: local diagnostic, action: shared-assumption-check}
+  - id: formal-choice-needs-external-fact
+    evidence_state: sha256:focused-fact
+    facts: {focused_fact: successor-comparator-practice}
+    expected: {row: 8, direction: focused Q, action: focused-Q:successor-comparator-practice}
+  - id: complete-route-local-diagnosis
+    evidence_state: sha256:local-diagnosis
+    facts: {local_diagnostic: unique}
+    expected: {row: 9, direction: local diagnostic, action: selected-local-diagnostic}
+  - id: dominated-diagnostic-repeat
+    evidence_state: sha256:dominated-repeat
+    facts: {local_diagnostic: dominated-repeat}
+    expected: {row: 9, direction: blocked, action: dominated-diagnostic-repeat-blocker}
+  - id: non-unique-local-diagnosis
+    evidence_state: sha256:nonunique-local
+    facts: {local_diagnostic: non-unique}
+    expected: {row: 9, direction: blocked, action: non-unique-technical-diagnostic}
+  - id: outside-allocation-probe
+    evidence_state: sha256:outside-allocation
+    facts: {outside_allocation: true, specialized_gate: implementation-review}
+    expected: {row: 10, direction: strategic replan, action: require-REPLAN_READY-before-dependent-B}
+  - id: evidence-determines-strategic-change
+    evidence_state: sha256:r8-strategic
+    facts: {evidence_determined: strategic-change, specialized_gate: design-review}
+    expected: {row: 11, direction: strategic replan, action: require-REPLAN_READY}
+  - id: evidence-determines-stop
+    evidence_state: sha256:r8-stop
+    facts: {evidence_determined: campaign-stop, specialized_gate: claims-review}
+    expected: {row: 11, direction: stop, action: full-closeout}
+  - id: specialized-implementation-gate
+    evidence_state: sha256:specialized-implementation
+    facts: {specialized_gate: implementation-review}
+    expected: {row: 12, direction: blocked, action: require-implementation-review}
+  - id: specialized-focused-evidence
+    evidence_state: sha256:specialized-focused
+    facts: {specialized_gate: focused-Q:confirmation-practice}
+    expected: {row: 12, direction: focused Q, action: focused-Q:confirmation-practice}
+  - id: specialized-user-authorization
+    evidence_state: sha256:specialized-v
+    facts: {specialized_gate: execution-V}
+    expected: {row: 12, direction: blocked, action: require-execution-V}
+  - id: routine-unique-r8
+    evidence_state: sha256:routine-r8
+    facts: {routine_r8: B055-local-probe}
+    expected: {row: 13, direction: local R8, action: B055-local-probe}
+  - id: positive-checkpoint-due
+    evidence_state: sha256:positive-checkpoint
+    facts: {result: positive, checkpoint: due, specialized_gate: route-checkpoint}
+    expected: {row: 12, direction: blocked, action: require-route-checkpoint}
+  - id: unfunded-validity-diagnosis
+    evidence_state: sha256:unfunded-validity
+    facts: {budget_block: exact-blocker, required_path: validity-diagnostic, validity: unresolved-funded}
+    expected: {row: 5, direction: blocked, action: budget-or-reserve-blocker}
+  - id: unfunded-route-refresh
+    evidence_state: sha256:unfunded-route-refresh
+    facts: {budget_block: exact-blocker, required_path: route-landscape-Q, route_set: incomplete}
+    expected: {row: 5, direction: blocked, action: budget-or-reserve-blocker}
+  - id: expected-maturation
+    evidence_state: sha256:expected-maturation
+    facts:
+      trajectory: expected-maturation
+      compatible_increments: [0.9, 0.7, 0.5]
+      prospective_envelope: positive-above-resolution
+      within_allocation: true
+      routine_r8: continue-current-route
+    expected: {row: 13, direction: local R8, action: continue-current-route}
+  - id: prospective-plateau
+    evidence_state: sha256:prospective-plateau
+    facts:
+      trajectory: prospective-plateau
+      compatible_increments: [0.4, 0.1, 0.0]
+      prospective_threshold_crossed: true
+      evidence_determined: strategic-change
+    expected: {row: 11, direction: strategic replan, action: require-REPLAN_READY}
+  - id: protocol-drift-validity-first
+    evidence_state: sha256:protocol-drift
+    facts:
+      validity: protocol-drift
+      changed_dimensions: [evaluator, workload, comparator]
+      forbidden_inference: trajectory-decline
+      validity_diagnostic:
+        sufficient: true
+        affordable: true
+        reachable: true
+        non_dominated: [D-protocol-comparability]
+        selected: D-protocol-comparability
+    expected: {row: 6, direction: local diagnostic, action: selected-validity-diagnostic}
+  - id: measurement-floor-confirmation
+    evidence_state: sha256:measurement-floor
+    facts:
+      validity: measurement-floor
+      apparent_change: below-resolution
+      forbidden_inference: route-exhaustion
+      validity_diagnostic:
+        sufficient: true
+        affordable: true
+        reachable: true
+        non_dominated: [D-resolution-bound]
+        selected: D-resolution-bound
+    expected: {row: 6, direction: local diagnostic, action: selected-validity-diagnostic}
+  - id: unexpected-slowdown-diagnosis
+    evidence_state: sha256:unexpected-slowdown
+    facts:
+      trajectory: unexpected-slowdown
+      prospective_stop_rule: absent
+      local_diagnostic: unique
+    expected: {row: 9, direction: local diagnostic, action: selected-local-diagnostic}
+  - id: single-anomaly-confirmation
+    evidence_state: sha256:single-anomaly
+    facts:
+      trajectory: single-anomaly
+      longer_compatible_sequence: true
+      local_diagnostic: unique
+    expected: {row: 9, direction: local diagnostic, action: selected-local-diagnostic}
+  - id: positive-but-unreachable
+    evidence_state: sha256:positive-unreachable
+    facts:
+      trajectory: positive-but-unreachable
+      budget_block: unique-stop
+      required_path: confirmation-threshold
+    expected: {row: 5, direction: stop, action: full-closeout}
+acceptance_scenarios:
+  - {number: 1, name: Routine unchanged route, target: {kind: resolver-fixture, id: routine-unique-r8}}
+  - {number: 2, name: Positive but checkpoint due, target: {kind: resolver-fixture, id: positive-checkpoint-due}}
+  - {number: 3, name: Incomplete route set, target: {kind: resolver-fixture, id: incomplete-route-landscape}}
+  - {number: 4, name: Reopened exclusion, target: {kind: resolver-fixture, id: reopened-route-landscape}}
+  - {number: 5, name: Focused fact, target: {kind: resolver-fixture, id: formal-choice-needs-external-fact}}
+  - {number: 6, name: Outside-allocation probe, target: {kind: resolver-fixture, id: outside-allocation-probe}}
+  - {number: 7, name: Parent mismatch, target: {kind: resolver-fixture, id: parent-mismatch-after-frontier-work}}
+  - {number: 8, name: Protected reserve, target: {kind: resolver-fixture, id: protected-reserve-exact-blocker}}
+  - {number: 9, name: General recovery request, target: {kind: contract-assertion, path: references/frontier-core.md, marker: Grants campaign-opening planning only}}
+  - {number: 10, name: No fake alternative, target: {kind: contract-assertion, path: references/entry-review.md, marker: Accept one eligible route without a fake T or tradeoff V}}
+  - {number: 11, name: Unfunded validity diagnosis, target: {kind: resolver-fixture, id: unfunded-validity-diagnosis}}
+  - {number: 12, name: Unfunded route refresh, target: {kind: resolver-fixture, id: unfunded-route-refresh}}
+  - {number: 13, name: Expected maturation, target: {kind: resolver-fixture, id: expected-maturation}}
+  - {number: 14, name: Prospective plateau, target: {kind: resolver-fixture, id: prospective-plateau}}
+  - {number: 15, name: Protocol drift, target: {kind: resolver-fixture, id: protocol-drift-validity-first}}
+  - {number: 16, name: Measurement floor, target: {kind: resolver-fixture, id: measurement-floor-confirmation}}
+  - {number: 17, name: Unexpected slowdown, target: {kind: resolver-fixture, id: unexpected-slowdown-diagnosis}}
+  - {number: 18, name: Single anomaly, target: {kind: resolver-fixture, id: single-anomaly-confirmation}}
+  - {number: 19, name: Proxy-only improvement, target: {kind: contract-assertion, path: references/learning-loop.md, marker: complete parent-owned vector}}
+  - {number: 20, name: Constraint migration, target: {kind: contract-assertion, path: references/learning-loop.md, marker: Constraint inference}}
+  - {number: 21, name: Trajectory reopens an alternative, target: {kind: resolver-fixture, id: reopened-route-landscape}}
+  - {number: 22, name: No credible alternative, target: {kind: resolver-fixture, id: evidence-determines-stop}}
+  - {number: 23, name: Positive but unreachable, target: {kind: resolver-fixture, id: positive-but-unreachable}}
+  - {number: 24, name: Parallel results, target: {kind: resolver-fixture, id: coverage-gap-dominates-budget}}
+  - {number: 25, name: One-shot work, target: {kind: contract-assertion, path: references/learning-loop.md, marker: For one-shot work}}
+  - {number: 26, name: Qualitative iterative route, target: {kind: contract-assertion, path: references/planning-records.md, marker: mechanism checkpoint}}
+  - {number: 27, name: Post-hoc rule, target: {kind: contract-assertion, path: references/learning-loop.md, marker: prospective}}
+  - {number: 28, name: Semantic conflict, target: {kind: contract-assertion, path: references/campaign-state.md, marker: Selection applies the reviewed Entry evidence or latest controlling reflection}}
+  - {number: 29, name: Compaction recovery, target: {kind: regression-test, path: scripts/test_frontier_provenance.py, test: test_complete_handoff_verifies_offline_from_outcome_root}}
+  - {number: 30, name: Claims boundary, target: {kind: contract-assertion, path: references/closeout-and-claims.md, marker: local optimum}}
+  - {number: 31, name: Mid-campaign workflow update, target: {kind: contract-assertion, path: references/frontier-core.md, marker: Any workflow update, including a changed decision rule}}
+  - {number: 32, name: Project-only decision node, target: {kind: contract-assertion, path: references/entry-review.md, marker: '`project-decision` content root and an empty payload'}}
+  - {number: 33, name: General reopen request, target: {kind: contract-assertion, path: references/frontier-core.md, marker: Grants campaign-opening planning only}}
+  - {number: 34, name: Specific recovery request, target: {kind: regression-test, path: scripts/test_validate_candidate_recovery.py, test: test_requested_identity_mismatch_blocks_before_generation_artifacts}}
+  - {number: 35, name: Critical source defect, target: {kind: resolver-fixture, id: hard-authority-stop-dominates-validity}}
+  - {number: 36, name: Regression review is not campaign adoption, target: {kind: contract-assertion, path: references/packaging-and-recovery.md, marker: outside campaigns}}
+  - {number: 37, name: Adaptive evaluator reuse, target: {kind: contract-assertion, path: references/learning-loop.md, marker: adaptive-exposure interpretation}}
+  - {number: 38, name: Semantic parent challenge, target: {kind: resolver-fixture, id: semantic-parent-challenge}}
+  - {number: 39, name: Common-mode route assumption, target: {kind: resolver-fixture, id: shared-assumption-first}}
+  - {number: 40, name: Route replacement and maturity, target: {kind: contract-assertion, path: references/learning-loop.md, marker: replacement boundary}}
+  - {number: 41, name: Parent-owned result vector, target: {kind: contract-assertion, path: references/learning-loop.md, marker: complete parent-owned vector}}
+  - {number: 42, name: Mutable context and expiring action, target: {kind: contract-assertion, path: references/entry-review.md, marker: action window}}
+  - {number: 43, name: Dominated diagnostic repeat, target: {kind: resolver-fixture, id: dominated-diagnostic-repeat}}
+  - {number: 44, name: Proportionate governance, target: {kind: contract-assertion, path: references/entry-review.md, marker: proportionality}}
+  - {number: 45, name: Workflow identity exclusion, target: {kind: contract-assertion, path: references/learning-loop.md, marker: workflow source, semantic, validator, worker, deployment, or release change}}
+  - {number: 46, name: Fabricated progress rule, target: {kind: contract-assertion, path: references/entry-review.md, marker: numeric rule invented only to complete the template}}
+  - {number: 47, name: Evidence-derived route before Q completion, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: provisional}}
+  - {number: 48, name: Established route wins, target: {kind: contract-assertion, path: references/entry-review.md, marker: novelty}}
+  - {number: 49, name: New route rejected cheaply, target: {kind: contract-assertion, path: references/planning-records.md, marker: earliest affordable discriminating check}}
+  - {number: 50, name: New route survives the first probe, target: {kind: contract-assertion, path: references/entry-review.md, marker: implementation review}}
+  - {number: 51, name: Decision-complete without exhaustive search, target: {kind: contract-assertion, path: references/entry-review.md, marker: decision completeness}}
+  - {number: 52, name: Literature dump is not route diversity, target: {kind: contract-assertion, path: references/entry-review.md, marker: mechanism class}}
+  - {number: 53, name: Superficial analogy, target: {kind: contract-assertion, path: references/entry-review.md, marker: surface analogy}}
+  - {number: 54, name: No continuous ideation tax, target: {kind: resolver-fixture, id: routine-unique-r8}}
+  - {number: 55, name: No learning or evaluation signal, target: {kind: contract-assertion, path: references/entry-review.md, marker: feedback}}
+  - {number: 56, name: Unresolved data adequacy, target: {kind: resolver-fixture, id: unresolved-prerequisite-first}}
+  - {number: 57, name: Supported small-data route, target: {kind: contract-assertion, path: references/entry-review.md, marker: prerequisite evidence}}
+  - {number: 58, name: Failed prerequisite, target: {kind: contract-assertion, path: references/planning-records.md, marker: A failed prerequisite}}

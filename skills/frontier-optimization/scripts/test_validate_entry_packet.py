@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import importlib.util
 import json
 import subprocess
@@ -12,6 +13,16 @@ import unittest
 from pathlib import Path
 
 import yaml
+import workflow_source_binding as WORKFLOW_SOURCE
+
+from workflow_source_binding import (
+    CLOSURE_CONTRACT_V1,
+    CLOSURE_PATHS_BY_CONTRACT,
+    CURRENT_CLOSURE_CONTRACT,
+    GOVERNING_PATHS,
+    validate_binding,
+    validate_source_closure,
+)
 
 
 SCRIPT = Path(__file__).with_name("validate_entry_packet.py")
@@ -93,7 +104,68 @@ def ensure_git_repository(root: Path) -> None:
         subprocess.run(["git", "init", "-q", str(root)], check=True)
 
 
+def write_workflow_source_binding(root: Path) -> dict:
+    skill_root = Path(__file__).parent.parent
+    source_paths = tuple(sorted(GOVERNING_PATHS))
+    def source_file(logical_path: str) -> Path:
+        if logical_path.startswith("workers/"):
+            _, skill_name, *relative = Path(logical_path).parts
+            return skill_root.parent / skill_name / Path(*relative)
+        return skill_root / logical_path
+
+    source_members = {path: source_file(path).read_text() for path in source_paths}
+    snapshot = {
+        "contract_version": "frontier-workflow-source-snapshot/1",
+        "closure_contract": CURRENT_CLOSURE_CONTRACT,
+        "members": [
+            {"path": path, "content": content}
+            for path, content in source_members.items()
+        ],
+    }
+    snapshot_raw = write_mapping(
+        root,
+        "artifacts/frontier/workflow/R900/source-snapshot.yaml",
+        snapshot,
+    )
+    snapshot_digest = MODULE.sha256_bytes(snapshot_raw)
+    manifest = {
+        "contract_version": "frontier-workflow-source-manifest/1",
+        "closure_contract": CURRENT_CLOSURE_CONTRACT,
+        "snapshot_identity": f"sha256:{snapshot_digest}",
+        "members": [
+            {
+                "path": path,
+                "size": len(content.encode()),
+                "sha256": MODULE.sha256_bytes(content.encode()),
+            }
+            for path, content in source_members.items()
+        ],
+    }
+    manifest_raw = write_mapping(
+        root,
+        "artifacts/frontier/workflow/R900/source-manifest.yaml",
+        manifest,
+    )
+    manifest_digest = MODULE.sha256_bytes(manifest_raw)
+    return {
+        "contract_version": "frontier-workflow-source-binding/1",
+        "adoption_mode": "entry",
+        "source_manifest": {
+            "path": "artifacts/frontier/workflow/R900/source-manifest.yaml",
+            "identity": f"sha256:{manifest_digest}",
+            "file_sha256": manifest_digest,
+        },
+        "source_snapshot": {
+            "path": "artifacts/frontier/workflow/R900/source-snapshot.yaml",
+            "identity": f"sha256:{snapshot_digest}",
+            "file_sha256": snapshot_digest,
+        },
+        "governs": ["Selection", "B900", "V900", "Outcome Reflection"],
+    }
+
+
 def make_workspace(root: Path, frozen: bool = False, target_launcher_id: str | None = None) -> dict:
+    workflow_source_binding = write_workflow_source_binding(root)
     direct_raw = write_mapping(root, "artifacts/frontier/B900-direct-profile.yaml", {"profile": "direct"})
     direct_identity = f"sha256:{MODULE.sha256_bytes(direct_raw)}"
     source_base_identity = "source-sha256:example"
@@ -166,7 +238,11 @@ def make_workspace(root: Path, frozen: bool = False, target_launcher_id: str | N
         "changes_executable_candidate": True,
         "executor": "Agent",
         "required_inputs": [],
-        "identity_contract": BATCH.IDENTITY_CONTRACT,
+            "identity_contract": BATCH.IDENTITY_CONTRACT,
+            "result_contract_version": BATCH.RESULT_CONTRACT_V1,
+            "workflow_source_binding": copy.deepcopy(workflow_source_binding),
+            "workflow_source_identity": workflow_source_binding["source_snapshot"]["identity"],
+            "worker_source_member": "workers/run-frontier-batch/SKILL.md",
         "design_profile": "direct",
         "design_contract_identity": direct_identity,
         "design_contract_binding": {
@@ -397,6 +473,7 @@ def make_workspace(root: Path, frozen: bool = False, target_launcher_id: str | N
         "representation_generated_at": "2026-01-01T00:00:00Z",
         "representation_review_result": "PROCEED_EXPLORATORY",
         "representation_permitted": "bounded scope",
+        "workflow_source_binding": workflow_source_binding,
         "campaign_generation": 1,
         "recovery_lineage": None,
         "repository_structure_disposition": "existing-integrated",
@@ -1079,6 +1156,195 @@ class EntryPacketSchemaTests(unittest.TestCase):
         packet = {"review_kind": "entry", "campaign_generation": 2, "selected_batches": ["B001"]}
         result = MODULE.validate(packet, "audit")
         self.assertIn("RECOVERY_LINEAGE_REQUIRED", {item["code"] for item in result["findings"]})
+
+    def test_entry_requires_recoverable_workflow_source_binding(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet = make_workspace(root)
+            packet.pop("workflow_source_binding")
+
+            result = MODULE.validate(packet, "draft", root)
+
+            codes = {item["code"] for item in result["findings"]}
+            self.assertIn("REQUIRED_FIELD_MISSING", codes)
+            self.assertIn("WORKFLOW_SOURCE_BINDING_INVALID", codes)
+
+    def test_entry_rejects_changed_workflow_source_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet = make_workspace(root)
+            source_path = root / packet["workflow_source_binding"]["source_snapshot"]["path"]
+            source_path.write_text("resolver: changed\n")
+
+            result = MODULE.validate(packet, "draft", root)
+
+            self.assertIn(
+                "WORKFLOW_SOURCE_BINDING_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_entry_rejects_self_consistent_but_incomplete_workflow_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet = make_workspace(root)
+            binding = packet["workflow_source_binding"]
+            snapshot_path = root / binding["source_snapshot"]["path"]
+            snapshot = yaml.safe_load(snapshot_path.read_text())
+            snapshot["members"] = [
+                item
+                for item in snapshot["members"]
+                if item["path"] != "references/campaign-cycle.md"
+            ]
+            snapshot_path.write_text(yaml.safe_dump(snapshot, sort_keys=False))
+            snapshot_digest = MODULE.sha256_bytes(snapshot_path.read_bytes())
+            binding["source_snapshot"].update(
+                {
+                    "identity": f"sha256:{snapshot_digest}",
+                    "file_sha256": snapshot_digest,
+                }
+            )
+            manifest_path = root / binding["source_manifest"]["path"]
+            manifest = yaml.safe_load(manifest_path.read_text())
+            manifest["snapshot_identity"] = f"sha256:{snapshot_digest}"
+            manifest["members"] = [
+                item
+                for item in manifest["members"]
+                if item["path"] != "references/campaign-cycle.md"
+            ]
+            manifest_path.write_text(yaml.safe_dump(manifest, sort_keys=False))
+            manifest_digest = MODULE.sha256_bytes(manifest_path.read_bytes())
+            binding["source_manifest"].update(
+                {
+                    "identity": f"sha256:{manifest_digest}",
+                    "file_sha256": manifest_digest,
+                }
+            )
+
+            result = MODULE.validate(packet, "draft", root)
+
+            self.assertIn(
+                "WORKFLOW_SOURCE_BINDING_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_replan_workflow_source_binding_requires_and_accepts_prior_binding(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            binding = write_workflow_source_binding(root)
+            binding["adoption_mode"] = "replan"
+            binding["prior_binding"] = "sha256:prior-workflow-source"
+
+            observed = validate_binding(
+                binding,
+                root,
+                expected_adoption_mode="replan",
+            )
+
+            self.assertEqual(
+                observed["source_snapshot"],
+                binding["source_snapshot"]["identity"],
+            )
+            binding.pop("prior_binding")
+            with self.assertRaisesRegex(ValueError, "requires prior_binding"):
+                validate_binding(binding, root, expected_adoption_mode="replan")
+
+    def test_v1_workflow_source_closure_remains_immutable(self) -> None:
+        skill_root = Path(__file__).parent.parent
+        normative_references = {
+            path.relative_to(skill_root).as_posix()
+            for path in (skill_root / "references").glob("*.md")
+        }
+        production_scripts = {
+            path.relative_to(skill_root).as_posix()
+            for path in (skill_root / "scripts").glob("*.py")
+            if not path.name.startswith("test_")
+            and path.name != "validate_frontier_skill_bundle.py"
+        }
+        coordinator_config = {"agents/openai.yaml"}
+        worker_sources = {
+            f"workers/{skill_name}/{relative}"
+            for skill_name in (
+                "grill-frontier",
+                "research-frontier",
+                "review-frontier",
+                "run-frontier-batch",
+            )
+            for relative in ("SKILL.md", "agents/openai.yaml")
+        }
+        version_2_only = {
+            "references/provenance-and-identity.md",
+            "scripts/frontier_provenance_cli.py",
+        }
+
+        self.assertEqual(
+            set(GOVERNING_PATHS),
+            (
+                {"SKILL.md"}
+                | coordinator_config
+                | normative_references
+                | production_scripts
+                | worker_sources
+            )
+            - version_2_only,
+        )
+        self.assertEqual(
+            CLOSURE_PATHS_BY_CONTRACT[CLOSURE_CONTRACT_V1],
+            GOVERNING_PATHS,
+        )
+
+    def test_source_closure_rejects_self_consistent_extra_member(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            binding = write_workflow_source_binding(root)
+            snapshot_path = root / binding["source_snapshot"]["path"]
+            manifest_path = root / binding["source_manifest"]["path"]
+            snapshot = yaml.safe_load(snapshot_path.read_text())
+            manifest = yaml.safe_load(manifest_path.read_text())
+            content = "def test_release_only(): pass\n"
+            snapshot["members"].append(
+                {"path": "scripts/test_release_only.py", "content": content}
+            )
+            manifest["members"].append(
+                {
+                    "path": "scripts/test_release_only.py",
+                    "size": len(content.encode()),
+                    "sha256": MODULE.sha256_bytes(content.encode()),
+                }
+            )
+            snapshot_raw = yaml.safe_dump(snapshot, sort_keys=False).encode()
+            snapshot_identity = f"sha256:{MODULE.sha256_bytes(snapshot_raw)}"
+            manifest["snapshot_identity"] = snapshot_identity
+            manifest_raw = yaml.safe_dump(manifest, sort_keys=False).encode()
+
+            with self.assertRaisesRegex(ValueError, "extra=scripts/test_release_only.py"):
+                validate_source_closure(
+                    manifest_raw,
+                    snapshot_raw,
+                    snapshot_identity,
+                )
+
+    def test_historical_closure_remains_valid_after_a_new_current_version(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            binding = write_workflow_source_binding(root)
+            manifest_raw = (root / binding["source_manifest"]["path"]).read_bytes()
+            snapshot_raw = (root / binding["source_snapshot"]["path"]).read_bytes()
+            v2 = "frontier-workflow-source-closure/2-test"
+            original_current = WORKFLOW_SOURCE.CURRENT_CLOSURE_CONTRACT
+            try:
+                WORKFLOW_SOURCE.CLOSURE_PATHS_BY_CONTRACT[v2] = frozenset(
+                    set(GOVERNING_PATHS) | {"references/future-contract.md"}
+                )
+                WORKFLOW_SOURCE.CURRENT_CLOSURE_CONTRACT = v2
+
+                validate_source_closure(
+                    manifest_raw,
+                    snapshot_raw,
+                    binding["source_snapshot"]["identity"],
+                )
+            finally:
+                WORKFLOW_SOURCE.CURRENT_CLOSURE_CONTRACT = original_current
+                WORKFLOW_SOURCE.CLOSURE_PATHS_BY_CONTRACT.pop(v2, None)
 
 
 if __name__ == "__main__":

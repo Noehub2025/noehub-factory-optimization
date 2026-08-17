@@ -15,6 +15,8 @@ from typing import Any
 from identity_bindings import IdentityBindingError, load_file_binding, resolve_repo_file
 from finding_effects import add_finding, finalize_findings
 from validate_candidate_package import validate_candidate_package
+from frontier_provenance.content import ProvenanceError
+from frontier_provenance.compatibility import require_v1_completion
 
 try:
     import yaml
@@ -24,6 +26,9 @@ except ImportError as exc:  # pragma: no cover
 
 VALIDATOR = "frontier-batch-result-preflight/6"
 IDENTITY_CONTRACT = "frontier-dispatch-identity/2"
+SUPPORTED_IDENTITY_CONTRACTS = {IDENTITY_CONTRACT}
+RESULT_CONTRACT_V1 = "frontier-batch-result/1"
+SUPPORTED_RESULT_CONTRACTS = {RESULT_CONTRACT_V1}
 OUTCOMES = {"completed", "interrupted", "failed", "blocked", "waiting_for_input"}
 REQUIRED_FIELDS = {
     "result_packet_path",
@@ -39,6 +44,8 @@ REQUIRED_FIELDS = {
     "work_kind",
     "problem_epoch",
     "representation_revision",
+    "result_contract_version",
+    "workflow_source_identity",
     "started_at",
     "ended_at",
     "outcome",
@@ -113,6 +120,8 @@ PACKET_BINDINGS = {
     "work_kind": "work_kind",
     "problem_epoch": "problem_epoch",
     "representation_revision": "representation_revision",
+    "result_contract_version": "result_contract_version",
+    "workflow_source_identity": "workflow_source_identity",
     "changes_executable_candidate": "changes_executable_candidate",
     "result_packet_path": "result_packet_path",
 }
@@ -191,7 +200,7 @@ def validate_dispatch_bindings(
     repo_root: Path | None,
     findings: list[dict[str, str]],
 ) -> None:
-    if not isinstance(packet, dict) or packet.get("identity_contract") != IDENTITY_CONTRACT:
+    if not isinstance(packet, dict) or packet.get("identity_contract") not in SUPPORTED_IDENTITY_CONTRACTS:
         return
     if repo_root is None:
         add_finding(
@@ -263,7 +272,21 @@ def validate_dispatch_bindings(
         )
         if verification.get("execution_start_id") != execution_start.identity:
             raise ValueError("execution-start verifier returned a different identity")
-    except (OSError, ValueError, yaml.YAMLError) as exc:
+        authority_root = (
+            start.get("execution_authority", {}).get("record", {}).get("identity")
+        )
+        inventory = read_yaml(
+            repo_root / ".frontier/provenance-rollout.yaml",
+            "v1 rollout inventory",
+        )
+        require_v1_completion(
+            inventory,
+            authority_root=authority_root,
+            requested_descendant="outcome",
+            scope_root=packet.get("packet_id"),
+            verified_parent_role="execution",
+        )
+    except (OSError, ValueError, yaml.YAMLError, ProvenanceError) as exc:
         add_finding(findings, "EXECUTION_START_RECOMPUTATION_FAILED", str(exc))
 
 
@@ -510,6 +533,12 @@ def build_experiment_result_contract_probe(packet: dict[str, Any]) -> dict[str, 
         "work_kind": packet.get("work_kind"),
         "problem_epoch": packet.get("problem_epoch"),
         "representation_revision": packet.get("representation_revision"),
+        "result_contract_version": packet.get("result_contract_version"),
+        "workflow_source_identity": (
+            packet.get("workflow_source_binding", {})
+            .get("source_snapshot", {})
+            .get("identity")
+        ),
         "started_at": "contract-probe",
         "ended_at": "contract-probe",
         "outcome": "completed",
@@ -825,6 +854,7 @@ def validate_materialized_candidate_sources(
         packet.get("candidate_root_path"),
         packet.get("candidate_manifest_path"),
         expected_candidate_id=document.get("candidate_identity"),
+        expected_workflow_source_identity=document.get("workflow_source_identity"),
         require_final_manifest=True,
         prohibited_downstream_paths=tuple(
             path
@@ -999,6 +1029,20 @@ def validate(
     check_dispatch: bool = True,
 ) -> dict[str, Any]:
     findings: list[dict[str, str]] = []
+    result_contract = document.get("result_contract_version")
+    packet_result_contract = (
+        packet.get("result_contract_version") if isinstance(packet, dict) else None
+    )
+    if (
+        result_contract not in SUPPORTED_RESULT_CONTRACTS
+        or packet_result_contract not in SUPPORTED_RESULT_CONTRACTS
+        or result_contract != packet_result_contract
+    ):
+        add_finding(
+            findings,
+            "RESULT_CONTRACT_UNSUPPORTED",
+            "result and packet must name the same supported versioned result contract",
+        )
     for field in sorted(REQUIRED_FIELDS - document.keys()):
         add_finding(findings, "REQUIRED_FIELD_MISSING", field)
     if document.get("work_kind") == "experiment":
@@ -1054,12 +1098,12 @@ def validate(
             repo_root is not None
             and phase != "audit"
             and isinstance(packet, dict)
-            and packet.get("identity_contract") != IDENTITY_CONTRACT
+            and packet.get("identity_contract") not in SUPPORTED_IDENTITY_CONTRACTS
         ):
             add_finding(
                 findings,
-                "LEGACY_PACKET_NOT_AUTHORIZABLE",
-                "legacy packet may be audited but cannot publish a current result",
+                "DISPATCH_CONTRACT_UNSUPPORTED",
+                "packet predates a supported recoverable dispatch identity contract",
             )
         else:
             validate_dispatch_bindings(document, packet, repo_root, findings)

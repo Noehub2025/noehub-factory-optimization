@@ -21,6 +21,7 @@ External action, code-bearing `mixed` work, campaign closeout, and completion of
 - [Common pre-dispatch gate](#common-pre-dispatch-gate)
 - [Dispatch acceptance scenarios](#dispatch-acceptance-scenarios)
 - [Interpret adopted evidence](#interpret-adopted-evidence)
+- [Resolve direction before Selection](#resolve-direction-before-selection)
 - [Route the current action](#route-the-current-action)
 - [Slice 5 acceptance scenarios](#slice-5-acceptance-scenarios)
 
@@ -40,7 +41,7 @@ Do not reload `technical-design.md` to execute a `ready` design. Follow W's matc
 
 ## Recover the selected B
 
-Read current parent reviews, `FRONTIER.md`, selected B, latest Budget and Selection, first-spend Entry review or later spend authority, assigned packet preflight, packet, acknowledgment, result, B terminal outcome, accounting evidence, related E, Outcome Reflection, join disposition, replan review, and stable artifacts that already exist. Use recorded identities, never conversation history.
+Read current parent reviews, `FRONTIER.md`, the exact project decision root, selected B, latest Budget and Selection, first-spend Entry review or later spend authority, assigned packet preflight, packet, acknowledgment, result, B terminal outcome, accounting evidence, related E, Outcome Reflection, join disposition, replan review, and stable project artifacts that already exist. Use recorded project identities, never conversation history or any workflow, validator, worker-interface, deployment, or release identity.
 
 For W-backed work, resolve the exact W path, current `plan_revision`, design-contract identity, Design-map concern identities, applicable `Read when` rows, selected Delivery row, design review, development authorization, worker progress and discoveries, and recovery state. For code, also resolve the source-base identity, candidate manifest, source-result bytes, implementation snapshot packet, review artifact, and adoption log when they exist. Recovery is valid without the original branch or worktree only when the packet preflight, packet, acknowledgment, execution-baseline snapshot and manifest, execution-start record, result validation, result packet, W revision, required concerns, manifest, source base and result, candidate bytes, configuration, dependencies, engineering evidence, and review inputs remain recoverable by stable identity. A hash without recoverable bytes is insufficient.
 
@@ -58,7 +59,7 @@ This gate is complete only when the unchanged target has durable `ENTRY_READY` a
 
 ## Common pre-dispatch gate
 
-Before dispatch, verify current parents, scope, claims limits, Selection, Budget, reservation, stops, reflection coverage, joins, V records, and every applicable positive review. Reproduce rather than repair the frozen structural, W traceability, and Entry-adoption identities.
+Before dispatch, verify the typed project provenance chain, current parents, scope, claims limits, persisted Selection, Budget, reservation, protected reserve, stops, reflection coverage, joins, V records, adopted Q records, its one direction-resolver result, and every applicable positive review. Require the Selection's cited evidence-state identity and every cited project fact to remain unchanged; then apply its persisted row, exact next action, and later-spend gates without running the resolver again. Reproduce rather than repair the frozen structural, W traceability, and Entry-adoption identities. A workflow update, source diff, or release PASS cannot recompute, migrate, or enter the selected B or its authority.
 
 Then apply the [Batch Interface state machine](batch-interface.md#dispatch-state-machine) in order: acknowledgment, the exact reviewed Coordinator post-state transition, content-addressed execution-baseline freeze, execution-start, and the second worker invocation. Authorization is recomputed from the immutable Entry snapshot; the exact reviewed live post-state is verified separately, with every other snapshot-copy input unchanged. The worker begins only after live verification of a record with `worker_may_start: yes`.
 
@@ -92,16 +93,28 @@ After the terminal outcome and any eligible E are adopted, apply [Learning loop]
 3. judge the hypothesis `supported`, `contradicted`, `inconclusive`, or `not-applicable`;
 4. infer the strongest useful whole-package, component, or mediated-pathway mechanism supported by the evidence;
 5. record what the design cannot attribute and the resulting R&D implication without creating follow-up authority;
-6. interpret progress, constraints, or measurement properties only when they can change the addressed or next concrete decision; and
-7. write Selection only after the reflection is complete.
+6. interpret progress, constraints, or measurement properties only when they can change the addressed or next concrete decision;
+7. when diagnosis is decision-relevant, record every considered complete path, what each distinguishes, funding, authority, reachability, action window, and the selected path's dominance or the exact non-unique blocker;
+8. apply the single total-order resolver in [Learning loop](learning-loop.md#integrated-direction-resolver); and
+9. write Selection only after every Q, V, join, and review selected by that resolver is complete.
 
 Stop inference at the first unresolved validity layer. A valid controlled whole-package comparison may support that the bounded package caused the local result without ablation; claiming that a component was active, necessary, dominant, or numerically responsible needs separating evidence. Incompatible, stale, invalid, or unresolved E remains campaign evidence but cannot form an ordered trajectory. A single proxy improvement cannot establish route success, and a local mechanism effect cannot establish a bottleneck without system-level evidence on the parent objective. Selection applies the reflection; it cannot rebuild the evidence sequence, strengthen the mechanism granularity, invent a post-hoc plateau rule, or soften a failed guardrail.
 
-This interpretation step creates no trajectory record, investment resolver, diagnosis, research task, review, B, spend, or authority. An attribution limit is non-blocking unless the pending decision depends on distinguishing the internal explanations. A measurement limitation matters only when it changes a concrete decision; saturation of one comparator-derived score does not prove evaluator exhaustion. One-shot, administrative, and implementation-only work use the applicable `not-applicable` fields and proceed through existing R8 and Selection rules without extra process. Older OR records remain immutable under their source; a new controlling reflection may cite their E and identities when compatibility is established.
+This interpretation step creates no trajectory record, diagnosis, research task, review, B, spend, or authority by itself. An attribution limit is non-blocking unless the pending decision depends on distinguishing the internal explanations. A measurement limitation matters only when it changes a concrete decision; saturation of one comparator-derived score does not prove evaluator exhaustion. One-shot, administrative, and implementation-only work use the applicable `not-applicable` fields and reach routine row 13 without extra process when no earlier condition applies. Older OR records remain immutable under their source; a new controlling reflection may cite their E and identities when compatibility is established.
+
+## Resolve direction before Selection
+
+Use only [Integrated direction resolver](learning-loop.md#integrated-direction-resolver). This file adds no direction table, fallback priority, research-first exception, or post-resolver R8 override.
+
+The resolver receives persisted facts from the completed Reflection and current authority records. It first protects parent and hard-stop boundaries, coverage and identity, the semantic-parent escape, Budget and protected reserve, then validity, route-set completeness, focused facts, local diagnosis, Replan, evidence-determined strategic consequences, specialized gates, and finally routine R8. Row 5 tests the complete least-cost sufficient path implied by later conditions before any spend-bearing Q or B is selected; constructing that candidate path is not a second resolver and grants no authority.
+
+At a formal direction choice, another evidence round is permitted only when resolver row 7 or row 8 selects it. Bind the Q to current experiment results and their controlling Reflections. Reconcile relevant industrial implementations, academic evidence, community reports or artifacts, repository evidence, retained results, and observed failures under one decision, action window, evidence-channel assignment, and search stop. Stop when the information is sufficient for the current allocation and further retrieval is unlikely to change it. Do not require exhaustive coverage, a source quota, or research after routine row 13.
+
+For a strategic change, prepare the proposal without dependent spend. Until an unchanged review is adopted as `REPLAN_READY`, the current route allocation remains authoritative and no dependent B, reservation, implementation, evaluation, integration, promotion, or claim consequence may proceed. A later specialized gate remains separate but cannot select a different direction from the resolver.
 
 ## Route the current action
 
-Choose one row from persisted state and load only its action-owned references.
+After direction resolution, choose one row below only to load the files that own the already selected action. This file-loading table is not a second direction resolver and cannot alter the recorded row or next action.
 
 | Current action | Load | Completion criterion |
 |---|---|---|
@@ -123,8 +136,12 @@ Routing is complete only when exactly one row owns the action and its completion
 | Scenario | Required durable outcome |
 |---|---|
 | Expected valid result and a unique R8 next step | Routine reflection states the hypothesis result, strongest supported mechanism, R&D implication, and exact R8 branch without extra diagnosis. |
-| Surprising result that may be an implementation or measurement problem | Diagnostic reflection compares a direct attempt, local check, protocol adjustment, focused research, or stop by expected decision information and cost. |
+| Surprising result that may be an implementation or measurement problem | Diagnostic reflection compares complete direct-attempt, local-check, protocol-adjustment, focused-research, or stop paths; Selection uses the unique non-dominated least-cost sufficient path or the exact non-unique blocker. |
+| Formal direction choice has an experiment-bound evidence gap | Resolver row 7 or 8 selects one bounded Q that reconciles current experiment results with applicable industrial, academic, community, repository, and retained evidence, then reruns the same resolver after adoption. |
+| Formal direction choice is already supported by complete evidence and unique R8 | Do not add another Q merely because a direction is being selected; apply the determined row and next gate. |
 | Result changes campaign baseline, route, or major allocation | Targeted evidence, applicable V, immutable replan snapshot, fresh `REPLAN_READY`, then authoritative Selection. |
+| Two funded diagnostic paths remain non-dominated | Return the exact non-unique technical diagnostic blocker; do not select by preference and do not ask the user to choose a technical path. |
+| A sufficient check would consume protected reserve | Resolver row 5 selects no B or spend-bearing Q and returns the exact Budget, stop, or zero-spend Replan consequence. |
 | Code implementation followed by performance evaluation | Separate implementation B and Slot H evaluation B; evaluation is blocked before unchanged `IMPLEMENTATION_READY`. |
 | Newly materialized candidate needs one cheap local signal before implementation review | A separate diagnostic-only experiment may run only under the candidate-lifecycle exception; it creates no E and grants no integration, incumbent, promotion, submission, or strength consequence. |
 | Parallel selected B records | Terminal reconciliation and reflection for every member, then one joined X before dependent Selection. |
@@ -141,4 +158,4 @@ Routing is complete only when exactly one row owns the action and its completion
 | A new reflection cites compatible E covered by OR records from an older source | Preserve the old OR bytes and validity; the new OR owns only its current interpretation. |
 | Mid-campaign external wording request | C plus `CLAIM_REVIEW_REQUIRED`; no claim-review completion or A in this slice. |
 
-This slice is complete when a fresh Coordinator can recover the packet, acknowledgment, content-addressed execution-baseline snapshot, execution-start record and post-transition baseline, finding-free result validation, exact W revision when used, terminal result or human-input wait, artifacts, spend, applicable candidate review, diagnostic-only disposition when used, separate Slot H evaluation and E lineage, every required Outcome Reflection, classification work, replan review, parallel join, and latest Selection. For code, recovery must also reconstruct the reviewed design and authorization lineage plus immutable candidate, and show either adopted unchanged `IMPLEMENTATION_READY` or a hard prohibition on Slot H evaluation, integration, and incumbent use. The same persisted state must yield the same next action or blocker. No later spend is permitted without every applicable reflection, V, join, and review.
+This slice is complete when a fresh Coordinator can recover the packet, acknowledgment, content-addressed execution-baseline snapshot, execution-start record and post-transition baseline, finding-free result validation, exact W revision when used, terminal result or human-input wait, artifacts, spend, applicable candidate review, diagnostic-only disposition when used, separate Slot H evaluation and E lineage, every required Outcome Reflection, diagnostic comparison, resolver row, adopted research, classification work, replan review, parallel join, and latest Selection. For code, recovery must also reconstruct the reviewed design and authorization lineage plus immutable candidate, and show either adopted unchanged `IMPLEMENTATION_READY` or a hard prohibition on Slot H evaluation, integration, and incumbent use. The same persisted state must recover the one stored resolver row and next action or blocker; it must not run the current workflow to derive another result. No later spend is permitted without every applicable unchanged reflection, Q, V, join, persisted resolver result, and review.

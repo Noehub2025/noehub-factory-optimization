@@ -26,6 +26,7 @@ from project_snapshot import (
     read_manifest as read_project_snapshot_manifest,
     verify as verify_project_snapshot,
 )
+from workflow_source_binding import WorkflowSourceBindingError, validate_binding
 
 try:
     import yaml
@@ -51,6 +52,7 @@ COMMON_REQUIRED = {
     "representation_generated_at",
     "representation_review_result",
     "representation_permitted",
+    "workflow_source_binding",
     "campaign_generation",
     "recovery_lineage",
     "repository_structure_disposition",
@@ -1393,6 +1395,14 @@ def validate(
                     "NON_PROJECT_ENTRY_INPUT",
                     f"{'.'.join(path)} refers to workflow, Skill, validator, or retired copied-snapshot state",
                 )
+        try:
+            validate_binding(
+                document.get("workflow_source_binding"),
+                root,
+                expected_adoption_mode="entry",
+            )
+        except WorkflowSourceBindingError as exc:
+            add_finding(findings, "WORKFLOW_SOURCE_BINDING_INVALID", str(exc))
 
     if document.get("review_kind") != "entry":
         add_finding(findings, "REVIEW_KIND_INVALID", "review_kind must be entry")
@@ -1654,6 +1664,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.phase != "audit":
+        print("legacy Entry writer is closed; use frontier_provenance_cli.py", file=sys.stderr)
+        return 2
     try:
         document = yaml.safe_load(args.packet.read_text())
     except (OSError, yaml.YAMLError) as exc:

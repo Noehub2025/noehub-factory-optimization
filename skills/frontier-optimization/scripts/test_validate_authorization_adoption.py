@@ -55,6 +55,7 @@ def make_record(root: Path) -> dict:
             "packet_id": entry["packet_id"],
             "file_sha256": hashlib.sha256(entry_raw).hexdigest(),
         },
+        "workflow_source_binding": copy.deepcopy(entry["workflow_source_binding"]),
         "readiness_review": {
             "review_id": "R900",
             "review_result": "AUTHORIZATION_READY",
@@ -341,6 +342,19 @@ class AuthorizationAdoptionTests(unittest.TestCase):
             result = MODULE.validate(record, "draft", root)
             self.assertIn(
                 "REVIEW_ARTIFACT_BINDING_MISMATCH",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_adoption_must_copy_entry_workflow_source_binding_exactly(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            record = make_record(root)
+            record["workflow_source_binding"]["governs"].append("unreviewed-object")
+
+            result = MODULE.validate(record, "draft", root)
+
+            self.assertIn(
+                "WORKFLOW_SOURCE_BINDING_NOT_COPIED",
                 {item["code"] for item in result["findings"]},
             )
 

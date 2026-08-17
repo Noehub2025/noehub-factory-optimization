@@ -19,13 +19,14 @@ Use only the five Frontier Skills. Claims review is one branch of the existing `
 - [Reconcile final budget and active work](#reconcile-final-budget-and-active-work)
 - [Settle retained results and gap](#settle-retained-results-and-gap)
 - [Dispose T W B and search state](#dispose-t-w-b-and-search-state)
+- [Preserve final direction state](#preserve-final-direction-state)
 - [Claims during full closeout](#claims-during-full-closeout)
 - [Write the final handoff](#write-the-final-handoff)
 - [Slice 6 acceptance scenarios](#slice-6-acceptance-scenarios)
 
 ## Choose one mode from recorded state
 
-Read current parent bindings, `FRONTIER.md`, latest Budget and Selection, terminal B outcomes, W states, E, D, X, Outcome Reflections, replan lineage, C, A, review packets and artifacts, and `log.md`. Use exact recorded identities, never conversation history.
+Read current parent bindings, `FRONTIER.md`, every surviving project decision root, latest Budget and Selection, terminal B outcomes, W states, E, D, X, Outcome Reflections, replan lineage, C, A, review packets and artifacts, and `log.md`. Use exact recorded project identities, never conversation history or workflow identities.
 
 Choose claim-only only when all are true:
 
@@ -126,6 +127,8 @@ For every cited W, record its exact current `plan_revision`, design identity, la
 
 Before final claims, ensure every terminal B and uncovered E has an Outcome Reflection. Reconstruct a missing reflection only from preserved plan and evidence. Keep unresolved strategic meaning, nonpositive replan review, unknown spend, and missing measurement explicit; closeout cannot approve them retroactively.
 
+Do not rewrite an older Outcome Reflection to add current fields, later X records, final Budget, a new resolver result, or later workflow semantics. Closeout may cite an immutable older reflection and record its final disposition separately; it never recomputes that reflection or its persisted resolver result under the current workflow.
+
 ## Settle retained results and gap
 
 Set F4 to exactly the result relation authorized by parent Slots D, E, H, and R8: one best option with applicable ties, a lexicographic best, a confirmed non-dominated set, a threshold-qualified set, or another exact parent-defined relation. Retain only valid E identities with their uncertainty, comparison validity, candidate and experiment identities, and promotion evidence.
@@ -146,6 +149,20 @@ Append X for every active T, W or W revision, selected or authorized B, and reus
 
 Each X must name affected identities, reason, evidence, recovery or reopening condition, and comparison, promotion, spend, and claim consequences. A shared W may remain reusable even when one linked route closes, but its surviving scope and revision must be explicit. Parent-owned search-state compatibility returns to `frame-optimization`; Frontier does not infer it.
 
+## Preserve final direction state
+
+Before `CLOSEOUT_COMPLETE`, freeze the final direction state in the handoff and final `FRONTIER.md` view without changing any historical B, E, Outcome Reflection, Selection, or review. Preserve:
+
+- the final compatible E sequence and every controlling Outcome Reflection identity, including exclusions and adaptive-exposure limits;
+- the strongest bounded progress and constraint meaning supported under the tested conditions, with unresolved validity kept explicit;
+- the latest `Route-set state`, eligible routes, exclusions, deferrals, shared assumptions, prerequisite outcomes, and observable reopening events;
+- every considered diagnostic path and dominance result that controls the final decision, including an exact non-unique blocker when present;
+- the latest first applicable direction-resolver row, its evidence-state identity, exact stop, halt, parent handoff, or blocker, and why no later row applies;
+- final Budget reachability, protected-reserve disposition, unknown spend, and any unfunded required check; and
+- each surviving project decision root, parent chain, and adopting Entry or Replan identity.
+
+A plateau, diminishing-return, or bottleneck statement remains limited to its exact conditions and evidence. Closeout may say that no permitted work can reach another meaningful check under the final Budget and authority; it cannot claim a local optimum, global optimum, impossibility, or that no better route exists.
+
 ## Claims during full closeout
 
 Create C only for exact wording and intended use beyond a raw measurement record. Process each important external claim through the same `review-frontier` claims branch and A or withdrawing X rules above. Full closeout continues after every active C receives a terminal A or X disposition.
@@ -161,7 +178,9 @@ Write the final handoff to `log.md` and update the `FRONTIER.md` Brief and F2-F8
 - measured and retained E with candidate and experiment identities;
 - completed, paused, superseded, invalid, or reusable T, W, B, and search state, including recovery steps;
 - applicable design, development authorization, implementation review, integration, and archive state;
-- Outcome Reflections, focused research, V, and replan lineage;
+- Outcome Reflections, compatible evidence sequence, bounded progress and constraint meaning, focused research, V, and replan lineage;
+- final route-set state, reopening events, diagnostic dominance, first applicable resolver row, and exact direction consequence;
+- project decision, attestation, authority, execution, and outcome roots for every surviving object;
 - active compatible D records and valid gap, or `gap: Unknown`;
 - C, A, X, supported wording, and wording that remains unauthorized; and
 - exact evidence, review, authorization, resource, or parent change required before continuation.
@@ -179,5 +198,6 @@ Before returning control, apply the canonical [User-facing handoff](frontier-cor
 | Claim review supports or downgrades wording | Coordinator appends A; only exact supported or exact reviewer-supplied downgraded wording receives the stated external-use authority. |
 | Claim and stop or halt are both active | Full closeout wins; claim disposition does not resume the campaign. |
 | Full closeout with unresolved accounting or bound contradiction | Campaign remains halted, affected gap and claims remain unavailable, and the handoff names the exact recovery requirement. |
+| Full closeout after direction resolution | The handoff preserves the final compatible evidence, route set and reopening events, diagnostic dominance, exact resolver row and consequence, Budget reachability, and typed project provenance without rewriting an earlier record. |
 
 Slice 6 passes only when every completed claim review has A, every pre-completion withdrawal has X, each C branch has exactly one controlling terminal disposition, claim-only processing leaves campaign state unchanged, and full closeout alone performs final budget, T/W/B, retained-result, gap, and handoff reconciliation.

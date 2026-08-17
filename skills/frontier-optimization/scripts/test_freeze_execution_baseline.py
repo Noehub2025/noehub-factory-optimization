@@ -40,6 +40,30 @@ def file_binding(path: Path, root: Path, identity_field: str, identity: str) -> 
     }
 
 
+def write_rollout(
+    root: Path, authority_root: str, packet_id: str, state: str = "acknowledged"
+) -> None:
+    rollout = root / ".frontier/provenance-rollout.yaml"
+    rollout.parent.mkdir(parents=True, exist_ok=True)
+    rollout.write_text(
+        yaml.safe_dump(
+            {
+                "contract_version": "frontier-v1-completion-inventory/1",
+                "rollout_cutoff": "2026-08-17T00:00:00Z",
+                "active_authorities": [
+                    {
+                        "authority_root": authority_root,
+                        "contract_version": "frontier-dispatch-identity/2",
+                        "state": state,
+                        "scope_root": packet_id,
+                    }
+                ],
+            },
+            sort_keys=False,
+        )
+    )
+
+
 def write_bound_dispatch_draft(root: Path) -> tuple[Path, Path, dict]:
     adoption = make_record(root)
     adoption_draft = MODULE.load_validator(
@@ -62,6 +86,7 @@ def write_bound_dispatch_draft(root: Path) -> tuple[Path, Path, dict]:
     acknowledgment = {
         "batch_id": "B900",
         "packet_id": packet["packet_id"],
+        "workflow_source_identity": packet["workflow_source_identity"],
         "packet_preflight_id": preflight["preflight_id"],
         "authority_id": adoption["adoption_id"],
         "authority_validation_id": adoption_validation["validation_id"],
@@ -103,6 +128,7 @@ def write_bound_dispatch_draft(root: Path) -> tuple[Path, Path, dict]:
         "execution_start_path": packet["execution_start_path"],
         "packet_path": packet["packet_path"],
         "packet_id": packet["packet_id"],
+        "workflow_source_identity": packet["workflow_source_identity"],
         "packet_preflight": file_binding(
             preflight_path, root, "preflight_id", preflight["preflight_id"]
         ),
@@ -145,6 +171,25 @@ def write_bound_dispatch_draft(root: Path) -> tuple[Path, Path, dict]:
     }
     draft_path = root / "dispatch-draft.yaml"
     draft_path.write_text(yaml.safe_dump(draft, sort_keys=False))
+    rollout = root / ".frontier/provenance-rollout.yaml"
+    rollout.parent.mkdir(parents=True, exist_ok=True)
+    rollout.write_text(
+        yaml.safe_dump(
+            {
+                "contract_version": "frontier-v1-completion-inventory/1",
+                "rollout_cutoff": "2026-08-17T00:00:00Z",
+                "active_authorities": [
+                    {
+                        "authority_root": draft["execution_authority"]["record"]["identity"],
+                        "contract_version": packet["identity_contract"],
+                        "state": "acknowledged",
+                        "scope_root": packet["packet_id"],
+                    }
+                ],
+            },
+            sort_keys=False,
+        )
+    )
     return draft_path, source, draft
 
 
@@ -366,7 +411,7 @@ class ExecutionBaselineTests(unittest.TestCase):
                 ],
             )
             output = root / "artifacts/frontier/B900/execution-start.yaml"
-            with self.assertRaisesRegex(MODULE.BaselineError, "legacy packet"):
+            with self.assertRaisesRegex(MODULE.BaselineError, "predates"):
                 MODULE.freeze(
                     draft,
                     "artifacts/frontier/B900/execution-baseline/",
@@ -392,8 +437,131 @@ class ExecutionBaselineTests(unittest.TestCase):
                 root.resolve(),
             )
             self.assertTrue(MODULE.verify(output, root.resolve(), False)["snapshot_verified"])
-            with self.assertRaisesRegex(MODULE.BaselineError, "legacy packet"):
+            with self.assertRaisesRegex(MODULE.BaselineError, "predates"):
                 MODULE.verify(output, root.resolve(), True)
+
+    def test_acknowledged_source_bound_packet_survives_live_contract_release(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            draft, _, _ = write_bound_dispatch_draft(root)
+            output = root / "artifacts/frontier/B900/execution-start.yaml"
+            with mock.patch.object(
+                MODULE,
+                "IDENTITY_CONTRACT",
+                "frontier-dispatch-identity/3",
+            ):
+                MODULE.freeze(
+                    draft,
+                    "artifacts/frontier/B900/execution-baseline/",
+                    output,
+                    root.resolve(),
+                )
+                verified = MODULE.verify(output, root.resolve(), True)
+            self.assertTrue(verified["snapshot_verified"])
+            self.assertTrue(verified["live_baseline_matched"])
+
+    def test_archived_source_cannot_replay_entry_authority_to_another_packet(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            draft_path, _, draft = write_bound_dispatch_draft(root)
+            adoption_binding = draft["execution_authority"]["record"]
+            adoption_path = root / adoption_binding["path"]
+            adoption = yaml.safe_load(adoption_path.read_text())
+            entry_binding = adoption["entry_packet"]
+            entry_path = root / entry_binding["path"]
+            entry = yaml.safe_load(entry_path.read_text())
+            entry["dispatch_contract"]["packet_id"] = "B901-packet-sha256:wrong"
+            entry_payload_sha256 = MODULE.sha256_bytes(
+                MODULE.canonical_yaml(entry, "packet_id")
+            )
+            entry["packet_id"] = (
+                f"entry-{entry['review_id']}-packet-sha256:{entry_payload_sha256}"
+            )
+            entry_path.write_text(yaml.safe_dump(entry, sort_keys=False))
+            entry_binding["packet_id"] = entry["packet_id"]
+            entry_binding["file_sha256"] = hashlib.sha256(entry_path.read_bytes()).hexdigest()
+
+            adoption_payload_sha256 = MODULE.sha256_bytes(
+                MODULE.canonical_yaml(adoption, "adoption_id")
+            )
+            adoption["adoption_id"] = (
+                f"authorization-adoption-sha256:{adoption_payload_sha256}"
+            )
+            adoption_path.write_text(yaml.safe_dump(adoption, sort_keys=False))
+            adoption_binding["identity"] = adoption["adoption_id"]
+            adoption_binding["file_sha256"] = hashlib.sha256(
+                adoption_path.read_bytes()
+            ).hexdigest()
+
+            validation_binding = draft["execution_authority"]["validation"]
+            validation_path = root / validation_binding["path"]
+            validation = json.loads(validation_path.read_text())
+            validation.update(
+                {
+                    "adoption_payload_sha256": adoption_payload_sha256,
+                    "computed_adoption_id": adoption["adoption_id"],
+                }
+            )
+            validation.pop("validation_id")
+            validation["validation_id"] = (
+                "authorization-adoption-validation-sha256:"
+                + MODULE.sha256_bytes(
+                    json.dumps(
+                        validation,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                        ensure_ascii=False,
+                    ).encode()
+                )
+            )
+            validation_path.write_bytes(MODULE.canonical_json_artifact(validation))
+            validation_binding.update(
+                {
+                    "identity": validation["validation_id"],
+                    "file_sha256": hashlib.sha256(
+                        validation_path.read_bytes()
+                    ).hexdigest(),
+                }
+            )
+
+            acknowledgment_binding = draft["acknowledgment"]
+            acknowledgment_path = root / acknowledgment_binding["path"]
+            acknowledgment = yaml.safe_load(acknowledgment_path.read_text())
+            acknowledgment.update(
+                {
+                    "authority_id": adoption["adoption_id"],
+                    "authority_validation_id": validation["validation_id"],
+                }
+            )
+            acknowledgment["acknowledgment_id"] = MODULE.compute_acknowledgment_id(
+                acknowledgment
+            )
+            acknowledgment_path.write_text(
+                yaml.safe_dump(acknowledgment, sort_keys=False)
+            )
+            acknowledgment_binding.update(
+                {
+                    "identity": acknowledgment["acknowledgment_id"],
+                    "file_sha256": hashlib.sha256(
+                        acknowledgment_path.read_bytes()
+                    ).hexdigest(),
+                }
+            )
+            draft["post_adoption_state"]["adoption_id"] = adoption["adoption_id"]
+            draft_path.write_text(yaml.safe_dump(draft, sort_keys=False))
+
+            with mock.patch.object(
+                MODULE,
+                "IDENTITY_CONTRACT",
+                "frontier-dispatch-identity/3",
+            ):
+                with self.assertRaisesRegex(MODULE.BaselineError, "Entry dispatch"):
+                    MODULE.freeze(
+                        draft_path,
+                        "artifacts/frontier/B900/execution-baseline/",
+                        root / "artifacts/frontier/B900/execution-start.yaml",
+                        root.resolve(),
+                    )
 
     def test_spend_readiness_chain_is_recomputed_without_user_adoption(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -495,6 +663,7 @@ class ExecutionBaselineTests(unittest.TestCase):
             acknowledgment = {
                 "batch_id": "B900",
                 "packet_id": packet["packet_id"],
+                "workflow_source_identity": packet["workflow_source_identity"],
                 "packet_preflight_id": preflight["preflight_id"],
                 "authority_id": authority_id,
                 "authority_validation_id": entry_validation["entry_schema_id"],
@@ -512,6 +681,7 @@ class ExecutionBaselineTests(unittest.TestCase):
                 "execution_start_path": packet["execution_start_path"],
                 "packet_path": packet["packet_path"],
                 "packet_id": packet["packet_id"],
+                "workflow_source_identity": packet["workflow_source_identity"],
                 "packet_preflight": file_binding(
                     preflight_path, root, "preflight_id", preflight["preflight_id"]
                 ),
@@ -556,6 +726,7 @@ class ExecutionBaselineTests(unittest.TestCase):
             }
             draft_path = root / "spend-readiness-draft.yaml"
             draft_path.write_text(yaml.safe_dump(draft, sort_keys=False))
+            write_rollout(root, authority_id, packet["packet_id"])
             output = root / packet["execution_start_path"]
             frozen = MODULE.freeze(
                 draft_path,

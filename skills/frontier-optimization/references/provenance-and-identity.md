@@ -1,0 +1,154 @@
+# Provenance and identity
+
+This contract is task- and technology-neutral. It applies to code, research,
+experiments, human input, external actions, documents, data work, model work,
+hardware work, and mixed batches.
+
+## Boundary
+
+Project provenance answers which project bytes, decisions, reviews, authority,
+starting state, outcomes, and live facts support one consequence. Workflow
+release provenance answers which Skill, validator, implementation, and test
+bytes make up a workflow release. These are separate identity systems.
+
+A new project object must not contain or reference workflow source files,
+workflow snapshots, Skill bytes, validator implementation digests, release
+roots, source-module roots, or a copied workflow-source binding. It names only
+its project role, immediate project parents, and exact project content root.
+Workflow source, release version, semantic or validator contract, deployment
+path, installation time, and worker version are never project identity inputs.
+Updating the workflow during repository work changes no project node,
+authority, review, Selection, spend gate, or handoff identity and requires no
+project migration or recomputation.
+
+Git already provides content-addressed workflow release provenance. A release
+record may name a full commit object identifier or verified signed tag. That
+release locator stays in release records and never enters a project identity.
+
+## Typed project graph
+
+New objects use `frontier-provenance-node/4` and these roles:
+
+```text
+decision -> attestation -> authority -> execution -> outcome
+```
+
+An attestation has one subject parent. An authority has exactly one decision
+parent and one finding-free ready attestation for that decision. An execution
+has exactly one authority parent. An outcome has exactly one execution parent.
+Missing nodes, wrong parent roles, duplicate edges, cycles, and replay against
+another decision fail closed.
+
+Decision, authority, execution, and outcome payloads are empty. Their role,
+parents, and project content root already provide the complete identity input.
+An attestation payload has a closed schema for subject, verdict, findings,
+freshness, timestamps, and invalidation facts; it contains no validator or
+workflow identifier. Each node has exactly one role-specific content root.
+
+Use the typed interface in `scripts/frontier_provenance/`:
+`freeze_decision`, `attest`, `bind_authority`, `freeze_execution`,
+`record_outcome`, `verify_for`, `export_chain`, and
+`NodeRepository`. Use `scripts/frontier_provenance_cli.py` for a durable
+JSON command boundary. It has no generic payload or parent-link operation.
+
+## Typed content roots
+
+`frontier-content-root-sha256/2` hashes canonical JSON containing one content
+domain, sorted logical artifact entries, and closed collection membership.
+Each entry binds its logical name, kind, behavior-changing metadata, exact byte
+length, and raw-byte SHA-256.
+
+Project roles require these domains:
+
+| Node role | Required content domain |
+|---|---|
+| decision | `project-decision` |
+| attestation | `review-report` |
+| authority | `project-authority` |
+| execution | `project-state` |
+| outcome | `project-outcome` |
+
+Live receipts use `live-receipt`. Workflow publication uses
+`workflow-release`, which is forbidden in every project role and portable
+project handoff. One content root cannot satisfy two project roles.
+
+Project capture uses `ProjectPortableStore` and supplies a role, not a caller-
+selected domain. The role fixes both the domain and its logical-name namespace:
+`project/decision/`, `project/review/`, `project/authority/`,
+`project/state/`, `project/outcome/`, or `receipts/`. Release capture uses the
+separate `release/` namespace. Project capture rejects the explicit `.agents`
+and `.codex` workflow namespaces in logical names. It also receives an explicit
+`project_root`, requires every source to be inside that root, and rejects only
+the root-relative workflow deployment trees: `.agents/skills/`,
+`.codex/skills/`, and Claude Code's `.claude/skills/`, `.claude/commands/`, and
+`.claude/agents/`. Nested copies of those exact roots are also release-only;
+other `.claude/` project data remains eligible. Ancestor directory names
+outside `project_root` have no effect. `project_root` is a
+capture-time boundary and is not stored or hashed. The policy does not infer
+identity from generic task or technology names such as `skills` or `validator`.
+Portable verification reapplies the manifest policy.
+
+Project artifact metadata is closed and may contain only the executable bit.
+Opaque nested source bindings, release locators, or implementation digests are
+invalid. Live receipts bind the fact name, status, observation time, expiry,
+and raw evidence. Workflow-release metadata may additionally name a release
+source module.
+
+A closed collection includes its complete sorted member set. Capture rejects
+missing, extra, symbolic-link, and nonregular members. The portable adapter
+rejects symbolic links and unexpected members at every authority manifest.
+`WorkflowReleaseGitStore` hashes raw release bytes without clean filters,
+writes a dedicated reachable commit, and verifies each release blob against
+the release content root. It cannot capture a project domain. Project content
+uses the portable raw-byte store so a project handoff never depends on Git.
+
+## Static and live verification
+
+`frontier-consequence-gates/1` defines the allowed root role and required live
+facts for each consequence. Unknown consequences fail closed. Each required
+fact must resolve through a verified `live-receipt`; the check time must be on
+or after observation and on or before expiry. A bare boolean or unrelated
+content root is not evidence.
+
+An immutable attestation has no observation time, expiry, or invalidation rule.
+A live attestation records its observation time and invalidating facts; its
+observation cannot be in the future at check time. Every finding contains only
+a code and one `block`, `repair`, or `advisory` effect. A ready
+attestation cannot contain block or repair findings.
+
+## Workflow release validation
+
+`references/source-modules.yaml` and
+`scripts/frontier_provenance/source_modules.py` are release-only facilities.
+They validate the workflow source inventory, transitive local imports, dynamic
+validator loads, Skill files, and release tests before publication or
+installation. They are not exported by the project provenance facade and no
+project caller may import or invoke them.
+
+A workflow release byte change changes only its release root. Even a workflow
+semantic change has no automatic project consequence. The currently installed
+workflow reads the existing project evidence and may create a new project
+decision only when ordinary project facts, authority, or user intent require
+one; the release change itself never does. A resolver result already persisted
+in Selection is a project decision and is never recomputed under a later
+workflow. Later-spend checks validate its cited project facts and gates rather
+than rerunning the resolver implementation.
+
+## Portable project recovery
+
+`export-handoff` exports only the reachable project nodes and their five typed
+project content domains. `verify-handoff` reproduces the chain offline,
+requires canonical content paths, rejects symbolic links and unexpected files,
+and fails if any workflow-release root is present. A project handoff does not
+package workflow Skills, validators, tests, or source modules.
+
+## Legacy completion
+
+Version 4 is the only writer for new project provenance nodes. Historical
+version 1 objects remain byte-identical. The repository-local
+`.frontier/provenance-rollout.yaml` fixes the exact old authority and scope
+eligible for audit or bounded completion. Legacy Entry, packet, adoption,
+baseline, result, candidate recovery, and handoff code may read those exact
+objects only through the compatibility adapter. It cannot create a new legacy
+decision, enlarge scope, migrate authority, execute archived workflow code, or
+make a legacy workflow snapshot part of a new project handoff.

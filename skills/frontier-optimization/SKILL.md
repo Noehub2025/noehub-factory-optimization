@@ -9,7 +9,7 @@ Act as the only Frontier Coordinator. Choose the next stage from recorded state,
 
 ## Start with the minimum context
 
-1. Read [Frontier core](references/frontier-core.md).
+1. Read [Frontier core](references/frontier-core.md) and the shared [Provenance and identity](references/provenance-and-identity.md) contract.
 2. Select one canonical task path and validate the exact positive Representation handoff through the shared [Framing-to-Frontier handoff](../frame-optimization/references/frontier-handoff.md).
 3. Apply the recorded-state router. Do not infer state from conversation history.
 4. Load exactly one stage file:
@@ -33,6 +33,7 @@ If the router returns `PARENT_REVIEW_REQUIRED`, load no stage file. If no router
 | Create or revise W | [Work plan](references/work-plan.md) |
 | Delegate any worker | [Worker interfaces](references/worker-interfaces.md), then the action-specific packet or review reference |
 | Freeze, review, validate, or adopt any review snapshot | [Review snapshots](references/review-snapshots.md) |
+| Freeze or verify an authority-bearing identity | [Provenance and identity](references/provenance-and-identity.md) |
 | Plan executable candidate work during Entry | [Entry code planning](references/entry-code-planning.md) |
 | Choose a code-design profile, draft or repair a module or system design, or change a design contract | [Technical design](references/technical-design.md) |
 | Manage executable candidate identities | [Candidate lifecycle](references/candidate-lifecycle.md) |
@@ -67,6 +68,8 @@ For code-bearing authorization, freeze the source-derived target specification b
 Dispatch every B through the [Batch Interface state machine](references/batch-interface.md#dispatch-state-machine). Perform only the Coordinator-owned rows; require packet preflight to prove result-contract compatibility and source-derived project design, source-base, and authorization-target bindings before Entry review. For experiment work, require the canonical nested target to bind the complete candidate root and derive the experiment identity from the exact contract bytes; reject copied experiment identities in prose fields. For code-bearing work, require a frozen engineering check plan whose selected units, content-addressed effect evidence, positive effect limits, and engineering-only consequence agree. Run the shared candidate-package validator and enforce the forward-only inventory, staged checks, completed evidence, final manifest, result sequence before result adoption. Require the Entry review artifact itself to bind its exact packet and filtered project snapshot. Workflow, Skill, validator, Slice 7, bundle, and workflow-test bytes never enter the project snapshot, B packet, or ordinary Entry completion check. For every Coordinator file that authorization may change, bind complete pre- and post-state bytes through `frontier-post-adoption-state/1`; do not use patches or drift exclusions. Require `run-frontier-batch` to return after acknowledgment, and invoke it again only after the baseline tool has recomputed the packet, adoption, acknowledgment, and execution-start chain. The tool must reproduce authorization from the Entry project snapshot, verify the exact reviewed live post-state separately, and reject every other live project change. For the first B of a planned campaign, authorize the structured lifecycle rule from Batch Interface, instantiate its UTC values only after accepted acknowledgment, and freeze its exact receipt and post-transition bytes in a reachable filtered project Git snapshot. Rerun result validation and the bound execution chain byte for byte before adopting a terminal outcome or creating a review snapshot.
 
 Delegation is complete only when the assigned worker has written its exclusive result, the result satisfies the packet's completion check, and this Skill has either adopted its checked meaning or recorded the exact blocker and recovery point.
+
+New lifecycle objects use the version 2 Provenance writer. The detailed version 1 identity fields remain available only through its bounded completion adapter.
 
 ## Preserve the authority boundary
 

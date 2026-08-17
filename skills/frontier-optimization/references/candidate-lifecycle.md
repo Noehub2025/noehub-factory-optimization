@@ -49,6 +49,8 @@ An explicit new recovery campaign may reuse one materialized candidate without c
 
 Before any new-generation record, run `scripts/validate_candidate_recovery.py` in draft mode against the canonical candidate root and manifest. Compare requested identities with independently recomputed manifest, member, and package identities. On PASS, freeze the preflight and reproduce its identity before V/X adoption. On mismatch, return `BLOCKED` without a generation update, recovery record, review, Selection, reservation, or spend. Do not treat a conversation-copied digest as canonical evidence.
 
+Historical candidate manifests remain byte-identical and may use the exact-inventory legacy reader. A legacy `frontier-candidate-manifest/2` may retain its recorded `workflow_source_identity`; a provenance-only sidecar may supply a genuinely absent historical binding only when the recovery inventory and validator require it. A current `frontier-candidate-manifest/3` rejects that field. The sidecar never creates current authority and never replaces the fresh `recovery-reuse` implementation review.
+
 The recovery review authorizes the unchanged candidate only in the new campaign generation. It does not revise the old B outcome or prior review. A nonpositive old implementation review may be cited as historical diagnosis; the recovery reviewer must independently decide whether its finding concerns candidate fidelity or only closed-generation authority. Any missing byte, identity mismatch, behavior-bearing change, or attempted repair ends zero-cost reuse and requires a new code-bearing B, development authorization, candidate identity, and proposal charge.
 
 ## Candidate package and final manifest
@@ -70,7 +72,7 @@ Run every import, compilation, test, evaluator-backed engineering fixture, or ot
 After all engineering evidence identities resolve, write the final manifest below exactly once. `code_paths` must exactly equal the inventory by path and digest; `source_result_identity.package_sha256` and, when present, `.members` must describe the same inventory. The final manifest binds the package inventory and completed engineering evidence. It contains only upstream recovery artifacts. Result validation, result, Outcome Reflection, closeout, and implementation review are downstream: they bind the final manifest and belong together in the implementation-review snapshot, never inside the manifest.
 
 ```yaml
-manifest_contract: frontier-candidate-manifest/2
+manifest_contract: frontier-candidate-manifest/3
 manifest_state: final
 candidate_id: <immutable identifier>
 campaign_generation: <positive integer>
@@ -98,6 +100,8 @@ recovery_artifacts: [<role, path, and file_sha256 for packet preflight, packet, 
 implementation_review: <assigned review path pending, adopted review identity, reusable review identity, or not required with rule>
 created_at: <ISO-8601 datetime>
 ```
+
+`workflow_source_identity` is forbidden in every newly written version 3 manifest. Do not rewrite an immutable version 2 manifest; use the exact legacy recovery adapter when that historical object is eligible.
 
 A direct candidate is recoverable only when a fresh Coordinator can reconstruct the inventory, final manifest, finding-free packet preflight, packet, acknowledgment, content-addressed execution-baseline snapshot, execution-start record and post-transition baseline, finding-free result validation, authorization, source base and result, candidate bytes, configuration, dependencies, runtime factors, generated assets, engineering evidence, and candidate identity without relying on a live branch or worktree. The implementation-review snapshot joins the final manifest with its downstream result and result validation. Later campaign-record bytes may prove current state but never substitute for the exact start-time snapshot. Recovery preserves the materialized candidate; it grants no performance-evaluation, integration, or incumbent permission before adopted unchanged `IMPLEMENTATION_READY`.
 

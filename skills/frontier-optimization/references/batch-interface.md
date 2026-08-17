@@ -17,6 +17,29 @@ Load for one selected B before invoking `run-frontier-batch`, validating its res
 
 This file is the sole interface for dispatching one B. Coordinator and worker instructions point here instead of restating the sequence.
 
+For a new B, represent the lifecycle with the typed version 2 graph in
+[Provenance and identity](provenance-and-identity.md): the frozen packet and
+Entry or Replan state form the decision root; a content-addressed validation
+report forms its attestation; accepted authority binds those two immediate
+parents; execution binds the authority and starting-state content roots; and
+the outcome binds execution plus produced content roots. Store nodes with
+`scripts/frontier_provenance_cli.py`. Do not copy full ancestry or individual
+file digests into descendants.
+
+Before acknowledgment, execution, spend, external action, or outcome
+publication, run `verify` for the named consequence and supply the applicable
+live facts. Static ancestry may be reused; current authority, Budget and
+reservation, expiry or action window, resource availability, known prior
+external effects, and starting-state drift may not. A false or unresolved live
+fact blocks only that consequence and does not reinterpret the immutable
+chain. Strategic dependent spend additionally requires the unchanged decision
+root to contain adopted `REPLAN_READY`. A routine R8 result that uniquely
+selects the next action does not authorize added research.
+
+The detailed packet, preflight, adoption, acknowledgment, and execution-start
+schemas below define legacy semantic payloads and the restricted version 1
+completion path. They are not parallel identity writers for new work.
+
 | State | Owner | Required durable output | Maximum consequence |
 |---|---|---|---|
 | Packet draft | Coordinator | Complete packet without `packet_id` | Eligible for structural validation only |
@@ -100,6 +123,9 @@ changes_executable_candidate: <true | false>
 executor: <Agent, user, tool, service, or team>
 required_inputs: [<identifiers, paths, schemas, or prerequisites>]
 identity_contract: frontier-dispatch-identity/2
+result_contract_version: frontier-batch-result/1
+decision_root: <exact frontier-decision-root-sha256 identity>
+project_content_roots: [<typed project roots required by this packet>]
 work_plan: <W path or null>
 work_plan_revision: <integer or null>
 design_contract_identity: <immutable reviewed design identity, exact direct packet_id, or null>
@@ -184,7 +210,7 @@ forced_halts: [<conditions>]
 prohibited_actions: [<actions and claims>]
 ```
 
-Do not compute `packet_id` yet. First complete the deterministic structural preflight below. Only a finding-free draft may be serialized canonically without `packet_id`, hashed, given the preflight's exact `computed_packet_id`, and frozen at `packet_path`. Rerun frozen preflight and require byte-identical PASS output before freezing an authorization-readiness project snapshot. Never overwrite the packet after that point. `identity_contract`, `design_contract_binding`, `source_base_binding`, `authorization_boundary`, and the source-derived authorization-target specification make the project authority inputs immutable without creating an identity cycle. Workflow, Skill, validator, Slice 7, bundle, and workflow-test identities are absent from the B packet. A later specification change or copied project identity cannot silently reinterpret an existing packet. This preflight establishes packet structure, not user authorization. The immutable packet binds only the pre-packet specification; the final target, later answer, and adoption remain separate artifacts. A later user V must cite the final target, immutable packet, preflight, finding-free authorization-readiness review, design or direct identity, source base, scope, spend, and stop boundary.
+Do not compute `packet_id` yet. First complete the deterministic structural preflight below. Only a finding-free draft may be serialized canonically without `packet_id`, hashed, given the preflight's exact `computed_packet_id`, and frozen at `packet_path`. Rerun frozen preflight and require byte-identical PASS output before freezing an authorization-readiness project snapshot. Never overwrite the packet after that point. `identity_contract`, `decision_root`, typed project content roots, `design_contract_binding`, `source_base_binding`, `authorization_boundary`, and the source-derived authorization-target specification make the project authority inputs immutable without creating an identity cycle. Workflow release, Skill, validator implementation, test, and source-module roots are forbidden. This preflight establishes packet structure, not user authorization. A later user V must cite the final target, immutable packet, preflight, finding-free authorization-readiness review, design or direct identity, source base, scope, spend, and stop boundary.
 
 For code-bearing work, freeze the engineering check plan before packet identity. A check declares every effect it can exercise, including local simulation or evaluator fixtures even when their results are engineering evidence only. Every declared effect requires a positive maximum; a zero or missing maximum is a structural conflict. `full-repository` means every collected unit is frozen in `selected_units`; use a non-executing discovery command when the test runner provides one. Entry review verifies the content-addressed effect evidence and rejects an opaque command whose effects are not bounded. The worker repeats this comparison before starting any check and blocks rather than learning a prohibited effect by executing it. Local engineering fixtures remain distinct from candidate performance measurement: `evidence_use: engineering-only` cannot support comparison, promotion, incumbent use, or a strength claim.
 
@@ -303,9 +329,9 @@ The draft already contains every field except `packet_id`, including `packet_pre
 }
 ```
 
-Apply [Finding effects](frontier-core.md#finding-effects). Any `block` or `repair` finding returns nonzero and forbids packet freezing and authorization-readiness review; an advisory remains in output and preserves readiness. Draft the packet and preflight in transient paths; failed bytes are diagnostic evidence, not immutable lifecycle objects. While the B objective, target specification, candidate or source, inputs, evaluator, sampling, comparison and acceptance semantics, scope, spend, effects, stop, and result consequence remain unchanged and no answer, adoption, acknowledgment, execution effect, spend, or result exists, repair and rerun the draft under the same B. After PASS, atomically publish the packet and preflight to their exclusive paths, insert only `computed_packet_id`, and rerun with `--phase frozen` to a temporary path. The frozen run must reproduce the published preflight bytes; otherwise the realization changed or the identity is wrong. If current workflow bytes later invalidate a reviewed but unanswered and unused realization, the narrow same-B migration rule in Entry Review permits a new exclusive realization and fresh review while preserving every old artifact. It never permits overwriting, authority transfer, semantic drift, or reuse after an answer or effect. A substantive change creates a new semantic plan and applicable review; an authoritative result requires a new immutable packet under Boundary-preserving continuation. Do not create a review snapshot, target question, reservation, acknowledgment, work, or spend from failed draft bytes.
+Apply [Finding effects](frontier-core.md#finding-effects). Any `block` or `repair` finding returns nonzero and forbids packet freezing and authorization-readiness review; an advisory remains in output and preserves readiness. Draft the packet and preflight in transient paths; failed bytes are diagnostic evidence, not immutable lifecycle objects. While the B objective, target specification, candidate or source, inputs, evaluator, sampling, comparison and acceptance semantics, scope, spend, effects, stop, and result consequence remain unchanged and no answer, adoption, acknowledgment, execution effect, spend, or result exists, repair and rerun the draft under the same B. After PASS, atomically publish the packet and preflight to their exclusive paths, insert only `computed_packet_id`, and rerun with `--phase frozen` to a temporary path. The frozen run must reproduce the published preflight bytes; otherwise the project realization changed or the identity is wrong. A workflow update never invalidates or migrates a project packet, review, authority, acknowledgment, result, or spend gate. A substantive project change creates a new plan and applicable review; an authoritative result requires a new immutable packet under Boundary-preserving continuation. Do not create a review snapshot, target question, reservation, acknowledgment, work, or spend from failed draft bytes.
 
-`--phase audit` exists only to diagnose immutable legacy packets that predate these fields. It may explain an old failure, but it never creates a current structural preflight, repairs the old packet, or permits review, authorization, acknowledgment, work, or spend. Any current packet must pass both draft and frozen phases.
+`--phase audit` exists only for immutable version 1 packets selected by the exact rollout inventory. It may explain an old failure but cannot create, repair, review, authorize, acknowledge, execute, or spend from a new legacy object. A current packet continues through its exact project decision root and stable project dispatch and result bytes. Workflow updates never alter it.
 
 The required invariants include:
 
@@ -331,6 +357,7 @@ Before work or spend, `run-frontier-batch` writes the assigned acknowledgment. I
 acknowledgment_id: <B identifier plus SHA-256 of canonical acknowledgment bytes with this field omitted>
 batch_id: <B identifier>
 packet_id: <verified batch packet identity>
+decision_root: <exact packet decision root>
 packet_preflight_id: <preflight_id recomputed from the frozen packet>
 authority_id: <frozen authorization-adoption identity>
 authority_validation_id: <finding-free adoption-validation identity>
@@ -355,7 +382,7 @@ python .agents/skills/frontier-optimization/scripts/freeze_execution_baseline.py
   --output <execution_start_path>
 ```
 
-The draft has every field below except `execution_start_id` and `baseline_snapshot`. Every `post_transition_baseline` row uses `scope: file | subtree` and a lowercase `sha256:<digest>`. File identity is SHA-256 over exact bytes. Subtree identity uses `frontier-tree-path-sha256/1`: SHA-256 over canonical JSON containing the sorted relative member paths and member SHA-256 values. Candidate and package trees use the separately named `frontier-package-path-size-sha256/1`; neither bare digest may be interpreted under the other algorithm. The tool rejects missing, changed, duplicate, symbolic-link, unsafe, or non-regular input; refuses any existing snapshot root or execution-start path; copies exact bytes; writes `manifest.yaml`; computes `snapshot_id`; binds it into execution-start; computes `execution_start_id`; and writes the final execution-start path exactly once.
+The version 1 draft has every field below except `execution_start_id` and `baseline_snapshot`. Every `post_transition_baseline` row uses `scope: file | subtree` and a lowercase `sha256:<digest>`. File identity is SHA-256 over exact bytes. Subtree identity uses `frontier-tree-path-sha256/1`: SHA-256 over canonical JSON containing the sorted relative member paths and member SHA-256 values. Candidate and package trees use the separately named `frontier-package-path-size-sha256/1`; neither bare digest may be interpreted under the other algorithm. The tool rejects missing, changed, duplicate, symbolic-link, unsafe, or non-regular input; refuses any existing snapshot root or execution-start path; writes the selected raw bytes to one reachable filtered Git tree; writes `project-snapshot.yaml`; computes `snapshot_id`; binds it into execution-start; computes `execution_start_id`; and writes the final execution-start path exactly once.
 
 The final record is:
 
@@ -364,6 +391,7 @@ execution_start_path: <exact assigned Coordinator-owned path>
 execution_start_id: <B identifier plus SHA-256 of canonical execution-start bytes with this field omitted>
 packet_path: <exact batch packet path>
 packet_id: <verified batch packet identity>
+decision_root: <exact packet decision root>
 packet_preflight: {path: <JSON path>, identity_field: preflight_id, identity: <recomputed preflight_id>, file_sha256: <exact digest>}
 execution_authority:
   mode: <authorization-adoption | spend-readiness>
@@ -410,7 +438,7 @@ For user-owned authorization, `post_adoption_state` is a derived receipt contain
 
 Before minting `execution_start_id`, the baseline tool reruns the frozen packet validator and requires the stored packet-preflight bytes to equal the deterministic recomputation. For user-owned authorization it reruns the exact frozen adoption validator against the Entry snapshot, then performs the separate post-adoption live-state check above; for direct spend-readiness it reruns the exact frozen Entry packet and requires an `ENTRY_READY` review whose frontmatter binds that packet and snapshot. It requires the stored validation bytes to match and derives the acknowledgment from its own bytes. The snapshot manifest has one row per baseline entry and records source path, scope, declared and recomputed identity, snapshot path, and sorted members for a subtree. The tool computes `execution_start_id` after every other field resolves and never overwrites either output. The record creates no new scope or budget; it proves that the acknowledged packet can begin under a coherent and recoverable post-transition baseline. `worker_may_start: no`, a missing or stale record, missing snapshot byte, unexpected acknowledgment-to-start change, incorrect lifecycle rule or receipt, or baseline mismatch returns `BLOCKED` without work or spend.
 
-A packet without the current `identity_contract` may be inspected with its historical validator, but the current baseline tool cannot mint a new execution-start from it. Historical execution-start verification is audit-only and transfers no authority.
+An immutable version 1 packet is audit-only unless `.frontier/provenance-rollout.yaml` explicitly permits its exact authority, scope, and next descendant. That compatibility branch verifies the frozen packet preflight, Entry or adoption validation, every project file identity, authorization chain, acknowledgment, post-adoption state, and execution baseline. Archived workflow source remains inert audit evidence. The branch cannot create a new review or authorization, execute archived code, repair or migrate history, replay authority onto another packet, or broaden a B.
 
 On the execution-phase invocation, `run-frontier-batch` runs `freeze_execution_baseline.py verify <execution_start_path> --live`, verifies the execution-start and snapshot identities, and matches every live post-transition baseline byte before work. It repeats live verification before writing the terminal result. Only then does it set `started_at` and begin spend. Drift in an execution-frozen input after this point forces a halt. A change only to a worker-forbidden path is not itself drift; it is a worker violation only when the worker made it, unless that path is also listed separately as an execution-frozen input. Later implementation review verifies the immutable snapshot without `--live`, so normal post-terminal campaign-record updates cannot erase start-time evidence.
 
@@ -431,6 +459,8 @@ parallel_set: <label or null>
 work_kind: <declared work kind>
 problem_epoch: <integer>
 representation_revision: <integer>
+result_contract_version: <exact packet result contract version>
+decision_root: <exact packet and execution-start decision root>
 started_at: <ISO-8601 datetime>
 ended_at: <ISO-8601 datetime>
 outcome: <completed | interrupted | failed | blocked | waiting_for_input>
@@ -489,7 +519,7 @@ Only a finding-free draft may receive the validator's `computed_result_packet_id
 
 Compute `result_packet_id` after every other result field resolves. A current result is publishable only after the result validator re-reads the three structured dispatch bindings, verifies the exact execution-start identity and live baseline, and recomputes the authority chain contained in execution-start. After the authoritative result exists, a resumed attempt uses a new immutable packet and exclusive acknowledgment, execution-baseline, execution-start, result-validation, and result paths. Before that publication, use [Boundary-preserving continuation](#boundary-preserving-continuation) when its invariants hold. `completed`, `interrupted`, `failed`, `blocked`, and `waiting_for_input` are all reportable outcomes. The first four end the current execution attempt; `waiting_for_input` preserves a paused recovery point. `actual_spend: unknown` is also valid evidence; it forces a new-spend halt until the Coordinator can establish the remaining budget. A result packet is worker evidence only. It never edits a concern contract, creates or updates E, turns human data into a technical conclusion or value choice, adopts a candidate, promotes an incumbent, or changes campaign meaning by itself.
 
-Draft or frozen publication under the current validator rejects a legacy packet. `--phase audit` may diagnose its bytes but cannot publish or adopt a new result.
+Draft or frozen publication requires the project packet's supported `result_contract_version` copied exactly from that packet. A released B continues only through its exact project decision root, packet, preflight, acknowledgment, execution-start, baseline, result format, and result identities. A workflow update does not change any of them; a packet whose own project result format is unsupported remains audit-only.
 
 A Slot H evaluation packet uses `work_kind: experiment`, `changes_executable_candidate: false`, and the canonical nested `evaluation_target` with `mode: formal-slot-h`. Its experiment identity must bind the immutable candidate, evaluator, data, controls, protocol, environment, budget, campaign generation, and exclusive result paths before acknowledgment. A recovery-generation evaluation must also cite the recovery V, X, inherited Budget, and fresh `IMPLEMENTATION_READY`. It may not change candidate bytes, evaluator semantics, comparison controls, or measurement inputs. The result reproduces the complete packet `evaluation_target` exactly; only the Coordinator may validate it and append E.
 

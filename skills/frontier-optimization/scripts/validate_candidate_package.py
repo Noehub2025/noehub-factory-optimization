@@ -29,7 +29,8 @@ except ImportError as exc:  # pragma: no cover
 
 VALIDATOR = "frontier-candidate-package-validation/3"
 INVENTORY_CONTRACT = "frontier-candidate-package-inventory/1"
-FINAL_MANIFEST_CONTRACT = "frontier-candidate-manifest/2"
+FINAL_MANIFEST_CONTRACT = "frontier-candidate-manifest/3"
+LEGACY_FINAL_MANIFEST_CONTRACT = "frontier-candidate-manifest/2"
 DOWNSTREAM_MANIFEST_ROLES = {
     "implementation-review",
     "result",
@@ -349,8 +350,12 @@ def validate_final_manifest_contract(
     findings: list[dict[str, str]],
     *,
     prohibited_downstream_paths: tuple[str, ...] = (),
+    allow_legacy_manifest: bool = False,
 ) -> None:
-    if manifest.get("manifest_contract") != FINAL_MANIFEST_CONTRACT:
+    allowed_contracts = {FINAL_MANIFEST_CONTRACT}
+    if allow_legacy_manifest:
+        allowed_contracts.add(LEGACY_FINAL_MANIFEST_CONTRACT)
+    if manifest.get("manifest_contract") not in allowed_contracts:
         add_finding(
             findings,
             "FINAL_MANIFEST_CONTRACT_INVALID",
@@ -436,6 +441,9 @@ def validate_candidate_package(
     *,
     expected_candidate_id: Any = None,
     expected_manifest_sha256: Any = None,
+    expected_workflow_source_identity: Any = None,
+    allow_missing_workflow_source_identity: bool = False,
+    allow_legacy_manifest: bool = False,
     require_final_manifest: bool = False,
     prohibited_downstream_paths: tuple[str, ...] = (),
 ) -> dict[str, Any]:
@@ -492,6 +500,46 @@ def validate_candidate_package(
                 findings,
                 "CANDIDATE_MANIFEST_IDENTITY_MISMATCH",
                 f"declared {expected!r}; observed {manifest_sha256!r}",
+            )
+
+    if manifest is not None and manifest.get("manifest_contract") == FINAL_MANIFEST_CONTRACT:
+        if "workflow_source_identity" in manifest:
+            add_finding(
+                findings,
+                "WORKFLOW_SOURCE_IDENTITY_RETIRED",
+                "current candidate manifests must not contain workflow_source_identity",
+            )
+    elif manifest is not None and (
+        manifest.get("manifest_contract") == LEGACY_FINAL_MANIFEST_CONTRACT
+        or (
+            allow_legacy_manifest and manifest.get("manifest_contract") is None
+        )
+    ):
+        workflow_source_identity = manifest.get("workflow_source_identity")
+        if workflow_source_identity is None and allow_missing_workflow_source_identity:
+            pass
+        elif (
+            not isinstance(workflow_source_identity, str)
+            or not workflow_source_identity.startswith("sha256:")
+            or len(workflow_source_identity) != 71
+            or any(
+                character not in "0123456789abcdef"
+                for character in workflow_source_identity.removeprefix("sha256:")
+            )
+        ):
+            add_finding(
+                findings,
+                "WORKFLOW_SOURCE_IDENTITY_INVALID",
+                "candidate manifest requires a lowercase sha256 workflow_source_identity",
+            )
+        elif (
+            expected_workflow_source_identity is not None
+            and workflow_source_identity != expected_workflow_source_identity
+        ):
+            add_finding(
+                findings,
+                "WORKFLOW_SOURCE_IDENTITY_MISMATCH",
+                "candidate manifest workflow_source_identity does not match its producing result",
             )
 
     if manifest is not None and package_sha256 is not None:
@@ -565,6 +613,7 @@ def validate_candidate_package(
                 manifest_sha256,
                 findings,
                 prohibited_downstream_paths=prohibited_downstream_paths,
+                allow_legacy_manifest=allow_legacy_manifest,
             )
 
     finding_summary = finalize_findings(findings)

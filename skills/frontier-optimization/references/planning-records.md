@@ -96,6 +96,7 @@ A `campaign-opening` V records an explicit current post-closeout reopen request.
 - Representation revision: <integer>
 - Permitted scope: <exact reviewed scope>
 - Starting records: <identifiers>
+- Workflow source identity: <adopted source-snapshot identity governing this B and all dependent objects>
 - Work: <operations, modules, and worker assignments>
 - Repository structure: <existing-integrated with evidence; user-approved-new with V; absent-awaiting-user; or not applicable>
 - Source base identity: <commit plus dirty-state identity, immutable source snapshot, or not applicable>
@@ -105,6 +106,7 @@ A `campaign-opening` V records an explicit current post-closeout reopen request.
 - Worker-forbidden paths: <paths this B's worker must not write, including evaluator, runner, interface, schema, Coordinator outputs, or other shared paths; or not applicable>
 - Execution-frozen inputs: <path, identity, and exact scope that no actor may change after execution start; or not applicable>
 - Packet preflight: <Coordinator-owned path, finding-free preflight identity, computed packet identity, validator identity, and created-before-authorization evidence>
+- Result contract version: <versioned result schema and validation branch frozen in the B packet>
 - Authorization readiness: <Entry schema identities, AUTHORIZATION_READY review identity, exact target, Coordinator adoption state, and adoption-validation identity>
 - Candidate package inventory: <assigned immutable pre-execution path and byte-derived identity rule, or not applicable>
 - Candidate manifest: <assigned stable path and identity rule, or not applicable>

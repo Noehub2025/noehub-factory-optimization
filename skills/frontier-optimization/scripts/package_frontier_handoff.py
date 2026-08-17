@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and verify an immutable post-closeout Frontier handoff package."""
+"""Audit and verify historical version 1 Frontier handoff packages."""
 
 from __future__ import annotations
 
@@ -22,6 +22,11 @@ from identity_bindings import (
     tree_inventory,
 )
 from finding_effects import add_finding, finalize_findings
+from workflow_source_binding import (
+    WorkflowSourceBindingError,
+    validate_binding,
+    validate_source_closure,
+)
 
 try:
     import yaml
@@ -40,9 +45,29 @@ REQUIRED_FIELDS = {
     "final_handoff_identity",
     "final_budget_identity",
     "lineage_sources",
+    "final_direction_state",
+    "workflow_source_bindings",
     "subtree_identity_algorithm",
     "entries",
     "authority_effect",
+}
+FINAL_DIRECTION_REQUIRED = {
+    "compatible_evidence",
+    "controlling_reflections",
+    "progress_meaning",
+    "constraint_meaning",
+    "route_set_state",
+    "reopening_events",
+    "diagnostic_dominance",
+    "resolver",
+    "budget_reachability",
+    "workflow_source_identity",
+}
+FINAL_RESOLVER_REQUIRED = {
+    "evidence_state_identity",
+    "row",
+    "direction_resolution",
+    "exact_action",
 }
 
 
@@ -107,6 +132,12 @@ def source_identity(path: Path, scope: str) -> tuple[list[dict[str, Any]], str]:
 
 def validate_plan(document: dict[str, Any], phase: str, repo_root: Path) -> dict[str, Any]:
     findings: list[dict[str, str]] = []
+    if phase != "audit":
+        add_finding(
+            findings,
+            "LEGACY_PACKAGER_READ_ONLY",
+            "new handoffs must use frontier_provenance_cli export-handoff",
+        )
     for field in sorted(REQUIRED_FIELDS - document.keys()):
         add_finding(findings, "REQUIRED_FIELD_MISSING", field)
     generation = document.get("campaign_generation")
@@ -130,6 +161,97 @@ def validate_plan(document: dict[str, Any], phase: str, repo_root: Path) -> dict
             "SUBTREE_IDENTITY_ALGORITHM_INVALID",
             f"subtree_identity_algorithm must be {PACKAGE_PATH_SIZE_SHA256_V1}",
         )
+
+    final_direction = document.get("final_direction_state")
+    if not isinstance(final_direction, dict):
+        add_finding(
+            findings,
+            "FINAL_DIRECTION_STATE_INVALID",
+            "final_direction_state must be a mapping",
+        )
+    else:
+        missing_direction = FINAL_DIRECTION_REQUIRED - final_direction.keys()
+        if missing_direction:
+            add_finding(
+                findings,
+                "FINAL_DIRECTION_STATE_INVALID",
+                "missing fields: " + ", ".join(sorted(missing_direction)),
+            )
+        for field in ("compatible_evidence", "controlling_reflections", "reopening_events"):
+            if not isinstance(final_direction.get(field), list):
+                add_finding(
+                    findings,
+                    "FINAL_DIRECTION_STATE_INVALID",
+                    f"{field} must be a list",
+                )
+        for field in (
+            "progress_meaning",
+            "constraint_meaning",
+            "route_set_state",
+            "diagnostic_dominance",
+            "budget_reachability",
+            "workflow_source_identity",
+        ):
+            if not isinstance(final_direction.get(field), str) or not final_direction[field].strip():
+                add_finding(
+                    findings,
+                    "FINAL_DIRECTION_STATE_INVALID",
+                    f"{field} must be a nonempty string",
+                )
+        resolver = final_direction.get("resolver")
+        if not isinstance(resolver, dict) or FINAL_RESOLVER_REQUIRED - resolver.keys():
+            add_finding(
+                findings,
+                "FINAL_DIRECTION_STATE_INVALID",
+                "resolver must contain evidence_state_identity, row, direction_resolution, and exact_action",
+            )
+        elif (
+            not isinstance(resolver.get("row"), int)
+            or isinstance(resolver.get("row"), bool)
+            or resolver["row"] not in range(1, 14)
+            or any(
+                not isinstance(resolver.get(field), str) or not resolver[field].strip()
+                for field in ("evidence_state_identity", "direction_resolution", "exact_action")
+            )
+        ):
+            add_finding(
+                findings,
+                "FINAL_DIRECTION_STATE_INVALID",
+                "resolver fields must identify one exact row and action",
+            )
+
+    workflow_sources = document.get("workflow_source_bindings")
+    validated_workflow_sources: list[dict[str, Any]] = []
+    if not isinstance(workflow_sources, list) or not workflow_sources:
+        add_finding(
+            findings,
+            "WORKFLOW_SOURCE_BINDINGS_INVALID",
+            "workflow_source_bindings must be a nonempty list",
+        )
+    else:
+        for index, binding in enumerate(workflow_sources):
+            try:
+                observed = validate_binding(binding, repo_root)
+                validated_workflow_sources.append(
+                    {"binding": binding, "observed": observed}
+                )
+            except WorkflowSourceBindingError as exc:
+                add_finding(
+                    findings,
+                    "WORKFLOW_SOURCE_BINDING_INVALID",
+                    f"workflow_source_bindings[{index}]: {exc}",
+                )
+        if isinstance(final_direction, dict):
+            source_identities = {
+                item["binding"]["source_snapshot"]["identity"]
+                for item in validated_workflow_sources
+            }
+            if final_direction.get("workflow_source_identity") not in source_identities:
+                add_finding(
+                    findings,
+                    "FINAL_DIRECTION_WORKFLOW_SOURCE_MISMATCH",
+                    "final direction state must name one packaged adopted workflow source",
+                )
     lineage = document.get("lineage_sources")
     observed_lineage: dict[str, str] = {}
     lineage_documents: dict[str, dict[str, Any]] = {}
@@ -316,6 +438,25 @@ def validate_plan(document: dict[str, Any], phase: str, repo_root: Path) -> dict
                     f"lineage_sources.{role}.path must be included as an exact package entry",
                 )
 
+    if validated_workflow_sources and expanded_entries:
+        for index, item in enumerate(validated_workflow_sources):
+            for role in ("source_manifest", "source_snapshot"):
+                source_path = item["binding"][role]["path"]
+                covered = any(
+                    source_path == entry["source"]
+                    or (
+                        entry["scope"] == "subtree"
+                        and source_path.startswith(entry["source"].rstrip("/") + "/")
+                    )
+                    for entry in expanded_entries
+                )
+                if not covered:
+                    add_finding(
+                        findings,
+                        "WORKFLOW_SOURCE_NOT_PACKAGED",
+                        f"workflow_source_bindings[{index}].{role}.path must be included in entries",
+                    )
+
     plan_sha256 = hashlib.sha256(canonical_payload(document)).hexdigest()
     expected_id = f"frontier-package-sha256:{plan_sha256}"
     declared_id = document.get("package_id")
@@ -353,63 +494,10 @@ def package_directory_name(package_id: str) -> str:
 
 
 def build(plan_path: Path, output_parent: Path, repo_root: Path) -> Path:
-    document = yaml.safe_load(plan_path.read_bytes())
-    if not isinstance(document, dict):
-        raise PackageError("package plan must contain a YAML mapping")
-    validation = validate_plan(document, "frozen", repo_root)
-    if not validation["package_ready"]:
-        raise PackageError(json.dumps(validation["findings"], sort_keys=True))
-    package_id = validation["computed_package_id"]
-    output_parent.mkdir(parents=True, exist_ok=True)
-    final_root = output_parent / package_directory_name(package_id)
-    if final_root.exists():
-        raise PackageError(f"refusing to reuse package root: {final_root}")
-
-    stage = Path(tempfile.mkdtemp(prefix=".frontier-package-", dir=output_parent))
-    published = False
-    try:
-        payload_root = stage / "payload"
-        payload_root.mkdir()
-        manifest_files: list[dict[str, Any]] = []
-        for entry in validation["expanded_entries"]:
-            source_root = repo_root / entry["source"]
-            for member in entry["members"]:
-                source = source_root if entry["scope"] == "file" else source_root / member["source_member"]
-                destination = payload_root / member["destination"]
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(source, destination)
-                if sha256_file(destination) != member["sha256"]:
-                    raise PackageError(f"copied byte identity mismatch: {member['destination']}")
-                manifest_files.append(
-                    {
-                        "path": f"payload/{member['destination']}",
-                        "sha256": member["sha256"],
-                        "size": member["size"],
-                        "role": entry["role"],
-                        "source": entry["source"],
-                    }
-                )
-        (stage / "package-plan.yaml").write_bytes(plan_path.read_bytes())
-        manifest = {
-            "validator": VALIDATOR,
-            "package_id": package_id,
-            "campaign_generation": document["campaign_generation"],
-            "closeout_identity": document["closeout_identity"],
-            "final_handoff_identity": document["final_handoff_identity"],
-            "final_budget_identity": document["final_budget_identity"],
-            "authority_effect": "none",
-            "subtree_identity_algorithm": document["subtree_identity_algorithm"],
-            "files": sorted(manifest_files, key=lambda item: item["path"]),
-        }
-        (stage / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
-        os.replace(stage, final_root)
-        published = True
-    finally:
-        if not published:
-            shutil.rmtree(stage, ignore_errors=True)
-    verify(final_root)
-    return final_root
-
+    del plan_path, output_parent, repo_root
+    raise PackageError(
+        "legacy handoff build is closed; use frontier_provenance_cli export-handoff"
+    )
 
 def verify(package_root: Path) -> dict[str, Any]:
     manifest_path = package_root / "manifest.json"
@@ -435,6 +523,8 @@ def verify(package_root: Path) -> dict[str, Any]:
         "closeout_identity",
         "final_handoff_identity",
         "final_budget_identity",
+        "final_direction_state",
+        "workflow_source_bindings",
         "authority_effect",
         "subtree_identity_algorithm",
     )
@@ -473,6 +563,56 @@ def verify(package_root: Path) -> dict[str, Any]:
                     "source": source,
                 }
             )
+
+    def packaged_source_path(source_path: str) -> Path | None:
+        for entry_index, entry in enumerate(entries):
+            entry_source = safe_relative(
+                entry.get("source"), f"entries[{entry_index}].source"
+            )
+            destination = safe_relative(
+                entry.get("destination"), f"entries[{entry_index}].destination"
+            )
+            if entry.get("scope") == "file" and entry_source == source_path:
+                return package_root / "payload" / destination
+            source_prefix = entry_source.rstrip("/") + "/"
+            if entry.get("scope") == "subtree" and source_path.startswith(source_prefix):
+                return package_root / "payload" / destination / source_path[len(source_prefix) :]
+        return None
+
+    workflow_sources = plan.get("workflow_source_bindings")
+    if not isinstance(workflow_sources, list) or not workflow_sources:
+        raise PackageError("frozen package plan has no workflow source bindings")
+    for index, binding in enumerate(workflow_sources):
+        if not isinstance(binding, dict):
+            raise PackageError(f"workflow source binding {index} is invalid")
+        recovered: dict[str, bytes] = {}
+        for role in ("source_manifest", "source_snapshot"):
+            source_binding = binding.get(role)
+            if not isinstance(source_binding, dict) or not isinstance(
+                source_binding.get("path"), str
+            ):
+                raise PackageError(f"workflow source binding {index}.{role} is invalid")
+            recovered_path = packaged_source_path(source_binding["path"])
+            if recovered_path is None or not recovered_path.is_file():
+                raise PackageError(f"packaged workflow source is missing: {source_binding['path']}")
+            raw = recovered_path.read_bytes()
+            digest = hashlib.sha256(raw).hexdigest()
+            if (
+                source_binding.get("file_sha256") != digest
+                or source_binding.get("identity") != f"sha256:{digest}"
+            ):
+                raise PackageError(
+                    f"packaged workflow source identity mismatch: {source_binding['path']}"
+                )
+            recovered[role] = raw
+        try:
+            validate_source_closure(
+                recovered["source_manifest"],
+                recovered["source_snapshot"],
+                binding["source_snapshot"]["identity"],
+            )
+        except WorkflowSourceBindingError as exc:
+            raise PackageError(f"packaged workflow source is not recoverable: {exc}") from exc
     expected_manifest_files.sort(key=lambda item: item["path"])
     if manifest["files"] != expected_manifest_files:
         raise PackageError(

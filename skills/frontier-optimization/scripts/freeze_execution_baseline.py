@@ -33,6 +33,12 @@ from project_snapshot import (
     read_manifest as read_project_snapshot_manifest,
     verify as verify_project_snapshot,
 )
+from workflow_source_binding import (
+    WorkflowSourceBindingError,
+    source_member_bytes,
+)
+from frontier_provenance.content import ProvenanceError
+from frontier_provenance.compatibility import require_v1_completion
 
 try:
     import yaml
@@ -42,6 +48,13 @@ except ImportError as exc:  # pragma: no cover
 
 LIFECYCLE_CONTRACT = "frontier-lifecycle-transition/1"
 IDENTITY_CONTRACT = "frontier-dispatch-identity/2"
+SUPPORTED_IDENTITY_CONTRACTS = {IDENTITY_CONTRACT}
+DISPATCH_SOURCE_MEMBERS = (
+    "scripts/freeze_execution_baseline.py",
+    "scripts/validate_batch_packet.py",
+    "scripts/validate_authorization_adoption.py",
+    "scripts/validate_entry_packet.py",
+)
 
 
 class BaselineError(ValueError):
@@ -289,33 +302,109 @@ def validate_dispatch_chain(
         repo_root, document.get("packet_path"), "packet_path"
     )
     packet = read_yaml(packet_path, f"packet {packet_relative}")
-    if packet.get("identity_contract") != IDENTITY_CONTRACT:
+    if packet.get("identity_contract") not in SUPPORTED_IDENTITY_CONTRACTS:
         if allow_legacy_audit:
             return
         raise BaselineError(
-            "legacy packet may be audited but cannot mint a current execution-start"
+            "packet predates a supported recoverable dispatch identity contract"
         )
     if packet.get("packet_id") != document.get("packet_id"):
         raise BaselineError("execution-start packet_id does not match the live packet")
-
-    packet_validator = load_validator(
-        "validate_batch_packet.py", "_frontier_batch_validator_for_execution"
+    source_identity = (
+        packet.get("workflow_source_binding", {})
+        .get("source_snapshot", {})
+        .get("identity")
     )
-    recomputed_preflight = packet_validator.validate(packet, "frozen", repo_root)
-    if not recomputed_preflight.get("packet_structure_ready"):
-        raise BaselineError("live packet no longer passes its bound packet validator")
+    if (
+        not isinstance(source_identity, str)
+        or document.get("workflow_source_identity") != source_identity
+        or packet.get("workflow_source_identity") != source_identity
+    ):
+        raise BaselineError(
+            "execution-start workflow source does not match the packet binding"
+        )
+    try:
+        archived_dispatch_sources = {
+            member: source_member_bytes(
+                packet.get("workflow_source_binding"), repo_root, member
+            )
+            for member in DISPATCH_SOURCE_MEMBERS
+        }
+    except WorkflowSourceBindingError as exc:
+        raise BaselineError(str(exc)) from exc
+    historical_source = (
+        packet.get("identity_contract") != IDENTITY_CONTRACT
+        or any(
+            content
+            != (
+                Path(__file__).read_bytes()
+                if member == "scripts/freeze_execution_baseline.py"
+                else Path(__file__).with_name(Path(member).name).read_bytes()
+            )
+            for member, content in archived_dispatch_sources.items()
+        )
+    )
     try:
         preflight = load_file_binding(
             repo_root,
             document.get("packet_preflight"),
             "packet_preflight",
             expected_identity_field="preflight_id",
-            expected_identity=recomputed_preflight.get("preflight_id"),
         )
     except IdentityBindingError as exc:
         raise BaselineError(str(exc)) from exc
-    if preflight.raw != canonical_json_artifact(recomputed_preflight):
-        raise BaselineError("stored packet preflight bytes do not equal current recomputation")
+    if preflight.document is None:
+        raise BaselineError("stored packet preflight must contain a mapping")
+    if historical_source:
+        if (
+            preflight.document.get("packet_structure_ready") is not True
+            or preflight.document.get("computed_packet_id") != packet.get("packet_id")
+            or preflight.document.get("blocking_findings") != []
+            or preflight.document.get("repair_findings") != []
+        ):
+            raise BaselineError(
+                "archived-source dispatch requires its finding-free frozen packet preflight"
+            )
+    else:
+        packet_validator = load_validator(
+            "validate_batch_packet.py", "_frontier_batch_validator_for_execution"
+        )
+        recomputed_preflight = packet_validator.validate(packet, "frozen", repo_root)
+        if not recomputed_preflight.get("packet_structure_ready"):
+            raise BaselineError("live packet no longer passes its bound packet validator")
+        if preflight.identity != recomputed_preflight.get("preflight_id"):
+            raise BaselineError("stored packet preflight identity differs from recomputation")
+        if preflight.raw != canonical_json_artifact(recomputed_preflight):
+            raise BaselineError("stored packet preflight bytes do not equal current recomputation")
+
+    def require_exact_entry_dispatch(entry_document: dict[str, Any]) -> None:
+        entry_payload_sha256 = sha256_bytes(
+            canonical_yaml(entry_document, "packet_id")
+        )
+        expected_entry_id = (
+            f"entry-{entry_document.get('review_id', 'UNKNOWN')}-packet-sha256:"
+            f"{entry_payload_sha256}"
+        )
+        if entry_document.get("packet_id") != expected_entry_id:
+            raise BaselineError(
+                "archived-source Entry identity does not derive from its canonical payload"
+            )
+        dispatch = entry_document.get("dispatch_contract")
+        expected = {
+            "batch_id": packet.get("batch_id"),
+            "packet_path": packet_relative,
+            "packet_id": packet.get("packet_id"),
+            "preflight_path": preflight.relative_path,
+            "preflight_id": preflight.identity,
+            "preflight_file_sha256": preflight.file_sha256,
+            "result_path": packet.get("result_packet_path"),
+        }
+        if not isinstance(dispatch, dict) or any(
+            dispatch.get(field) != value for field, value in expected.items()
+        ):
+            raise BaselineError(
+                "archived-source Entry dispatch does not bind the exact packet and preflight"
+            )
 
     authority = document.get("execution_authority")
     if not isinstance(authority, dict):
@@ -350,22 +439,101 @@ def validate_dispatch_chain(
             raise BaselineError(str(exc)) from exc
         if adoption.document is None or validation.document is None:
             raise BaselineError("execution authority files must contain mappings")
-        adoption_validator = load_validator(
-            "validate_authorization_adoption.py",
-            "_frontier_adoption_validator_for_execution",
-        )
-        recomputed_adoption = adoption_validator.validate(
-            adoption.document,
-            "frozen",
-            repo_root,
-            reconcile_entry_live=False,
-        )
-        if not recomputed_adoption.get("authorization_adoption_valid"):
-            raise BaselineError("authorization adoption is not valid under the current validator")
         if adoption.document.get("entry_result") != "ENTRY_READY":
             raise BaselineError("authorization adoption does not grant ENTRY_READY")
-        if validation.raw != canonical_json_artifact(recomputed_adoption):
-            raise BaselineError("stored adoption validation bytes do not equal current recomputation")
+        if historical_source:
+            adoption_payload_sha256 = sha256_bytes(
+                canonical_yaml(adoption.document, "adoption_id")
+            )
+            expected_adoption_id = (
+                f"authorization-adoption-sha256:{adoption_payload_sha256}"
+            )
+            adoption_validation_payload = dict(validation.document)
+            adoption_validation_payload.pop("validation_id", None)
+            expected_validation_id = (
+                "authorization-adoption-validation-sha256:"
+                + sha256_bytes(
+                    json.dumps(
+                        adoption_validation_payload,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                        ensure_ascii=False,
+                    ).encode()
+                )
+            )
+            if (
+                validation.document.get("authorization_adoption_valid") is not True
+                or validation.document.get("blocking_findings") != []
+                or validation.document.get("repair_findings") != []
+            ):
+                raise BaselineError(
+                    "archived-source dispatch requires its finding-free adoption validation"
+                )
+            if (
+                adoption.document.get("adoption_id") != expected_adoption_id
+                or validation.document.get("adoption_payload_sha256")
+                != adoption_payload_sha256
+                or validation.document.get("computed_adoption_id")
+                != expected_adoption_id
+                or validation.identity != expected_validation_id
+            ):
+                raise BaselineError(
+                    "archived-source adoption identity does not match its canonical payload and stored validation"
+                )
+            adopted_source = (
+                adoption.document.get("workflow_source_binding", {})
+                .get("source_snapshot", {})
+                .get("identity")
+            )
+            if adopted_source != source_identity:
+                raise BaselineError(
+                    "archived-source adoption does not bind the packet workflow source"
+                )
+            target = adoption.document.get("authorization_target")
+            if not isinstance(target, dict) or (
+                target.get("batch_id") != packet.get("batch_id")
+                or target.get("packet_id") != packet.get("packet_id")
+            ):
+                raise BaselineError(
+                    "archived-source authorization target does not bind the exact packet"
+                )
+            try:
+                entry_reference = adoption.document.get("entry_packet")
+                if not isinstance(entry_reference, dict):
+                    raise IdentityBindingError(
+                        "authorization_adoption.entry_packet must be a mapping"
+                    )
+                adopted_entry = load_file_binding(
+                    repo_root,
+                    {
+                        "path": entry_reference.get("path"),
+                        "identity_field": "packet_id",
+                        "identity": entry_reference.get("packet_id"),
+                        "file_sha256": entry_reference.get("file_sha256"),
+                    },
+                    "authorization_adoption.entry_packet",
+                    expected_identity_field="packet_id",
+                )
+            except IdentityBindingError as exc:
+                raise BaselineError(str(exc)) from exc
+            if adopted_entry.document is None:
+                raise BaselineError("archived-source Entry packet must contain a mapping")
+            require_exact_entry_dispatch(adopted_entry.document)
+        else:
+            adoption_validator = load_validator(
+                "validate_authorization_adoption.py",
+                "_frontier_adoption_validator_for_execution",
+            )
+            recomputed_adoption = adoption_validator.validate(
+                adoption.document,
+                "frozen",
+                repo_root,
+                reconcile_entry_live=False,
+            )
+            if not recomputed_adoption.get("authorization_adoption_valid"):
+                raise BaselineError("authorization adoption is not valid under the current validator")
+            if validation.raw != canonical_json_artifact(recomputed_adoption):
+                raise BaselineError("stored adoption validation bytes do not equal current recomputation")
         validate_post_adoption_live(document, adoption.document, repo_root)
         authority_identity = adoption.identity
         validation_identity = validation.identity
@@ -395,16 +563,67 @@ def validate_dispatch_chain(
             raise BaselineError(str(exc)) from exc
         if entry.document is None or validation.document is None:
             raise BaselineError("spend-readiness Entry files must contain mappings")
-        entry_validator = load_validator(
-            "validate_entry_packet.py", "_frontier_entry_validator_for_execution"
-        )
-        recomputed_entry = entry_validator.validate(entry.document, "frozen", repo_root)
-        if not recomputed_entry.get("entry_schema_ready"):
-            raise BaselineError("spend-readiness Entry packet is not source-valid")
         if entry.document.get("review_stage") != "spend-readiness":
             raise BaselineError("spend-readiness authority requires the matching Entry stage")
-        if validation.raw != canonical_json_artifact(recomputed_entry):
-            raise BaselineError("stored Entry validation bytes do not equal current recomputation")
+        if historical_source:
+            entry_payload_sha256 = sha256_bytes(
+                canonical_yaml(entry.document, "packet_id")
+            )
+            expected_entry_id = (
+                f"entry-{entry.document.get('review_id', 'UNKNOWN')}-packet-sha256:"
+                f"{entry_payload_sha256}"
+            )
+            entry_validation_payload = dict(validation.document)
+            entry_validation_payload.pop("entry_schema_id", None)
+            expected_entry_validation_id = (
+                f"entry-{entry.document.get('review_id', 'UNKNOWN')}-schema-sha256:"
+                + sha256_bytes(
+                    json.dumps(
+                        entry_validation_payload,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                        ensure_ascii=False,
+                    ).encode()
+                )
+            )
+            if (
+                validation.document.get("entry_schema_ready") is not True
+                or validation.document.get("blocking_findings") != []
+                or validation.document.get("repair_findings") != []
+            ):
+                raise BaselineError(
+                    "archived-source dispatch requires its finding-free Entry validation"
+                )
+            if (
+                entry.document.get("packet_id") != expected_entry_id
+                or validation.document.get("packet_payload_sha256")
+                != entry_payload_sha256
+                or validation.document.get("computed_packet_id")
+                != expected_entry_id
+                or validation.identity != expected_entry_validation_id
+            ):
+                raise BaselineError(
+                    "archived-source Entry identity does not match its canonical payload and stored validation"
+                )
+            entry_source = (
+                entry.document.get("workflow_source_binding", {})
+                .get("source_snapshot", {})
+                .get("identity")
+            )
+            if entry_source != source_identity:
+                raise BaselineError(
+                    "archived-source Entry does not bind the packet workflow source"
+                )
+            require_exact_entry_dispatch(entry.document)
+        else:
+            entry_validator = load_validator(
+                "validate_entry_packet.py", "_frontier_entry_validator_for_execution"
+            )
+            recomputed_entry = entry_validator.validate(entry.document, "frozen", repo_root)
+            if not recomputed_entry.get("entry_schema_ready"):
+                raise BaselineError("spend-readiness Entry packet is not source-valid")
+            if validation.raw != canonical_json_artifact(recomputed_entry):
+                raise BaselineError("stored Entry validation bytes do not equal current recomputation")
         frontmatter = read_frontmatter(review.raw, review.relative_path)
         if (
             frontmatter.get("review_result") != "ENTRY_READY"
@@ -434,6 +653,7 @@ def validate_dispatch_chain(
     expected_ack_fields = {
         "batch_id": document.get("batch_id"),
         "packet_id": document.get("packet_id"),
+        "workflow_source_identity": source_identity,
         "packet_preflight_id": preflight.identity,
         "authority_id": authority_identity,
         "authority_validation_id": validation_identity,
@@ -622,6 +842,26 @@ def freeze(
     if document.get("baseline_snapshot") is not None:
         raise BaselineError("execution-start draft must not contain baseline_snapshot")
     validate_dispatch_chain(document, repo_root)
+    packet_path = resolve_inside(repo_root, document.get("packet_path"), "packet_path")[1]
+    packet = read_yaml(packet_path, "version 1 packet")
+    if packet.get("identity_contract") in SUPPORTED_IDENTITY_CONTRACTS:
+        authority_root = (
+            document.get("execution_authority", {}).get("record", {}).get("identity")
+        )
+        try:
+            inventory = read_yaml(
+                repo_root / ".frontier/provenance-rollout.yaml",
+                "v1 rollout inventory",
+            )
+            require_v1_completion(
+                inventory,
+                authority_root=authority_root,
+                requested_descendant="execution-start",
+                scope_root=packet.get("packet_id"),
+                verified_parent_role="acknowledgment",
+            )
+        except (OSError, ProvenanceError) as exc:
+            raise BaselineError(str(exc)) from exc
     baseline = document.get("post_transition_baseline")
     if not isinstance(baseline, list) or not baseline:
         raise BaselineError("post_transition_baseline must be a nonempty list")

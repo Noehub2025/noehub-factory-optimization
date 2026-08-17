@@ -23,6 +23,9 @@ representation_generated_at: "<ISO-8601 datetime>"
 representation_review_result: <PROCEED_EXPLORATORY | PROCEED_MODULAR>
 representation_reviewed_at: "<ISO-8601 datetime>"
 representation_permitted: "<exact reviewed Permitted text>"
+project_provenance:
+  decision_root: <frontier-decision-root-sha256 identity>
+  adopted_by: <Entry or Replan packet and unchanged positive review identity>
 campaign_generation: <positive integer; legacy omission means 1>
 campaign_status: <planned | running | stopped | halted>
 current_state:
@@ -42,7 +45,7 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 
 ## Brief
 
-<Explain the campaign generation and recovery lineage when applicable, reference baseline, replaceable campaign baseline, reason it can carry optimization, exact scope, repository integration when relevant, remaining budget, next work, review authority, first performance check, protected reserve, latest decisive reflection, stop or halt conditions, and claim limits. Use concrete names, not bare identifiers.>
+<Explain the campaign generation and recovery lineage when applicable, project provenance, reference baseline, replaceable campaign baseline, reason it can carry optimization, exact scope, repository integration when relevant, remaining budget, next work, review authority, first performance check, protected reserve, latest decisive reflection, stop or halt conditions, and claim limits. Use concrete names, not bare identifiers.>
 
 ## Contract
 
@@ -113,10 +116,11 @@ Selection:
 - Recorded at: <ISO-8601 datetime>
 - Campaign generation: <positive integer>
 - Recovery lineage: <prior CLOSEOUT_COMPLETE, recovery V and X identities, reused objects and limits; or None for generation 1>
-- Evidence-state identity: <immutable identity of controlling terminal outcomes, E, reflections, Q, V, D, X, Budget, W, and reviews>
+- Project provenance: <decision root and adopting Entry or Replan identity; no workflow identity>
+- Evidence-state identity: <immutable identity of current parents, controlling terminal outcomes, E, reflections, Q, V, D, X, Budget, W, and reviews>
 - Outcome reflections applied: <every controlling reflection, or None before the first B>
 - Route-set state: <complete for this decision | incomplete | reopened, with Q, T, peer-source basis, shared assumptions, exclusions, deferrals, prerequisites, and reopening evidence>
-- Direction resolution: <local R8 | local diagnostic | focused Q | route-landscape Q | strategic replan | stop | halt | blocked, with the first applicable rule>
+- Direction resolution: <local R8 | local diagnostic | focused Q | route-landscape Q | strategic replan | stop | halt | blocked, with the first applicable row from learning-loop.md, its persisted condition, and exact next action>
 - Terminal and join coverage: <terminal selected B identifiers, E coverage, joined X identity, or exact blocker>
 - Route research: <route landscape Q and coverage conclusion>
 - Campaign-baseline candidates: <eligible T identifiers, plain-language mechanisms, and route-generation basis>
@@ -132,11 +136,12 @@ Selection:
 - Implementation review gate: <required review before first measurement, integration, or incumbent use; reusable prior review and exact unchanged identity; or not applicable>
 - User values applied: <V identifiers and effective conditions or None>
 - Decision-relevant unknowns: <answered, deferred with event, or blocking>
+- Diagnostic decision: <controlling Outcome Reflection, ordered considered path identifiers, selected path and dominance reason; exact non-unique technical diagnostic blocker; or not applicable>
 - Research disposition: <none with reason | local diagnosis | focused Q | route landscape refresh | isolated prototype | parent review>
 - Strategic replan gate: <assigned review path requiring adopted REPLAN_READY, unchanged prior identity, or not applicable>
 - Adopted replan review: <unchanged REPLAN_READY identity whose reviewed proposal exactly matches this Selection and B state, or not applicable>
 - R8 rule applied: <exact clause>
-- Deterministic resolution: <unique R8 action, cheapest diagnostic, focused research target, required V, strategic review, stop, halt, or exact blocker>
+- Deterministic resolution: <the exact action produced by the recorded first applicable resolver row, including required Q, V, Replan, specialized gate, stop, halt, or blocker>
 - Primary: <B identifier and reason>
 - Parallel: <identifiers and independence reason or None>
 - Parallel checks: <same current W revision when shared, reservations, exclusive mutable paths, shared-resource safety, integration ownership, measurement compatibility, and failure isolation; or None>
@@ -148,6 +153,6 @@ Selection:
 - Deferred: <identifiers, reasons, unresolved or unavailable prerequisite consequences, and observable reconsideration events>
 ```
 
-Selection applies the reviewed Entry evidence or latest controlling reflection; it does not reinterpret route eligibility to make a proposed B pass. `complete for this decision` supports the current allocation only and makes no exhaustive-search, originality, or optimality claim. A sole eligible route is sufficient when every material decision-relevant mechanism class is dispositioned. When a load-bearing prerequisite is unresolved, the only eligible route-related B is its smallest sufficient prerequisite-first check; dependent implementation remains ineligible until passing evidence is adopted through the applicable Entry or Replan gate.
+Selection applies the reviewed Entry evidence or latest controlling reflection; it does not reinterpret validity, technical learning, route eligibility, progress, constraint meaning, diagnostic alternatives, or dominance to make a proposed B pass. `complete for this decision` supports the current allocation only and makes no exhaustive-search, originality, or optimality claim. A sole eligible route is sufficient when every material decision-relevant mechanism class is dispositioned. When a load-bearing prerequisite is unresolved, the only eligible route-related B is its smallest sufficient prerequisite-first check; dependent implementation remains ineligible until passing evidence is adopted through the applicable Entry or Replan gate.
 
-The same evidence-state identity must produce the same deterministic resolution. If multiple technically eligible actions remain and R8 does not choose among them, require the exact missing Q or V instead of selecting by preference or conversation context. No later spend authority exists until the Selection cites every required reflection, V, join, and applicable positive review.
+One evidence-state identity has exactly one persisted first applicable resolver row and deterministic resolution. Reject a competing Selection for that identity. Later workflow changes never recompute it. A new resolver run requires a new project decision event and a new evidence-state identity. If multiple technical diagnostic paths remain non-dominated and no existing R8 or prospective rule selects one, copy the exact non-unique technical diagnostic blocker from the controlling reflection; do not ask the user to choose. Use Q only for the resolver's named evidence gap and V only for a genuine user-owned tradeoff or exact authorization. No later spend authority exists until the persisted Selection cites every required reflection, V, join, adopted Q, applicable unchanged review, and its one resolver result, and those cited project facts remain unchanged. Routine row 13 may not add research, diagnosis, or review, and no Selection may consume protected reserve for routine work.

@@ -8,7 +8,34 @@ A snapshot contains project facts only: project source, configuration, campaign 
 
 Historical copied snapshot directories remain audit records only. They transfer no answer, adoption, acknowledgment, execution, spend, result, or claim authority into a new Entry. Do not read, copy, map, convert, or migrate their `inputs/` trees when creating new authority.
 
-## Filtered Git snapshot
+## Current snapshot writer
+
+For every new review, capture the selected project bytes with the typed
+interface in [Provenance and identity](provenance-and-identity.md). Declare the
+logical members and every closed collection explicitly. The resulting
+`frontier-content-root-sha256/1` value is the sole authority identity. Use the
+Git adapter when a repository is available and the portable adapter otherwise;
+both must produce the same content root for the same logical names, raw bytes,
+modes, and behavior-changing metadata.
+
+The Git adapter writes raw bytes without clean filters through a temporary
+index. It records a reachable commit, tree, and custom ref only as storage
+locators. The portable adapter records the same raw objects and manifest.
+Review packets carry the content root, not a member-by-member digest expansion.
+The manifest remains available for diagnosis and audit.
+
+Before review, create a decision node that names exactly one `project-decision`
+content root and has an empty payload. Store the finding report under the
+`review-report` domain and create one attestation for that exact decision.
+Authority may bind only a finding-free attestation whose subject is that same
+decision. Workflow, validator, worker-interface, deployment, and release roots
+are invalid review inputs and never affect an adopted review.
+
+## Version 1 filtered Git snapshot
+
+The contract below is retained only to validate or complete an already
+authoritative version 1 chain. It is not a writer for a new review, Entry,
+packet, or authorization.
 
 Create one `frontier-project-snapshot/1` manifest per review attempt. Use `scripts/project_snapshot.py capture` with a temporary Git index. Capture the selected worktree bytes, including explicitly selected dirty tracked and untracked files, without changing the current branch, worktree, or ordinary index.
 

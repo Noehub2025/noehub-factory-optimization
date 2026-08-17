@@ -1,0 +1,83 @@
+contract_version: frontier-source-modules/1
+modules:
+  graph-core:
+    depends_on: []
+    files:
+      - frontier-optimization/SKILL.md
+      - frontier-optimization/agents/openai.yaml
+      - frontier-optimization/references/frontier-core.md
+      - frontier-optimization/references/provenance-and-identity.md
+      - frontier-optimization/references/provenance-rollout.yaml
+      - frontier-optimization/references/source-modules.yaml
+      - frontier-optimization/scripts/finding_effects.py
+      - frontier-optimization/scripts/frontier_provenance/__init__.py
+      - frontier-optimization/scripts/frontier_provenance/content.py
+      - frontier-optimization/scripts/frontier_provenance/facade.py
+      - frontier-optimization/scripts/frontier_provenance/graph.py
+      - frontier-optimization/scripts/frontier_provenance/repository.py
+      - frontier-optimization/scripts/frontier_provenance/source_modules.py
+  storage-recovery:
+    depends_on: [graph-core]
+    files:
+      - frontier-optimization/references/review-snapshots.md
+      - frontier-optimization/scripts/frontier_provenance/stores.py
+      - frontier-optimization/scripts/frontier_provenance/handoff.py
+  provenance-runtime:
+    depends_on: [graph-core, storage-recovery]
+    files:
+      - frontier-optimization/scripts/frontier_provenance_cli.py
+  direction:
+    depends_on: [graph-core]
+    files:
+      - frontier-optimization/references/campaign-cycle.md
+      - frontier-optimization/references/campaign-state.md
+      - frontier-optimization/references/entry-and-planning.md
+      - frontier-optimization/references/entry-review.md
+      - frontier-optimization/references/learning-loop.md
+      - frontier-optimization/references/planning-records.md
+      - grill-frontier/SKILL.md
+      - grill-frontier/agents/openai.yaml
+      - research-frontier/SKILL.md
+      - research-frontier/agents/openai.yaml
+      - review-frontier/SKILL.md
+      - review-frontier/agents/openai.yaml
+  execution:
+    depends_on: [graph-core, provenance-runtime]
+    files:
+      - frontier-optimization/references/batch-interface.md
+      - frontier-optimization/references/candidate-lifecycle.md
+      - frontier-optimization/references/worker-interfaces.md
+      - run-frontier-batch/SKILL.md
+      - run-frontier-batch/agents/openai.yaml
+  evidence:
+    depends_on: [graph-core, storage-recovery]
+    files:
+      - frontier-optimization/references/closeout-and-claims.md
+      - frontier-optimization/references/evidence-records.md
+      - frontier-optimization/references/packaging-and-recovery.md
+      - frontier-optimization/references/result-adoption.md
+      - review-frontier/SKILL.md
+      - review-frontier/agents/openai.yaml
+  claims:
+    depends_on: [graph-core, evidence]
+    files:
+      - frontier-optimization/references/claim-records.md
+      - frontier-optimization/references/claim-review.md
+      - frontier-optimization/references/closeout-and-claims.md
+  legacy-validation:
+    depends_on: [graph-core]
+    files:
+      - frontier-optimization/scripts/frontier_provenance/compatibility.py
+      - frontier-optimization/scripts/authorization_target_contract.py
+      - frontier-optimization/scripts/freeze_execution_baseline.py
+      - frontier-optimization/scripts/identity_bindings.py
+      - frontier-optimization/scripts/package_frontier_handoff.py
+      - frontier-optimization/scripts/post_adoption_state.py
+      - frontier-optimization/scripts/project_snapshot.py
+      - frontier-optimization/scripts/validate_authorization_adoption.py
+      - frontier-optimization/scripts/validate_batch_packet.py
+      - frontier-optimization/scripts/validate_batch_result.py
+      - frontier-optimization/scripts/validate_candidate_package.py
+      - frontier-optimization/scripts/validate_candidate_recovery.py
+      - frontier-optimization/scripts/validate_entry_packet.py
+      - frontier-optimization/scripts/workflow_source_binding.py

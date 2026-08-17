@@ -16,6 +16,8 @@ from pathlib import Path
 
 import yaml
 
+from test_validate_entry_packet import write_workflow_source_binding
+
 
 SCRIPT = Path(__file__).with_name("validate_batch_packet.py")
 SPEC = importlib.util.spec_from_file_location("validate_batch_packet", SCRIPT)
@@ -50,6 +52,10 @@ def project_fixture_binding(name: str, identity_field: str | None = None) -> dic
 
 
 def seed_identity_sources(root: Path, packet: dict) -> None:
+    packet["workflow_source_binding"] = write_workflow_source_binding(root)
+    packet["workflow_source_identity"] = packet["workflow_source_binding"][
+        "source_snapshot"
+    ]["identity"]
     bindings = [packet["source_base_binding"], packet["design_contract_binding"]]
     for binding in bindings:
         relative = binding["path"]
@@ -121,6 +127,24 @@ def base_packet() -> dict:
         "executor": "Agent",
         "required_inputs": [],
         "identity_contract": MODULE.IDENTITY_CONTRACT,
+        "result_contract_version": MODULE.RESULT_CONTRACT_V1,
+        "workflow_source_binding": {
+            "contract_version": "frontier-workflow-source-binding/1",
+            "adoption_mode": "entry",
+            "source_manifest": {
+                "path": "artifacts/frontier/workflow/R900/source-manifest.yaml",
+                "identity": f"sha256:{HASH}",
+                "file_sha256": HASH,
+            },
+            "source_snapshot": {
+                "path": "artifacts/frontier/workflow/R900/source-snapshot.yaml",
+                "identity": f"sha256:{HASH}",
+                "file_sha256": HASH,
+            },
+            "governs": ["B900", "packet", "execution", "result"],
+        },
+        "workflow_source_identity": f"sha256:{HASH}",
+        "worker_source_member": "workers/run-frontier-batch/SKILL.md",
         "design_profile": "direct",
         "design_contract_identity": direct_binding["identity"],
         "design_contract_binding": copy.deepcopy(direct_binding),
@@ -293,6 +317,7 @@ def seed_evaluation_sources(root: Path, target: dict) -> None:
     candidate_id = f"B900-candidate-sha256:{package_sha256}"
     manifest = {
         "candidate_id": candidate_id,
+        "workflow_source_identity": f"sha256:{HASH}",
         "source_result_identity": {
             "package_sha256": package_sha256,
             "members": members,
@@ -562,7 +587,7 @@ class PacketPreflightTests(unittest.TestCase):
             {item["code"] for item in result["findings"]},
         )
 
-    def test_cli_reproduces_identical_draft_and_frozen_artifacts(self) -> None:
+    def test_cli_closes_legacy_draft_and_frozen_writers(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             packet_path = root / "packet.yaml"
@@ -588,10 +613,10 @@ class PacketPreflightTests(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
-            self.assertEqual(draft.returncode, 0, draft.stderr)
+            self.assertEqual(draft.returncode, 2)
+            self.assertIn("legacy packet writer is closed", draft.stderr)
+            self.assertFalse(draft_output.exists())
 
-            packet["packet_id"] = json.loads(draft_output.read_text())["computed_packet_id"]
-            packet_path.write_text(yaml.safe_dump(packet, sort_keys=False))
             frozen = subprocess.run(
                 [
                     sys.executable,
@@ -608,8 +633,9 @@ class PacketPreflightTests(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
-            self.assertEqual(frozen.returncode, 0, frozen.stderr)
-            self.assertEqual(draft_output.read_bytes(), frozen_output.read_bytes())
+            self.assertEqual(frozen.returncode, 2)
+            self.assertIn("legacy packet writer is closed", frozen.stderr)
+            self.assertFalse(frozen_output.exists())
 
     def test_valid_draft_and_frozen_packet_share_preflight_identity(self) -> None:
         draft = base_packet()
@@ -988,7 +1014,7 @@ class PacketPreflightTests(unittest.TestCase):
 
     def test_new_packet_requires_machine_addressable_frozen_inputs(self) -> None:
         packet = base_packet()
-        packet["execution_frozen_inputs"] = ["current project and workflow contracts"]
+        packet["execution_frozen_inputs"] = ["current project inputs"]
         result = MODULE.validate(packet, "draft")
         self.assertIn("INVALID_PATH_SCHEMA", {item["code"] for item in result["findings"]})
 
