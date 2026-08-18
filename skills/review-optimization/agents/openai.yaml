@@ -1,6 +1,6 @@
 interface:
   display_name: "Review Optimization"
-  short_description: "Check whether solution comparison can start"
-  default_prompt: "Use $review-optimization in a fresh context to check the selected optimization task and state whether comparison can start or what remains missing."
+  short_description: "Review optimization framing and measurement support"
+  default_prompt: "Use $review-optimization in a fresh context to run the selected readiness, measurement-support, or comparability review branch."
 policy:
   allow_implicit_invocation: true

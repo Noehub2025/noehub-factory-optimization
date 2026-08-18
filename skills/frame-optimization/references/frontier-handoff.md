@@ -33,8 +33,12 @@ Emit one immutable handoff only from the latest positive representation review. 
 
 ## Frontier admission
 
-Before creating or resuming campaign state, `frontier-optimization` recomputes every handoff and parent identity from repository bytes. It accepts only an unchanged positive result whose exact scope remains current. A mismatch returns `PARENT_REVIEW_REQUIRED` before any campaign record, Selection, reservation, worker action, or spend.
+Before creating or resuming campaign state, `frontier-optimization` recomputes every handoff and parent identity from the exact project contract and artifact bytes named by the reviewed-path manifest and measurement bindings. Skill files, workflow source or release data, and transient user replies are not identity inputs. It accepts only an unchanged positive project result whose exact scope remains current. A mismatch returns `PARENT_REVIEW_REQUIRED` before any campaign record, Selection, reservation, worker action, or spend. A workflow-only change does not stale the handoff.
 
 Admission copies the handoff bindings into Frontier state without changing their meaning. A positive handoff defines permitted search work; it does not authorize candidate development, spend, measurement, integration, incumbent use, promotion, production changes, or claims. Frontier applies its own Entry and lifecycle gates for those consequences.
 
 The handoff is complete when a fresh reader can identify the active Coordinator, reproduce every binding, and reach the same admission result without conversation history or a global Skill installation.
+
+## User return
+
+After validating the technical handoff, apply [user-facing-return.md](user-facing-return.md). The technical handoff contract above remains complete without the user reply.

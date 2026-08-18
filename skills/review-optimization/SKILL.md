@@ -1,6 +1,6 @@
 ---
 name: review-optimization
-description: Review an optimization framing task in a fresh context and issue a fail-closed readiness or epoch-comparability verdict. Use when frame-optimization requests an independent framing gate, or when a pinned contract changes while retained results exist.
+description: Review an optimization framing task in a fresh context for problem readiness, measurement-support implementation readiness, or retained-result comparability. Use when frame-optimization requests one of those independent gates.
 ---
 
 # review-optimization
@@ -12,6 +12,7 @@ Run a **clean-room gate** on one optimization framing task. Judge the durable co
 Require the canonical task path and one branch:
 
 - `readiness`: decide whether solution comparison can start;
+- `measurement-support`: decide whether one fixed implementation makes the framing measurement contract executable without running the consequential measurement; or
 - `comparability`: decide the disposition of retained results after a pinned contract changes.
 
 The canonical path must resolve under `docs/skills/optimization/`. Its task slug must match `[a-z0-9]+(?:-[a-z0-9]+)*`, and `PROBLEM.md` must exist.
@@ -189,6 +190,44 @@ If a required metadata write fails, return `BLOCKED`; do not report `PROCEED`.
 
 The readiness branch is complete only when one verdict is returned and its required metadata state is present on disk.
 
+## Measurement-support branch
+
+Use this branch only for implementation that makes Slot H or R8 executable before a separately consequential baseline, evaluation, experiment, or search run.
+
+Require the caller to supply one existing review-target path and one new review-record path under the selected task's `eval/` directory. The target belongs to `frame-optimization`; the review record belongs to `review-optimization`. The target must state:
+
+- the framing rule or open finding that needs the support;
+- the exact allowed file set;
+- required behavior and fail-closed cases;
+- each focused check authorized for this review;
+- every consequential action excluded from the review; and
+- one checkable completion condition.
+
+Return `BLOCKED` when either path escapes the selected task, the target is incomplete, the review path already exists, or the current authority does not cover an allowed check required for the verdict.
+
+Read the current Slot H, R8 when present, the controlling finding, the target, every allowed implementation file, and each directly affected test or schema. Use Git only to inspect the named files and their containment; do not stage, commit, switch, reset, or rewrite project files.
+
+Run only the target's authorized focused checks. A check that starts the baseline, evaluator, game, experiment, search, sealed-input access, remote action, paid action, or production action is consequential and remains outside this branch.
+
+Inspect every allowed project file and reject any required implementation byte outside the allowed set. Exclude Skill files, workflow source or release data, and transient user replies from the target and reviewed-byte manifest. Confirm that the implementation satisfies the required behavior, rejects each named fail-closed case, preserves the parent measurement meaning, and creates no candidate, search, result, or claim authority. Record the SHA-256 of every reviewed implementation and test file.
+
+Write the new review record with:
+
+- `type: Optimization Measurement Support Review`;
+- `status: stable` for `IMPLEMENTATION_READY`, otherwise `draft`;
+- branch, task, target, reviewer, and review time;
+- one result: `IMPLEMENTATION_READY`, `REPAIR_REQUIRED`, or `BLOCKED`;
+- every reviewed path and SHA-256;
+- each focused check and result;
+- findings with evidence, required action, and completion condition; and
+- an authority statement that excludes durable containment and every consequential run.
+
+Return `IMPLEMENTATION_READY` only when the target is complete, every reviewed byte is recorded, every required focused check passes, every required behavior and fail-closed case is present, and no finding remains. Return `REPAIR_REQUIRED` for an implementation defect. Return `BLOCKED` only for a missing capability, authority, input, or safe review path.
+
+This branch writes only its new review record. It does not edit the implementation, core task documents, findings, logs, handoffs, or project identity. Its result grants no durable containment, baseline, evaluation, experiment, candidate, search, spend, remote, production, or claim authority.
+
+The measurement-support branch is complete only when the new review record contains one result, the complete reviewed-byte manifest, all required check results, and either no finding for `IMPLEMENTATION_READY` or a complete finding set.
+
 ## Comparability branch
 
 Use this branch only for a semantic change to a pinned row or its linked Slot document while retained results exist.
@@ -251,6 +290,21 @@ Slot: <A-H>
 Epoch: <old> -> <new>
 Reason: <decisive semantic comparison>
 Affected results: <identifiers and final state>
+```
+
+For measurement support, return:
+
+```text
+RESULT: IMPLEMENTATION_READY | REPAIR_REQUIRED | BLOCKED
+Task: <canonical task path>
+Target: <canonical review-target path>
+Review record: <canonical review-record path>
+Reviewed bytes: <path and SHA-256 entries>
+Checks: <command and result entries>
+Findings: <omit for IMPLEMENTATION_READY>
+- Evidence: <decisive evidence>
+  Required action: <one action>
+  Complete when: <checkable condition>
 ```
 
 `PROCEED` means the comparison contract is ready. It does not predict optimization success.

@@ -1093,6 +1093,7 @@ def test_live_source_module_manifest_covers_existing_files() -> None:
         "evidence",
         "claims",
         "legacy-validation",
+        "release-validation",
     } == set(closure)
     assert all(source_module_root(manifest, skills_root, name) for name in closure)
     assert (
@@ -1331,40 +1332,44 @@ def test_handoff_rejects_external_manifest_symlink() -> None:
 
 def test_rollout_closes_legacy_entry_packet_and_authority_writers() -> None:
     scripts = Path(__file__).parent
-    repo_root = scripts.parents[3]
-    assert (repo_root / ".frontier/provenance-rollout.yaml").is_file()
-    commands = [
-        [
-            str(scripts / "validate_entry_packet.py"),
-            "missing.yaml",
-            "--phase",
-            "draft",
-            "--root",
-            str(repo_root),
-        ],
-        [
-            str(scripts / "validate_batch_packet.py"),
-            "missing.yaml",
-            "--phase",
-            "draft",
-            "--repo-root",
-            str(repo_root),
-        ],
-        [
-            str(scripts / "validate_authorization_adoption.py"),
-            "missing.yaml",
-            "--phase",
-            "draft",
-            "--root",
-            str(repo_root),
-        ],
-    ]
-    for command in commands:
-        result = subprocess.run(
-            [str(Path(sys.executable)), *command],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=False,
-        )
-        assert result.returncode == 2
-        assert b"legacy" in result.stderr
+    rollout_fixture = scripts.parent / "references/provenance-rollout.yaml"
+    with tempfile.TemporaryDirectory() as directory:
+        repo_root = Path(directory)
+        rollout_path = repo_root / ".frontier/provenance-rollout.yaml"
+        rollout_path.parent.mkdir(parents=True)
+        rollout_path.write_bytes(rollout_fixture.read_bytes())
+        commands = [
+            [
+                str(scripts / "validate_entry_packet.py"),
+                "missing.yaml",
+                "--phase",
+                "draft",
+                "--root",
+                str(repo_root),
+            ],
+            [
+                str(scripts / "validate_batch_packet.py"),
+                "missing.yaml",
+                "--phase",
+                "draft",
+                "--repo-root",
+                str(repo_root),
+            ],
+            [
+                str(scripts / "validate_authorization_adoption.py"),
+                "missing.yaml",
+                "--phase",
+                "draft",
+                "--root",
+                str(repo_root),
+            ],
+        ]
+        for command in commands:
+            result = subprocess.run(
+                [str(Path(sys.executable)), *command],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            assert result.returncode == 2
+            assert b"legacy" in result.stderr

@@ -94,7 +94,7 @@ Install all ten Skills as one workflow. Normally, users invoke only the two coor
 - **[frame-optimization](./skills/frame-optimization/SKILL.md)** — Coordinates the problem definition, search representation, repair loops, reviews, and final handoff.
 - **[research-optimization](./skills/research-optimization/SKILL.md)** — Investigates one assigned question without changing the task contract.
 - **[grill-optimization](./skills/grill-optimization/SKILL.md)** — Collects one decision that only the user can make.
-- **[review-optimization](./skills/review-optimization/SKILL.md)** — Independently checks whether the problem definition is ready or whether old and new results remain comparable.
+- **[review-optimization](./skills/review-optimization/SKILL.md)** — Independently checks problem readiness, fixed measurement-support implementations, or whether old and new results remain comparable.
 - **[review-representation](./skills/review-representation/SKILL.md)** — Independently checks the proposed search space and the exact scope that later work may use.
 
 ### Run the improvement campaign

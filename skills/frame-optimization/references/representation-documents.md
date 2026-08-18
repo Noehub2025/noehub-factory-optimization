@@ -418,6 +418,8 @@ A positive handoff contains:
 
 Require the downstream workflow to acknowledge the task path, parent epoch, parent binding, representation revision, and permitted scope before recording search state or results.
 
-For `RESEARCH_REQUIRED`, `REDESIGN_REQUIRED`, `REFRAME_REQUIRED`, or `BLOCKED`, return the exact result, affected item, canonical task path, and first next action or blocker. Do not emit a positive search handoff.
+For `RESEARCH_REQUIRED`, `REDESIGN_REQUIRED`, or `REFRAME_REQUIRED`, continue every safe, reachable, in-scope, and authorized repair route. The result alone does not require a user return. `BLOCKED` permits a return only when the existing rules leave no legal internal action. Do not emit a positive search handoff.
+
+When an existing route determines that control must return, use [user-facing-return.md](user-facing-return.md). Keep the review finding as the unchanged repair manifest.
 
 A positive result means the named search work is defined. It does not predict optimization success.

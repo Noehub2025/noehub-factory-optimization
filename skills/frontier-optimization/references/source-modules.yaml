@@ -81,3 +81,24 @@ modules:
       - frontier-optimization/scripts/validate_candidate_recovery.py
       - frontier-optimization/scripts/validate_entry_packet.py
       - frontier-optimization/scripts/workflow_source_binding.py
+  release-validation:
+    depends_on: [direction, execution, evidence, claims, legacy-validation]
+    files:
+      - frame-optimization/scripts/test_validate_frame_skill_bundle.py
+      - frontier-optimization/scripts/run_workflow_checks.py
+      - frontier-optimization/scripts/validate_frontier_skill_bundle.py
+      - frontier-optimization/scripts/test_direction_resolver_contract.py
+      - frontier-optimization/scripts/test_finding_effects.py
+      - frontier-optimization/scripts/test_freeze_execution_baseline.py
+      - frontier-optimization/scripts/test_frontier_provenance.py
+      - frontier-optimization/scripts/test_package_frontier_handoff.py
+      - frontier-optimization/scripts/test_project_snapshot.py
+      - frontier-optimization/scripts/test_run_workflow_checks.py
+      - frontier-optimization/scripts/test_slice7_end_to_end.py
+      - frontier-optimization/scripts/test_validate_authorization_adoption.py
+      - frontier-optimization/scripts/test_validate_batch_packet.py
+      - frontier-optimization/scripts/test_validate_batch_result.py
+      - frontier-optimization/scripts/test_validate_candidate_package.py
+      - frontier-optimization/scripts/test_validate_candidate_recovery.py
+      - frontier-optimization/scripts/test_validate_entry_packet.py
+      - frontier-optimization/scripts/test_validate_frontier_skill_bundle.py

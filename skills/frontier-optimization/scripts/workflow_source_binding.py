@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import posixpath
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -120,11 +121,12 @@ def _member_path(value: Any, role: str) -> str:
     return normalized
 
 
-def validate_source_closure(
+@lru_cache(maxsize=8)
+def _validated_source_members(
     manifest_raw: bytes,
     snapshot_raw: bytes,
     snapshot_identity: str,
-) -> None:
+) -> tuple[tuple[str, bytes], ...]:
     manifest = _parse_mapping(manifest_raw, "source_manifest")
     snapshot = _parse_mapping(snapshot_raw, "source_snapshot")
     if manifest.get("contract_version") != MANIFEST_CONTRACT:
@@ -218,6 +220,19 @@ def validate_source_closure(
             + "; extra="
             + ",".join(sorted(extra_governing))
         )
+    return tuple(
+        (member["path"], member["content"].encode())
+        for member in snapshot_members
+    )
+
+
+def validate_source_closure(
+    manifest_raw: bytes,
+    snapshot_raw: bytes,
+    snapshot_identity: str,
+) -> None:
+    """Validate immutable legacy source bytes, reusing exact-byte results in-process."""
+    _validated_source_members(manifest_raw, snapshot_raw, snapshot_identity)
 
 
 def validate_binding(
@@ -314,19 +329,22 @@ def source_member_bytes(binding: Any, root: Path, logical_path: str) -> bytes:
     """Return one verified archived source member from a complete binding."""
 
     validate_binding(binding, root)
+    manifest_source = binding["source_manifest"]
     snapshot_source = binding["source_snapshot"]
+    manifest_path = _safe_file(root, manifest_source["path"], "source_manifest")
     snapshot_path = _safe_file(root, snapshot_source["path"], "source_snapshot")
-    snapshot = _parse_mapping(snapshot_path.read_bytes(), "source_snapshot")
-    members = snapshot.get("members")
-    if not isinstance(members, list):  # pragma: no cover - closure validation owns this
-        raise WorkflowSourceBindingError("source_snapshot.members must be a list")
+    members = _validated_source_members(
+        manifest_path.read_bytes(),
+        snapshot_path.read_bytes(),
+        snapshot_source["identity"],
+    )
     matches = [
-        member
-        for member in members
-        if isinstance(member, dict) and member.get("path") == logical_path
+        content
+        for path, content in members
+        if path == logical_path
     ]
-    if len(matches) != 1 or not isinstance(matches[0].get("content"), str):
+    if len(matches) != 1:
         raise WorkflowSourceBindingError(
             f"source snapshot must contain exactly one UTF-8 member {logical_path}"
         )
-    return matches[0]["content"].encode()
+    return matches[0]

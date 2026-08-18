@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from functools import lru_cache
 from pathlib import Path
 
 import yaml
@@ -104,9 +105,12 @@ def ensure_git_repository(root: Path) -> None:
         subprocess.run(["git", "init", "-q", str(root)], check=True)
 
 
-def write_workflow_source_binding(root: Path) -> dict:
+@lru_cache(maxsize=1)
+def workflow_source_fixture() -> tuple[bytes, bytes, dict]:
+    """Build the immutable version 1 source fixture once per test process."""
     skill_root = Path(__file__).parent.parent
     source_paths = tuple(sorted(GOVERNING_PATHS))
+
     def source_file(logical_path: str) -> Path:
         if logical_path.startswith("workers/"):
             _, skill_name, *relative = Path(logical_path).parts
@@ -122,11 +126,7 @@ def write_workflow_source_binding(root: Path) -> dict:
             for path, content in source_members.items()
         ],
     }
-    snapshot_raw = write_mapping(
-        root,
-        "artifacts/frontier/workflow/R900/source-snapshot.yaml",
-        snapshot,
-    )
+    snapshot_raw = yaml.safe_dump(snapshot, sort_keys=False).encode()
     snapshot_digest = MODULE.sha256_bytes(snapshot_raw)
     manifest = {
         "contract_version": "frontier-workflow-source-manifest/1",
@@ -141,13 +141,9 @@ def write_workflow_source_binding(root: Path) -> dict:
             for path, content in source_members.items()
         ],
     }
-    manifest_raw = write_mapping(
-        root,
-        "artifacts/frontier/workflow/R900/source-manifest.yaml",
-        manifest,
-    )
+    manifest_raw = yaml.safe_dump(manifest, sort_keys=False).encode()
     manifest_digest = MODULE.sha256_bytes(manifest_raw)
-    return {
+    binding = {
         "contract_version": "frontier-workflow-source-binding/1",
         "adoption_mode": "entry",
         "source_manifest": {
@@ -162,6 +158,17 @@ def write_workflow_source_binding(root: Path) -> dict:
         },
         "governs": ["Selection", "B900", "V900", "Outcome Reflection"],
     }
+    return snapshot_raw, manifest_raw, binding
+
+
+def write_workflow_source_binding(root: Path) -> dict:
+    snapshot_raw, manifest_raw, binding = workflow_source_fixture()
+    snapshot_path = root / "artifacts/frontier/workflow/R900/source-snapshot.yaml"
+    manifest_path = root / "artifacts/frontier/workflow/R900/source-manifest.yaml"
+    snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+    snapshot_path.write_bytes(snapshot_raw)
+    manifest_path.write_bytes(manifest_raw)
+    return copy.deepcopy(binding)
 
 
 def make_workspace(root: Path, frozen: bool = False, target_launcher_id: str | None = None) -> dict:
@@ -1274,6 +1281,7 @@ class EntryPacketSchemaTests(unittest.TestCase):
         version_2_only = {
             "references/provenance-and-identity.md",
             "scripts/frontier_provenance_cli.py",
+            "scripts/run_workflow_checks.py",
         }
 
         self.assertEqual(

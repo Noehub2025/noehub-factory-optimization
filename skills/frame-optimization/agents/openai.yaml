@@ -1,6 +1,6 @@
 interface:
   display_name: "Frame Optimization"
   short_description: "Define an optimization task before search starts"
-  default_prompt: "Use $frame-optimization to recover one optimization task, resolve missing decisions, define how search may work, and hand off only work that passed an independent check."
+  default_prompt: "Use $frame-optimization to recover one optimization task, continue safe authorized framing work, define how search may work, and return one clear recommendation or exact blocker when control returns to me."
 policy:
   allow_implicit_invocation: false

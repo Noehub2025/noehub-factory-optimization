@@ -224,6 +224,8 @@ Reviewed at: <ISO-8601 datetime>
 
 A valid review contains exactly one allowed verdict and a Cold-read reconstruction written before details were opened. `PROCEED` has no open finding and says `None` for unexplained terms or relationships. Every other verdict has at least one finding with all six fields.
 
+`Required action` and `Complete when` define the repair work and its checkable completion, not the user reply. Keep the finding schema unchanged. When control returns to the user, derive the reply through [user-facing-return.md](user-facing-return.md).
+
 The Review Agent initializes each finding to `open`. The Primary Framing Agent sets `complete` only when the completion condition holds and sets `blocked` only with an exact blocker.
 
 Derive the verdict from work types: any `blocker` gives `BLOCKED`; otherwise, any `reframe` or `grill` gives `REFRAME_REQUIRED`; otherwise, factual findings give `RESEARCH_REQUIRED`.

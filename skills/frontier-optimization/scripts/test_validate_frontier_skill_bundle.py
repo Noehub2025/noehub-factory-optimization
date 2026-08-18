@@ -321,6 +321,33 @@ class FrontierSkillBundleTests(unittest.TestCase):
         self.assertEqual(len(result["bundle_sha256"]), 64)
         self.assertGreater(len(result["source_manifest"]), 20)
 
+    def test_bundle_validator_owns_common_skill_description_checks(self) -> None:
+        live_root = SCRIPT.parents[2]
+        for invalid_description in ("", "contains <placeholder>", "x" * 1025):
+            with self.subTest(description=invalid_description[:24]):
+                with tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory) / "skills"
+                    shutil.copytree(
+                        live_root,
+                        root,
+                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+                    )
+                    skill = root / "frame-optimization/SKILL.md"
+                    text = skill.read_text()
+                    text = re.sub(
+                        r"^description:.*$",
+                        f"description: {invalid_description}",
+                        text,
+                        count=1,
+                        flags=re.MULTILINE,
+                    )
+                    skill.write_text(text)
+                    result = MODULE.validate(root)
+                    self.assertIn(
+                        "SKILL_DESCRIPTION_INVALID",
+                        {item["code"] for item in result["findings"]},
+                    )
+
     def test_finding_effect_owner_cannot_fail_open_or_create_identity_churn(self) -> None:
         live_root = SCRIPT.parents[2]
         mutations = (

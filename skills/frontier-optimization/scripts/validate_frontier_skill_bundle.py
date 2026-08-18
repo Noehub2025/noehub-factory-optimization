@@ -53,6 +53,7 @@ REQUIRED_COORDINATOR_SCRIPTS = {
     "validate_candidate_recovery.py",
     "validate_entry_packet.py",
     "validate_frontier_skill_bundle.py",
+    "run_workflow_checks.py",
 }
 LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 RUNTIME_ARTIFACT_LINKS = {"FRONTIER.md", "log.md"}
@@ -373,6 +374,19 @@ def validate(skills_root: Path) -> dict[str, Any]:
                     findings,
                     "SKILL_NAME_MISMATCH",
                     f"{name} declares {frontmatter.get('name')!r}",
+                )
+            description = frontmatter.get("description")
+            if (
+                not isinstance(description, str)
+                or not description.strip()
+                or len(description) > 1024
+                or "<" in description
+                or ">" in description
+            ):
+                add_finding(
+                    findings,
+                    "SKILL_DESCRIPTION_INVALID",
+                    f"{name} description must be nonempty, at most 1024 characters, and contain no angle brackets",
                 )
             metadata = yaml.safe_load(openai_yaml.read_text())
             implicit = metadata.get("policy", {}).get("allow_implicit_invocation")
