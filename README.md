@@ -1,17 +1,20 @@
 # Noehub Factory Optimization
 
-Noehub Factory Optimization helps coding agents improve a system without losing track of what “better” means.
+Noehub Factory Optimization is a task-agnostic Recursive Self-Improvement (RSI) workflow for automated optimization research. It gives coding agents a durable loop for proposing changes, testing them, learning from measured outcomes, and using that evidence to choose the next improvement.
+
+Here RSI means an evidence-driven recursive research loop, not an unconstrained self-modifying agent. Each validated cycle can improve the target system and, when the task contract permits it, the search strategy, evaluator, tools, or research process used to produce later improvements.
 
 Before an agent starts changing code, the workflow makes it explain the task in plain language: what is being improved, what may change, how candidates will be measured, what counts as success, and what the work is not allowed to claim. Once those decisions have been reviewed, the workflow can run a controlled improvement campaign with an explicit budget, small batches of work, independent checks, and a durable record of what was learned.
 
-Use it for tasks such as reducing latency or cost, improving a model or game-playing agent, tuning a configuration, or searching over alternative implementations. It is especially useful when a passing test is not enough to prove that a change is genuinely better.
+The workflow is not tied to a particular benchmark, model, codebase, or optimization method. Use it for tasks such as reducing latency or cost, improving a model or game-playing agent, tuning a configuration, or searching over alternative implementations. It is especially useful when a passing test is not enough to prove that a change is genuinely better.
 
-This repository provides the workflow as ten reusable Agent Skills. It does not provide a domain-specific optimizer or a winning solution.
+This repository provides the RSI workflow as ten reusable Agent Skills. It does not provide a domain-specific optimizer, promise a winning solution, or remove human authority over consequential actions.
 
 ## What problem does it solve?
 
 Optimization work often goes wrong before the search even begins:
 
+- the process runs repeated experiments but does not turn one cycle's evidence into a better next cycle;
 - the goal sounds clear but the score, baseline, or success threshold is ambiguous;
 - the agent changes something that was supposed to remain fixed;
 - two results are compared under different data, code, or evaluation rules;
