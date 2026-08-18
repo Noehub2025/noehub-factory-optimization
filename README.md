@@ -126,6 +126,19 @@ Define the problem
 
 The loop may stop early when evidence is sufficient, the budget or a stopping rule is reached, required permission is missing, or the approved task definition changes.
 
+## Shared agent instructions
+
+This repository includes a task-neutral [`AGENTS.md`](./AGENTS.md) for outcome-oriented optimization behavior. The detailed workflow remains in the Skills. Codex reads `AGENTS.md` directly; Claude Code uses the checked-in [`CLAUDE.md`](./CLAUDE.md) adapter, which imports `AGENTS.md` instead of duplicating it.
+
+When adding the workflow to another repository:
+
+- if no agent instruction file exists, copy `AGENTS.md` and add a `CLAUDE.md` containing `@AGENTS.md` for Claude Code;
+- if `AGENTS.md` already exists, merge the `Frontier-seeking workflow behavior` section once and preserve all repository-specific rules;
+- if `CLAUDE.md` already exists, add `@AGENTS.md` once without replacing its Claude Code-specific content; and
+- resolve conflicts explicitly. Shared optimization behavior never broadens existing authority or weakens task-specific safety, resource, evidence, or validation rules.
+
+Claude Code plugins provide Skills but do not load a plugin-root `CLAUDE.md` as project context, so deploy or merge the instruction files separately. See [Deploying shared agent instructions](./docs/agent-instructions.md) for the complete new-repository, existing-file, nested-instruction, and verification procedure.
+
 ## Install
 
 ### Agent Skills installer
@@ -162,6 +175,10 @@ Keep each complete Skill folder together. Its `SKILL.md`, references, scripts, f
 ## Repository layout
 
 ```text
+AGENTS.md             shared cross-agent workflow behavior
+CLAUDE.md             Claude Code adapter that imports AGENTS.md
+docs/
+  agent-instructions.md
 skills/<skill-name>/
   SKILL.md
   references/          optional detailed guidance

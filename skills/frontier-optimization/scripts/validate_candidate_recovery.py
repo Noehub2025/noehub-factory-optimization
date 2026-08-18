@@ -85,6 +85,30 @@ LEGACY_ARTIFACT_IDENTITY_FIELDS = {
     "implementation_review": None,
 }
 
+TRANSITIVE_RECOVERY_LINK_FIELDS = {
+    "campaign_generation",
+    "recovery_preflight",
+    "reuse_disposition",
+    "closeout",
+    "handoff",
+    "budget",
+}
+RECOVERY_DISPOSITION_CONTRACT = "frontier-candidate-recovery-disposition/1"
+RECOVERY_DISPOSITION_ID_PREFIX = "candidate-recovery-disposition-sha256:"
+RECOVERY_DISPOSITION_FIELDS = {
+    "recovery_disposition_id",
+    "contract_version",
+    "event",
+    "campaign_generation",
+    "candidate_id",
+    "candidate_manifest_sha256",
+    "recovery_preflight_id",
+    "candidate_mutation",
+    "new_proposal_attempts",
+    "disposition",
+    "authority_effect",
+}
+
 
 def canonical_json(value: Any) -> bytes:
     return json.dumps(
@@ -493,10 +517,410 @@ def package_inventory(root: Path) -> tuple[list[dict[str, Any]], str]:
     return members, identity.removeprefix("sha256:")
 
 
+def validate_transitive_recovery_chain(
+    document: dict[str, Any],
+    repo_root: Path,
+    *,
+    manifest_generation: Any,
+    prior_generation: Any,
+    candidate_id: str | None,
+    manifest_sha256: str | None,
+    bound_lineage: dict[str, str],
+    seen_preflights: set[str],
+) -> tuple[list[dict[str, str]], list[dict[str, Any]]]:
+    """Validate every content-addressed hop from candidate production to closeout."""
+
+    findings: list[dict[str, str]] = []
+    summaries: list[dict[str, Any]] = []
+    chain = document.get("intervening_recovery_chain")
+    if chain is None:
+        chain = []
+    if not isinstance(chain, list):
+        add_finding(
+            findings,
+            "TRANSITIVE_RECOVERY_CHAIN_INVALID",
+            "intervening_recovery_chain must be a list when present",
+        )
+        return findings, summaries
+
+    generations_valid = (
+        isinstance(manifest_generation, int)
+        and not isinstance(manifest_generation, bool)
+        and manifest_generation >= 1
+        and isinstance(prior_generation, int)
+        and not isinstance(prior_generation, bool)
+        and prior_generation >= 1
+    )
+    if not generations_valid:
+        add_finding(
+            findings,
+            "TRANSITIVE_RECOVERY_CHAIN_INVALID",
+            "candidate source and prior campaign generations must be positive integers",
+        )
+        return findings, summaries
+
+    if manifest_generation == prior_generation:
+        if chain:
+            add_finding(
+                findings,
+                "TRANSITIVE_RECOVERY_CHAIN_UNEXPECTED",
+                "no intervening recovery link is allowed when the candidate was produced in the immediately closed generation",
+            )
+        return findings, summaries
+
+    if manifest_generation > prior_generation:
+        add_finding(
+            findings,
+            "CANDIDATE_GENERATION_MISMATCH",
+            "candidate manifest generation is newer than the closed source generation",
+        )
+        return findings, summaries
+
+    if not chain:
+        add_finding(
+            findings,
+            "TRANSITIVE_RECOVERY_CHAIN_REQUIRED",
+            "an older candidate requires one content-addressed recovery link for every intervening closed generation",
+        )
+        return findings, summaries
+
+    expected_generations = list(range(manifest_generation + 1, prior_generation + 1))
+    observed_generations = [
+        link.get("campaign_generation") if isinstance(link, dict) else None
+        for link in chain
+    ]
+    if observed_generations != expected_generations:
+        add_finding(
+            findings,
+            "TRANSITIVE_RECOVERY_CHAIN_NOT_CONSECUTIVE",
+            f"expected campaign generations {expected_generations}, observed {observed_generations}",
+        )
+
+    previous_closeout_identity: str | None = None
+    previous_handoff_identity: str | None = None
+    previous_budget_identity: str | None = None
+    previous_budget: dict[str, Any] | None = None
+
+    for index, link in enumerate(chain):
+        label = f"intervening_recovery_chain[{index}]"
+        if not isinstance(link, dict):
+            add_finding(
+                findings,
+                "TRANSITIVE_RECOVERY_LINK_INVALID",
+                f"{label} must be a mapping",
+            )
+            continue
+        if set(link) != TRANSITIVE_RECOVERY_LINK_FIELDS:
+            missing = sorted(TRANSITIVE_RECOVERY_LINK_FIELDS - link.keys())
+            extra = sorted(link.keys() - TRANSITIVE_RECOVERY_LINK_FIELDS)
+            add_finding(
+                findings,
+                "TRANSITIVE_RECOVERY_LINK_SCHEMA_INVALID",
+                f"{label} fields differ; missing={missing}; extra={extra}",
+            )
+
+        link_generation = link.get("campaign_generation")
+        expected_generation = manifest_generation + index + 1
+        if link_generation != expected_generation:
+            add_finding(
+                findings,
+                "TRANSITIVE_RECOVERY_CHAIN_NOT_CONSECUTIVE",
+                f"{label} must bind campaign generation {expected_generation}",
+            )
+
+        bound_documents: dict[str, dict[str, Any]] = {}
+        bound_identities: dict[str, str] = {}
+        binding_fields = {
+            "recovery_preflight": "recovery_preflight_id",
+            "reuse_disposition": "recovery_disposition_id",
+            "closeout": None,
+            "handoff": None,
+            "budget": None,
+        }
+        for role, identity_field in binding_fields.items():
+            try:
+                bound = load_file_binding(
+                    repo_root,
+                    link.get(role),
+                    f"{label}.{role}",
+                    expected_identity_field=identity_field,
+                )
+                parsed = bound.document
+                if parsed is None:
+                    try:
+                        parsed = yaml.safe_load(bound.raw)
+                    except yaml.YAMLError as exc:
+                        raise IdentityBindingError(
+                            f"{label}.{role} is not valid YAML: {exc}"
+                        ) from exc
+                if not isinstance(parsed, dict):
+                    raise IdentityBindingError(
+                        f"{label}.{role} must contain a YAML mapping"
+                    )
+                bound_documents[role] = parsed
+                bound_identities[role] = bound.identity
+            except IdentityBindingError as exc:
+                add_finding(
+                    findings,
+                    "TRANSITIVE_RECOVERY_BINDING_INVALID",
+                    str(exc),
+                )
+
+        linked_preflight = bound_documents.get("recovery_preflight")
+        linked_preflight_binding = link.get("recovery_preflight")
+        if linked_preflight is not None and isinstance(linked_preflight_binding, dict):
+            linked_path = linked_preflight_binding.get("path")
+            if not isinstance(linked_path, str) or not linked_path.strip():
+                add_finding(
+                    findings,
+                    "TRANSITIVE_RECOVERY_PREFLIGHT_INVALID",
+                    f"{label}.recovery_preflight requires a path",
+                )
+            elif linked_path in seen_preflights:
+                add_finding(
+                    findings,
+                    "TRANSITIVE_RECOVERY_CHAIN_CYCLE",
+                    f"{label} repeats recovery preflight {linked_path}",
+                )
+            else:
+                linked_result = validate(
+                    linked_preflight,
+                    "frozen",
+                    repo_root,
+                    _seen_preflights=seen_preflights | {linked_path},
+                )
+                for finding in linked_result["findings"]:
+                    add_finding(
+                        findings,
+                        "TRANSITIVE_RECOVERY_PREFLIGHT_INVALID",
+                        f"{label}: {finding['code']}: {finding['detail']}",
+                    )
+            if linked_preflight.get("campaign_generation") != link_generation:
+                add_finding(
+                    findings,
+                    "TRANSITIVE_RECOVERY_PREFLIGHT_GENERATION_MISMATCH",
+                    f"{label} preflight does not open campaign generation {link_generation}",
+                )
+            if linked_preflight.get("prior_campaign_generation") != link_generation - 1:
+                add_finding(
+                    findings,
+                    "TRANSITIVE_RECOVERY_PREFLIGHT_GENERATION_MISMATCH",
+                    f"{label} preflight does not continue from campaign generation {link_generation - 1}",
+                )
+            if linked_preflight.get("recovery_preflight_path") != linked_path:
+                add_finding(
+                    findings,
+                    "TRANSITIVE_RECOVERY_PREFLIGHT_PATH_MISMATCH",
+                    f"{label} preflight path does not match its bound path",
+                )
+            for field, expected in (
+                ("candidate_root", document.get("candidate_root")),
+                ("candidate_manifest_path", document.get("candidate_manifest_path")),
+                ("requested_candidate_id", candidate_id),
+                ("requested_manifest_sha256", manifest_sha256),
+                ("review_mode", "recovery-reuse"),
+                ("candidate_mutation", "prohibited"),
+                ("new_proposal_attempts", 0),
+            ):
+                if linked_preflight.get(field) != expected:
+                    add_finding(
+                        findings,
+                        "TRANSITIVE_RECOVERY_CANDIDATE_MISMATCH",
+                        f"{label} preflight field {field} does not preserve the current candidate recovery input",
+                    )
+            if index > 0:
+                linked_lineage = linked_preflight.get("lineage_sources")
+                if not isinstance(linked_lineage, dict):
+                    add_finding(
+                        findings,
+                        "TRANSITIVE_RECOVERY_LINEAGE_GAP",
+                        f"{label} preflight has no bound prior lineage",
+                    )
+                else:
+                    expected_prior = {
+                        "closeout": previous_closeout_identity,
+                        "handoff": previous_handoff_identity,
+                        "budget": previous_budget_identity,
+                    }
+                    for role, expected_identity in expected_prior.items():
+                        source_binding = linked_lineage.get(role)
+                        if (
+                            not isinstance(source_binding, dict)
+                            or source_binding.get("identity") != expected_identity
+                        ):
+                            add_finding(
+                                findings,
+                                "TRANSITIVE_RECOVERY_LINEAGE_GAP",
+                                f"{label} preflight does not consume the preceding {role} identity",
+                            )
+
+        disposition = bound_documents.get("reuse_disposition")
+        if disposition is not None:
+            if set(disposition) != RECOVERY_DISPOSITION_FIELDS:
+                missing = sorted(RECOVERY_DISPOSITION_FIELDS - disposition.keys())
+                extra = sorted(disposition.keys() - RECOVERY_DISPOSITION_FIELDS)
+                add_finding(
+                    findings,
+                    "TRANSITIVE_RECOVERY_DISPOSITION_SCHEMA_INVALID",
+                    f"{label} disposition fields differ; missing={missing}; extra={extra}",
+                )
+            if disposition.get("contract_version") != RECOVERY_DISPOSITION_CONTRACT:
+                add_finding(
+                    findings,
+                    "TRANSITIVE_RECOVERY_DISPOSITION_INVALID",
+                    f"{label} disposition contract is invalid",
+                )
+            if not embedded_yaml_identity_matches(
+                disposition,
+                "recovery_disposition_id",
+                RECOVERY_DISPOSITION_ID_PREFIX,
+            ):
+                add_finding(
+                    findings,
+                    "TRANSITIVE_RECOVERY_DISPOSITION_IDENTITY_MISMATCH",
+                    f"{label} disposition identity does not derive from its exact bytes",
+                )
+            disposition_expectations = {
+                "event": "CANDIDATE_RECOVERY_REUSED",
+                "campaign_generation": link_generation,
+                "candidate_id": candidate_id,
+                "candidate_manifest_sha256": manifest_sha256,
+                "recovery_preflight_id": bound_identities.get("recovery_preflight"),
+                "candidate_mutation": "prohibited",
+                "new_proposal_attempts": 0,
+                "disposition": "re-evaluated",
+                "authority_effect": "historical-lineage-only",
+            }
+            for field, expected in disposition_expectations.items():
+                if disposition.get(field) != expected:
+                    add_finding(
+                        findings,
+                        "TRANSITIVE_RECOVERY_DISPOSITION_INVALID",
+                        f"{label} disposition field {field} does not match the recovery link",
+                    )
+
+        closeout = bound_documents.get("closeout")
+        if closeout is not None:
+            closeout_expectations = {
+                "event": "CLOSEOUT_COMPLETE",
+                "campaign_generation": link_generation,
+                "unresolved_claims": [],
+                "active_workers": [],
+            }
+            for field, expected in closeout_expectations.items():
+                if closeout.get(field) != expected:
+                    add_finding(
+                        findings,
+                        "TRANSITIVE_RECOVERY_CLOSEOUT_INVALID",
+                        f"{label} closeout field {field} does not match the closed recovery generation",
+                    )
+            if closeout.get("campaign_status") not in {"stopped", "halted"}:
+                add_finding(
+                    findings,
+                    "TRANSITIVE_RECOVERY_CLOSEOUT_INVALID",
+                    f"{label} closeout campaign_status must be stopped or halted",
+                )
+
+        handoff = bound_documents.get("handoff")
+        if handoff is not None and (
+            handoff.get("handoff_complete") is not True
+            or handoff.get("campaign_generation") != link_generation
+        ):
+            add_finding(
+                findings,
+                "TRANSITIVE_RECOVERY_HANDOFF_INVALID",
+                f"{label} handoff must be complete for campaign generation {link_generation}",
+            )
+
+        budget = bound_documents.get("budget")
+        if budget is not None:
+            budget_valid = (
+                budget.get("campaign_generation") == link_generation
+                and isinstance(budget.get("proposal_attempt_ceiling"), int)
+                and not isinstance(budget.get("proposal_attempt_ceiling"), bool)
+                and isinstance(budget.get("actual_spend"), int)
+                and not isinstance(budget.get("actual_spend"), bool)
+                and isinstance(budget.get("unknown_spend"), int)
+                and not isinstance(budget.get("unknown_spend"), bool)
+                and budget.get("active_reservations") == []
+                and budget.get("actual_spend", -1) >= 0
+                and budget.get("unknown_spend", -1) >= 0
+                and budget.get("actual_spend", 0) + budget.get("unknown_spend", 0)
+                <= budget.get("proposal_attempt_ceiling", -1)
+            )
+            if not budget_valid:
+                add_finding(
+                    findings,
+                    "TRANSITIVE_RECOVERY_BUDGET_INVALID",
+                    f"{label} budget is not a complete closed nonnegative accounting record",
+                )
+            linked_budget = (
+                linked_preflight.get("inherited_budget")
+                if isinstance(linked_preflight, dict)
+                else None
+            )
+            if isinstance(linked_budget, dict) and (
+                budget.get("proposal_attempt_ceiling")
+                != linked_budget.get("proposal_attempt_ceiling")
+                or budget.get("actual_spend", -1) < linked_budget.get("actual_spend", -1)
+            ):
+                add_finding(
+                    findings,
+                    "TRANSITIVE_RECOVERY_BUDGET_REGRESSION",
+                    f"{label} closeout budget changes the ceiling or reduces actual spend",
+                )
+            if previous_budget is not None and (
+                budget.get("proposal_attempt_ceiling")
+                != previous_budget.get("proposal_attempt_ceiling")
+                or budget.get("actual_spend", -1) < previous_budget.get("actual_spend", -1)
+            ):
+                add_finding(
+                    findings,
+                    "TRANSITIVE_RECOVERY_BUDGET_REGRESSION",
+                    f"{label} budget changes the ceiling or reduces cumulative actual spend",
+                )
+
+        previous_closeout_identity = bound_identities.get("closeout")
+        previous_handoff_identity = bound_identities.get("handoff")
+        previous_budget_identity = bound_identities.get("budget")
+        previous_budget = budget
+        summaries.append(
+            {
+                "campaign_generation": link_generation,
+                "recovery_preflight_identity": bound_identities.get("recovery_preflight"),
+                "reuse_disposition_identity": bound_identities.get("reuse_disposition"),
+                "closeout_identity": previous_closeout_identity,
+                "handoff_identity": previous_handoff_identity,
+                "budget_identity": previous_budget_identity,
+            }
+        )
+
+    if summaries:
+        last = summaries[-1]
+        for role, summary_field in (
+            ("closeout", "closeout_identity"),
+            ("handoff", "handoff_identity"),
+            ("budget", "budget_identity"),
+        ):
+            if bound_lineage.get(role) != last.get(summary_field):
+                add_finding(
+                    findings,
+                    "TRANSITIVE_RECOVERY_CURRENT_LINEAGE_MISMATCH",
+                    f"current {role} identity does not match the final intervening recovery link",
+                )
+
+    return findings, summaries
+
+
 def validate(
-    document: dict[str, Any], phase: str, repo_root: Path
+    document: dict[str, Any],
+    phase: str,
+    repo_root: Path,
+    *,
+    _seen_preflights: set[str] | None = None,
 ) -> dict[str, Any]:
     findings: list[dict[str, str]] = []
+    seen_preflights = set(_seen_preflights or ())
     for field in sorted(REQUIRED_FIELDS - document.keys()):
         add_finding(findings, "REQUIRED_FIELD_MISSING", field)
 
@@ -802,13 +1226,20 @@ def validate(
     except (OSError, ValueError, yaml.YAMLError):
         pass
 
+    chain_summary: list[dict[str, Any]] = []
     if manifest is not None:
-        if manifest.get("campaign_generation") != prior_generation:
-            add_finding(
-                findings,
-                "CANDIDATE_GENERATION_MISMATCH",
-                "candidate manifest generation does not match the closed source generation",
-            )
+        manifest_generation = manifest.get("campaign_generation")
+        chain_findings, chain_summary = validate_transitive_recovery_chain(
+            document,
+            repo_root,
+            manifest_generation=manifest_generation,
+            prior_generation=prior_generation,
+            candidate_id=canonical_candidate_id,
+            manifest_sha256=manifest_sha256,
+            bound_lineage=bound_lineage,
+            seen_preflights=seen_preflights,
+        )
+        findings.extend(chain_findings)
         for field in (
             "candidate_interface",
             "source_base_identity",
@@ -833,7 +1264,7 @@ def validate(
                     candidate_id=canonical_candidate_id,
                     candidate_members=members,
                     candidate_manifest=manifest,
-                    prior_campaign_generation=prior_generation,
+                    prior_campaign_generation=manifest_generation,
                 )
             )
         elif legacy_manifest and "workflow_source_identity" not in manifest:
@@ -885,6 +1316,7 @@ def validate(
     if legacy_manifest:
         result["source_workflow_identity"] = source_workflow_identity
         result["legacy_candidate_source_binding"] = legacy_source_binding
+    result["intervening_recovery_chain"] = chain_summary
     return result
 
 

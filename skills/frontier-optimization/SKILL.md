@@ -73,6 +73,8 @@ New lifecycle objects use the version 2 Provenance writer. The detailed version 
 
 ## Preserve the authority boundary
 
+Apply each restriction only to its named consequence. Treat decision-relevant read-only evidence gathering as planning unless an exact parent or user rule prohibits that access; restrictions on execution, spend, remote side effects, publication, or claims do not prohibit it.
+
 Treat the inherited evaluated baseline as the comparison reference, not as the automatic campaign baseline. Entry must compare a bounded set of technically eligible starting points using current evidence and must ask the user when the choice depends on value, cost, risk, reversibility, maintenance, or another user-owned preference. A campaign baseline may be simple, but its selection must explain why it can carry later optimization and what evidence would replace it.
 
 At Entry, apply [Entry and planning](references/entry-and-planning.md) to reconcile peer route sources into a decision-complete route set. Apply the [T eligibility contract](references/planning-records.md#t-route) before Selection: one eligible route needs no ceremonial T or user-choice V, and an unresolved load-bearing prerequisite permits only its smallest sufficient prerequisite-first work.

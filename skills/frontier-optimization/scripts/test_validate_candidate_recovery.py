@@ -177,6 +177,151 @@ def write_binding(root: Path, relative: str, identity_field: str | None) -> dict
     }
 
 
+def write_yaml_binding(
+    root: Path,
+    relative: str,
+    document: dict,
+    *,
+    identity_field: str | None = None,
+) -> dict:
+    path = root / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(yaml.safe_dump(document, sort_keys=False))
+    return write_binding(root, relative, identity_field)
+
+
+def freeze_preflight(root: Path, preflight: dict) -> dict:
+    frozen = copy.deepcopy(preflight)
+    frozen["recovery_preflight_id"] = (
+        "candidate-recovery-preflight-sha256:"
+        + hashlib.sha256(MODULE.canonical_payload(frozen)).hexdigest()
+    )
+    binding = write_yaml_binding(
+        root,
+        frozen["recovery_preflight_path"],
+        frozen,
+        identity_field="recovery_preflight_id",
+    )
+    return binding
+
+
+def write_recovery_hop(
+    root: Path,
+    *,
+    generation: int,
+    preflight_binding: dict,
+    candidate_id: str,
+    manifest_sha256: str,
+    actual_spend: int = 3,
+) -> tuple[dict, dict[str, dict]]:
+    disposition = {
+        "contract_version": MODULE.RECOVERY_DISPOSITION_CONTRACT,
+        "event": "CANDIDATE_RECOVERY_REUSED",
+        "campaign_generation": generation,
+        "candidate_id": candidate_id,
+        "candidate_manifest_sha256": manifest_sha256,
+        "recovery_preflight_id": preflight_binding["identity"],
+        "candidate_mutation": "prohibited",
+        "new_proposal_attempts": 0,
+        "disposition": "re-evaluated",
+        "authority_effect": "historical-lineage-only",
+    }
+    disposition["recovery_disposition_id"] = (
+        MODULE.RECOVERY_DISPOSITION_ID_PREFIX
+        + hashlib.sha256(
+            yaml.safe_dump(
+                disposition, sort_keys=False, allow_unicode=True
+            ).encode()
+        ).hexdigest()
+    )
+    disposition = {
+        "recovery_disposition_id": disposition.pop("recovery_disposition_id"),
+        **disposition,
+    }
+    base = f"lineage/G{generation:03d}"
+    sources = {
+        "closeout": write_yaml_binding(
+            root,
+            f"{base}/closeout.yaml",
+            {
+                "event": "CLOSEOUT_COMPLETE",
+                "campaign_generation": generation,
+                "campaign_status": "halted",
+                "unresolved_claims": [],
+                "active_workers": [],
+            },
+        ),
+        "handoff": write_yaml_binding(
+            root,
+            f"{base}/handoff.yaml",
+            {
+                "campaign_generation": generation,
+                "handoff_complete": True,
+            },
+        ),
+        "budget": write_yaml_binding(
+            root,
+            f"{base}/budget.yaml",
+            {
+                "campaign_generation": generation,
+                "proposal_attempt_ceiling": 20,
+                "actual_spend": actual_spend,
+                "unknown_spend": 0,
+                "active_reservations": [],
+            },
+        ),
+    }
+    link = {
+        "campaign_generation": generation,
+        "recovery_preflight": preflight_binding,
+        "reuse_disposition": write_yaml_binding(
+            root,
+            f"{base}/recovery-disposition.yaml",
+            disposition,
+            identity_field="recovery_disposition_id",
+        ),
+        "closeout": sources["closeout"],
+        "handoff": sources["handoff"],
+        "budget": sources["budget"],
+    }
+    return link, sources
+
+
+def advance_preflight(
+    preflight: dict,
+    *,
+    prior_generation: int,
+    sources: dict[str, dict],
+    chain: list[dict],
+) -> dict:
+    advanced = copy.deepcopy(preflight)
+    advanced.pop("recovery_preflight_id", None)
+    advanced["prior_campaign_generation"] = prior_generation
+    advanced["campaign_generation"] = prior_generation + 1
+    advanced["recovery_preflight_path"] = (
+        f"artifacts/frontier/recovery/G{prior_generation + 1:03d}/B900-preflight.yaml"
+    )
+    advanced["prior_closeout"] = {
+        "event": "CLOSEOUT_COMPLETE",
+        "campaign_generation": prior_generation,
+        "campaign_status": "halted",
+        "closeout_identity": sources["closeout"]["identity"],
+        "final_handoff_identity": sources["handoff"]["identity"],
+        "unresolved_claims": [],
+        "active_workers": [],
+    }
+    advanced["inherited_budget"] = {
+        "proposal_attempt_ceiling": 20,
+        "actual_spend": 3,
+        "unknown_spend": 0,
+        "active_reservations": [],
+        "budget_identity": sources["budget"]["identity"],
+    }
+    advanced["lineage_sources"] = copy.deepcopy(sources)
+    advanced["intervening_recovery_chain"] = copy.deepcopy(chain)
+    return advanced
+
+
 def configure_legacy_source_binding(root: Path, preflight: dict) -> Path:
     manifest_path = root / preflight["candidate_manifest_path"]
     manifest = yaml.safe_load(manifest_path.read_bytes())
@@ -448,6 +593,25 @@ class CandidateRecoveryTests(unittest.TestCase):
             self.assertTrue(result["recovery_ready"], result["findings"])
             self.assertEqual(result["recomputed_candidate_id"], candidate_id)
 
+    def test_nonpositive_manifest_generation_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            candidate_id, manifest_sha256 = create_candidate(root)
+            preflight = base_preflight(root, candidate_id, manifest_sha256)
+            manifest_path = root / preflight["candidate_manifest_path"]
+            manifest = yaml.safe_load(manifest_path.read_bytes())
+            manifest["campaign_generation"] = 0
+            manifest_path.write_text(yaml.safe_dump(manifest, sort_keys=False))
+            preflight["requested_manifest_sha256"] = sha256_file(manifest_path)
+
+            result = MODULE.validate(preflight, "draft", root)
+
+            self.assertFalse(result["recovery_ready"])
+            self.assertIn(
+                "TRANSITIVE_RECOVERY_CHAIN_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
+
     def test_copied_lineage_identity_is_rejected_even_when_locally_consistent(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
@@ -680,6 +844,261 @@ class CandidateRecoveryTests(unittest.TestCase):
             rewrite_sidecar(root, preflight, sidecar)
             result = MODULE.validate(preflight, "draft", root)
             self.assertTrue(result["recovery_ready"], result["findings"])
+
+    def test_one_intervening_closed_generation_passes_complete_chain(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            candidate_id, manifest_sha256 = create_candidate(root)
+            generation_three = base_preflight(root, candidate_id, manifest_sha256)
+            generation_three_binding = freeze_preflight(root, generation_three)
+            hop_three, sources_three = write_recovery_hop(
+                root,
+                generation=3,
+                preflight_binding=generation_three_binding,
+                candidate_id=candidate_id,
+                manifest_sha256=manifest_sha256,
+            )
+            generation_four = advance_preflight(
+                generation_three,
+                prior_generation=3,
+                sources=sources_three,
+                chain=[hop_three],
+            )
+
+            result = MODULE.validate(generation_four, "draft", root)
+
+            self.assertTrue(result["recovery_ready"], result["findings"])
+            self.assertEqual(
+                [3],
+                [
+                    item["campaign_generation"]
+                    for item in result["intervening_recovery_chain"]
+                ],
+            )
+
+    def test_multiple_intervening_generations_pass_complete_chain(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            candidate_id, manifest_sha256 = create_candidate(root)
+            generation_three = base_preflight(root, candidate_id, manifest_sha256)
+            generation_three_binding = freeze_preflight(root, generation_three)
+            hop_three, sources_three = write_recovery_hop(
+                root,
+                generation=3,
+                preflight_binding=generation_three_binding,
+                candidate_id=candidate_id,
+                manifest_sha256=manifest_sha256,
+            )
+            generation_four = advance_preflight(
+                generation_three,
+                prior_generation=3,
+                sources=sources_three,
+                chain=[hop_three],
+            )
+            generation_four_binding = freeze_preflight(root, generation_four)
+            hop_four, sources_four = write_recovery_hop(
+                root,
+                generation=4,
+                preflight_binding=generation_four_binding,
+                candidate_id=candidate_id,
+                manifest_sha256=manifest_sha256,
+            )
+            generation_five = advance_preflight(
+                generation_four,
+                prior_generation=4,
+                sources=sources_four,
+                chain=[hop_three, hop_four],
+            )
+
+            result = MODULE.validate(generation_five, "draft", root)
+
+            self.assertTrue(result["recovery_ready"], result["findings"])
+            self.assertEqual(
+                [3, 4],
+                [
+                    item["campaign_generation"]
+                    for item in result["intervening_recovery_chain"]
+                ],
+            )
+
+    def test_missing_or_reordered_intervening_generation_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            candidate_id, manifest_sha256 = create_candidate(root)
+            generation_three = base_preflight(root, candidate_id, manifest_sha256)
+            generation_three_binding = freeze_preflight(root, generation_three)
+            hop_three, sources_three = write_recovery_hop(
+                root,
+                generation=3,
+                preflight_binding=generation_three_binding,
+                candidate_id=candidate_id,
+                manifest_sha256=manifest_sha256,
+            )
+            generation_four = advance_preflight(
+                generation_three,
+                prior_generation=3,
+                sources=sources_three,
+                chain=[hop_three],
+            )
+            generation_four_binding = freeze_preflight(root, generation_four)
+            hop_four, sources_four = write_recovery_hop(
+                root,
+                generation=4,
+                preflight_binding=generation_four_binding,
+                candidate_id=candidate_id,
+                manifest_sha256=manifest_sha256,
+            )
+            missing = advance_preflight(
+                generation_four,
+                prior_generation=4,
+                sources=sources_four,
+                chain=[hop_four],
+            )
+            reordered = copy.deepcopy(missing)
+            reordered["intervening_recovery_chain"] = [hop_four, hop_three]
+
+            missing_result = MODULE.validate(missing, "draft", root)
+            reordered_result = MODULE.validate(reordered, "draft", root)
+
+            for result in (missing_result, reordered_result):
+                self.assertFalse(result["recovery_ready"])
+                self.assertIn(
+                    "TRANSITIVE_RECOVERY_CHAIN_NOT_CONSECUTIVE",
+                    {item["code"] for item in result["findings"]},
+                )
+
+    def test_transitive_disposition_tamper_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            candidate_id, manifest_sha256 = create_candidate(root)
+            generation_three = base_preflight(root, candidate_id, manifest_sha256)
+            generation_three_binding = freeze_preflight(root, generation_three)
+            hop_three, sources_three = write_recovery_hop(
+                root,
+                generation=3,
+                preflight_binding=generation_three_binding,
+                candidate_id=candidate_id,
+                manifest_sha256=manifest_sha256,
+            )
+            disposition_path = root / hop_three["reuse_disposition"]["path"]
+            disposition = yaml.safe_load(disposition_path.read_bytes())
+            disposition["candidate_manifest_sha256"] = "0" * 64
+            disposition_path.write_text(yaml.safe_dump(disposition, sort_keys=False))
+            hop_three["reuse_disposition"]["file_sha256"] = sha256_file(
+                disposition_path
+            )
+            generation_four = advance_preflight(
+                generation_three,
+                prior_generation=3,
+                sources=sources_three,
+                chain=[hop_three],
+            )
+
+            result = MODULE.validate(generation_four, "draft", root)
+            codes = {item["code"] for item in result["findings"]}
+
+            self.assertFalse(result["recovery_ready"])
+            self.assertIn("TRANSITIVE_RECOVERY_DISPOSITION_IDENTITY_MISMATCH", codes)
+            self.assertIn("TRANSITIVE_RECOVERY_DISPOSITION_INVALID", codes)
+
+    def test_transitive_budget_binding_cannot_regress(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            candidate_id, manifest_sha256 = create_candidate(root)
+            generation_three = base_preflight(root, candidate_id, manifest_sha256)
+            generation_three_binding = freeze_preflight(root, generation_three)
+            hop_three, sources_three = write_recovery_hop(
+                root,
+                generation=3,
+                preflight_binding=generation_three_binding,
+                candidate_id=candidate_id,
+                manifest_sha256=manifest_sha256,
+                actual_spend=2,
+            )
+            generation_four = advance_preflight(
+                generation_three,
+                prior_generation=3,
+                sources=sources_three,
+                chain=[hop_three],
+            )
+
+            result = MODULE.validate(generation_four, "draft", root)
+
+            self.assertFalse(result["recovery_ready"])
+            self.assertIn(
+                "TRANSITIVE_RECOVERY_BUDGET_REGRESSION",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_transitive_preflight_binding_tamper_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            candidate_id, manifest_sha256 = create_candidate(root)
+            generation_three = base_preflight(root, candidate_id, manifest_sha256)
+            generation_three_binding = freeze_preflight(root, generation_three)
+            hop_three, sources_three = write_recovery_hop(
+                root,
+                generation=3,
+                preflight_binding=generation_three_binding,
+                candidate_id=candidate_id,
+                manifest_sha256=manifest_sha256,
+            )
+            preflight_path = root / generation_three_binding["path"]
+            preflight_path.write_text(preflight_path.read_text() + "tampered: true\n")
+            generation_three_binding["file_sha256"] = sha256_file(preflight_path)
+            hop_three["recovery_preflight"] = generation_three_binding
+            generation_four = advance_preflight(
+                generation_three,
+                prior_generation=3,
+                sources=sources_three,
+                chain=[hop_three],
+            )
+
+            result = MODULE.validate(generation_four, "draft", root)
+
+            self.assertFalse(result["recovery_ready"])
+            self.assertIn(
+                "TRANSITIVE_RECOVERY_PREFLIGHT_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_transitive_closeout_binding_must_be_complete(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            candidate_id, manifest_sha256 = create_candidate(root)
+            generation_three = base_preflight(root, candidate_id, manifest_sha256)
+            generation_three_binding = freeze_preflight(root, generation_three)
+            hop_three, sources_three = write_recovery_hop(
+                root,
+                generation=3,
+                preflight_binding=generation_three_binding,
+                candidate_id=candidate_id,
+                manifest_sha256=manifest_sha256,
+            )
+            closeout_path = root / hop_three["closeout"]["path"]
+            closeout = yaml.safe_load(closeout_path.read_bytes())
+            closeout["event"] = "CLOSEOUT_PENDING"
+            closeout_path.write_text(yaml.safe_dump(closeout, sort_keys=False))
+            closeout_binding = write_binding(
+                root, hop_three["closeout"]["path"], None
+            )
+            hop_three["closeout"] = closeout_binding
+            sources_three["closeout"] = closeout_binding
+            generation_four = advance_preflight(
+                generation_three,
+                prior_generation=3,
+                sources=sources_three,
+                chain=[hop_three],
+            )
+            generation_four["prior_closeout"]["event"] = "CLOSEOUT_PENDING"
+
+            result = MODULE.validate(generation_four, "draft", root)
+
+            self.assertFalse(result["recovery_ready"])
+            self.assertIn(
+                "TRANSITIVE_RECOVERY_CLOSEOUT_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
 
 
 if __name__ == "__main__":
