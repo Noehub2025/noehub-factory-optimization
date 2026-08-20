@@ -48,6 +48,7 @@ from frontier_provenance_cli import (
     apply_operation,
     content_resolver as cli_content_resolver,
 )
+from frontier_review import PREPARATION_CONTRACT, prepare_review
 
 
 TEST_DOMAINS: dict[str, str] = {}
@@ -99,7 +100,7 @@ def content_resolver(content_root: str) -> dict[str, object]:
         "prior_external_effects_known",
         "budget_accounted",
     }
-    return {
+    result = {
         "content_root": content_root,
         "domain": TEST_DOMAINS[content_root],
         "verified": True,
@@ -112,6 +113,9 @@ def content_resolver(content_root: str) -> dict[str, object]:
             for name in receipt_names
         },
     }
+    if TEST_DOMAINS[content_root] == "project-decision":
+        result["review_subject"] = {"subject_mode": "complete"}
+    return result
 
 
 def fact(receipt_root: str) -> dict[str, str]:
@@ -132,6 +136,93 @@ def initialize(root: Path) -> None:
         "-qm",
         "initial",
     )
+
+
+def _self_identified(field: str, prefix: str, body: bytes) -> bytes:
+    remaining = (
+        f"identity_rule: {prefix.removesuffix(':')} of exact UTF-8 bytes with the complete {field} line omitted\n"
+    ).encode() + body
+    return f"{field}: {prefix}{hashlib.sha256(remaining).hexdigest()}\n".encode() + remaining
+
+
+def prepare_entry_bundle(root: Path, destination: Path, marker: str = "project-v1") -> dict:
+    draft = root / f"draft-{destination.name}"
+    for name in ("state", "parents", "entry"):
+        (draft / name).mkdir(parents=True, exist_ok=True)
+    (draft / "state/frontier.md").write_text(f"# Frontier\n\n{marker}\n")
+    (draft / "state/ledger.md").write_text("# Ledger\n\n## X001 Selection\n")
+    (draft / "state/log.md").write_text("# Log\n")
+    (draft / "parents/problem.md").write_text("# Problem\n")
+    (draft / "parents/representation.md").write_text("# Representation\n")
+    (draft / "parents/handoff.yaml").write_text("contract_version: framing-handoff/1\n")
+    (draft / "selection.yaml").write_text(
+        "contract_version: frontier-selection-evidence-state/1\n"
+        "event_id: X001\n"
+        "budget: {ceiling: 3, actual: 0}\n"
+        "route_set: {state: complete}\n"
+        "resolver: {first_applicable_row: 12}\n"
+        "selection: {primary: B001}\n"
+        "authority: {current: planning-only}\n"
+    )
+    (draft / "entry/plan.yaml").write_bytes(
+        _self_identified(
+            "batch_plan_id",
+            "B001-plan-sha256:",
+            b"contract_version: frontier-project-batch-plan/2\n"
+            b"batch_id: B001\nmaximum_spend: {schedules: 1}\n"
+            b"authorization_gate: exact reviewed authorization\n"
+            b"stop_conditions: [one result]\n",
+        )
+    )
+    (draft / "entry/work.yaml").write_text(
+        "contract_version: frontier-project-experiment/1\n"
+        "batch_id: B001\n"
+        "purpose: one bounded test\n"
+    )
+    (draft / "entry/target.yaml").write_bytes(
+        _self_identified(
+            "target_id",
+            "V001-target-sha256:",
+            b"contract_version: frontier-project-authorization-target/1\n"
+            b"decision_id: V001\nbatch_id: B001\nscope: one bounded test\n"
+            b"maximum_spend: {schedules: 1}\nstop_boundary: stop after one result\n"
+            b"authorization_question: Authorize the exact test?\n"
+            b"authorize_consequence: permit one later acknowledged schedule\n",
+        )
+    )
+    items = (
+        ("project/decision/state/frontier.md", "state/frontier.md"),
+        ("project/decision/state/ledger.md", "state/ledger.md"),
+        ("project/decision/state/log.md", "state/log.md"),
+        ("project/decision/parents/problem.md", "parents/problem.md"),
+        ("project/decision/parents/representation.md", "parents/representation.md"),
+        ("project/decision/parents/handoff.yaml", "parents/handoff.yaml"),
+        ("project/decision/selection/evidence-state.yaml", "selection.yaml"),
+        ("project/decision/entry/plan.yaml", "entry/plan.yaml"),
+        ("project/decision/entry/work.yaml", "entry/work.yaml"),
+        ("project/decision/entry/target.yaml", "entry/target.yaml"),
+    )
+    result = prepare_review(
+        {
+            "contract_version": PREPARATION_CONTRACT,
+            "review_kind": "entry",
+            "artifacts": [
+                {
+                    "logical_name": logical,
+                    "path": str(draft / relative),
+                    "kind": "blob",
+                    "behavioral_metadata": {},
+                }
+                for logical, relative in items
+            ],
+            "closed_collections": [],
+            "semantic_projection": {"review_stage": "authorization-readiness"},
+        },
+        root,
+        destination,
+    )
+    assert result["status"] == "SEALED", result
+    return result
 
 
 def chain(content_root: str) -> tuple[dict, dict, dict, dict, dict[str, dict]]:
@@ -159,10 +250,14 @@ def chain_with_roots(
         verdict="ready",
         findings=[],
     )
-    authority = bind_authority(
-        authority_root=roots["project-authority"],
-        decision=decision,
-        validation=validation,
+    authority = build_node(
+        "authority",
+        {},
+        parents=[
+            {"edge": "decision", "node_id": decision["node_id"]},
+            {"edge": "attestation", "node_id": validation["node_id"]},
+        ],
+        artifact_roots=[roots["project-authority"]],
     )
     execution = freeze_execution(
         authority=authority,
@@ -192,13 +287,20 @@ def portable_project_chain(
         "project-outcome",
     ):
         bundle = root / f"content-{domain}"
-        manifest = ProjectPortableStore().capture(
-            DOMAIN_ROLES[domain],
-            [ArtifactSource(DOMAIN_PREFIXES[domain] + "project-record.txt", source)],
-            bundle,
-            project_root=root,
-        )
+        if domain == "project-decision":
+            prepared = prepare_entry_bundle(root, root / "prepared-decision")
+            bundle = root / "prepared-decision/snapshot"
+            manifest = ProjectPortableStore().verify(bundle, expected_role="decision")
+        else:
+            sources = [ArtifactSource(DOMAIN_PREFIXES[domain] + "project-record.txt", source)]
+            manifest = ProjectPortableStore().capture(
+                DOMAIN_ROLES[domain],
+                sources,
+                bundle,
+                project_root=root,
+            )
         roots[domain] = manifest["content_root"]
+        TEST_DOMAINS[manifest["content_root"]] = domain
         bundles[manifest["content_root"]] = bundle
     _, _, _, outcome, nodes = chain_with_roots(roots)
 
@@ -557,6 +659,57 @@ def test_typed_chain_accepts_immediate_parents_and_live_facts() -> None:
     assert result["node_count"] == 5
 
 
+def test_action_verification_rejects_a_manually_built_partial_decision() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        source = root / "repair-only.txt"
+        source.write_text("partial\n")
+        bundle = root / "partial-decision"
+        manifest = ProjectPortableStore().capture(
+            "decision",
+            [ArtifactSource("project/decision/repair-only.txt", source)],
+            bundle,
+            project_root=root,
+        )
+        decision_root = manifest["content_root"]
+        TEST_DOMAINS[decision_root] = "project-decision"
+        decision = freeze_decision(decision_root=decision_root)
+        validation = attest(
+            decision,
+            validation_report_root=typed_root("review-report", "partial"),
+            verdict="ready",
+            findings=[],
+        )
+        authority = build_node(
+            "authority",
+            {},
+            parents=[
+                {"edge": "decision", "node_id": decision["node_id"]},
+                {"edge": "attestation", "node_id": validation["node_id"]},
+            ],
+            artifact_roots=[typed_root("project-authority", "partial")],
+        )
+        nodes = {
+            node["node_id"]: node for node in (decision, validation, authority)
+        }
+        receipt_root = typed_root("live-receipt", "partial")
+
+        def resolve(content_root: str) -> dict[str, object]:
+            if content_root == decision_root:
+                return ProjectPortableStore().verify(bundle, expected_role="decision")
+            return content_resolver(content_root)
+
+        with pytest.raises(ProvenanceError, match="complete review subject"):
+            verify_for(
+                authority["node_id"],
+                nodes.__getitem__,
+                resolve,
+                consequence="acknowledgment",
+                live_facts={"authority_current": fact(receipt_root)},
+                checked_at="2026-08-17T01:00:00Z",
+            )
+
+
 def test_live_fact_failure_does_not_reinterpret_static_chain() -> None:
     content_root = "frontier-content-root-sha256:" + "b" * 64
     _, _, _, outcome, nodes = chain(content_root)
@@ -851,7 +1004,7 @@ def test_expired_live_receipt_cannot_be_replayed_for_spend() -> None:
     }
 
     def expired(root: str) -> dict[str, object]:
-        return {
+        result: dict[str, object] = {
             "content_root": root,
             "domain": TEST_DOMAINS[root],
             "verified": True,
@@ -864,6 +1017,9 @@ def test_expired_live_receipt_cannot_be_replayed_for_spend() -> None:
                 for name in names
             },
         }
+        if TEST_DOMAINS[root] == "project-decision":
+            result["review_subject"] = {"subject_mode": "complete"}
+        return result
 
     result = verify_for(
         authority["node_id"],
@@ -954,13 +1110,11 @@ def test_workflow_release_mutation_does_not_change_project_identity() -> None:
         workflow = root / "workflow.py"
         project.write_text("project-v1\n")
         workflow.write_text("workflow-v1\n")
-        project_manifest = ProjectPortableStore().capture(
-            "decision",
-            [ArtifactSource("project/decision/project.txt", project)],
-            root / "project-v1",
-            project_root=root,
+        prepared = prepare_entry_bundle(root, root / "project-v1")
+        project_manifest = ProjectPortableStore().verify(
+            root / "project-v1/snapshot", expected_role="decision"
         )
-        decision = freeze_decision(decision_root=project_manifest["content_root"])
+        decision = freeze_decision(decision_root=prepared["content_root"])
         report_root = typed_root("review-report", "stable-report")
         authority_root = typed_root("project-authority", "stable-authority")
         validation = attest(
@@ -973,6 +1127,7 @@ def test_workflow_release_mutation_does_not_change_project_identity() -> None:
             authority_root=authority_root,
             decision=decision,
             validation=validation,
+            decision_bundle=root / "project-v1/snapshot",
         )
         release_v1 = PortableBundleStore().capture(
             [ArtifactSource("release/workflow.py", workflow)],
@@ -998,6 +1153,7 @@ def test_workflow_release_mutation_does_not_change_project_identity() -> None:
             authority_root=authority_root,
             decision=same_decision,
             validation=same_validation,
+            decision_bundle=root / "project-v1/snapshot",
         )
         assert release_v1["content_root"] != release_v2["content_root"]
         assert same_decision["node_id"] == decision["node_id"]
@@ -1125,30 +1281,36 @@ def test_cli_facade_freezes_and_verifies_a_decision() -> None:
         repository = NodeRepository(Path(directory))
         source = Path(directory) / "decision.txt"
         source.write_text("one exact decision\n")
-        bindings: list[dict[str, str]] = []
-        roots: dict[str, str] = {}
+        prepared = prepare_entry_bundle(Path(directory), Path(directory) / "prepared")
+        bindings: list[dict[str, str]] = [
+            {
+                "adapter": "portable-bundle/1",
+                "path": str(Path(directory) / "prepared/snapshot"),
+            }
+        ]
+        roots: dict[str, str] = {"project-decision": prepared["content_root"]}
         for domain in (
-            "project-decision",
             "review-report",
             "project-authority",
             "project-state",
             "project-outcome",
         ):
             bundle = Path(directory) / domain
+            artifacts = [
+                {
+                    "logical_name": DOMAIN_PREFIXES[domain] + "project-record.txt",
+                    "path": str(source),
+                    "kind": "blob",
+                    "behavioral_metadata": {},
+                }
+            ]
             captured = apply_operation(
                 {
                     "contract_version": REQUEST_CONTRACT,
                     "operation": "capture-project",
                     "role": DOMAIN_ROLES[domain],
                     "project_root": str(Path(directory)),
-                    "artifacts": [
-                        {
-                            "logical_name": DOMAIN_PREFIXES[domain] + "project-record.txt",
-                            "path": str(source),
-                            "kind": "blob",
-                            "behavioral_metadata": {},
-                        }
-                    ],
+                        "artifacts": artifacts,
                     "closed_collections": [],
                     "destination": str(bundle),
                 },
@@ -1222,6 +1384,7 @@ def test_cli_facade_freezes_and_verifies_a_decision() -> None:
                 "authority_root": roots["project-authority"],
                 "decision_id": frozen["node_id"],
                 "attestation_id": attestation["node_id"],
+                "content_bindings": bindings,
             },
             repository,
         )

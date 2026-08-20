@@ -30,6 +30,10 @@ PROVENANCE_TESTS = (
     FRONTIER_SCRIPTS / "test_project_snapshot.py",
     FRONTIER_SCRIPTS / "test_package_frontier_handoff.py",
 )
+REVIEW_PREPARATION_TESTS = (
+    FRONTIER_SCRIPTS / "test_frontier_review_preparation.py",
+    FRONTIER_SCRIPTS / "test_frontier_provenance.py",
+)
 ENTRY_TESTS = (
     FRONTIER_SCRIPTS / "test_validate_entry_packet.py",
     FRONTIER_SCRIPTS / "test_validate_authorization_adoption.py",
@@ -100,6 +104,7 @@ SCRIPT_TESTS = {
     "validate_entry_packet.py": (*ENTRY_TESTS, FRONTIER_SCRIPTS / "test_slice7_end_to_end.py"),
     "validate_frontier_skill_bundle.py": (BUNDLE_TEST,),
     "frontier_provenance_cli.py": (*PROVENANCE_TESTS, *ENTRY_TESTS, *BATCH_TESTS, *RECOVERY_TESTS),
+    "frontier_review_cli.py": REVIEW_PREPARATION_TESTS,
     "run_workflow_checks.py": (SELECTOR_TEST,),
     "workflow_source_binding.py": (*ENTRY_TESTS, *BATCH_TESTS, *RECOVERY_TESTS),
 }
@@ -224,7 +229,23 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
             continue
 
         if area == "scripts":
+            if len(parts) >= 5 and parts[4] == "frontier_review":
+                _add_tests(
+                    selected,
+                    reasons,
+                    REVIEW_PREPARATION_TESTS,
+                    "review preparation module changed",
+                )
+                continue
             if len(parts) >= 5 and parts[4] == "frontier_provenance":
+                if path.name in {"review_contract.py", "review_subject.py"}:
+                    _add_tests(
+                        selected,
+                        reasons,
+                        REVIEW_PREPARATION_TESTS,
+                        "review subject contract changed",
+                    )
+                    continue
                 _add_tests(
                     selected,
                     reasons,

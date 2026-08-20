@@ -2,13 +2,34 @@
 
 ## Current provenance form
 
-For a new Entry or Replan, capture the selected project artifacts and validation
-report as strong content roots. Freeze one decision node containing exactly one
-`project-decision` content root and an empty payload. Create
-one attestation whose report uses the `review-report` domain and whose
+Keep a new Entry or Replan mutable until its deterministic checks pass. Call
+`prepare_review(draft_spec, project_root, output_root)` once. It validates final
+raw-byte self-identities, cross-file path, digest, and identity bindings,
+monotonic record namespaces, review-kind role schemas, selected paths, and
+closed collections. The caller supplies only the Entry review stage. The role
+adapter derives affected scope, Budget, Selection, authority target, and the
+later-spend gate from canonical project objects; caller-written summaries are
+not accepted. `NOT_READY` returns findings only: it allocates no R
+identifier and creates no snapshot, decision, packet, supplement, or recovery
+record. Repair the same unspent and unauthorized B draft and call it again.
+
+`SEALED` atomically publishes one portable `project-decision` content root, one
+decision node, one review packet, and one exclusive review assignment. The root
+contains a generated `frontier-review-subject/1` index that enumerates every
+member, every closed collection, the applied `frontier-review-role-adapter/1`,
+and the derived review-kind semantic projection. The
+reviewer receives that single complete root. A reviewed realization remains
+immutable; a later repair creates another complete root and review, never a
+base-plus-supplement overlay.
+
+The decision node binds exactly that `project-decision` content root and an empty payload.
+Completeness belongs to the verified content and role adapter, not to caller
+text stored on the node.
+
+Create one attestation whose report uses the `review-report` domain and whose
 subject is that exact decision. After any required user answer, bind one
-authority node to the decision and finding-free attestation. Later objects cite
-only their immediate typed parent.
+authority node to the decision, finding-free attestation, and verified complete
+subject. Later objects cite only their immediate typed parent.
 
 The current workflow, validator, worker interface, deployment location, and
 release identity are never project inputs. Updating any of them while repository
@@ -19,7 +40,7 @@ its own version in the project chain.
 
 The current Entry plan is stored only as `project-decision` content. It contains
 the exact project parents, evidence roots, F1-F8, Budget, Selection, route-set
-state, persisted resolver result, B plan, authority target, and later-spend gates
+state, persisted resolver result, affected scope, surviving authority, B plan, authority target, and later-spend gates
 needed for review. It contains no workflow source binding, semantic-rule version,
 validator or worker identity, deployment path, installation time, or release
 locator. The review report is separate `review-report` content and the
@@ -28,13 +49,30 @@ the persisted Selection and cited project facts; it never reruns the resolver
 under a later workflow.
 
 Selection must be copied from persisted Reflection without reinterpretation.
-The attested `project-decision` content includes the resolver row, route-set state, direction,
+The attested `project-decision` content includes the resolver row, route-set state, direction, affected scope, surviving authority,
 research disposition, diagnostic dominance or exact blocker, Budget and
 protected reserve, and every later-spend gate. A strategic change cannot bind
 authority for dependent spend until the same decision has `REPLAN_READY`.
 Unresolved validity remains an unresolved fact; it cannot be encoded as route
 or frame evidence. A routine R8 result that uniquely determines the next action
 records `research_disposition: no-additional-research`.
+
+Historical incomplete attempts remain audit records. They cannot be combined
+through prose replacement rules to create a complete Entry, and a supplement-
+only decision cannot control a new authority. A pre-review failure has no
+review identity to preserve. A nonpositive reviewer verdict is different: keep
+that exact subject, report, and attestation, then prepare a new complete subject
+if the Coordinator repairs the draft.
+
+The current adapters use stable logical roles and project schemas, not task or
+technology names. Entry requires the canonical state, parent, Selection,
+batch-plan, and authorization-target or spend-gate objects. Replan,
+implementation, and claims each require their own explicit project contract.
+Design requires its canonical design index and one closed design collection.
+An unsupported project contract returns `NOT_READY`; add a deliberate adapter
+instead of accepting unknown identity text. The outer identity of a composite
+design index may use an exact top-level omit-line SHA-256 rule while its nested
+concern and traceability checks remain owned by Design review.
 
 The detailed version 1 packet below remains available only when the object
 itself selects the bounded completion adapter. It cannot create a new Entry,
@@ -58,7 +96,7 @@ A historical packet is audit evidence and cannot authorize new work. If a determ
 4. Check every eligible T against the canonical [T eligibility contract](planning-records.md#t-route). Require the observation-to-test mechanism chain, expected behavior, competing explanation or transfer mismatch, falsifier, exact replacement boundary, feedback path, headroom or known limits, and a disposition for every load-bearing data, coverage, label, feedback, evaluator, compute, access, or dependency prerequisite. Current evidence must satisfy the prerequisite, or the plan must select the smallest bounded and funded prerequisite-first path with pass/fail evidence. An unavailable prerequisite makes the dependent route ineligible or deferred. An unresolved prerequisite makes any dependent candidate development, tuning, evaluation, integration, or performance claim `ENTRY_REPAIR_REQUIRED`. Reject theoretical feasibility, popularity, unrelated success, or surface analogy as prerequisite evidence. Apply the canonical R8 vacuity definition: reject candidate or evaluation work only when current evidence proves every legal result maps to the same allowed next action; permit an unknown measurement property as the bounded first-check target when its result branches change the next action.
 5. Check adopted V records and the proposed authorization target. A `campaign-opening` V must quote an explicit current reopen request, bind the prior closeout, unchanged parents, next generation, inherited Budget, and zero-B-spend boundary, and leave the technical objective to the Coordinator. A later user-owned tradeoff and exact execution authorization remain separate. A tradeoff follows technical filtering and faithfully records a real user choice. An execution target binds one exact target path, target file hash, target identity, packet, structural preflight, reviewed design or direct identity, source base, scope, maximum spend, stop boundary, proposed Budget and Selection consequence, B result path, authorization-answer result path, adoption path, and `frontier-post-adoption-state/1`. For every Coordinator file that authorization may change, the post-adoption contract binds the pre-state digest and one complete frozen post-state source file with its exact digest. Include both the live target and frozen post-state source in the project snapshot. Do not use patches, ignored fields, or prose diffs. The target file must expose those Entry summary values under the same top-level field names. Every design or prerequisite binding required for authorization must appear in both the structured Entry gate and the target file with the same path, file hash, and embedded identity when one exists; every preflight identity must belong to the selected B. Recompute the B packet and structural preflight rather than trusting a stored `packet_structure_ready` claim. Require `result_contract_compatibility: PASS`; for experiment work, confirm that the packet and future result use the same canonical nested `evaluation_target`, including the complete candidate root, with no competing flat aliases or copied experiment identity in prose. Require the validator to derive the experiment identity from the bound project bytes. In recovery, require current-generation authority rather than treating closed authorization as current. Do not require or accept a completed execution answer in an `authorization-readiness` snapshot.
 6. For code-bearing work, verify repository fit against project files. Require the recorded structure disposition, candidate interface, exclusive worker write surfaces, worker-forbidden paths, execution-frozen inputs, profile evidence, exact pending authorization target, complete `candidate_root_path`, manifest, isolated-runtime plan, bytecode-suppression plan when Python applies, planned implementation review, and finding-free candidate-package validation. For `module` or `system`, consume an unchanged adopted `DESIGN_READY` rather than repeating design review. For a separate diagnostic-only experiment, verify every eligibility and consequence limit in `candidate-lifecycle.md`; it cannot weaken the code-bearing materialization gate.
-7. Check the Brief, F1-F8, proposed Budget and Selection consequence, B, applicable W, and worker packets as one plan. Reconstruct the immutable evidence-state identity and apply the single [Integrated direction resolver](learning-loop.md#integrated-direction-resolver); require Selection to record the first applicable row, exact next action, route-set state, research disposition, diagnostic decision when applicable, and every later-spend gate without reinterpretation. Require exact parent scope, zero new B spend before adoption, exact inherited spend and remaining ceiling, reconciled Entry planning and research cost, a usable baseline checkpoint, decision-changing first performance check, its legal result branches and distinct next actions, comparison-validity checks, `Trajectory contribution`, preparation limit, protected reserve, observable continuation and stop rules, unchanged claim ceilings, and a precommitted hypothesis, contradictory observation, and checkpoint decision for every selected B. Require a defensible prospective progress rule for every iterative T or a reasoned `not applicable`; reject a numeric rule invented only to complete the template. Reject routine research, any routine use of protected reserve, or dependent strategic spend before unchanged adopted `REPLAN_READY`. For recovery reuse, require adopted fresh `IMPLEMENTATION_READY`, unchanged candidate identity, zero new proposal charge, and a separate experiment B. A diagnostic-only exception cannot be used for recovery reuse. Reject an untriggered or empty W. For human input, require the complete input contract and evidence-only limit.
+7. Check the Brief, F1-F8, proposed Budget and Selection consequence, B, applicable W, and worker packets as one plan. Reconstruct the immutable evidence-state identity and apply the single [Integrated direction resolver](learning-loop.md#integrated-direction-resolver); require Selection to record the first applicable row, affected scope, surviving authority, exact next action, route-set state, research disposition, diagnostic decision when applicable, and every later-spend gate without reinterpretation. Require every result-based R8 stop to name candidate, route, or campaign scope and the exact surviving authority; reject a broader disposition than its evidence and precommitted rule support. Require exact parent scope, zero new B spend before adoption, exact inherited spend and remaining ceiling, reconciled Entry planning and research cost, a usable baseline checkpoint, decision-changing first performance check, its legal result branches and distinct next actions, comparison-validity checks, `Trajectory contribution`, preparation limit, protected reserve, observable continuation and stop rules, unchanged claim ceilings, and a precommitted hypothesis, contradictory observation, and checkpoint decision for every selected B. Require a defensible prospective progress rule for every iterative T or a reasoned `not applicable`; reject a numeric rule invented only to complete the template. Reject routine research, any routine use of protected reserve, or dependent strategic spend before unchanged adopted `REPLAN_READY`. For recovery reuse, require adopted fresh `IMPLEMENTATION_READY`, unchanged candidate identity, zero new proposal charge, and a separate experiment B. A diagnostic-only exception cannot be used for recovery reuse. Reject an untriggered or empty W. For human input, require the complete input contract and evidence-only limit.
 8. For W-backed work, require the selected Delivery row, required concern identities, and machine-readable evidence destinations to map completely into B. Reject whole-W freezing. Current authorization must be absent from W and owned by external lifecycle records.
 9. Reconstruct dispatch from the project packet, preflight, permissions, and frozen project evidence. Recompute both structural and Entry schema checks. For code-bearing work, verify the exact package-inventory path and the task-neutral engineering check plan from project bytes: every selected unit is frozen, every possible execution effect appears in `declared_effects`, every declared effect has a positive maximum, and all outputs remain engineering-only. Reject a full or opaque suite when its bounded effect evidence is incomplete; do not rely on the worker to discover a prohibited effect by executing it. Require acknowledgment before work or spend, the structured Coordinator lifecycle transition when applicable, exclusive Coordinator execution-baseline and execution-start outputs, recoverable project bytes for every post-transition baseline identity, result-contract compatibility before authorization, profile-aware result validation before the final result path, and a second worker invocation. Require the packet to apply [Boundary-preserving continuation](batch-interface.md#boundary-preserving-continuation), assign distinct evidence paths, and distinguish support repair from substantive change; reject first-support-failure terminalization, unbounded retries, or retries that add sampling, selection, human-response, or external-side-effect opportunities. At execution-start, require the adoption to reproduce from the immutable pre-transition project snapshot, then independently require every reviewed transition target to equal its complete reviewed post-state bytes and every other frozen project member to remain byte-identical to the snapshot. Require each transitioned target exactly once in the post-transition execution baseline. For a first-B transition, also verify that the packet binds the exact pre-transition identity and authorizes one deterministic rule that remains executable across UTC midnight: one post-acknowledgment UTC instant supplies both `generated.at` and the `updated` calendar date. Reject a literal runtime date, prose field diff, ambiguous timezone, repeated clock read, material runtime choice disguised as derivation, or any state that could become executable only by mutating a reviewed packet, design contract, source, or whole W after the user answers.
 10. For `authorization-readiness`, return exactly `AUTHORIZATION_READY`, `ENTRY_REPAIR_REQUIRED`, `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED`, or `BLOCKED`. For `spend-readiness` with no user authorization, use `ENTRY_READY` as the positive result. A positive result has no block or repair finding and may list advisories separately; every nonpositive result has at least one complete block or repair finding.

@@ -13,7 +13,7 @@
 - [Select reproducibly](#7-select-reproducibly)
 - [Pin the Entry snapshot](#8-pin-the-entry-snapshot)
 - [Obtain independent Entry review](#9-obtain-independent-entry-review)
-- [Return one outcome](#return-one-outcome)
+- [Record one outcome, then finalize the return](#record-one-outcome-then-finalize-the-return)
 
 Use this stage when no campaign exists, Entry is incomplete, or `frontier-core.md` selected post-closeout recovery mode. Its only successful outcome is one reviewed, reproducible first-batch plan with zero new-generation B spend and fully accounted inherited and Entry cost.
 
@@ -25,7 +25,7 @@ Load [Campaign state](campaign-state.md) and [Planning records](planning-records
 
 Bind the exact Problem epoch, Representation revision, generation times, positive reviews, reference baseline, measurement identity, exact `Permitted` text, R1-R8, budget authority, and claim limits. Copy no broader meaning into Frontier records.
 
-Return `PARENT_REVIEW_REQUIRED` without creating campaign state when a required parent, review, measurement, budget rule, or R8 instruction is missing, stale, conflicting, or ambiguous. Do not repair parent documents here.
+Record `PARENT_REVIEW_REQUIRED` without creating campaign state when a required parent, review, measurement, budget rule, or R8 instruction is missing, stale, conflicting, or ambiguous, then use the finalization section below. Do not repair parent documents here.
 
 ### Rebind a compatible pre-spend campaign
 
@@ -121,7 +121,7 @@ For `human_input`, record the exact request, response path, schema, provenance, 
 
 ## 7. Select reproducibly
 
-Apply exact R8 route, eligibility, priority, uncertainty, measurement-use, vacuity, promotion, confirmation, parallelism, and fallback clauses. If R8 is silent or ambiguous about a required rule and does not delegate it, return `PARENT_REVIEW_REQUIRED`.
+Apply exact R8 route, eligibility, priority, uncertainty, measurement-use, vacuity, promotion, confirmation, parallelism, and fallback clauses. If R8 is silent or ambiguous about a required rule and does not delegate it, record `PARENT_REVIEW_REQUIRED` and use the finalization section below.
 
 Technically filter first, then apply adopted V records. Propose one Primary B and only demonstrably independent Parallel B records. Record the exact proposed Selection and Budget transition, separate budgets, mutable paths, stable shared resources, failure isolation, and one join point. Do not adopt a reservation or executable Selection before the applicable readiness review and user authorization.
 
@@ -141,13 +141,15 @@ Preserve every review. A semantic `ENTRY_REPAIR_REQUIRED` finding receives a new
 
 Append `FIRST_BATCH_PLANNED` only after direct `ENTRY_READY` or exact post-answer adoption. Include campaign generation, readiness snapshot and review, V and adoption when applicable, parents, selected B records, inherited and Entry-cost accounting, and zero-B-spend consequence. Do not execute the B.
 
-## Return one outcome
+## Record one outcome, then finalize the return
 
-Return exactly one:
+Record exactly one stage outcome:
 
 - `FIRST_BATCH_PLANNED`: complete Entry, unchanged readiness authority and `ENTRY_READY` adoption, zero new-generation B spend, and reconciled inherited and Entry cost;
 - `CLOSEOUT_REQUIRED`: a valid pre-spend stop or halt applies;
 - `PARENT_REVIEW_REQUIRED`: parent authority or meaning is missing, stale, or ambiguous;
 - `BLOCKED`: required authority, private facts, tools, data, or access are unavailable.
+
+Before control returns to the user, apply the canonical [User-facing handoff](frontier-core.md#user-facing-handoff) to that outcome and the complete persisted next-step set.
 
 Entry is complete only when artifacts reconstruct campaign generation, planning-only opening authority and Coordinator-derived objective when applicable, structured recovery lineage, peer-source route generation, decision completeness, prerequisite dispositions, baseline choice, replacement boundary, inherited budget, proposed target, readiness review, separate user tradeoff and exact execution authorization when applicable, selected work, earliest discriminating check, code gates, and zero-B-spend boundary.

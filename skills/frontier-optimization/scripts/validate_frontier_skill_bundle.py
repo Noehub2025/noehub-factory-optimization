@@ -220,7 +220,8 @@ RESULT_CONTRACT_REQUIREMENTS = {
     "frontier-optimization/scripts/validate_candidate_package.py": (
         'VALIDATOR = "frontier-candidate-package-validation/3"',
         'INVENTORY_CONTRACT = "frontier-candidate-package-inventory/1"',
-        'FINAL_MANIFEST_CONTRACT = "frontier-candidate-manifest/2"',
+        'FINAL_MANIFEST_CONTRACT = "frontier-candidate-manifest/3"',
+        'LEGACY_FINAL_MANIFEST_CONTRACT = "frontier-candidate-manifest/2"',
         "PACKAGE_PATH_SIZE_SHA256_V1",
         "CANDIDATE_MEMBER_MISMATCH",
         "FORBIDDEN_RUNTIME_ARTIFACT",

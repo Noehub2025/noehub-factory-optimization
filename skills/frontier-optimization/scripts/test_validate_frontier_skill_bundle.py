@@ -136,7 +136,7 @@ def reflection_contract_findings(skills_root: Path) -> list[str]:
 
 RESOLVER_ROW_MARKERS = {
     1: "Parent or handoff mismatch",
-    2: "safety, legality, authority, accounting, unconditional F7 stop, or halt",
+    2: "safety, legality, authority, accounting, explicit campaign-scope unconditional F7 stop, or halt",
     3: "terminal B or E lacks coverage",
     4: "parent-owned objective, Representation, Slot H measurement meaning, R8 rule, permitted scope, or claim ceiling",
     5: "without consuming a protected reserve",
@@ -178,6 +178,7 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
         "learning-loop.md": (
             "Apply the rows from 1 through 13 exactly once",
             "The first applicable row governs; no later row may override it",
+            "Every stop consequence has one exact scope",
             "Unknown cost is not affordable",
             "Do not ask the user to choose a technical diagnostic",
             "The same diagnostic class cannot repeat from the same evidence-state identity",
@@ -191,7 +192,9 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "first applicable row from learning-loop.md",
             "exact non-unique technical diagnostic blocker",
             "Routine row 13 may not add research, diagnosis, or review",
-            "does not reinterpret validity, technical learning, route eligibility, progress, constraint meaning, diagnostic alternatives, or dominance",
+            "does not reinterpret validity, technical learning, route eligibility, progress, constraint meaning, diagnostic alternatives, dominance, affected scope, or surviving authority",
+            "Affected scope",
+            "Surviving authority",
             "Project provenance",
         ),
         "campaign-cycle.md": (

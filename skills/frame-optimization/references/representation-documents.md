@@ -72,7 +72,7 @@ generated: { by: frame-optimization/1, at: "<ISO-8601 datetime>" }
 | R5 | Split into parts | - | Search treats each option as one whole; no split is active. | |
 | R6 | Part boundaries | - | No rules for joining separately changed parts apply while search treats each option as one whole. | |
 | R7 | Cross-part effects | - | No cross-part rule applies because search does not split the option into parts. | |
-| R8 | Search run and old work | O | The start, budget, feedback use, selection, stopping, harness checks, and old-work reuse are not decided. | |
+| R8 | Search run and old work | O | The start, budget, feedback use, selection, scoped stopping, harness checks, and old-work reuse are not decided. | |
 
 ## Open decisions
 
@@ -80,7 +80,7 @@ generated: { by: frame-optimization/1, at: "<ISO-8601 datetime>" }
 - R2 (O): check whether different proposals produce the same option, or state that results cannot claim unique or complete coverage.
 - R3 (O): check how changing problem size affects proposal size and scoring cost before saying search is efficient.
 - R4 (O): decide allowed changes, illegal-option handling, starting points, and what search cannot prove before search starts.
-- R8 (O): decide the start, budget, allowed feedback, selection and stopping rules, harness checks, and old-work reuse before review.
+- R8 (O): decide the start, budget, allowed feedback, selection, each stop trigger's candidate, route, or campaign scope and surviving authority, harness checks, and old-work reuse before review.
 
 ## Known limits
 
@@ -162,7 +162,7 @@ Read both Briefs before review. Without merely repeating task-specific labels, a
 
 Then read the complete `PROBLEM.md` and `REPRESENTATION.md` without opening details. The pair passes the decision check only when the reader can decide what search may try, how proposals become measurable, how invalid work is handled, how feedback and budget may be used, how work is selected or stopped, whether search is split, which old work may be reused, what remains unknown, and what the results cannot prove.
 
-For an older table-only `REPRESENTATION.md`, derive the Brief, Open decisions, and Known limits from the current table and linked rule details. Apply both the task-to-search understanding check and the two-document decision test before preserving review assurance. When the search meaning already exists consistently and only the Brief explanation is missing, keep R1-R8 status and `representation_revision`, rewrite the Brief, set `REPRESENTATION.md` to draft, remove `review_scope` and `verified`, and require a fresh readability review. When an underlying search decision is absent, set the affected row to `O`, name the missing decision under Open decisions, invalidate representation assurance, and apply the search-state rules. In particular, absent feedback, survivor selection, tie handling, confirmation, promotion, stopping, or scale-up rules are missing R8 decisions, not wording omissions.
+For an older table-only `REPRESENTATION.md`, derive the Brief, Open decisions, and Known limits from the current table and linked rule details. Apply both the task-to-search understanding check and the two-document decision test before preserving review assurance. When the search meaning already exists consistently and only the Brief explanation is missing, keep R1-R8 status and `representation_revision`, rewrite the Brief, set `REPRESENTATION.md` to draft, remove `review_scope` and `verified`, and require a fresh readability review. When an underlying search decision is absent, set the affected row to `O`, name the missing decision under Open decisions, invalidate representation assurance, and apply the search-state rules. In particular, absent feedback, survivor selection, tie handling, confirmation, promotion, stop scope, surviving authority, or scale-up rules are missing R8 decisions, not wording omissions.
 
 ## Frontmatter and row status
 

@@ -35,9 +35,9 @@ Choose claim-only only when all are true:
 - no ordinary stop, forced halt, unresolved `CLOSEOUT_REQUIRED`, or parent conflict is active; and
 - the campaign was planned or running before the claim trigger.
 
-Choose full closeout for a durable ordinary stop, forced halt, stopped or halted campaign, unresolved `CLOSEOUT_REQUIRED`, or parent mismatch after campaign records exist. Full closeout wins when a claim and a stop or halt are both active.
+Choose full closeout for a durable campaign-scope ordinary stop, forced halt, stopped or halted campaign, unresolved `CLOSEOUT_REQUIRED`, or parent mismatch after campaign records exist. A candidate- or route-scope disposition returns to Campaign Cycle under the persisted resolver result and never enters full closeout by itself. Full closeout wins when a claim and a campaign-scope stop or halt are both active.
 
-If neither mode fits, return `BLOCKED` with the conflicting records. Do not convert a claim-only request into closeout or use claim review to repair campaign state.
+If neither mode fits, record `BLOCKED` with the conflicting records and continue to the canonical return finalization. Do not convert a claim-only request into closeout or use claim review to repair campaign state.
 
 ## Claim-only branch
 

@@ -79,8 +79,10 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 - After each completed batch, the agent compares the result with the hypothesis fixed before the work, records the strongest mechanism the evidence supports, and keeps unresolved component attribution separate from the proven whole-package effect.
 - Results identify the problem and representation versions under which they were produced, so incompatible results are not compared.
 - Project evidence and workflow releases use separate identities. Updating an installed Skill does not rewrite or invalidate an existing project decision, review, authorization, result, or handoff.
+- Review preparation deterministically freezes the exact project subject, its provenance chain, and the evidence a fresh reviewer may inspect. Workflow implementation files remain outside the project decision identity.
 - Budget, stopping rules, known limits, and permitted claims remain visible in the main campaign document.
 - One ordered direction resolver selects the first applicable next action or blocker, so research, diagnosis, direct attempts, budget limits, and parent escalation do not compete through separate decision paths.
+- If valid execution, measurement, and local-mechanism explanations are exhausted, the workflow can return an exact semantic challenge to the parent task contract instead of repeating in-scope work that can no longer reach the objective.
 - Independent reviews use fixed copies of the evidence and an agent that has not seen the drafting conversation. If that independent review is unavailable, the workflow reports a blocker instead of readiness.
 - Campaign state is recovered from repository files and their recorded versions, not from conversation history.
 - Portable project handoffs can be verified offline from exact project bytes and their typed provenance chain; they do not depend on copied workflow implementation files.
@@ -115,6 +117,7 @@ Define the problem
   -> independently approve an exact search scope
   -> choose a starting approach and budget
   -> review and authorize one exact bounded batch when required
+  -> deterministically prepare the exact project-only subject for each fresh review
   -> acknowledge the packet and freeze its execution baseline
   -> start and run the batch
   -> review implementations before measuring them

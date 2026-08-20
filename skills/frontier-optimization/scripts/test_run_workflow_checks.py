@@ -97,6 +97,33 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
             self.assertIn(expected.as_posix(), plan.tests)
         self.assertNotIn(MODULE.FRAME_TEST.as_posix(), plan.tests)
 
+    def test_review_preparation_change_selects_only_its_interface_tests(self) -> None:
+        plan = MODULE.select_checks(
+            (".agents/skills/frontier-optimization/scripts/frontier_review/preparation.py",),
+            "affected",
+        )
+
+        self.assertEqual(
+            plan.tests,
+            tuple(sorted(path.as_posix() for path in MODULE.REVIEW_PREPARATION_TESTS)),
+        )
+        self.assertFalse(plan.release)
+
+    def test_review_subject_contract_uses_the_same_focused_tests(self) -> None:
+        plan = MODULE.select_checks(
+            (
+                ".agents/skills/frontier-optimization/scripts/"
+                "frontier_provenance/review_contract.py",
+            ),
+            "affected",
+        )
+
+        self.assertEqual(
+            plan.tests,
+            tuple(sorted(path.as_posix() for path in MODULE.REVIEW_PREPARATION_TESTS)),
+        )
+        self.assertFalse(plan.release)
+
     def test_cross_cutting_contract_escalates_to_complete_suite(self) -> None:
         plan = MODULE.select_checks(
             (".agents/skills/frontier-optimization/references/frontier-core.md",),

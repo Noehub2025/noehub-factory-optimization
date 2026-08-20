@@ -10,22 +10,27 @@ modules:
       - frontier-optimization/references/provenance-rollout.yaml
       - frontier-optimization/references/source-modules.yaml
       - frontier-optimization/scripts/finding_effects.py
+  storage-recovery:
+    depends_on: [graph-core]
+    files:
+      - frontier-optimization/references/review-snapshots.md
       - frontier-optimization/scripts/frontier_provenance/__init__.py
       - frontier-optimization/scripts/frontier_provenance/content.py
       - frontier-optimization/scripts/frontier_provenance/facade.py
       - frontier-optimization/scripts/frontier_provenance/graph.py
       - frontier-optimization/scripts/frontier_provenance/repository.py
+      - frontier-optimization/scripts/frontier_provenance/review_subject.py
+      - frontier-optimization/scripts/frontier_provenance/review_contract.py
       - frontier-optimization/scripts/frontier_provenance/source_modules.py
-  storage-recovery:
-    depends_on: [graph-core]
-    files:
-      - frontier-optimization/references/review-snapshots.md
       - frontier-optimization/scripts/frontier_provenance/stores.py
       - frontier-optimization/scripts/frontier_provenance/handoff.py
   provenance-runtime:
     depends_on: [graph-core, storage-recovery]
     files:
       - frontier-optimization/scripts/frontier_provenance_cli.py
+      - frontier-optimization/scripts/frontier_review/__init__.py
+      - frontier-optimization/scripts/frontier_review/preparation.py
+      - frontier-optimization/scripts/frontier_review_cli.py
   direction:
     depends_on: [graph-core]
     files:
@@ -65,7 +70,7 @@ modules:
       - frontier-optimization/references/claim-review.md
       - frontier-optimization/references/closeout-and-claims.md
   legacy-validation:
-    depends_on: [graph-core]
+    depends_on: [storage-recovery]
     files:
       - frontier-optimization/scripts/frontier_provenance/compatibility.py
       - frontier-optimization/scripts/authorization_target_contract.py
@@ -91,6 +96,7 @@ modules:
       - frontier-optimization/scripts/test_finding_effects.py
       - frontier-optimization/scripts/test_freeze_execution_baseline.py
       - frontier-optimization/scripts/test_frontier_provenance.py
+      - frontier-optimization/scripts/test_frontier_review_preparation.py
       - frontier-optimization/scripts/test_package_frontier_handoff.py
       - frontier-optimization/scripts/test_project_snapshot.py
       - frontier-optimization/scripts/test_run_workflow_checks.py

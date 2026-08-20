@@ -89,7 +89,7 @@ Candidate reuse is a separate Entry action selected only by an explicit current 
 
 1. Build a temporary recovery preflight containing the prior closeout and final handoff identities, inherited Budget, requested candidate and manifest identities, candidate root, source generation, proposed next generation, `review_mode: recovery-reuse`, `candidate_mutation: prohibited`, and `new_proposal_attempts: 0`. Add `lineage_sources.closeout`, `.handoff`, and `.budget` as exact `{path, identity_field: null, identity, file_sha256}` bindings. Parse those source records and derive the closeout event, generation, status, unresolved claims, active workers, Budget ceiling, actual and unknown spend, and active reservations; copied summary fields cannot replace them. If the candidate predates the immediately closed generation, also bind one consecutive `intervening_recovery_chain` link per generation. Each link must contain the frozen recovery preflight, reuse disposition, closeout, handoff, and Budget. The validator recursively verifies those content-addressed files, the unchanged candidate and manifest, parent continuity, exact closing identities, and nondecreasing cumulative spend. A current version 3 manifest and preflight contain no workflow-source identity. The validator accepts a version 2 workflow-source binding only through its exact historical compatibility path.
 2. Run `scripts/validate_candidate_recovery.py` in draft mode against canonical repository artifacts. Derive member and package identities from bytes; never trust a conversation-copied digest.
-3. If draft validation fails, return `BLOCKED` with the exact path, requested identity, and recomputed identity. Write no new-generation artifact and spend nothing.
+3. If draft validation fails, record `BLOCKED` with the exact path, requested identity, and recomputed identity, then finalize the return. Write no new-generation artifact and spend nothing.
 4. If it passes, insert only the computed preflight identity, freeze the preflight at a new stable path, and reproduce finding-free frozen validation.
 5. Bind the frozen recovery preflight in the new V, X, Entry snapshot, implementation snapshot, and fresh `review_mode: recovery-reuse` review.
 
@@ -112,6 +112,8 @@ Produce one source manifest and one fresh release review for the stable workflow
 `Depends on` records original dependency, `Regression triggered by` records the later change, `Rechecks` records conclusions covered again, and `Supersedes` applies only to an earlier attempt. The same immutable source and fixture manifests must produce the same package validation result.
 
 ## Acceptance scenarios
+
+Before control returns to the user, apply the canonical [User-facing handoff](frontier-core.md#user-facing-handoff) to the packaging or recovery outcome and every decision-relevant next action that remains live. Packaging creates no ranking or campaign authority.
 
 | Scenario | Required durable outcome |
 |---|---|

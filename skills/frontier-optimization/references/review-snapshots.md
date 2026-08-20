@@ -10,26 +10,36 @@ Historical copied snapshot directories remain audit records only. They transfer 
 
 ## Current snapshot writer
 
-For every new review, capture the selected project bytes with the typed
-interface in [Provenance and identity](provenance-and-identity.md). Declare the
-logical members and every closed collection explicitly. The resulting
-`frontier-content-root-sha256/1` value is the sole authority identity. Use the
-Git adapter when a repository is available and the portable adapter otherwise;
-both must produce the same content root for the same logical names, raw bytes,
-modes, and behavior-changing metadata.
+For every new review, call `scripts/frontier_review_cli.py` or the equivalent
+`prepare_review` interface. Supply the review kind, complete project artifact
+list, closed collections, and, for Entry, its review stage. A review-kind role
+adapter validates canonical project objects and derives the consequence
+projection from their frozen fields. Callers cannot restate Budget, Selection,
+scope, authority, or later-spend gates. The interface performs all deterministic
+draft checks before it assigns an R identifier. It then
+stages the portable bundle, generated subject index, decision node, review
+packet, and assignment under the destination parent; it publishes the whole
+directory only after the frozen bytes reproduce.
 
-The Git adapter writes raw bytes without clean filters through a temporary
-index. It records a reachable commit, tree, and custom ref only as storage
-locators. The portable adapter records the same raw objects and manifest.
-Review packets carry the content root, not a member-by-member digest expansion.
-The manifest remains available for diagnosis and audit.
+The resulting `frontier-content-root-sha256/2` value is the sole project content
+identity. Project review content always uses the portable raw-byte store. Git is
+ordinary draft history and workflow-release storage; it is not part of a
+project review identity or recovery requirement.
 
-Before review, create a decision node that names exactly one `project-decision`
-content root and has an empty payload. Store the finding report under the
-`review-report` domain and create one attestation for that exact decision.
-Authority may bind only a finding-free attestation whose subject is that same
-decision. Workflow, validator, worker-interface, deployment, and release roots
-are invalid review inputs and never affect an adopted review.
+The generated `project/decision/review-subject-index.json` has no independent
+identity. It is hashed inside the decision root and lists the review kind,
+complete logical members, closed collections, and semantic projection. Before
+authority binding, portable verification must reproduce that index against the
+manifest and independently rerun the named role adapter. A missing index,
+partial role set, unknown contract, caller-authored projection, supplement, or
+prose overlay is not a complete subject.
+
+Store the finding report under the `review-report` domain and create one
+attestation for the exact decision. Authority may bind only a finding-free
+attestation whose subject is that same decision and whose verified content root
+contains a complete subject index. Workflow, validator, worker-interface,
+deployment, and release roots are invalid review inputs and never affect an
+adopted review.
 
 ## Version 1 filtered Git snapshot
 
@@ -94,4 +104,7 @@ The first Entry under this contract is the new authority origin. Preserve earlie
 
 An ordinary Entry completion check covers only the selected B, its project bindings, prerequisites, candidate or closed roots, evaluator, budget, scope, stop conditions, authorization target, result contract, project snapshot, and directly required project engineering checks. Workflow regression suites, Skill bundle checks, Slice 7, validator source checks, and repository-wide tests belong to workflow development or a B that explicitly changes the corresponding project surface; they are not repeated for every Entry.
 
-Preserve each manifest, packet, and review artifact. Removing the legacy copied snapshot store is a separate cleanup action requiring explicit user authorization after every current authority path has moved to a verified project snapshot.
+Preserve each sealed subject, packet, reviewer verdict, and attestation. A draft
+that failed before sealing produced none of these objects. Historical copied
+snapshot stores remain audit-only until separately cleaned up with explicit
+user authorization.

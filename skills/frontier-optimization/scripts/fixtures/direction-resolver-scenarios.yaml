@@ -107,8 +107,16 @@ scenarios:
     expected: {row: 11, direction: strategic replan, action: require-REPLAN_READY}
   - id: evidence-determines-stop
     evidence_state: sha256:r8-stop
-    facts: {evidence_determined: campaign-stop, specialized_gate: claims-review}
+    facts: {evidence_determined: campaign-stop, stop_scope: campaign, specialized_gate: claims-review}
     expected: {row: 11, direction: stop, action: full-closeout}
+  - id: candidate-repair-preserves-campaign
+    evidence_state: sha256:candidate-repair
+    facts: {evidence_determined: candidate-stop, stop_scope: candidate, repair_within_allocation: true, specialized_gate: execution-V}
+    expected: {row: 11, direction: local R8, action: close-candidate-and-plan-in-generation-repair}
+  - id: route-stop-preserves-campaign
+    evidence_state: sha256:route-stop
+    facts: {evidence_determined: route-stop, stop_scope: route, surviving_route: T-next}
+    expected: {row: 11, direction: local R8, action: close-route-and-select-surviving-action}
   - id: specialized-implementation-gate
     evidence_state: sha256:specialized-implementation
     facts: {specialized_gate: implementation-review}

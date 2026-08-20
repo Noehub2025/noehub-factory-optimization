@@ -1039,16 +1039,28 @@ class Slice7ContractTests(unittest.TestCase):
             "A runtime-derived timestamp or date is never a packet literal",
         )
 
-    def test_user_facing_handoff_exposes_each_real_decision(self) -> None:
+    def test_user_facing_handoff_is_manager_readable_and_exposes_each_real_decision(self) -> None:
         self.assert_contract_contains(
             "frontier-core.md",
             "## User-facing handoff",
-            "one evidence-supported recommended next action",
+            "the current objective and reference point in task language",
+            "the work completed since the prior handoff",
+            "the strongest result and learning supported by the controlling evidence",
+            "progress toward the objective at two levels",
+            "the complete decision-relevant next-step set",
+            "one dominant or preferred action, conditional preferences, or an exact non-dominated tie",
             "Legal availability does not make actions equally advisable",
-            "Lead with `Recommended next action`, then `Why`",
-            "only decision-relevant alternatives, each with the condition",
-            "give the evidence-supported conditional recommendation and ask one exact tradeoff question",
+            "Present the management explanation before audit detail",
+            "Budget consumption, artifact count, passed checks, lifecycle gates",
+            "A next procedural gate must be paired with the substantive question",
+            "the direction is not yet resolved",
+            "Offer a planning-only continuation instruction",
+            "surface every decision-relevant candidate",
+            "give the evidence-supported conditional ordering and ask one exact tradeoff question",
+            "return the exact technical blocker",
             "If the current request already supplies a qualifying reopening request",
+            "Continue an open campaign after a terminal action when no later resolver result or Selection exists",
+            "present the complete next-step candidate set and its recorded ordering",
             "do not invent an identifier or ask the user to authorize one",
             "Lead with the response recommended by the unchanged Selection",
             "Use $frame-optimization. Review <exact conflicting parent fields and identities>",
@@ -1057,12 +1069,35 @@ class Slice7ContractTests(unittest.TestCase):
             "present legal alternatives as equally recommended",
         )
         coordinator = (SCRIPT_ROOT.parent / "SKILL.md").read_text()
-        closeout = (SCRIPT_ROOT.parent / "references/closeout-and-claims.md").read_text()
+        self.assertIn("Before every return to the user", coordinator)
+        self.assertIn("what changed, what the evidence establishes", coordinator)
+        self.assertIn("without decoding record identifiers", coordinator)
+        self.assertIn("complete decision-relevant next-step set", coordinator)
         self.assertIn("references/frontier-core.md#user-facing-handoff", coordinator)
-        self.assertIn("frontier-core.md#user-facing-handoff", closeout)
-        self.assertIn("evidence-supported recommendation omitted", coordinator)
+        for reference in (
+            "entry-and-planning.md",
+            "campaign-cycle.md",
+            "closeout-and-claims.md",
+            "packaging-and-recovery.md",
+        ):
+            with self.subTest(reference=reference):
+                contract = (SCRIPT_ROOT.parent / "references" / reference).read_text()
+                self.assertIn("frontier-core.md#user-facing-handoff", contract)
+        closeout = (SCRIPT_ROOT.parent / "references/closeout-and-claims.md").read_text()
+        self.assertIn("decision-relevant candidate", coordinator)
         self.assertIn("flat list of legal actions does not satisfy", coordinator)
         self.assertIn("attach switching conditions to material alternatives", closeout)
+
+        cycle = (SCRIPT_ROOT.parent / "references" / "campaign-cycle.md").read_text()
+        for behavior in (
+            "A terminal implementation result has positive implementation review but no later resolver result or Selection",
+            "concrete behavior made reachable",
+            "performance and the valid objective gap remain unknown",
+            "direction is unresolved until one resolver run produces the complete candidate set",
+            "subordinate operational detail",
+        ):
+            with self.subTest(behavior=behavior):
+                self.assertIn(behavior, cycle)
 
     def test_parent_change_uses_a_new_immutable_fixture_identity(self) -> None:
         fixtures = SCRIPT_ROOT / "fixtures/slice7"

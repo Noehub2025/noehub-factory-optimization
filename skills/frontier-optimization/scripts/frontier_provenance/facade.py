@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from .content import ProvenanceError
 from .graph import build_node, collect_chain
+from .stores import ProjectPortableStore
 
 
 READY_VERDICTS = {"ready", "blocked", "repair"}
@@ -32,6 +34,13 @@ CONSEQUENCES = {
         {"outcome"},
         {"authority_current", "inputs_current", "budget_accounted", "prior_external_effects_known"},
     ),
+}
+COMPLETE_SUBJECT_CONSEQUENCES = {
+    "acknowledgment",
+    "execution",
+    "spend",
+    "external-action",
+    "outcome-publication",
 }
 
 
@@ -112,6 +121,7 @@ def bind_authority(
     authority_root: str,
     decision: dict[str, Any],
     validation: dict[str, Any],
+    decision_bundle: Path | None = None,
 ) -> dict[str, Any]:
     if validation.get("payload", {}).get("verdict") != "ready":
         raise ProvenanceError("authority cannot bind a non-ready validation")
@@ -122,6 +132,24 @@ def bind_authority(
         for item in validation["payload"]["findings"]
     ):
         raise ProvenanceError("authority validation contains a blocking finding")
+    decision_roots = decision.get("artifact_roots", [])
+    decision_content = (
+        ProjectPortableStore().verify(decision_bundle, expected_role="decision")
+        if isinstance(decision_bundle, Path)
+        else None
+    )
+    if (
+        not isinstance(decision_content, dict)
+        or decision_content.get("verified") is not True
+        or decision_content.get("domain") != "project-decision"
+        or len(decision_roots) != 1
+        or decision_content.get("content_root") != decision_roots[0]
+        or not isinstance(decision_content.get("review_subject"), dict)
+        or decision_content["review_subject"].get("subject_mode") != "complete"
+    ):
+        raise ProvenanceError(
+            "new authority requires the verified complete subject of its reviewed decision"
+        )
     return build_node(
         "authority",
         {},
@@ -190,6 +218,7 @@ def verify_for(
         "outcome": "project-outcome",
     }
     root_roles: dict[str, str] = {}
+    resolved_content: dict[str, dict[str, Any]] = {}
     for node in nodes:
         for content_root in node["artifact_roots"]:
             prior = root_roles.setdefault(content_root, node["role"])
@@ -205,10 +234,24 @@ def verify_for(
             or resolved.get("content_root") != content_root
         ):
             raise ProvenanceError(f"content root did not verify: {content_root}")
+        resolved_content[content_root] = resolved
         expected_domain = expected_domains[root_roles[content_root]]
         if resolved.get("domain") != expected_domain:
             raise ProvenanceError(
                 f"{root_roles[content_root]} content must use {expected_domain} domain"
+            )
+    if consequence in COMPLETE_SUBJECT_CONSEQUENCES:
+        decision_roots = [
+            content_root
+            for content_root, role in root_roles.items()
+            if role == "decision"
+        ]
+        if len(decision_roots) != 1:
+            raise ProvenanceError("action consequence requires one reviewed decision")
+        subject = resolved_content[decision_roots[0]].get("review_subject")
+        if not isinstance(subject, dict) or subject.get("subject_mode") != "complete":
+            raise ProvenanceError(
+                "action consequence requires a verified complete review subject"
             )
     chain = {
         "root_id": root_id,

@@ -7,6 +7,18 @@ SKILL_ROOT = Path(__file__).resolve().parents[1]
 
 
 class FrameSkillBundleTests(unittest.TestCase):
+    def test_r8_stops_have_explicit_scope_and_surviving_authority(self) -> None:
+        contract = (
+            SKILL_ROOT / "references/representation-contracts.md"
+        ).read_text(encoding="utf-8")
+        documents = (
+            SKILL_ROOT / "references/representation-documents.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("the smallest affected scope (`candidate`, `route`, or `campaign`)", contract)
+        self.assertIn("the exact identities and authority that survive", contract)
+        self.assertIn("stop scope, surviving authority", documents)
+
     def test_single_user_return_contract_is_referenced_from_core_paths(self) -> None:
         contract = SKILL_ROOT / "references/user-facing-return.md"
         self.assertTrue(contract.is_file())

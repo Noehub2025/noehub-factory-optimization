@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import yaml
 
 
@@ -105,8 +106,20 @@ def resolve_persisted_facts(scenario: dict) -> tuple[int, str, str]:
 
     evidence = facts.get("evidence_determined")
     if evidence:
-        if evidence == "campaign-stop":
-            return 11, "stop", "full-closeout"
+        if evidence.endswith("-stop"):
+            stop_scope = facts.get("stop_scope")
+            outcomes = {
+                "candidate": (
+                    "local R8",
+                    "close-candidate-and-plan-in-generation-repair",
+                ),
+                "route": ("local R8", "close-route-and-select-surviving-action"),
+                "campaign": ("stop", "full-closeout"),
+            }
+            if stop_scope not in outcomes:
+                raise ValueError("evidence-determined stop requires exact stop_scope")
+            direction, action = outcomes[stop_scope]
+            return 11, direction, action
         return 11, "strategic replan", "require-REPLAN_READY"
 
     gate = facts.get("specialized_gate")
@@ -136,8 +149,27 @@ def test_exact_fixtures_cover_every_row_and_material_branches() -> None:
     assert by_id["protected-reserve-zero-spend-replan"]["expected"]["action"] == "prepare-replan-no-spend"
     assert by_id["unresolved-prerequisite-first"]["expected"]["action"] == "prerequisite-first-check"
     assert by_id["evidence-determines-stop"]["expected"]["action"] == "full-closeout"
+    assert by_id["candidate-repair-preserves-campaign"]["expected"]["action"] == "close-candidate-and-plan-in-generation-repair"
+    assert by_id["route-stop-preserves-campaign"]["expected"]["action"] == "close-route-and-select-surviving-action"
     assert by_id["specialized-user-authorization"]["expected"]["action"] == "require-execution-V"
     assert by_id["routine-unique-r8"]["expected"]["direction"] == "local R8"
+
+
+def test_evidence_determined_stop_requires_exact_scope() -> None:
+    with pytest.raises(ValueError, match="exact stop_scope"):
+        resolve_persisted_facts(
+            {"facts": {"evidence_determined": "candidate-stop"}}
+        )
+
+
+def test_candidate_identity_and_campaign_generation_remain_separate() -> None:
+    skill_root = Path(__file__).parent.parent
+    candidate_contract = (
+        skill_root / "references/candidate-lifecycle.md"
+    ).read_text()
+    resolver_contract = (skill_root / "references/learning-loop.md").read_text()
+    assert "It does not by itself increment `campaign_generation`" in candidate_contract
+    assert "Every stop consequence has one exact scope" in resolver_contract
 
 
 def test_section_18_acceptance_coverage_is_complete_and_unique() -> None:

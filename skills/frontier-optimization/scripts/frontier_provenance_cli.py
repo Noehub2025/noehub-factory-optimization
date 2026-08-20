@@ -154,12 +154,17 @@ def apply_operation(request: dict[str, Any], repository: NodeRepository) -> dict
         require_fields(
             request,
             operation,
-            {"authority_root", "decision_id", "attestation_id"},
+            {"authority_root", "decision_id", "attestation_id", "content_bindings"},
+        )
+        decision = repository.load(request["decision_id"])
+        decision_bundle = content_bundle_path(
+            request["content_bindings"], decision["artifact_roots"][0]
         )
         node = bind_authority(
             authority_root=request["authority_root"],
-            decision=repository.load(request["decision_id"]),
+            decision=decision,
             validation=repository.load(request["attestation_id"]),
+            decision_bundle=decision_bundle,
         )
     elif operation == "freeze-execution":
         require_fields(
@@ -265,6 +270,30 @@ def content_resolver(bindings: Any):
         return resolved[content_root]
 
     return resolve
+
+
+def content_bundle_path(bindings: Any, content_root: str) -> Path:
+    """Resolve one verified portable bundle path without trusting a caller summary."""
+
+    if not isinstance(bindings, list):
+        raise ProvenanceError("content_bindings must be a list")
+    matches: list[Path] = []
+    for index, binding in enumerate(bindings):
+        if not isinstance(binding, dict) or set(binding) != {"adapter", "path"}:
+            raise ProvenanceError(f"content_bindings[{index}] is invalid")
+        if binding["adapter"] != "portable-bundle/1":
+            raise ProvenanceError(
+                f"content_bindings[{index}] must be a portable project bundle"
+            )
+        path = Path(binding["path"])
+        result = ProjectPortableStore().verify(path)
+        if result["content_root"] == content_root:
+            matches.append(path)
+    if len(matches) != 1:
+        raise ProvenanceError(
+            f"decision content root requires one exact portable binding: {content_root}"
+        )
+    return matches[0]
 
 
 def handoff_exports(bindings: Any):

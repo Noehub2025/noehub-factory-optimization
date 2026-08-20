@@ -51,6 +51,12 @@ Use the typed interface in `scripts/frontier_provenance/`:
 `NodeRepository`. Use `scripts/frontier_provenance_cli.py` for a durable
 JSON command boundary. It has no generic payload or parent-link operation.
 
+Prepare every new reviewed decision through
+`scripts/frontier_review/preparation.py` or `scripts/frontier_review_cli.py`.
+Its single interface validates mutable project drafts before identity allocation
+and atomically publishes one complete review subject. Low-level capture and
+freeze operations are provenance primitives, not an alternative review writer.
+
 ## Typed content roots
 
 `frontier-content-root-sha256/2` hashes canonical JSON containing one content
@@ -101,6 +107,29 @@ rejects symbolic links and unexpected members at every authority manifest.
 writes a dedicated reachable commit, and verifies each release blob against
 the release content root. It cannot capture a project domain. Project content
 uses the portable raw-byte store so a project handoff never depends on Git.
+
+Every new reviewed decision root contains one generated
+`project/decision/review-subject-index.json`. The index uses
+`frontier-review-subject/1`, declares `subject_mode: complete`, and reproduces
+the manifest's complete member and closed-collection sets. It also carries the
+`frontier-review-role-adapter/1` result and its derived review-kind semantic
+projection so a reviewer can see exactly what consequence the subject controls.
+Portable verification reruns that adapter against the raw members and rejects
+unknown role contracts, correction or supplement namespaces, external-base
+composition fields, and projection disagreement. The index is an ordinary
+member of the content root, not a second identity or a workflow binding.
+
+`bind_authority` requires the verified decision content as an input and rejects
+a missing or incomplete subject index. The durable CLI therefore requires the
+decision bundle in `content_bindings` when binding new authority. Existing
+nodes remain byte-identical and auditable; this rule prevents an old partial
+decision or a new supplement from creating another authority.
+
+Consequence verification repeats the same boundary. Before acknowledgment,
+execution, spend, external action, or outcome publication, `verify_for` resolves
+the decision ancestor and requires its portable bundle to rerun a complete role
+adapter. A manually assembled authority or descendant cannot make a historical,
+partial, or supplement-only decision actionable.
 
 ## Static and live verification
 

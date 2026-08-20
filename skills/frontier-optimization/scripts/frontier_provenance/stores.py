@@ -25,6 +25,7 @@ from .content import (
     sha256_bytes,
     verify_manifest,
 )
+from .review_subject import validate_review_subject
 
 
 DEFAULT_GIT_REF = "refs/frontier/provenance/current"
@@ -537,6 +538,7 @@ class PortableBundleStore:
         if storage != {"adapter": "portable-bundle/1", "object_root": "objects"}:
             raise ProvenanceError("portable storage binding is invalid")
         expected: set[str] = set()
+        raw_by_name: dict[str, bytes] = {}
         for item in manifest["artifacts"]:
             digest = item["content_sha256"]
             relative = f"objects/{digest[:2]}/{digest}"
@@ -551,6 +553,7 @@ class PortableBundleStore:
             raw = path.read_bytes()
             if len(raw) != item["size"] or sha256_bytes(raw) != digest:
                 raise ProvenanceError(f"portable object identity mismatch: {relative}")
+            raw_by_name[item["logical_name"]] = raw
         observed = {
             path.relative_to(destination).as_posix()
             for path in destination.rglob("*")
@@ -564,6 +567,7 @@ class PortableBundleStore:
             "adapter": "portable-bundle/1",
             "artifact_count": len(manifest["artifacts"]),
             "receipt_facts": _receipt_facts(manifest),
+            "review_subject": validate_review_subject(manifest, raw_by_name),
             "verified": True,
         }
 
