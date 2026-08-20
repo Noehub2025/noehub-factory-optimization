@@ -69,6 +69,20 @@ REFLECTION_REQUIRED_MARKERS = {
         "Selection must apply its hypothesis result, mechanism inference, attribution limit, R&D implication, measurement implication, maximum conclusion, diagnostic alternatives, and dominance result without strengthening or reinterpretation",
         "Keep every earlier Outcome Reflection immutable under its recorded project evidence",
         "These forms create no additional Q, research, review, repeated B, synthetic E, metric, or trajectory artifact",
+        "complete [Fresh-context Reflection analysis](reflection-analysis.md) before showing that analyst",
+        "A precommitted stop can determine the action while leaving the technical interpretation unchanged",
+    ),
+    "reflection-analysis.md": (
+        "Dispatch one analyst with no inherited conversation",
+        "Before reading the calibration contrasts below, draft the final candidate content",
+        "Insufficient component separation limits attribution; it does not erase valid package-level or implementation learning",
+        "fixes the accepted research content before restoring operational context",
+    ),
+    "reflection-calibration.md": (
+        "They calibrate evidence use; they are not prose templates",
+        "Whole package and component contribution",
+        "Implemented pathway and performance effect",
+        "Research meaning and a precommitted stop",
     ),
     "campaign-cycle.md": (
         "recover the exact technical hypothesis and expected observation fixed before work",
@@ -102,6 +116,9 @@ def reflection_contract_findings(skills_root: Path) -> list[str]:
         for name in REFLECTION_REQUIRED_MARKERS
     }
     findings: list[str] = []
+    entrypoint = (skills_root / "frontier-optimization/SKILL.md").read_text()
+    if "[Fresh-context Reflection analysis](references/reflection-analysis.md)" not in entrypoint:
+        findings.append("frontier-optimization SKILL omits fresh-context Reflection routing")
     all_markdown = [path.read_text() for path in skills_root.rglob("*.md")]
     for field in REFLECTION_FIELDS:
         count = sum(text.count(f"- {field}: <") for text in all_markdown)

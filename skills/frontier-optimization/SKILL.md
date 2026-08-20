@@ -42,6 +42,7 @@ If the router returns `PARENT_REVIEW_REQUIRED`, load no stage file and continue 
 | Freeze or review a technical design | [Design review](references/design-review.md) |
 | Dispatch or reconcile a B | [Batch interface](references/batch-interface.md) |
 | Adopt a terminal B, review a materialized candidate, or adopt E | [Result adoption](references/result-adoption.md) |
+| Interpret an experiment, research, representation, mechanism, or candidate-performance result | [Fresh-context Reflection analysis](references/reflection-analysis.md), then [Learning loop](references/learning-loop.md) |
 | Reflect, investigate, or replan after a B | [Learning loop](references/learning-loop.md) |
 | Review a materialized candidate | [Implementation review](references/implementation-review.md) |
 | Review external claim wording | [Claim review](references/claim-review.md) |
@@ -63,6 +64,8 @@ Before delegation, create the target, fix its parent versions, allowed paths, re
 For a user authorization tied to a concrete B packet, apply [Entry review](references/entry-review.md) from structural validation through post-answer adoption. Apply the Frontier Core finding effects at every validator and review seam. Pass the mutable draft through the single `prepare_review` interface before allocating an R identifier or dispatching a reviewer. A `NOT_READY` draft remains ordinary work in the same B; repair it without creating a snapshot, decision, packet, supplement, or recovery chain. Ask only after `AUTHORIZATION_READY` with no block or repair finding; accept authority only after the frozen adoption validator returns `ENTRY_READY` for the unchanged target.
 
 Validate every result against its packet. A worker result changes no campaign state until this Skill records its accepted meaning. Preserve invalid, partial, negative, and costly output with an explicit disposition.
+
+For a terminal result with technical or research meaning, complete one fresh-context Reflection analysis before exposing that analyst to the current Selection, Budget, authority, R8 resolution, campaign stop, closeout, or proposed next action. Fix the accepted evidence-grounded research fields first; only then add operational consequences and run the integrated direction resolver. This analysis is a read-only reasoning pass, not a worker, review, campaign artifact, identity, or authority event.
 
 For code-bearing authorization, freeze the source-derived target specification before packet identity, then derive packet and preflight, exact post-adoption bytes, and the final target in that order. The specification contains stable decision semantics but no current packet or downstream identity. Entry must prove that the final target is its exact realization before asking the user.
 

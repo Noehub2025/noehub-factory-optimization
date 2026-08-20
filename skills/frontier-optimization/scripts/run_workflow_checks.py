@@ -63,6 +63,8 @@ DIRECTION_REFERENCES = {
     "entry-and-planning.md",
     "learning-loop.md",
     "planning-records.md",
+    "reflection-analysis.md",
+    "reflection-calibration.md",
 }
 ENTRY_REFERENCES = {
     "entry-code-planning.md",

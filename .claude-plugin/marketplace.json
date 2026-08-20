@@ -12,8 +12,8 @@
     {
       "name": "noehub-factory-optimization",
       "source": "./",
-      "version": "0.10.0",
-      "description": "Frame optimization problems, prepare exact project-only review subjects, and run bounded implementation and evaluation campaigns with typed provenance, closeout, and recovery.",
+      "version": "0.11.0",
+      "description": "Frame optimization problems, interpret results in a fresh context, prepare exact project-only review subjects, and run bounded campaigns with typed provenance, closeout, and recovery.",
       "category": "engineering",
       "keywords": [
         "optimization",

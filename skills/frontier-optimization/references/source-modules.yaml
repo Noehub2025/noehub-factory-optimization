@@ -40,6 +40,8 @@ modules:
       - frontier-optimization/references/entry-review.md
       - frontier-optimization/references/learning-loop.md
       - frontier-optimization/references/planning-records.md
+      - frontier-optimization/references/reflection-analysis.md
+      - frontier-optimization/references/reflection-calibration.md
       - grill-frontier/SKILL.md
       - grill-frontier/agents/openai.yaml
       - research-frontier/SKILL.md

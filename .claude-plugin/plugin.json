@@ -1,7 +1,7 @@
 {
   "name": "noehub-factory-optimization",
-  "version": "0.10.0",
-  "description": "Evidence-gated optimization framing and Frontier campaigns with deterministic review preparation, typed project provenance, bounded execution, evaluation, closeout, and recovery.",
+  "version": "0.11.0",
+  "description": "Evidence-gated optimization framing and Frontier campaigns with fresh-context result interpretation, deterministic review preparation, typed project provenance, execution, closeout, and recovery.",
   "author": {
     "name": "Ken Chen"
   },

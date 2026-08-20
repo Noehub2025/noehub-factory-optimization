@@ -32,7 +32,7 @@ Before acknowledging any later B, enumerate terminal B records and E records fro
 
 1. Reconcile result packet, W state, artifacts, spend, reservations, recovery, E, and X. Preserve negative, failed, ambiguous, and invalid evidence.
 2. Establish validity in this order: implementation, measurement, then comparison validity. Stop the inference at the first unresolved layer.
-3. Build the evidence chain below. Recover the exact technical hypothesis and expected observation fixed before work. The terminal B controls the addressed decision; an exact candidate lineage supplies the originating mechanism when the B evaluates or confirms already implemented behavior. Judge the controlling B hypothesis `supported`, `contradicted`, `inconclusive`, or `not-applicable`; do not invent a post-result hypothesis.
+3. When the terminal result bears on a technical hypothesis, mechanism, performance, representation, constraint, or bound, complete [Fresh-context Reflection analysis](reflection-analysis.md) before showing that analyst the current Selection, Budget, authority, R8 resolution, campaign stop, closeout, or proposed next action. For work with no technical or research meaning, build the evidence chain below directly. Recover the exact technical hypothesis and expected observation fixed before work. The terminal B controls the addressed decision; an exact candidate lineage supplies the originating mechanism when the B evaluates or confirms already implemented behavior. Judge the controlling B hypothesis `supported`, `contradicted`, `inconclusive`, or `not-applicable`; do not invent a post-result hypothesis.
 4. Infer the strongest useful mechanism supported by the implementation, behavior, and outcome evidence. Distinguish a whole-package effect from evidence that a component was active, necessary, dominant, or numerically responsible.
 5. Record the attribution limit and the R&D implication. An attribution limit creates no diagnosis, research, review, B, or spend by itself.
 6. Interpret comparable history, progress, constraints, or measurement properties only when they can change the addressed or next concrete decision. Preserve every exclusion, adaptive-exposure limit, parent-owned metric, and guardrail that the interpretation uses.
@@ -52,10 +52,10 @@ Write a Reflection from adopted evidence; do not rerun the candidate, evaluator,
 
 Read the smallest complete evidence chain in this order:
 
-1. **Current decision:** read the terminal B's `Decision hypothesis`, `Expected observation`, result, terminal outcome, related E, and the R8 rule, parent metrics, guardrails, and decision boundary that govern its consequence.
+1. **Current technical decision:** read the terminal B's `Decision hypothesis`, `Expected observation`, result, terminal outcome, related E, parent metrics, guardrails, and technical decision boundary.
 2. **Originating mechanism:** when B evaluates, confirms, or reuses an executable candidate, follow the exact candidate identity to the originating T or W, the design or implementation B that changed behavior, the executable-difference description or source manifest, the adopted implementation review, and the engineering or behavior evidence. Use identity-bound lineage rather than topic similarity. For a reference measurement, administrative B, or work with no technical mechanism, record `not-applicable` instead of inventing one.
 3. **Comparison meaning:** read the adopted evaluator, protocol, comparator, workload or data scope, uncertainty, and result direction from E and its result. Add prior E and their controlling OR only when the comparability rule below permits the exact interpretation being made. Read lower-level measurement artifacts only when the adopted result does not already establish a decision-relevant property; never repeat the measurement.
-4. **R&D decision:** read the applicable replacement boundary, disqualifying evidence, known limits, current Selection, and only those traces, route alternatives, or design surfaces already supported by persisted evidence. Budget and authority determine what may happen next, not what the evidence means.
+4. **R&D meaning:** read the applicable replacement boundary, disqualifying evidence, known limits, and only those traces, route alternatives, or design surfaces already supported by persisted evidence. Interpret what the result changes before reading current Selection, Budget, authority, R8 action, or stop state. Those records determine what may happen next, not what the evidence means.
 
 Synthesize that chain rather than summarizing each record:
 
@@ -72,6 +72,8 @@ The Reflection is complete when a fresh Coordinator can answer from it: what was
 ## Outcome Reflection
 
 Append after each adopted terminal B. One block may cover that B and its E. It cannot cover another terminal B. Add a separate block only for an E not covered by its evaluation B reflection.
+
+For an applicable fresh-context analysis, the analyst supplies the final evidence-grounded research content from `Decision addressed` through the technical `Decision-relevant unknowns`. The Coordinator checks those claims against their cited evidence and may remove or narrow an unsupported claim; it does not recast accepted research meaning as an admission, permission, resolver, or closeout summary. After that content is fixed, the Coordinator supplies `Level` and the operational fields from `Diagnostic alternatives considered` through `Later-spend gate`. A precommitted stop can determine the action while leaving the technical interpretation unchanged.
 
 ```markdown
 Outcome Reflection:

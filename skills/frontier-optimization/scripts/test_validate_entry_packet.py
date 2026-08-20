@@ -1280,6 +1280,8 @@ class EntryPacketSchemaTests(unittest.TestCase):
         }
         version_2_only = {
             "references/provenance-and-identity.md",
+            "references/reflection-analysis.md",
+            "references/reflection-calibration.md",
             "scripts/frontier_provenance_cli.py",
             "scripts/frontier_review_cli.py",
             "scripts/run_workflow_checks.py",

@@ -76,6 +76,7 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 - One coordinator owns the task definition and search design; another owns the later campaign. Worker Skills cannot silently change either contract.
 - Planning, user authorization, worker acknowledgment, execution start, implementation review, measurement, result adoption, and claims are separate gates. Each gate applies only to the exact files and identities it names.
 - Candidate creation and performance evaluation are separate steps. Passing engineering checks does not prove improvement.
+- A fresh-context, read-only analyst interprets each terminal technical result before seeing the current selection, budget, authority, stopping state, or proposed next action. This keeps the technical meaning of the evidence separate from what the campaign may do next.
 - After each completed batch, the agent compares the result with the hypothesis fixed before the work, records the strongest mechanism the evidence supports, and keeps unresolved component attribution separate from the proven whole-package effect.
 - Results identify the problem and representation versions under which they were produced, so incompatible results are not compared.
 - Project evidence and workflow releases use separate identities. Updating an installed Skill does not rewrite or invalidate an existing project decision, review, authorization, result, or handoff.
@@ -122,7 +123,7 @@ Define the problem
   -> start and run the batch
   -> review implementations before measuring them
   -> measure under the approved comparison rules
-  -> compare the result with the precommitted hypothesis and record supported mechanisms and limits
+  -> interpret the technical evidence in a fresh context, then compare it with the precommitted hypothesis and record supported mechanisms and limits
   -> apply one ordered direction resolver to select the next action or blocker
   -> close the campaign with final evidence, limits, and files needed to resume later
 ```
