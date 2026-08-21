@@ -7,9 +7,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from .content import ProvenanceError
 from .graph import build_node, collect_chain
 from .stores import ProjectPortableStore
+from .repository import NodeRepository
+from .routine_admission import validate_routine_admission
 
 
 READY_VERDICTS = {"ready", "blocked", "repair"}
@@ -25,6 +29,18 @@ CONSEQUENCES = {
     "spend": (
         {"authority", "execution"},
         {"authority_current", "budget_current", "reservation_current", "inputs_current", "resources_available"},
+    ),
+    "routine-local-execution": (
+        {"authority", "execution"},
+        {
+            "authority_current",
+            "budget_current",
+            "reservation_current",
+            "inputs_current",
+            "resources_available",
+            "action_window_open",
+            "routine_slot_current",
+        },
     ),
     "external-action": (
         {"execution"},
@@ -146,6 +162,8 @@ def bind_authority(
         or decision_content.get("content_root") != decision_roots[0]
         or not isinstance(decision_content.get("review_subject"), dict)
         or decision_content["review_subject"].get("subject_mode") != "complete"
+        or decision_content["review_subject"].get("contract_version")
+        != "frontier-review-subject/2"
     ):
         raise ProvenanceError(
             "new authority requires the verified complete subject of its reviewed decision"
@@ -165,13 +183,98 @@ def freeze_execution(
     *,
     authority: dict[str, Any],
     starting_state_root: str,
+    routine_admission: dict[str, Any] | None = None,
+    repository: NodeRepository | None = None,
+    resolve_content: Callable[[str], dict[str, Any]] | None = None,
+    read_content: Callable[[str], dict[str, bytes]] | None = None,
+    live_facts: dict[str, dict[str, Any]] | None = None,
+    checked_at: str | None = None,
 ) -> dict[str, Any]:
-    return build_node(
+    admission_result: dict[str, Any] | None = None
+    if routine_admission is not None:
+        if not all((repository, resolve_content, read_content)):
+            raise ProvenanceError(
+                "routine execution requires its canonical repository and content resolvers"
+            )
+        load = repository.load
+        gate = verify_for(
+            authority["node_id"],
+            load,
+            resolve_content,
+            consequence="routine-local-execution",
+            live_facts=live_facts,
+            checked_at=checked_at,
+        )
+        if not gate["ready"]:
+            raise ProvenanceError(
+                "routine execution has unresolved live facts: "
+                + ", ".join(gate["unresolved_live_facts"])
+            )
+        state_content = resolve_content(starting_state_root)
+        routine_receipt_root = (live_facts or {}).get(
+            "routine_slot_current", {}
+        ).get("receipt_root")
+        if routine_receipt_root != routine_admission.get("live_receipt_root"):
+            raise ProvenanceError(
+                "routine execution live receipt differs from its frozen admission"
+            )
+        admission_result = validate_routine_admission(
+            admission=routine_admission,
+            authority=authority,
+            state_root=starting_state_root,
+            state_content=state_content,
+            state_raw=read_content(starting_state_root),
+            load=load,
+            resolve_content=resolve_content,
+            read_content=read_content,
+        )
+        for prior in repository.iter_role("execution"):
+            if prior["node_id"] == routine_admission["materialization_execution_root"]:
+                continue
+            if not any(
+                parent["edge"] == "authority"
+                and parent["node_id"] == authority["node_id"]
+                for parent in prior["parents"]
+            ):
+                continue
+            try:
+                prior_raw = read_content(prior["artifact_roots"][0])
+            except (KeyError, ProvenanceError) as exc:
+                raise ProvenanceError(
+                    "cannot rule out a prior routine execution under this authority"
+                ) from exc
+            prior_admission_raw = prior_raw.get("project/state/routine-admission.yaml")
+            if prior_admission_raw is None:
+                continue
+            try:
+                prior_admission = yaml.safe_load(prior_admission_raw)
+            except yaml.YAMLError as exc:
+                raise ProvenanceError("prior routine admission is unreadable") from exc
+            prior_target = (
+                prior_admission.get("evaluation_target", {})
+                if isinstance(prior_admission, dict)
+                else {}
+            )
+            prior_slot = prior_target.get("routine_slot", {}).get("slot_id")
+            if prior_slot == admission_result["slot_id"]:
+                raise ProvenanceError(
+                    "routine slot already has a canonical execution; replay cannot sample again"
+                )
+    execution = build_node(
         "execution",
         {},
         parents=[{"edge": "authority", "node_id": authority["node_id"]}],
         artifact_roots=[starting_state_root],
     )
+    if admission_result is not None:
+        if repository.contains(execution["node_id"]):
+            raise ProvenanceError(
+                "routine execution already exists; a replay cannot release a worker or sample again"
+            )
+        repository.consume_routine_slot(
+            admission_result["slot_id"], execution["node_id"]
+        )
+    return execution
 
 
 def record_outcome(

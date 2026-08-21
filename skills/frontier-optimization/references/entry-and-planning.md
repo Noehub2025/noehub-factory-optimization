@@ -150,6 +150,6 @@ Record exactly one stage outcome:
 - `PARENT_REVIEW_REQUIRED`: parent authority or meaning is missing, stale, or ambiguous;
 - `BLOCKED`: required authority, private facts, tools, data, or access are unavailable.
 
-Before control returns to the user, apply the canonical [User-facing handoff](frontier-core.md#user-facing-handoff) to that outcome and the complete persisted next-step set.
+Return the recorded stage outcome to the Coordinator.
 
 Entry is complete only when artifacts reconstruct campaign generation, planning-only opening authority and Coordinator-derived objective when applicable, structured recovery lineage, peer-source route generation, decision completeness, prerequisite dispositions, baseline choice, replacement boundary, inherited budget, proposed target, readiness review, separate user tradeoff and exact execution authorization when applicable, selected work, earliest discriminating check, code gates, and zero-B-spend boundary.

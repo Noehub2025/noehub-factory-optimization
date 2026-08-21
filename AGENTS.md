@@ -9,3 +9,9 @@ When several routes remain possible, prefer the experiment or research question 
 Stop only the affected action when an observed hard boundary is crossed, an authorized resource limit is exhausted, or no safe and reachable research, experiment, representation change, or mechanism hypothesis can still improve the attainable result or tighten the known bound. State the exact boundary and recovery condition. Otherwise continue.
 
 Judge progress by objective improvement, tighter bounds, eliminated live hypotheses, stronger representations, or newly reachable search space—not by artifact count, zero failures, zero spending, or procedural compliance.
+
+## User-facing workflow returns
+
+Whenever any workflow returns control to the user, lead with what materially changed, why it matters to the objective, the strongest supported conclusion and its important limit, the remaining objective gap or the observation needed to determine it, and every material next choice with its recorded ordering and switching conditions.
+
+Put record identifiers, reviews, gates, budget accounting, and repository status afterward as audit detail. A stop, authorization, or permission boundary limits what the agent may do; it does not justify omitting legal next choices or their consequences.

@@ -96,7 +96,7 @@ A `campaign-opening` V records an explicit current post-closeout reopen request.
 - Representation revision: <integer>
 - Permitted scope: <exact reviewed scope>
 - Starting records: <identifiers>
-- Workflow source identity: <adopted source-snapshot identity governing this B and all dependent objects>
+- Project provenance: <exact decision and authority roots governing this B>
 - Work: <operations, modules, and worker assignments>
 - Repository structure: <existing-integrated with evidence; user-approved-new with V; absent-awaiting-user; or not applicable>
 - Source base identity: <commit plus dirty-state identity, immutable source snapshot, or not applicable>
@@ -111,8 +111,9 @@ A `campaign-opening` V records an explicit current post-closeout reopen request.
 - Candidate package inventory: <assigned immutable pre-execution path and byte-derived identity rule, or not applicable>
 - Candidate manifest: <assigned stable path and identity rule, or not applicable>
 - Engineering check plan: <exact selected units, argument vectors, content-addressed effect evidence, positive effect limits, and engineering-only consequence; or not applicable>
-- Implementation review gate: <required before first Slot H measurement, integration, or incumbent use; exact diagnostic-only exception under candidate-lifecycle.md; reusable prior review with exact unchanged identity; or not applicable>
-- Evaluation target: <for Slot H measurement, immutable candidate identity, manifest, adopted IMPLEMENTATION_READY, planned experiment identity, and Slot H contract; for diagnostic-only measurement, immutable candidate and experiment identities plus the candidate-lifecycle evidence and consequence boundary; or not applicable>
+- Implementation review gate: <required before routine-local or first Slot H measurement, integration, or incumbent use; exact diagnostic-only exception under candidate-lifecycle.md; reusable prior review with exact unchanged identity; or not applicable>
+- Evaluation target: <for formal Slot H, immutable candidate, review, experiment, and Slot H contract; for diagnostic-only, its exception evidence and consequence boundary; for routine-local, the derived candidate plus exact pre-authorized slot, protocol, calibration, structured evidence scope, and B-evidence-only boundary; or not applicable>
+- Routine follow-up slot: <available slot identity and originating materialization B | consumed by exact execution root | invalid with reason | not applicable>
 - Preparation role: <why this work is necessary to establish the baseline or reach a decision, or not applicable>
 - Decision hypothesis: <mechanism or assumption this B tests or advances>
 - Expected observation: <observable result and direction, including what would contradict the hypothesis>
@@ -142,6 +143,8 @@ A B authorizes one bounded objective, authority, evidence, and spend envelope ra
 When B is the bounded path for an unresolved prerequisite, its work, allowed paths, output contract, spend, and decision after checkpoint must stop at the prerequisite observation. Its `Depends on` and `Authorization gate` must make every dependent implementation or evaluation B ineligible until the Coordinator adopts evidence that the prerequisite passed through the applicable Entry or Replan gate.
 
 Apply the canonical R8 vacuity definition before selecting B. Known-vacuous work is ineligible. An unknown measurement property may instead be the bounded first observation when its possible results lead to different permitted next actions. A diagnostic-only experiment follows `candidate-lifecycle.md`, remains B evidence, and cannot create E or any promotion, integration, incumbent, or strength consequence.
+
+A routine-local B follows [Evaluation protocol reuse](evaluation-protocol.md). It consumes the one slot reviewed with its materialization B, never protected reserve, and ends at a terminal B outcome plus Outcome Reflection. It cannot create E or directly authorize another B.
 
 ## B terminal outcome
 

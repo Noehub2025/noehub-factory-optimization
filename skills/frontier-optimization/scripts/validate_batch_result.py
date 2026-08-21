@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -17,6 +18,16 @@ from finding_effects import add_finding, finalize_findings
 from validate_candidate_package import validate_candidate_package
 from frontier_provenance.content import ProvenanceError
 from frontier_provenance.compatibility import require_v1_completion
+from evaluation_target_contract import (
+    DIAGNOSTIC_PROHIBITED_CONSEQUENCES,
+    LEGACY_KEYS as EVALUATION_TARGET_LEGACY_KEYS,
+    PROHIBITED_RESULT_KEYS as DIAGNOSTIC_PROHIBITED_KEYS,
+    ROUTINE_PROHIBITED_RESULT_KEYS,
+    validate_evidence_scope,
+    validate_experiment_source,
+    normalized_nested_keys,
+    validate_evaluation_target_contract,
+)
 
 try:
     import yaml
@@ -28,7 +39,8 @@ VALIDATOR = "frontier-batch-result-preflight/6"
 IDENTITY_CONTRACT = "frontier-dispatch-identity/2"
 SUPPORTED_IDENTITY_CONTRACTS = {IDENTITY_CONTRACT}
 RESULT_CONTRACT_V1 = "frontier-batch-result/1"
-SUPPORTED_RESULT_CONTRACTS = {RESULT_CONTRACT_V1}
+RESULT_CONTRACT_V2 = "frontier-batch-result/2"
+SUPPORTED_RESULT_CONTRACTS = {RESULT_CONTRACT_V1, RESULT_CONTRACT_V2}
 OUTCOMES = {"completed", "interrupted", "failed", "blocked", "waiting_for_input"}
 REQUIRED_FIELDS = {
     "result_packet_path",
@@ -90,13 +102,6 @@ MATERIALIZATION_BINDING_FIELDS = {
     "implementation_review_state",
 }
 EXPERIMENT_LEGACY_BINDING_FIELDS = MATERIALIZATION_BINDING_FIELDS
-EVALUATION_TARGET_LEGACY_KEYS = {
-    "candidate_identity",
-    "candidate_manifest",
-    "experiment_identity",
-    "implementation_review_state",
-}
-SHA256_VALUE = re.compile(r"^(?:sha256:)?[0-9a-f]{64}$")
 LIST_FIELDS = {
     "artifacts",
     "design_inputs_used",
@@ -125,24 +130,6 @@ PACKET_BINDINGS = {
     "changes_executable_candidate": "changes_executable_candidate",
     "result_packet_path": "result_packet_path",
 }
-DIAGNOSTIC_PROHIBITED_CONSEQUENCES = {
-    "E",
-    "integration",
-    "incumbent use",
-    "promotion",
-    "submission",
-    "strength claim",
-}
-DIAGNOSTIC_PROHIBITED_KEYS = {
-    "claim",
-    "e_record",
-    "evaluation_record",
-    "incumbent",
-    "integration",
-    "promotion",
-    "strength_claim",
-    "submission",
-}
 
 
 def canonical_payload(document: dict[str, Any]) -> bytes:
@@ -153,18 +140,6 @@ def canonical_payload(document: dict[str, Any]) -> bytes:
 
 def computed_result_id(document: dict[str, Any], digest: str) -> str:
     return f"{document.get('batch_id', 'UNKNOWN')}-result-sha256:{digest}"
-
-
-def normalized_nested_keys(value: Any) -> set[str]:
-    keys: set[str] = set()
-    if isinstance(value, dict):
-        for key, child in value.items():
-            keys.add(str(key).lower().replace("-", "_").replace(" ", "_"))
-            keys.update(normalized_nested_keys(child))
-    elif isinstance(value, list):
-        for child in value:
-            keys.update(normalized_nested_keys(child))
-    return keys
 
 
 def validate_packet_bindings(
@@ -290,235 +265,11 @@ def validate_dispatch_bindings(
         add_finding(findings, "EXECUTION_START_RECOMPUTATION_FAILED", str(exc))
 
 
-def require_nonempty_string(
-    value: Any,
-    field: str,
-    findings: list[dict[str, str]],
-) -> None:
-    if not isinstance(value, str) or not value.strip():
-        add_finding(
-            findings,
-            "EVALUATION_TARGET_SCHEMA_INVALID",
-            f"evaluation_target {field} must be a nonempty string",
-        )
-
-
-def require_sha256(
-    value: Any,
-    field: str,
-    findings: list[dict[str, str]],
-) -> None:
-    if not isinstance(value, str) or SHA256_VALUE.fullmatch(value) is None:
-        add_finding(
-            findings,
-            "EVALUATION_TARGET_IDENTITY_INVALID",
-            f"evaluation_target {field} must be an exact lowercase SHA-256 value",
-        )
-
-
-def validate_evaluation_target_contract(
-    evaluation_target: Any,
-    findings: list[dict[str, str]],
-) -> None:
-    """Validate the one packet/result binding schema for experiment work."""
-    if not isinstance(evaluation_target, dict):
-        add_finding(
-            findings,
-            "EVALUATION_TARGET_INVALID",
-            "experiment work requires a structured evaluation_target",
-        )
-        return
-
-    for field in sorted(EVALUATION_TARGET_LEGACY_KEYS & evaluation_target.keys()):
-        add_finding(
-            findings,
-            "EVALUATION_TARGET_LEGACY_BINDING_PRESENT",
-            f"evaluation_target must use its canonical nested mapping instead of {field}",
-        )
-
-    mode = evaluation_target.get("mode")
-    if mode not in {"formal-slot-h", "diagnostic-only"}:
-        add_finding(
-            findings,
-            "EVALUATION_TARGET_MODE_INVALID",
-            "evaluation_target mode must be formal-slot-h or diagnostic-only",
-        )
-
-    candidate = evaluation_target.get("candidate")
-    if not isinstance(candidate, dict):
-        add_finding(
-            findings,
-            "EVALUATION_TARGET_SCHEMA_INVALID",
-            "evaluation_target candidate must be a mapping",
-        )
-    else:
-        for field in ("id", "root_path", "manifest_path"):
-            require_nonempty_string(candidate.get(field), f"candidate.{field}", findings)
-        require_sha256(
-            candidate.get("manifest_sha256"), "candidate.manifest_sha256", findings
-        )
-
-    experiment = evaluation_target.get("experiment")
-    if not isinstance(experiment, dict):
-        add_finding(
-            findings,
-            "EVALUATION_TARGET_SCHEMA_INVALID",
-            "evaluation_target experiment must be a mapping",
-        )
-    else:
-        for field in ("path", "experiment_id"):
-            require_nonempty_string(experiment.get(field), f"experiment.{field}", findings)
-        require_sha256(experiment.get("file_sha256"), "experiment.file_sha256", findings)
-
-    if mode == "formal-slot-h":
-        for field in (
-            "exception_evidence",
-            "consequence_limit",
-            "prohibited_consequences",
-        ):
-            if field in evaluation_target:
-                add_finding(
-                    findings,
-                    "FORMAL_DIAGNOSTIC_BINDING_PRESENT",
-                    f"formal-slot-h evaluation_target must omit {field}",
-                )
-        implementation_review = evaluation_target.get("implementation_review")
-        if not isinstance(implementation_review, dict):
-            add_finding(
-                findings,
-                "FORMAL_EVALUATION_REVIEW_MISSING",
-                "formal Slot H evaluation requires a structured implementation_review",
-            )
-        else:
-            for field in ("review_id", "path"):
-                require_nonempty_string(
-                    implementation_review.get(field),
-                    f"implementation_review.{field}",
-                    findings,
-                )
-            require_sha256(
-                implementation_review.get("file_sha256"),
-                "implementation_review.file_sha256",
-                findings,
-            )
-            if implementation_review.get("result") != "IMPLEMENTATION_READY":
-                add_finding(
-                    findings,
-                    "FORMAL_EVALUATION_REVIEW_MISSING",
-                    "formal Slot H evaluation requires implementation_review.result: IMPLEMENTATION_READY",
-                )
-
-        slot_h_contract = evaluation_target.get("slot_h_contract")
-        if not isinstance(slot_h_contract, dict):
-            add_finding(
-                findings,
-                "FORMAL_EVALUATION_CONTRACT_MISSING",
-                "formal Slot H evaluation requires a structured slot_h_contract",
-            )
-        else:
-            require_nonempty_string(
-                slot_h_contract.get("path"), "slot_h_contract.path", findings
-            )
-            require_sha256(
-                slot_h_contract.get("file_sha256"),
-                "slot_h_contract.file_sha256",
-                findings,
-            )
-
-    if mode == "diagnostic-only":
-        for field in ("implementation_review", "slot_h_contract"):
-            if field in evaluation_target:
-                add_finding(
-                    findings,
-                    "DIAGNOSTIC_FORMAL_BINDING_PRESENT",
-                    f"diagnostic-only evaluation_target must omit {field}",
-                )
-        if evaluation_target.get("consequence_limit") != "B evidence only":
-            add_finding(
-                findings,
-                "DIAGNOSTIC_CONSEQUENCE_BOUNDARY_MISSING",
-                "diagnostic-only packet requires consequence_limit: B evidence only",
-            )
-        if not evaluation_target.get("exception_evidence"):
-            add_finding(
-                findings,
-                "DIAGNOSTIC_EXCEPTION_EVIDENCE_MISSING",
-                "diagnostic-only packet requires its candidate-lifecycle exception evidence",
-            )
-        prohibited = evaluation_target.get("prohibited_consequences")
-        if not isinstance(prohibited, list) or not DIAGNOSTIC_PROHIBITED_CONSEQUENCES.issubset(
-            set(prohibited)
-        ):
-            add_finding(
-                findings,
-                "DIAGNOSTIC_PROHIBITIONS_INCOMPLETE",
-                "diagnostic-only packet must prohibit E, integration, incumbent use, promotion, submission, and strength claims",
-            )
-
-    evidence_reuse = evaluation_target.get("evidence_reuse")
-    if evidence_reuse is not None:
-        if mode != "formal-slot-h":
-            add_finding(
-                findings,
-                "EVIDENCE_REUSE_MODE_INVALID",
-                "evidence_reuse is permitted only for formal-slot-h publication recovery",
-            )
-        if not isinstance(evidence_reuse, dict):
-            add_finding(
-                findings,
-                "EVIDENCE_REUSE_CONTRACT_INVALID",
-                "evaluation_target evidence_reuse must be a mapping",
-            )
-        else:
-            require_nonempty_string(
-                evidence_reuse.get("source_batch_id"),
-                "evidence_reuse.source_batch_id",
-                findings,
-            )
-            raw_artifacts = evidence_reuse.get("raw_artifacts")
-            if not isinstance(raw_artifacts, list) or not raw_artifacts:
-                add_finding(
-                    findings,
-                    "EVIDENCE_REUSE_CONTRACT_INVALID",
-                    "evidence_reuse raw_artifacts must be a nonempty list",
-                )
-            else:
-                for index, artifact in enumerate(raw_artifacts):
-                    if not isinstance(artifact, dict):
-                        add_finding(
-                            findings,
-                            "EVIDENCE_REUSE_CONTRACT_INVALID",
-                            f"evidence_reuse raw_artifacts[{index}] must be a mapping",
-                        )
-                        continue
-                    require_nonempty_string(
-                        artifact.get("path"),
-                        f"evidence_reuse.raw_artifacts[{index}].path",
-                        findings,
-                    )
-                    require_sha256(
-                        artifact.get("file_sha256"),
-                        f"evidence_reuse.raw_artifacts[{index}].file_sha256",
-                        findings,
-                    )
-            expected_reuse_boundary = {
-                "measurement_execution": "prohibited",
-                "reruns": 0,
-                "measurement_semantics": "unchanged",
-            }
-            for field, expected in expected_reuse_boundary.items():
-                if evidence_reuse.get(field) != expected:
-                    add_finding(
-                        findings,
-                        "EVIDENCE_REUSE_CONTRACT_INVALID",
-                        f"evidence_reuse {field} must equal {expected!r}",
-                    )
-
-
 def build_experiment_result_contract_probe(packet: dict[str, Any]) -> dict[str, Any]:
     """Build a complete non-authoritative result draft for packet preflight."""
     target = packet.get("evaluation_target")
     diagnostic = isinstance(target, dict) and target.get("mode") == "diagnostic-only"
+    routine = isinstance(target, dict) and target.get("mode") == "routine-local"
     probe = {
         "result_packet_path": packet.get("result_packet_path"),
         "packet_path": packet.get("packet_path"),
@@ -561,9 +312,11 @@ def build_experiment_result_contract_probe(packet: dict[str, Any]) -> dict[str, 
         "performance_evaluation_state": (
             "diagnostic-only under cited Entry authority"
             if diagnostic
+            else "routine-local under the pre-authorized single-use slot"
+            if routine
             else "performed under cited IMPLEMENTATION_READY and Slot H measurement authority"
         ),
-        "integration_state": "not-authorized" if diagnostic else "not-performed",
+        "integration_state": "not-authorized" if diagnostic or routine else "not-performed",
         "work_plan_progress": None,
         "design_change_proposals": [],
         "recovery_point": "contract-probe",
@@ -576,7 +329,18 @@ def build_experiment_result_contract_probe(packet: dict[str, Any]) -> dict[str, 
         "results": [
             {
                 "contract_probe": True,
-                **({"maximum_consequence": "B evidence only"} if diagnostic else {}),
+                **(
+                    {
+                        "maximum_consequence": "B evidence only",
+                        **(
+                            {"evidence_scope": target.get("evidence_scope")}
+                            if routine
+                            else {}
+                        ),
+                    }
+                    if diagnostic or routine
+                    else {}
+                ),
             }
         ],
         "observed_vs_expected": "contract-probe",
@@ -603,6 +367,17 @@ def validate_packet_result_contract(
     findings: list[dict[str, str]] = []
     probe_validation_id: str | None = None
     if packet.get("work_kind") == "experiment":
+        target = packet.get("evaluation_target")
+        if (
+            isinstance(target, dict)
+            and target.get("mode") == "routine-local"
+            and packet.get("result_contract_version") != "frontier-batch-result/2"
+        ):
+            add_finding(
+                findings,
+                "ROUTINE_RESULT_CONTRACT_INVALID",
+                "routine-local packet must use frontier-batch-result/2",
+            )
         probe_validation = validate(
             build_experiment_result_contract_probe(packet),
             "draft",
@@ -742,45 +517,21 @@ def validate_evaluation_target_sources(
                 f"{label} {relative} has SHA-256 {observed}, expected {expected}",
             )
 
-    if isinstance(experiment, dict):
-        relative = experiment.get("path")
-        declared_id = experiment.get("experiment_id")
-        if isinstance(relative, str) and isinstance(declared_id, str):
-            try:
-                _, path = resolve_repo_file(root, relative, "experiment.path")
-                raw = path.read_bytes()
-                lines = raw.splitlines(keepends=True)
-                identity_lines = [
-                    index
-                    for index, line in enumerate(lines)
-                    if line.startswith(b"experiment_id:")
-                ]
-                if len(identity_lines) != 1:
-                    raise ValueError(
-                        "experiment source must contain exactly one top-level experiment_id line"
-                    )
-                index = identity_lines[0]
-                parsed = yaml.safe_load(raw)
-                if not isinstance(parsed, dict) or parsed.get("experiment_id") != declared_id:
-                    raise ValueError(
-                        "experiment source experiment_id does not match evaluation_target"
-                    )
-                digest = hashlib.sha256(
-                    b"".join(lines[:index] + lines[index + 1 :])
-                ).hexdigest()
-                if ":" not in declared_id:
-                    raise ValueError("experiment_id must be namespaced")
-                expected_id = f"{declared_id.rsplit(':', 1)[0]}:{digest}"
-                if declared_id != expected_id:
-                    raise ValueError(
-                        f"experiment_id {declared_id!r} does not equal byte-derived {expected_id!r}"
-                    )
-            except (IdentityBindingError, OSError, ValueError, yaml.YAMLError) as exc:
-                add_finding(
-                    findings,
-                    "EXPERIMENT_IDENTITY_MISMATCH",
-                    f"cannot derive evaluation_target experiment identity: {exc}",
-                )
+    if isinstance(experiment, dict) and isinstance(experiment.get("path"), str):
+        try:
+            relative, path = resolve_repo_file(root, experiment["path"], "experiment.path")
+            validate_experiment_source(
+                experiment,
+                logical_name=relative,
+                raw=path.read_bytes(),
+                findings=findings,
+            )
+        except (IdentityBindingError, OSError) as exc:
+            add_finding(
+                findings,
+                "EXPERIMENT_IDENTITY_MISMATCH",
+                f"cannot read evaluation_target experiment source: {exc}",
+            )
 
 
 def validate_materialization_boundary(
@@ -880,7 +631,7 @@ def validate_evaluation_boundary(
 ) -> None:
     performance_state = str(document.get("performance_evaluation_state", ""))
     if document.get("work_kind") != "experiment":
-        if performance_state.startswith(("performed", "diagnostic-only")):
+        if performance_state.startswith(("performed", "diagnostic-only", "routine-local")):
             add_finding(
                 findings,
                 "PERFORMANCE_RESULT_OUTSIDE_EVALUATION",
@@ -928,43 +679,38 @@ def validate_evaluation_boundary(
                 "EVIDENCE_REUSE_ACCOUNTING_INVALID",
                 "evidence-reuse result requires actual_spend: 0 new measurement spend",
             )
-    if evaluation_target.get("mode") == "diagnostic-only":
+    if evaluation_target.get("mode") in {"diagnostic-only", "routine-local"}:
+        bounded_mode = evaluation_target.get("mode")
         if document.get("outcome") == "completed" and not performance_state.startswith(
-            "diagnostic-only"
+            bounded_mode
         ):
             add_finding(
                 findings,
                 "DIAGNOSTIC_PERFORMANCE_STATE_INVALID",
-                "completed diagnostic-only result must report diagnostic-only performance state",
+                f"completed {bounded_mode} result must report {bounded_mode} performance state",
             )
         elif document.get("outcome") != "completed" and not performance_state.startswith(
-            ("diagnostic-only", "not-performed", "not-authorized")
+            (bounded_mode, "not-performed", "not-authorized")
         ):
             add_finding(
                 findings,
                 "DIAGNOSTIC_PERFORMANCE_STATE_INVALID",
-                "non-completed diagnostic-only result must report diagnostic-only, not-performed, or not-authorized state",
+                f"non-completed {bounded_mode} result must report its mode, not-performed, or not-authorized state",
             )
         if document.get("integration_state") != "not-authorized":
             add_finding(
                 findings,
                 "DIAGNOSTIC_INTEGRATION_BOUNDARY_INVALID",
-                "diagnostic-only evaluation requires integration_state: not-authorized",
-            )
-        if evaluation_target.get("mode") != "diagnostic-only":
-            add_finding(
-                findings,
-                "DIAGNOSTIC_TARGET_MODE_INVALID",
-                "diagnostic-only result requires packet evaluation_target mode: diagnostic-only",
+                f"{bounded_mode} evaluation requires integration_state: not-authorized",
             )
         results = document.get("results")
-        if performance_state.startswith("diagnostic-only") and (
+        if performance_state.startswith(bounded_mode) and (
             not isinstance(results, list) or not results
         ):
             add_finding(
                 findings,
                 "DIAGNOSTIC_RESULTS_MISSING",
-                "diagnostic-only evaluation requires at least one bounded result",
+                f"{bounded_mode} evaluation requires at least one bounded result",
             )
         if isinstance(results, list):
             for index, result in enumerate(results):
@@ -981,6 +727,69 @@ def validate_evaluation_boundary(
                         "DIAGNOSTIC_RESULT_CONSEQUENCE_MISSING",
                         f"diagnostic result {index} requires maximum_consequence: B evidence only",
                     )
+                if bounded_mode == "routine-local":
+                    if set(result) != {
+                        "observations",
+                        "maximum_consequence",
+                        "evidence_scope",
+                    } or not isinstance(result.get("observations"), list) or not result[
+                        "observations"
+                    ]:
+                        add_finding(
+                            findings,
+                            "ROUTINE_RESULT_SCHEMA_INVALID",
+                            "routine results must contain exactly nonempty structured observations, maximum_consequence, and evidence_scope",
+                        )
+                    else:
+                        for observation_index, observation in enumerate(
+                            result["observations"]
+                        ):
+                            if (
+                                not isinstance(observation, dict)
+                                or set(observation)
+                                != {"metric", "value", "unit", "sample_count"}
+                                or not isinstance(observation.get("metric"), str)
+                                or not observation["metric"].strip()
+                                or not isinstance(observation.get("unit"), str)
+                                or not observation["unit"].strip()
+                                or not isinstance(observation.get("sample_count"), int)
+                                or isinstance(observation.get("sample_count"), bool)
+                                or observation["sample_count"] < 1
+                                or not isinstance(
+                                    observation.get("value"), (int, float, bool)
+                                )
+                            ):
+                                add_finding(
+                                    findings,
+                                    "ROUTINE_OBSERVATION_INVALID",
+                                    f"routine observation {index}.{observation_index} must be one measured scalar with metric, value, unit, and positive sample_count",
+                                )
+                    validate_evidence_scope(
+                        result.get("evidence_scope"),
+                        findings,
+                        role=f"results[{index}].evidence_scope",
+                    )
+                    if result.get("evidence_scope") != evaluation_target.get("evidence_scope"):
+                        add_finding(
+                            findings,
+                            "ROUTINE_RESULT_SCOPE_MISMATCH",
+                            f"routine result {index} must preserve the packet evidence_scope exactly",
+                        )
+                    routine_payload = {
+                        key: value
+                        for key, value in result.items()
+                        if key != "evidence_scope"
+                    }
+                    prohibited_routine_keys = (
+                        normalized_nested_keys(routine_payload)
+                        & ROUTINE_PROHIBITED_RESULT_KEYS
+                    )
+                    if prohibited_routine_keys:
+                        add_finding(
+                            findings,
+                            "ROUTINE_RESULT_CLAIM_PRESENT",
+                            f"routine result {index} contains claims beyond its structured scope: {sorted(prohibited_routine_keys)}",
+                        )
                 prohibited_keys = normalized_nested_keys(result) & DIAGNOSTIC_PROHIBITED_KEYS
                 if prohibited_keys:
                     add_finding(
@@ -988,6 +797,89 @@ def validate_evaluation_boundary(
                         "DIAGNOSTIC_RESULT_CLAIM_PRESENT",
                         f"diagnostic result {index} contains prohibited consequence fields: {sorted(prohibited_keys)}",
                     )
+        if bounded_mode == "routine-local":
+            routine_measurement_completed = performance_state.startswith("routine-local")
+            if routine_measurement_completed and (
+                not isinstance(results, list) or len(results) != 1
+            ):
+                add_finding(
+                    findings,
+                    "ROUTINE_RESULT_CONTAINER_INVALID",
+                    "a completed routine measurement requires exactly one result container",
+                )
+            elif not routine_measurement_completed and results != []:
+                add_finding(
+                    findings,
+                    "ROUTINE_RESULT_CONTAINER_INVALID",
+                    "a routine action that ended before measurement requires an empty results list",
+                )
+            sample_count = 0
+            for result in results or []:
+                if not isinstance(result, dict):
+                    continue
+                for observation in result.get("observations", []):
+                    if not isinstance(observation, dict):
+                        continue
+                    value = observation.get("value")
+                    if isinstance(value, float) and not math.isfinite(value):
+                        add_finding(
+                            findings,
+                            "ROUTINE_OBSERVATION_INVALID",
+                            "routine observation values must be finite",
+                        )
+                    count = observation.get("sample_count")
+                    if isinstance(count, int) and not isinstance(count, bool):
+                        sample_count = max(sample_count, count)
+            sample_ceiling = evaluation_target.get("sample_ceiling", {}).get("runs")
+            if not isinstance(sample_ceiling, int) or sample_count > sample_ceiling:
+                add_finding(
+                    findings,
+                    "ROUTINE_SAMPLE_CEILING_EXCEEDED",
+                    "routine result sample_count exceeds the Entry-authorized ceiling",
+                )
+            if document.get("possible_follow_up") is not None:
+                add_finding(
+                    findings,
+                    "ROUTINE_FOLLOW_UP_AUTHORITY_PRESENT",
+                    "routine result possible_follow_up must be null; only Reflection and the integrated resolver may choose a next action",
+                )
+            expected_observation_summary = (
+                "recorded in structured routine observations"
+                if routine_measurement_completed
+                else "no structured routine observation completed"
+            )
+            if document.get("observed_vs_expected") != expected_observation_summary:
+                add_finding(
+                    findings,
+                    "ROUTINE_RESULT_NARRATIVE_PRESENT",
+                    "routine observed_vs_expected must use the exact neutral text for its measurement state",
+                )
+            if document.get("decision_relevant_surprises") != []:
+                add_finding(
+                    findings,
+                    "ROUTINE_RESULT_NARRATIVE_PRESENT",
+                    "routine result surprises must be represented as structured observations for later Reflection",
+                )
+            neutral_fields = {
+                "work_plan_progress": None,
+                "design_change_proposals": [],
+                "recovery_point": "routine result recorded; no later consequence authorized",
+                "engineering_validation": [],
+                "new_prerequisites": [],
+                "scope_deviation": "None",
+            }
+            drifted_neutral_fields = sorted(
+                field
+                for field, expected in neutral_fields.items()
+                if document.get(field) != expected
+            )
+            if drifted_neutral_fields:
+                add_finding(
+                    findings,
+                    "ROUTINE_RESULT_AUTHORITY_LEAKAGE",
+                    "routine result must keep generic planning, recovery, validation, prerequisite, and scope fields neutral: "
+                    + ", ".join(drifted_neutral_fields),
+                )
     elif evaluation_target.get("mode") == "formal-slot-h":
         if document.get("integration_state") not in {"not-performed", "not-authorized"}:
             add_finding(
@@ -1042,6 +934,16 @@ def validate(
             findings,
             "RESULT_CONTRACT_UNSUPPORTED",
             "result and packet must name the same supported versioned result contract",
+        )
+    if (
+        phase != "audit"
+        and result_contract != RESULT_CONTRACT_V2
+        and (not check_dispatch or repo_root is None)
+    ):
+        add_finding(
+            findings,
+            "RESULT_CONTRACT_LEGACY_WRITE_FORBIDDEN",
+            f"current result writing requires {RESULT_CONTRACT_V2}",
         )
     for field in sorted(REQUIRED_FIELDS - document.keys()):
         add_finding(findings, "REQUIRED_FIELD_MISSING", field)

@@ -9,12 +9,20 @@ from .content import ProvenanceError
 from .review_contract import (
     ENTRY_STAGES,
     ROLE_ADAPTER_CONTRACT,
+    ROLE_ADAPTER_CONTRACT_V1,
+    ROLE_ADAPTER_CONTRACT_V2,
     REVIEW_KINDS,
     validate_and_project,
 )
 
 
-SUBJECT_CONTRACT = "frontier-review-subject/1"
+SUBJECT_CONTRACT_V1 = "frontier-review-subject/1"
+SUBJECT_CONTRACT_V2 = "frontier-review-subject/2"
+SUBJECT_CONTRACT = SUBJECT_CONTRACT_V2
+SUBJECT_ADAPTER_PAIRS = {
+    SUBJECT_CONTRACT_V1: ROLE_ADAPTER_CONTRACT_V1,
+    SUBJECT_CONTRACT_V2: ROLE_ADAPTER_CONTRACT_V2,
+}
 INDEX_LOGICAL_NAME = "project/decision/review-subject-index.json"
 
 
@@ -44,10 +52,11 @@ def validate_review_subject(
     }
     if not isinstance(index, dict) or set(index) != required:
         raise ProvenanceError("review subject index has unknown or missing fields")
-    if index["contract_version"] != SUBJECT_CONTRACT:
-        raise ProvenanceError(f"review subject contract must be {SUBJECT_CONTRACT}")
-    if index["role_adapter"] != ROLE_ADAPTER_CONTRACT:
-        raise ProvenanceError(f"review subject role adapter must be {ROLE_ADAPTER_CONTRACT}")
+    expected_adapter = SUBJECT_ADAPTER_PAIRS.get(index["contract_version"])
+    if expected_adapter is None:
+        raise ProvenanceError("review subject contract is unsupported")
+    if index["role_adapter"] != expected_adapter:
+        raise ProvenanceError("review subject and role adapter versions cannot be mixed")
     if index["review_kind"] not in REVIEW_KINDS:
         raise ProvenanceError("review subject kind is invalid")
     if index["subject_mode"] != "complete":
@@ -84,6 +93,7 @@ def validate_review_subject(
         {name: raw_by_name[name] for name in expected_members},
         review_stage=review_stage,
         closed_collections=manifest["closed_collections"],
+        role_adapter=index["role_adapter"],
     )
     if projection != derived:
         raise ProvenanceError("review subject semantic projection disagrees with its members")

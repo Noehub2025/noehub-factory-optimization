@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import concurrent.futures
 import hashlib
 import json
 import shutil
@@ -32,7 +33,7 @@ from frontier_provenance.source_modules import (
     validate_source_modules,
 )
 from frontier_provenance.compatibility import require_v1_completion
-from frontier_provenance.content import authority_payload
+from frontier_provenance.content import authority_payload, canonical_json
 from frontier_provenance.stores import (
     ArtifactSource,
     ClosedCollection,
@@ -168,7 +169,7 @@ def prepare_entry_bundle(root: Path, destination: Path, marker: str = "project-v
         _self_identified(
             "batch_plan_id",
             "B001-plan-sha256:",
-            b"contract_version: frontier-project-batch-plan/2\n"
+            b"contract_version: frontier-project-batch-plan/3\n"
             b"batch_id: B001\nmaximum_spend: {schedules: 1}\n"
             b"authorization_gate: exact reviewed authorization\n"
             b"stop_conditions: [one result]\n",
@@ -314,6 +315,650 @@ def portable_project_chain(
         content_root: exporter(bundle)
         for content_root, bundle in bundles.items()
     }
+
+
+def routine_execution_fixture(root: Path) -> dict[str, object]:
+    entry_content = typed_root("project-decision", "routine-entry")
+    review_content = typed_root("review-report", "routine-entry-review")
+    authority_content = typed_root("project-authority", "routine-authority")
+    materialization_state = typed_root("project-state", "materialization-state")
+    outcome_content = typed_root("project-outcome", "materialization-outcome")
+    implementation_content = typed_root("project-decision", "implementation-review")
+    implementation_report = typed_root("review-report", "implementation-report")
+    routine_state = typed_root("project-state", "routine-state")
+    receipt_root = typed_root("live-receipt", "routine-receipts")
+
+    entry = freeze_decision(decision_root=entry_content)
+    entry_review = attest(
+        entry,
+        validation_report_root=review_content,
+        verdict="ready",
+        findings=[],
+    )
+    authority = build_node(
+        "authority",
+        {},
+        parents=[
+            {"edge": "decision", "node_id": entry["node_id"]},
+            {"edge": "attestation", "node_id": entry_review["node_id"]},
+        ],
+        artifact_roots=[authority_content],
+    )
+    materialization = freeze_execution(
+        authority=authority, starting_state_root=materialization_state
+    )
+    materialization_outcome = record_outcome(
+        execution=materialization, outcome_root=outcome_content
+    )
+    implementation = freeze_decision(decision_root=implementation_content)
+    implementation_validation = attest(
+        implementation,
+        validation_report_root=implementation_report,
+        verdict="ready",
+        findings=[],
+    )
+    nodes = {
+        node["node_id"]: node
+        for node in (
+            entry,
+            entry_review,
+            authority,
+            materialization,
+            materialization_outcome,
+            implementation,
+            implementation_validation,
+        )
+    }
+
+    candidate_manifest_name = "project/state/candidate/manifest.yaml"
+    candidate_collection_name = "project/state/candidate"
+    candidate_main = b"def candidate(): return 1\n"
+    package_members = [
+        {
+            "path": "main.py",
+            "size": len(candidate_main),
+            "sha256": hashlib.sha256(candidate_main).hexdigest(),
+        }
+    ]
+    package_sha = hashlib.sha256(canonical_json(package_members)).hexdigest()
+    candidate_id = "B001-candidate-sha256:" + package_sha
+    candidate_manifest = yaml.safe_dump(
+        {
+            "manifest_contract": "frontier-candidate-manifest/3",
+            "manifest_state": "final",
+            "candidate_id": candidate_id,
+            "source_result_identity": {
+                "package_sha256": package_sha,
+                "members": package_members,
+            },
+            "code_paths": [
+                {"path": item["path"], "sha256": item["sha256"]}
+                for item in package_members
+            ],
+        },
+        sort_keys=False,
+    ).encode()
+    collection = {
+        "logical_name": candidate_collection_name,
+        "members": [
+            candidate_manifest_name,
+            "project/state/candidate/main.py",
+        ],
+    }
+    collection_root = "sha256:" + package_sha
+    manifest_sha = hashlib.sha256(candidate_manifest).hexdigest()
+    protocol_key = "protocol-key-sha256:" + "5" * 64
+    protocol_id = "protocol-sha256:" + "6" * 64
+    calibration_id = "calibration-sha256:" + "7" * 64
+    template = {
+        "contract_version": "frontier-routine-experiment-template/1",
+        "experiment": {
+            "contract_version": "frontier-routine-experiment/1",
+            "candidate": {
+                "id": "$late.candidate.id",
+                "manifest_sha256": "$late.candidate.manifest_sha256",
+                "collection_root": "$late.candidate.collection_root",
+            },
+            "scientific_question": "one bounded local question",
+            "protocol_id": protocol_id,
+            "calibration_id": calibration_id,
+            "sample_ceiling": {"runs": 16},
+            "resource_ceiling": {"local_minutes": 5},
+            "evidence_scope": {
+                "evidence_class": "b-evidence",
+                "exposure": "development",
+                "confirmation": "none",
+                "comparator_scope": "one fixed development comparator",
+                "data_scope": "one fixed development sample",
+                "workload_scope": "one local workload",
+                "scenario_scope": "one named scenario set",
+                "metric_scope": "one predeclared metric set",
+                "mechanism_grain": "whole-package-at-most",
+                "transfer_scope": "local-only",
+            },
+            "result_path": "project/outcome/B002-result.yaml",
+            "stop_conditions": ["one bounded local screen"],
+        },
+        "runtime_inputs": {
+            "sample_ceiling": {"runs": 16},
+            "resource_ceiling": {"local_minutes": 5},
+            "schedule": {"seeds": [1, 2], "order": "fixed"},
+        },
+        "evaluation_target": {
+            "contract_version": "frontier-evaluation-target/2",
+            "result_contract_version": "frontier-batch-result/2",
+            "mode": "routine-local",
+            "sample_ceiling": {"runs": 16},
+            "resource_ceiling": {"local_minutes": 5},
+            "candidate": {
+                "id": "$late.candidate.id",
+                "root_path": "candidates/B001",
+                "manifest_path": candidate_manifest_name,
+                "manifest_sha256": "$late.candidate.manifest_sha256",
+                "collection_root": "$late.candidate.collection_root",
+            },
+            "implementation_review": {
+                "result": "IMPLEMENTATION_READY",
+                "derivation": "unique finding-free review of the derived candidate",
+            },
+            "experiment": {
+                "path": "project/state/experiment.yaml",
+                "experiment_id": "$derived.experiment.id",
+                "file_sha256": "$derived.experiment.file_sha256",
+            },
+            "routine_slot": {
+                "contract_version": "frontier-routine-follow-up/1",
+                "slot_id": "slot-B001-screen",
+                "materialization_batch_id": "B001",
+                "follow_up_batch_id": "B002",
+                "origin_decision_root": "$entry.origin_decision_root",
+                "origin_authority_root": "$entry.origin_authority_root",
+                "template_root": "$entry.template_root",
+            },
+            "protocol": {
+                "contract_version": "frontier-evaluation-protocol/1",
+                "content_root": "$entry.protocol_content_root",
+                "protocol_id": protocol_id,
+                "invalidation_key": protocol_key,
+            },
+            "calibration": {
+                "contract_version": "frontier-protocol-calibration-result/1",
+                "content_root": "$entry.calibration_content_root",
+                "calibration_id": calibration_id,
+                "protocol_invalidation_key": protocol_key,
+            },
+            "consequence_limit": "B evidence only",
+            "prohibited_consequences": sorted(
+                {
+                    "E",
+                    "formal Slot H",
+                    "sealed confirmation",
+                    "integration",
+                    "incumbent use",
+                    "promotion",
+                    "submission",
+                    "external action",
+                    "paid action",
+                    "publication",
+                    "strength claim",
+                    "direct next-B authority",
+                }
+            ),
+            "evidence_scope": {
+                "evidence_class": "b-evidence",
+                "exposure": "development",
+                "confirmation": "none",
+                "comparator_scope": "one fixed development comparator",
+                "data_scope": "one fixed development sample",
+                "workload_scope": "one local workload",
+                "scenario_scope": "one named scenario set",
+                "metric_scope": "one predeclared metric set",
+                "mechanism_grain": "whole-package-at-most",
+                "transfer_scope": "local-only",
+            },
+        },
+    }
+    template_root = "sha256:" + hashlib.sha256(canonical_json(template)).hexdigest()
+    target = copy.deepcopy(template["evaluation_target"])
+    replacements = {
+        "$late.candidate.id": candidate_id,
+        "$late.candidate.manifest_sha256": manifest_sha,
+        "$late.candidate.collection_root": collection_root,
+        "$entry.origin_decision_root": entry["node_id"],
+        "$entry.origin_authority_root": authority["node_id"],
+        "$entry.template_root": template_root,
+        "$entry.protocol_content_root": entry_content,
+        "$entry.calibration_content_root": entry_content,
+    }
+
+    def bind(value):
+        if isinstance(value, str):
+            return replacements.get(value, value)
+        if isinstance(value, list):
+            return [bind(item) for item in value]
+        if isinstance(value, dict):
+            return {key: bind(item) for key, item in value.items()}
+        return value
+
+    experiment_body = yaml.safe_dump(
+        bind(template["experiment"]), sort_keys=False, allow_unicode=True
+    ).encode()
+    experiment_id = (
+        "B002-experiment-sha256:" + hashlib.sha256(experiment_body).hexdigest()
+    )
+    experiment_raw = f"experiment_id: {experiment_id}\n".encode() + experiment_body
+    replacements["$derived.experiment.id"] = experiment_id
+    replacements["$derived.experiment.file_sha256"] = hashlib.sha256(
+        experiment_raw
+    ).hexdigest()
+
+    target = bind(target)
+    late_objects = {
+        "candidate_manifest": candidate_manifest_name,
+        "candidate_collection": candidate_collection_name,
+        "materialization_execution_node": "project/state/nodes/materialization-execution.json",
+        "materialization_outcome_node": "project/state/nodes/materialization-outcome.json",
+        "materialization_result": "project/state/materialization-result.yaml",
+        "materialization_result_validation": "project/state/materialization-result-validation.yaml",
+        "implementation_review_decision_node": "project/state/nodes/implementation-decision.json",
+        "implementation_review_attestation_node": "project/state/nodes/implementation-attestation.json",
+        "implementation_review_input": "project/state/implementation-review-input.yaml",
+        "implementation_review_report": "project/state/implementation-review.md",
+        "final_experiment": "project/state/experiment.yaml",
+        "runtime_inputs": "project/state/runtime-inputs.yaml",
+    }
+    admission = {
+        "contract_version": "frontier-routine-admission/1",
+        "evaluation_target": target,
+        "origin_decision_root": entry["node_id"],
+        "origin_authority_root": authority["node_id"],
+        "materialization_execution_root": materialization["node_id"],
+        "materialization_outcome_root": materialization_outcome["node_id"],
+        "implementation_review_decision_root": implementation["node_id"],
+        "implementation_review_attestation_root": implementation_validation["node_id"],
+        "live_receipt_root": receipt_root,
+        "budget": {
+            "budget_identity": "budget-sha256:" + "a" * 64,
+            "reservation_identity": "reservation-sha256:" + "b" * 64,
+            "planned_spend": 1,
+            "available_unprotected": 2,
+            "protected_reserve_used": False,
+            "reservation_state": "current",
+        },
+        "late_objects": late_objects,
+    }
+    state_raw = {
+        "project/state/routine-admission.yaml": yaml.safe_dump(admission, sort_keys=False).encode(),
+        candidate_manifest_name: candidate_manifest,
+        "project/state/candidate/main.py": candidate_main,
+        "project/state/nodes/materialization-execution.json": canonical_json(materialization) + b"\n",
+        "project/state/nodes/materialization-outcome.json": canonical_json(materialization_outcome) + b"\n",
+        "project/state/materialization-result.yaml": yaml.safe_dump(
+            {"outcome": "completed", "candidate_identity": candidate_id},
+            sort_keys=False,
+        ).encode(),
+        "project/state/materialization-result-validation.yaml": yaml.safe_dump(
+            {
+                "result_structure_ready": True,
+                "blocking_findings": [],
+                "repair_findings": [],
+            },
+            sort_keys=False,
+        ).encode(),
+        "project/state/nodes/implementation-decision.json": canonical_json(implementation) + b"\n",
+        "project/state/nodes/implementation-attestation.json": canonical_json(implementation_validation) + b"\n",
+        "project/state/implementation-review-input.yaml": yaml.safe_dump(
+            {
+                "candidate": {
+                    "id": candidate_id,
+                    "root_path": "candidates/B001",
+                    "manifest_path": candidate_manifest_name,
+                    "manifest_sha256": manifest_sha,
+                    "collection_root": collection_root,
+                }
+            },
+            sort_keys=False,
+        ).encode(),
+        "project/state/implementation-review.md": b"IMPLEMENTATION_READY\n",
+        "project/state/experiment.yaml": experiment_raw,
+        "project/state/runtime-inputs.yaml": yaml.safe_dump(
+            template["runtime_inputs"], sort_keys=False, allow_unicode=True
+        ).encode(),
+    }
+    content = {
+        entry_content: {
+            "content_root": entry_content,
+            "domain": "project-decision",
+            "verified": True,
+            "review_subject": {
+                "contract_version": "frontier-review-subject/2",
+                "review_kind": "entry",
+                "subject_mode": "complete",
+                "semantic_projection": {
+                    "routine_follow_up": {
+                        "slot_id": "slot-B001-screen",
+                        "materialization_batch_id": "B001",
+                        "follow_up_batch_id": "B002",
+                        "route_id": "route-1",
+                        "protocol_id": protocol_id,
+                        "calibration_id": calibration_id,
+                        "protocol_invalidation_key": protocol_key,
+                        "scientific_question": "one bounded local question",
+                        "sample_ceiling": {"runs": 16},
+                        "resource_ceiling": {"local_minutes": 5},
+                        "action_window": "current",
+                        "budget_boundary": {"maximum_spend": 1},
+                        "template": template,
+                        "prohibited_consequences": target["prohibited_consequences"],
+                    }
+                },
+            },
+        },
+        review_content: {"content_root": review_content, "domain": "review-report", "verified": True},
+        authority_content: {"content_root": authority_content, "domain": "project-authority", "verified": True},
+        routine_state: {
+            "content_root": routine_state,
+            "domain": "project-state",
+            "verified": True,
+            "closed_collections": [collection],
+        },
+        implementation_content: {
+            "content_root": implementation_content,
+            "domain": "project-decision",
+            "verified": True,
+            "review_subject": {
+                "contract_version": "frontier-review-subject/2",
+                "review_kind": "implementation",
+                "subject_mode": "complete",
+                "semantic_projection": {
+                    "candidate": {
+                        "id": candidate_id,
+                        "root_path": "candidates/B001",
+                        "manifest_path": candidate_manifest_name,
+                        "manifest_sha256": manifest_sha,
+                        "collection_root": collection_root,
+                    }
+                },
+            },
+        },
+        implementation_report: {
+            "content_root": implementation_report,
+            "domain": "review-report",
+            "verified": True,
+        },
+        outcome_content: {"content_root": outcome_content, "domain": "project-outcome", "verified": True},
+        receipt_root: {
+            "content_root": receipt_root,
+            "domain": "live-receipt",
+            "verified": True,
+            "receipt_facts": {
+                name: {
+                    "status": "pass",
+                    "observed_at": "2026-08-20T00:00:00Z",
+                    "expires_at": "2026-08-20T02:00:00Z",
+                }
+                for name in (
+                    "authority_current",
+                    "budget_current",
+                    "reservation_current",
+                    "inputs_current",
+                    "resources_available",
+                    "action_window_open",
+                    "routine_slot_current",
+                )
+            },
+        },
+    }
+    content[receipt_root]["receipt_facts"]["routine_slot_current"]["document"] = {
+        "contract_version": "frontier-routine-live-receipt/1",
+        "slot_id": "slot-B001-screen",
+        "origin_decision_root": entry["node_id"],
+        "origin_authority_root": authority["node_id"],
+        "template_root": template_root,
+        "budget_identity": "budget-sha256:" + "a" * 64,
+        "reservation_identity": "reservation-sha256:" + "b" * 64,
+        "planned_spend": 1,
+        "available_unprotected": 2,
+        "protected_reserve_used": False,
+        "reservation_state": "current",
+        "action_window": "current",
+    }
+    raw = {
+        routine_state: state_raw,
+        outcome_content: {
+            "project/outcome/result.yaml": yaml.safe_dump(
+                {"outcome": "completed", "candidate_identity": candidate_id},
+                sort_keys=False,
+            ).encode(),
+            "project/outcome/result-validation.yaml": state_raw[
+                "project/state/materialization-result-validation.yaml"
+            ],
+        },
+        implementation_content: {
+            "project/decision/implementation-review-input.yaml": state_raw[
+                "project/state/implementation-review-input.yaml"
+            ]
+        },
+        implementation_report: {
+            "review/report.md": state_raw["project/state/implementation-review.md"]
+        },
+    }
+    facts = {
+        name: {"receipt_root": receipt_root}
+        for name in content[receipt_root]["receipt_facts"]
+    }
+    return {
+        "authority": authority,
+        "nodes": nodes,
+        "content": content,
+        "raw": raw,
+        "state_root": routine_state,
+        "admission": admission,
+        "facts": facts,
+    }
+
+
+def test_routine_execution_derives_candidate_and_consumes_one_slot() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = routine_execution_fixture(Path(directory))
+        nodes = fixture["nodes"]
+        content = fixture["content"]
+        raw = fixture["raw"]
+        repository = NodeRepository(Path(directory) / "nodes")
+        repository.write_all(nodes.values())
+        execution = freeze_execution(
+            authority=fixture["authority"],
+            starting_state_root=fixture["state_root"],
+            routine_admission=fixture["admission"],
+            repository=repository,
+            resolve_content=content.__getitem__,
+            read_content=raw.__getitem__,
+            live_facts=fixture["facts"],
+            checked_at="2026-08-20T01:00:00Z",
+        )
+        with pytest.raises(ProvenanceError, match="already consumed"):
+            freeze_execution(
+                authority=fixture["authority"],
+                starting_state_root=fixture["state_root"],
+                routine_admission=fixture["admission"],
+                repository=repository,
+                resolve_content=content.__getitem__,
+                read_content=raw.__getitem__,
+                live_facts=fixture["facts"],
+                checked_at="2026-08-20T01:00:00Z",
+            )
+        repository.write(execution)
+        assert repository.load_routine_slot("slot-B001-screen") == {
+            "slot_id": "slot-B001-screen",
+            "execution_root": execution["node_id"],
+        }
+        replay_state = typed_root("project-state", "routine-state-replay")
+        content[replay_state] = {
+            **content[fixture["state_root"]],
+            "content_root": replay_state,
+        }
+        raw[replay_state] = raw[fixture["state_root"]]
+        with pytest.raises(ProvenanceError, match="canonical execution"):
+            freeze_execution(
+                authority=fixture["authority"],
+                starting_state_root=replay_state,
+                routine_admission=fixture["admission"],
+                repository=repository,
+                resolve_content=content.__getitem__,
+                read_content=raw.__getitem__,
+                live_facts=fixture["facts"],
+                checked_at="2026-08-20T01:00:00Z",
+            )
+
+        slot_directory = repository.root / "routine-slots"
+        slot_directory.rename(repository.root / "routine-slots-backup")
+        with pytest.raises(ProvenanceError, match="canonical execution"):
+            freeze_execution(
+                authority=fixture["authority"],
+                starting_state_root=replay_state,
+                routine_admission=fixture["admission"],
+                repository=repository,
+                resolve_content=content.__getitem__,
+                read_content=raw.__getitem__,
+                live_facts=fixture["facts"],
+                checked_at="2026-08-20T01:00:00Z",
+            )
+
+
+def test_concurrent_routine_release_allows_exactly_one_execution() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = routine_execution_fixture(Path(directory))
+        repository = NodeRepository(Path(directory) / "nodes")
+        repository.write_all(fixture["nodes"].values())
+
+        def release() -> dict:
+            return freeze_execution(
+                authority=fixture["authority"],
+                starting_state_root=fixture["state_root"],
+                routine_admission=fixture["admission"],
+                repository=repository,
+                resolve_content=fixture["content"].__getitem__,
+                read_content=fixture["raw"].__getitem__,
+                live_facts=fixture["facts"],
+                checked_at="2026-08-20T01:00:00Z",
+            )
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [executor.submit(release) for _ in range(2)]
+            outcomes: list[dict | BaseException] = []
+            for future in futures:
+                try:
+                    outcomes.append(future.result())
+                except BaseException as exc:  # capture the competing release
+                    outcomes.append(exc)
+        assert sum(isinstance(item, dict) for item in outcomes) == 1
+        failures = [item for item in outcomes if isinstance(item, BaseException)]
+        assert len(failures) == 1
+        assert isinstance(failures[0], ProvenanceError)
+        assert "already consumed" in str(failures[0])
+
+
+def test_routine_execution_rejects_forged_candidate_and_protected_reserve() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = routine_execution_fixture(Path(directory))
+        repository = NodeRepository(Path(directory) / "nodes")
+        repository.write_all(fixture["nodes"].values())
+        for mutation in ("candidate", "reserve"):
+            admission = copy.deepcopy(fixture["admission"])
+            raw = copy.deepcopy(fixture["raw"])
+            if mutation == "candidate":
+                admission["evaluation_target"]["candidate"]["id"] = "forged"
+            else:
+                admission["budget"]["protected_reserve_used"] = True
+            raw[fixture["state_root"]]["project/state/routine-admission.yaml"] = yaml.safe_dump(
+                admission, sort_keys=False
+            ).encode()
+            with pytest.raises(ProvenanceError):
+                freeze_execution(
+                    authority=fixture["authority"],
+                    starting_state_root=fixture["state_root"],
+                    routine_admission=admission,
+                    repository=repository,
+                    resolve_content=fixture["content"].__getitem__,
+                    read_content=raw.__getitem__,
+                    live_facts=fixture["facts"],
+                    checked_at="2026-08-20T01:00:00Z",
+                )
+
+
+def test_routine_execution_rejects_candidate_experiment_and_live_budget_drift() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        fixture = routine_execution_fixture(Path(directory))
+        for mutation in (
+            "candidate-bytes",
+            "experiment-bytes",
+            "live-budget",
+            "review-report",
+            "result-validation",
+        ):
+            raw = copy.deepcopy(fixture["raw"])
+            content = copy.deepcopy(fixture["content"])
+            if mutation == "candidate-bytes":
+                raw[fixture["state_root"]][
+                    "project/state/candidate/main.py"
+                ] = b"def candidate(): return 2\n"
+            elif mutation == "experiment-bytes":
+                raw[fixture["state_root"]][
+                    "project/state/experiment.yaml"
+                ] += b"extra: sample\n"
+            elif mutation == "live-budget":
+                content[next(iter(fixture["facts"].values()))["receipt_root"]][
+                    "receipt_facts"
+                ]["routine_slot_current"]["document"]["available_unprotected"] = 0
+            elif mutation == "review-report":
+                raw[fixture["state_root"]][
+                    "project/state/implementation-review.md"
+                ] = b"IMPLEMENTATION_REPAIR_REQUIRED: blocking defect\n"
+            else:
+                raw[fixture["state_root"]][
+                    "project/state/materialization-result-validation.yaml"
+                ] = yaml.safe_dump(
+                    {
+                        "result_structure_ready": True,
+                        "blocking_findings": [],
+                        "repair_findings": [],
+                        "extra_unbound": True,
+                    },
+                    sort_keys=False,
+                ).encode()
+            repository = NodeRepository(Path(directory) / f"nodes-{mutation}")
+            repository.write_all(fixture["nodes"].values())
+            with pytest.raises(ProvenanceError):
+                freeze_execution(
+                    authority=fixture["authority"],
+                    starting_state_root=fixture["state_root"],
+                    routine_admission=fixture["admission"],
+                    repository=repository,
+                    resolve_content=content.__getitem__,
+                    read_content=raw.__getitem__,
+                    live_facts=fixture["facts"],
+                    checked_at="2026-08-20T01:00:00Z",
+                )
+
+
+def test_routine_cli_rejects_caller_selected_slot_index() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        repository = NodeRepository(Path(directory) / "nodes")
+        with pytest.raises(ProvenanceError, match="complete legacy or routine shape"):
+            apply_operation(
+                {
+                    "contract_version": REQUEST_CONTRACT,
+                    "operation": "freeze-execution",
+                    "authority_id": "frontier-authority-root-sha256:" + "1" * 64,
+                    "starting_state_root": typed_root("project-state", "state"),
+                    "content_bindings": [],
+                    "routine_admission": {},
+                    "live_facts": {},
+                    "checked_at": "2026-08-20T01:00:00Z",
+                    "slot_index_root": str(Path(directory) / "alternate"),
+                },
+                repository,
+            )
 
 
 def test_release_git_and_portable_adapters_share_one_raw_byte_content_root() -> None:

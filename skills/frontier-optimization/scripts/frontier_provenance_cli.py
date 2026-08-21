@@ -167,15 +167,38 @@ def apply_operation(request: dict[str, Any], repository: NodeRepository) -> dict
             decision_bundle=decision_bundle,
         )
     elif operation == "freeze-execution":
-        require_fields(
-            request,
-            operation,
-            {"authority_id", "starting_state_root"},
-        )
-        node = freeze_execution(
-            authority=repository.load(request["authority_id"]),
-            starting_state_root=request["starting_state_root"],
-        )
+        legacy_fields = {"authority_id", "starting_state_root"}
+        routine_fields = legacy_fields | {
+            "content_bindings",
+            "routine_admission",
+            "live_facts",
+            "checked_at",
+        }
+        observed = set(request) - {"contract_version", "operation"}
+        if observed == legacy_fields:
+            require_fields(request, operation, legacy_fields)
+            node = freeze_execution(
+                authority=repository.load(request["authority_id"]),
+                starting_state_root=request["starting_state_root"],
+            )
+        elif observed == routine_fields:
+            require_fields(request, operation, routine_fields)
+            resolver = content_resolver(request["content_bindings"])
+            reader = content_reader(request["content_bindings"])
+            node = freeze_execution(
+                authority=repository.load(request["authority_id"]),
+                starting_state_root=request["starting_state_root"],
+                routine_admission=request["routine_admission"],
+                repository=repository,
+                resolve_content=resolver,
+                read_content=reader,
+                live_facts=request["live_facts"],
+                checked_at=request["checked_at"],
+            )
+        else:
+            raise ProvenanceError(
+                "freeze-execution request fields must be exactly one complete legacy or routine shape"
+            )
     elif operation == "record-outcome":
         require_fields(
             request,
@@ -294,6 +317,32 @@ def content_bundle_path(bindings: Any, content_root: str) -> Path:
             f"decision content root requires one exact portable binding: {content_root}"
         )
     return matches[0]
+
+
+def content_reader(bindings: Any):
+    """Return verified raw project bytes by content root."""
+
+    if not isinstance(bindings, list):
+        raise ProvenanceError("content_bindings must be a list")
+    paths: dict[str, Path] = {}
+    for index, binding in enumerate(bindings):
+        if not isinstance(binding, dict) or set(binding) != {"adapter", "path"}:
+            raise ProvenanceError(f"content_bindings[{index}] is invalid")
+        if binding["adapter"] != "portable-bundle/1":
+            raise ProvenanceError(f"content_bindings[{index}] must be portable")
+        path = Path(binding["path"])
+        result = ProjectPortableStore().verify(path)
+        if result["content_root"] in paths:
+            raise ProvenanceError(f"duplicate content binding: {result['content_root']}")
+        paths[result["content_root"]] = path
+
+    def read(content_root: str) -> dict[str, bytes]:
+        path = paths.get(content_root)
+        if path is None:
+            raise ProvenanceError(f"content root has no readable binding: {content_root}")
+        return PortableBundleStore().read_artifacts(path)
+
+    return read
 
 
 def handoff_exports(bindings: Any):

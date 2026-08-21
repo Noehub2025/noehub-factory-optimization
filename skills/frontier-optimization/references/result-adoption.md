@@ -7,6 +7,7 @@ Load only after a worker result exists, when freezing or adopting a materialized
 - [Validate and disposition the result](#validate-and-disposition-the-result)
 - [Review a materialized candidate](#review-a-materialized-candidate)
 - [Adopt diagnostic-only evidence](#adopt-diagnostic-only-evidence)
+- [Adopt routine-local evidence](#adopt-routine-local-evidence)
 - [Adopt valid measurement as E](#adopt-valid-measurement-as-e)
 - [Completion](#completion)
 
@@ -31,6 +32,12 @@ If no candidate materialized, record implementation review as not applicable and
 For an experiment selected through the [diagnostic-only exception](candidate-lifecycle.md#diagnostic-only-exception), validate its Entry authority, candidate and experiment identities, local isolation, hard-constraint checks, sealed-evidence exclusion, maximum spend, result validation, and prohibited consequences. Append the B terminal outcome and one controlling Outcome Reflection. Preserve the result only as diagnostic B evidence; create no E and grant no implementation readiness, integration, incumbent use, promotion, submission, or strength consequence.
 
 A useful diagnostic may select a later implementation review, repair, abandonment, or formal Slot H experiment plan. It cannot make its own measurement comparison-valid or bypass any later gate.
+
+## Adopt routine-local evidence
+
+For `evaluation_target.mode: routine-local`, rerun the shared target and result validator, reproduce admission through the original Entry authority, and require the exact consumed slot, derived candidate, finding-free implementation review, unchanged protocol and calibration, current live facts, unprotected Budget, and frozen experiment template. Enforce the structured evidence scope in [Evaluation protocol reuse](evaluation-protocol.md#structured-evidence-ceiling).
+
+Append only the routine B terminal outcome and its controlling Outcome Reflection. Create no E. The result cannot satisfy formal Slot H, confirm or promote the candidate, authorize integration or incumbent use, support submission, publication, external or paid action, approve a claim, or directly authorize the next B. Run the integrated resolver once on the new evidence state.
 
 ## Adopt valid measurement as E
 

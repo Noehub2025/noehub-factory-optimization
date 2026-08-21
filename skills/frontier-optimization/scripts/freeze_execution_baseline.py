@@ -310,6 +310,11 @@ def validate_dispatch_chain(
         )
     if packet.get("packet_id") != document.get("packet_id"):
         raise BaselineError("execution-start packet_id does not match the live packet")
+    evaluation_target = packet.get("evaluation_target")
+    if isinstance(evaluation_target, dict) and evaluation_target.get("mode") == "routine-local":
+        raise BaselineError(
+            "routine-local execution must use the single provenance freeze_execution admission writer"
+        )
     source_identity = (
         packet.get("workflow_source_binding", {})
         .get("source_snapshot", {})

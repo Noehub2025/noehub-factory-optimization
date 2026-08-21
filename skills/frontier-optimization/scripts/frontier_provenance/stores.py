@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
+import yaml
+
 from .content import (
     PROJECT_DOMAINS,
     PROJECT_ROLE_DOMAINS,
@@ -361,7 +363,10 @@ class GitSnapshotStore:
             "domain": manifest["domain"],
             "adapter": "git-snapshot/1",
             "artifact_count": len(observed),
-            "receipt_facts": _receipt_facts(manifest),
+            "receipt_facts": _receipt_facts(
+                manifest,
+                {name: value[2] for name, value in observed.items()},
+            ),
             "verified": True,
         }
 
@@ -566,9 +571,28 @@ class PortableBundleStore:
             "domain": manifest["domain"],
             "adapter": "portable-bundle/1",
             "artifact_count": len(manifest["artifacts"]),
-            "receipt_facts": _receipt_facts(manifest),
+            "closed_collections": manifest["closed_collections"],
+            "receipt_facts": _receipt_facts(manifest, raw_by_name),
             "review_subject": validate_review_subject(manifest, raw_by_name),
             "verified": True,
+        }
+
+    def read_artifacts(self, destination: Path) -> dict[str, bytes]:
+        """Return verified logical bytes from one portable bundle."""
+
+        self.verify(destination)
+        try:
+            manifest = json.loads((destination / "manifest.json").read_text())
+        except (OSError, json.JSONDecodeError) as exc:  # pragma: no cover - verify owns this path
+            raise ProvenanceError(f"portable manifest is unreadable: {exc}") from exc
+        return {
+            item["logical_name"]: (
+                destination
+                / "objects"
+                / item["content_sha256"][:2]
+                / item["content_sha256"]
+            ).read_bytes()
+            for item in manifest["artifacts"]
         }
 
 
@@ -640,8 +664,10 @@ class WorkflowReleaseGitStore(GitSnapshotStore):
         )
 
 
-def _receipt_facts(manifest: dict[str, Any]) -> dict[str, dict[str, str]]:
-    receipts: dict[str, dict[str, str]] = {}
+def _receipt_facts(
+    manifest: dict[str, Any], raw_by_name: dict[str, bytes]
+) -> dict[str, dict[str, Any]]:
+    receipts: dict[str, dict[str, Any]] = {}
     for item in manifest["artifacts"]:
         if item["kind"] != "external-receipt":
             continue
@@ -649,9 +675,16 @@ def _receipt_facts(manifest: dict[str, Any]) -> dict[str, dict[str, str]]:
         fact = metadata["fact"]
         if fact in receipts:
             raise ProvenanceError(f"duplicate external receipt fact: {fact}")
-        receipts[fact] = {
+        receipt: dict[str, Any] = {
             "status": metadata["status"],
             "observed_at": metadata["observed_at"],
             "expires_at": metadata["expires_at"],
         }
+        try:
+            document = yaml.safe_load(raw_by_name[item["logical_name"]])
+        except yaml.YAMLError as exc:
+            raise ProvenanceError(f"external receipt body is unreadable: {fact}") from exc
+        if isinstance(document, dict):
+            receipt["document"] = document
+        receipts[fact] = receipt
     return receipts

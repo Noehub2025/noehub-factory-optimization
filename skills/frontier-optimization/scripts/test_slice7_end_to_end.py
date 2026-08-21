@@ -183,7 +183,7 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "executor": "Agent",
                 "required_inputs": [],
                 "identity_contract": BATCH.IDENTITY_CONTRACT,
-                "result_contract_version": BATCH.RESULT_CONTRACT_V1,
+                "result_contract_version": BATCH.RESULT_CONTRACT_V2,
                 "workflow_source_binding": copy.deepcopy(workflow_source_binding),
                 "workflow_source_identity": workflow_source_binding["source_snapshot"]["identity"],
                 "worker_source_member": "workers/run-frontier-batch/SKILL.md",
@@ -758,7 +758,7 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "work_kind": "code",
                 "problem_epoch": 3,
                 "representation_revision": 4,
-                "result_contract_version": BATCH.RESULT_CONTRACT_V1,
+                "result_contract_version": BATCH.RESULT_CONTRACT_V2,
                 "workflow_source_identity": workflow_source_binding["source_snapshot"]["identity"],
                 "started_at": "2026-08-12T08:01:00Z",
                 "ended_at": "2026-08-12T08:02:00Z",
@@ -1041,39 +1041,34 @@ class Slice7ContractTests(unittest.TestCase):
 
     def test_user_facing_handoff_is_manager_readable_and_exposes_each_real_decision(self) -> None:
         self.assert_contract_contains(
-            "frontier-core.md",
-            "## User-facing handoff",
-            "the current objective and reference point in task language",
-            "the work completed since the prior handoff",
-            "the strongest result and learning supported by the controlling evidence",
-            "progress toward the objective at two levels",
-            "the complete decision-relevant next-step set",
-            "one dominant or preferred action, conditional preferences, or an exact non-dominated tie",
-            "Legal availability does not make actions equally advisable",
-            "Present the management explanation before audit detail",
-            "Budget consumption, artifact count, passed checks, lifecycle gates",
-            "A next procedural gate must be paired with the substantive question",
-            "the direction is not yet resolved",
-            "Offer a planning-only continuation instruction",
-            "surface every decision-relevant candidate",
-            "give the evidence-supported conditional ordering and ask one exact tradeoff question",
-            "return the exact technical blocker",
+            "user-facing-handoff.md",
+            "Load this file last, immediately before the final reply",
+            "the current objective and reference point from the Brief, F1, and F3",
+            "the concrete work completed since the prior handoff",
+            "the important limit on that learning",
+            "the valid objective gap from F6",
+            "every decision-relevant next candidate",
+            "the dominance reason, switching conditions, or exact non-dominated technical blocker",
+            "Pair every procedural gate with the substantive question",
+            "direction is not yet resolved",
+            "surface every decision-relevant candidate and its recorded ordering",
             "If the current request already supplies a qualifying reopening request",
             "Continue an open campaign after a terminal action when no later resolver result or Selection exists",
             "present the complete next-step candidate set and its recorded ordering",
             "do not invent an identifier or ask the user to authorize one",
-            "Lead with the response recommended by the unchanged Selection",
+            "Authorization question withheld by request",
+            "requesting presentation of the unchanged exact question",
+            "Present the exact unchanged <V target> authorization question",
+            "response recommended by the unchanged Selection",
             "Use $frame-optimization. Review <exact conflicting parent fields and identities>",
             "Suggest no command",
-            "reduce a known recovery path to only `BLOCKED` or `no authority`",
-            "present legal alternatives as equally recommended",
         )
         coordinator = (SCRIPT_ROOT.parent / "SKILL.md").read_text()
-        self.assertIn("Before every return to the user", coordinator)
-        self.assertIn("what changed, what the evidence establishes", coordinator)
-        self.assertIn("without decoding record identifiers", coordinator)
-        self.assertIn("complete decision-relevant next-step set", coordinator)
-        self.assertIn("references/frontier-core.md#user-facing-handoff", coordinator)
+        self.assertIn("Immediately before the final reply", coordinator)
+        self.assertIn("references/user-facing-handoff.md", coordinator)
+        self.assertIn("read", coordinator)
+        self.assertIn("last", coordinator)
+        self.assertIn("may not rerun routing, direction resolution, review, or state adoption", coordinator)
         for reference in (
             "entry-and-planning.md",
             "campaign-cycle.md",
@@ -1082,11 +1077,11 @@ class Slice7ContractTests(unittest.TestCase):
         ):
             with self.subTest(reference=reference):
                 contract = (SCRIPT_ROOT.parent / "references" / reference).read_text()
-                self.assertIn("frontier-core.md#user-facing-handoff", contract)
-        closeout = (SCRIPT_ROOT.parent / "references/closeout-and-claims.md").read_text()
-        self.assertIn("decision-relevant candidate", coordinator)
-        self.assertIn("flat list of legal actions does not satisfy", coordinator)
-        self.assertIn("attach switching conditions to material alternatives", closeout)
+                self.assertNotIn("User-facing handoff", contract)
+                self.assertIn("Coordinator", contract)
+
+        core = (SCRIPT_ROOT.parent / "references/frontier-core.md").read_text()
+        self.assertNotIn("## User-facing handoff", core)
 
         cycle = (SCRIPT_ROOT.parent / "references" / "campaign-cycle.md").read_text()
         for behavior in (

@@ -104,6 +104,8 @@ The first Entry under this contract is the new authority origin. Preserve earlie
 
 An ordinary Entry completion check covers only the selected B, its project bindings, prerequisites, candidate or closed roots, evaluator, budget, scope, stop conditions, authorization target, result contract, project snapshot, and directly required project engineering checks. Workflow regression suites, Skill bundle checks, Slice 7, validator source checks, and repository-wide tests belong to workflow development or a B that explicitly changes the corresponding project surface; they are not repeated for every Entry.
 
+A routine-local execution snapshot follows the narrow late-object closure in [Evaluation protocol reuse](evaluation-protocol.md#routine-project-state-closure-and-recovery). Do not copy the whole campaign state or repeat protocol and calibration bytes already reachable through Entry ancestry.
+
 Preserve each sealed subject, packet, reviewer verdict, and attestation. A draft
 that failed before sealing produced none of these objects. Historical copied
 snapshot stores remain audit-only until separately cleaned up with explicit

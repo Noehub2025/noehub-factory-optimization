@@ -8,7 +8,7 @@ Before an agent starts changing code, the workflow makes it explain the task in 
 
 The workflow is not tied to a particular benchmark, model, codebase, or optimization method. Use it for tasks such as reducing latency or cost, improving a model or game-playing agent, tuning a configuration, or searching over alternative implementations. It is especially useful when a passing test is not enough to prove that a change is genuinely better.
 
-This repository provides the RSI workflow as ten reusable Agent Skills. It does not provide a domain-specific optimizer, promise a winning solution, or remove human authority over consequential actions.
+This repository provides the RSI workflow as eleven reusable Agent Skills. It does not provide a domain-specific optimizer, promise a winning solution, or remove human authority over consequential actions.
 
 ## What problem does it solve?
 
@@ -30,7 +30,7 @@ The workflow has two stages.
 
 | Stage | What happens | Main result |
 |---|---|---|
-| Define the task and search | Explain the real-world task, fix the comparison rules, decide what candidates may look like, and obtain an independent review. | `PROBLEM.md` and `REPRESENTATION.md` |
+| Define the task and search | Explain the real-world task, design the decision-relevant measurement protocol, decide what candidates may look like, and obtain an independent review. | `PROBLEM.md` and `REPRESENTATION.md` |
 | Run the improvement campaign | Choose a starting approach, authorize bounded work, implement and measure candidates separately, learn from results, and close or recover the campaign. | `FRONTIER.md` and records under `frontier/` |
 
 `PROBLEM.md` answers:
@@ -74,6 +74,7 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 ## How the workflow protects the result
 
 - One coordinator owns the task definition and search design; another owns the later campaign. Worker Skills cannot silently change either contract.
+- A fresh-context measurement designer can create or repair the complete decision-relevant protocol. The framing coordinator must adopt that projection as a whole before it becomes part of the task contract.
 - Planning, user authorization, worker acknowledgment, execution start, implementation review, measurement, result adoption, and claims are separate gates. Each gate applies only to the exact files and identities it names.
 - Candidate creation and performance evaluation are separate steps. Passing engineering checks does not prove improvement.
 - A fresh-context, read-only analyst interprets each terminal technical result before seeing the current selection, budget, authority, stopping state, or proposed next action. This keeps the technical meaning of the evidence separate from what the campaign may do next.
@@ -90,11 +91,12 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 
 ## Skills
 
-Install all ten Skills as one workflow. Normally, users invoke only the two coordinators; the coordinators assign the narrower worker Skills.
+Install all eleven Skills as one workflow. Normally, users invoke only the two coordinators; the coordinators assign the narrower worker Skills.
 
 ### Define the task and search
 
 - **[frame-optimization](./skills/frame-optimization/SKILL.md)** — Coordinates the problem definition, search representation, repair loops, reviews, and final handoff.
+- **[design-measurement](./skills/design-measurement/SKILL.md)** — Designs or repairs the decision-relevant measurement protocol in a fresh context without adopting it or choosing campaign actions.
 - **[research-optimization](./skills/research-optimization/SKILL.md)** — Investigates one assigned question without changing the task contract.
 - **[grill-optimization](./skills/grill-optimization/SKILL.md)** — Collects one decision that only the user can make.
 - **[review-optimization](./skills/review-optimization/SKILL.md)** — Independently checks problem readiness, fixed measurement-support implementations, or whether old and new results remain comparable.
@@ -114,6 +116,7 @@ Internally, the first stage uses A–H and R1–R8 as completeness checklists. U
 
 ```text
 Define the problem
+  -> design the decision-relevant measurement protocol in a fresh context
   -> decide how candidates can be represented and searched
   -> independently approve an exact search scope
   -> choose a starting approach and budget
@@ -137,7 +140,7 @@ This repository includes a task-neutral [`AGENTS.md`](./AGENTS.md) for outcome-o
 When adding the workflow to another repository:
 
 - if no agent instruction file exists, copy `AGENTS.md` and add a `CLAUDE.md` containing `@AGENTS.md` for Claude Code;
-- if `AGENTS.md` already exists, merge the `Frontier-seeking workflow behavior` section once and preserve all repository-specific rules;
+- if `AGENTS.md` already exists, merge the `Frontier-seeking workflow behavior` and `User-facing workflow returns` sections once each and preserve all repository-specific rules;
 - if `CLAUDE.md` already exists, add `@AGENTS.md` once without replacing its Claude Code-specific content; and
 - resolve conflicts explicitly. Shared optimization behavior never broadens existing authority or weakens task-specific safety, resource, evidence, or validation rules.
 
@@ -153,7 +156,7 @@ Use this route for Codex, Claude Code, Cursor, and other Agent Skills-compatible
 npx skills@latest add Noehub2025/noehub-factory-optimization
 ```
 
-Choose all ten Skills and the coding agents where you want to install them.
+Choose all eleven Skills and the coding agents where you want to install them.
 
 ### Claude Code plugin
 
@@ -162,7 +165,7 @@ Choose all ten Skills and the coding agents where you want to install them.
 /plugin install noehub-factory-optimization@noehub
 ```
 
-The plugin installs all ten Skills as one managed bundle.
+The plugin installs all eleven Skills as one managed bundle.
 
 ### Manual installation
 

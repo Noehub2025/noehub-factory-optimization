@@ -8,6 +8,7 @@ Load after `frontier-core.md` selects a planned or running campaign with one sel
 - one `module` or `system` design checkpoint or code slice under a current W; or
 - one human-input B with its request and validation contract in B or W;
 - one diagnostic-only experiment B under the exact candidate-lifecycle exception;
+- one routine-local experiment B admitted through the exact single-use slot reviewed with its materialization B;
 - one separate Slot H evaluation B for an unchanged `IMPLEMENTATION_READY` candidate; and
 - the learning loop and next Selection after every terminal B.
 
@@ -29,7 +30,7 @@ External action, code-bearing `mixed` work, campaign closeout, and completion of
 
 - Load [Campaign state](campaign-state.md) and [Planning records](planning-records.md) to resolve the selected B, baseline, Budget, and authority.
 - Load [Batch interface](batch-interface.md) to create, acknowledge, dispatch, or reconcile the exact packet.
-- Load [Candidate lifecycle](candidate-lifecycle.md), [Review snapshots](review-snapshots.md), and [Implementation review](implementation-review.md) only for code-bearing work, a diagnostic-only experiment, or an implementation-review reuse check.
+- Load [Candidate lifecycle](candidate-lifecycle.md), [Review snapshots](review-snapshots.md), and [Implementation review](implementation-review.md) only for code-bearing work, a diagnostic-only experiment, or an implementation-review reuse check. Load [Evaluation protocol reuse](evaluation-protocol.md) only for protocol calibration, a composite Entry slot, or a routine-local experiment.
 - Load [Result adoption](result-adoption.md) only after a worker result exists, when freezing a materialized candidate review, adopting diagnostic evidence, or validating and adopting E.
 - Load [Work plan](work-plan.md) when B cites W. Load only W frontmatter, Current state, the selected Delivery row, its applicable Validation and Definition-of-done terms, Recovery, and Design-map rows whose `Read when` condition matches the action.
 - Load [Technical design](technical-design.md) only while choosing, drafting, repairing, or changing a `module` or `system` design. Load [Design review](design-review.md) only when freezing, reviewing, or adopting that design.
@@ -133,7 +134,7 @@ A candidate without adopted unchanged `IMPLEMENTATION_READY` cannot be selected 
 
 Routing is complete only when exactly one row owns the action and its completion criterion is satisfied. A row may point to several files because one action can cross several existing modules; it must not load another row merely because that work could follow later.
 
-When routing completion returns control to the user, apply the canonical [User-facing handoff](frontier-core.md#user-facing-handoff). Synthesize the management explanation from the current Brief and F1/F3/F5/F6, the latest terminal B and controlling Outcome Reflection, any adopted result, the persisted resolver result and Selection when they exist, and finally Budget and authority records. Presentation does not rerun or alter direction resolution. It must not substitute record identifiers, Budget use, gate status, or repository hygiene for the concrete work, supported learning, objective gap, nearest decision-changing evidence, and complete persisted next-step set.
+Return the recorded routing outcome to the Coordinator.
 
 ## Slice 5 acceptance scenarios
 

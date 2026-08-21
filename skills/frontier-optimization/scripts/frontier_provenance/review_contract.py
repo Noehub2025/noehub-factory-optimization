@@ -8,10 +8,15 @@ from typing import Any
 
 import yaml
 
+from evaluation_target_contract import validate_evaluation_target_contract
+
 from .content import ProvenanceError
 
 
-ROLE_ADAPTER_CONTRACT = "frontier-review-role-adapter/1"
+ROLE_ADAPTER_CONTRACT_V1 = "frontier-review-role-adapter/1"
+ROLE_ADAPTER_CONTRACT_V2 = "frontier-review-role-adapter/2"
+ROLE_ADAPTER_CONTRACT = ROLE_ADAPTER_CONTRACT_V2
+SUPPORTED_ROLE_ADAPTERS = {ROLE_ADAPTER_CONTRACT_V1, ROLE_ADAPTER_CONTRACT_V2}
 REVIEW_KINDS = {"entry", "replan", "design", "implementation", "claims"}
 ENTRY_STAGES = {"authorization-readiness", "spend-readiness"}
 OVERLAY_ROLES = {"repair", "correction", "supplement", "overlay"}
@@ -31,16 +36,23 @@ def validate_and_project(
     *,
     review_stage: str | None = None,
     closed_collections: list[dict[str, Any]] | None = None,
+    role_adapter: str = ROLE_ADAPTER_CONTRACT,
 ) -> dict[str, Any]:
     """Validate one complete role set and derive its semantic projection."""
 
     if review_kind not in REVIEW_KINDS:
         raise ProvenanceError(f"unsupported review kind: {review_kind!r}")
+    if role_adapter not in SUPPORTED_ROLE_ADAPTERS:
+        raise ProvenanceError(f"unsupported review role adapter: {role_adapter!r}")
     parsed = {name: _parse(name, raw) for name, raw in raw_by_name.items()}
     _reject_overlay_semantics(parsed)
     collections = closed_collections or []
     return {
-        "entry": _entry_projection,
+        "entry": (
+            _legacy_entry_projection
+            if role_adapter == ROLE_ADAPTER_CONTRACT_V1
+            else _entry_projection
+        ),
         "replan": _replan_projection,
         "design": lambda parsed, stage, collections: _design_projection(
             parsed, stage, collections, raw_by_name
@@ -101,7 +113,7 @@ def _entry_projection(
         {"event_id", "budget", "selection", "authority", "resolver", "route_set"},
         "entry selection evidence state",
     )
-    plan = _one_contract(parsed, "project/decision/entry/", "frontier-project-batch-plan/2")
+    plan = _one_contract(parsed, "project/decision/entry/", "frontier-project-batch-plan/3")
     _require_fields(
         plan,
         {"batch_id", "maximum_spend", "authorization_gate", "stop_conditions"},
@@ -116,7 +128,7 @@ def _entry_projection(
         and document.get("batch_id") == plan["batch_id"]
         and document.get("contract_version")
         not in {
-            "frontier-project-batch-plan/2",
+            "frontier-project-batch-plan/3",
             "frontier-project-authorization-target/1",
             "frontier-project-spend-gate/1",
         }
@@ -162,16 +174,264 @@ def _entry_projection(
         authority_target = gate["authority_target"]
         affected_scope = gate["affected_scope"]
         later_spend_gate = gate["later_spend_gate"]
-    return _substantive(
-        {
-            "review_stage": review_stage,
-            "affected_scope": affected_scope,
-            "budget": selection["budget"],
-            "selection": selection["selection"],
-            "authority_target": authority_target,
-            "later_spend_gate": later_spend_gate,
-        }
+    projection = {
+        "review_stage": review_stage,
+        "affected_scope": affected_scope,
+        "budget": selection["budget"],
+        "selection": selection["selection"],
+        "authority_target": authority_target,
+        "later_spend_gate": later_spend_gate,
+    }
+    routine = plan.get("routine_follow_up")
+    if routine is not None:
+        projection["routine_follow_up"] = _routine_follow_up_projection(parsed, plan)
+    return _substantive(projection)
+
+
+def _legacy_entry_projection(
+    parsed: dict[str, Any], review_stage: str | None, collections: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Read the exact pre-cutover Entry shape without making it writable again."""
+
+    rewritten = dict(parsed)
+    legacy = _one_contract(
+        rewritten, "project/decision/entry/", "frontier-project-batch-plan/2"
     )
+    current = dict(legacy)
+    current["contract_version"] = "frontier-project-batch-plan/3"
+    for name, document in list(rewritten.items()):
+        if document is legacy:
+            rewritten[name] = current
+            break
+    return _entry_projection(rewritten, review_stage, collections)
+
+
+def _routine_follow_up_projection(
+    parsed: dict[str, Any], plan: dict[str, Any]
+) -> dict[str, Any]:
+    routine = _mapping(plan.get("routine_follow_up"), "routine follow-up")
+    _require_contract(routine, "frontier-routine-follow-up/1")
+    _require_fields(
+        routine,
+        {
+            "slot_id",
+            "materialization_batch_id",
+            "follow_up_batch_id",
+            "route_id",
+            "protocol_id",
+            "calibration_id",
+            "scientific_question",
+            "sample_ceiling",
+            "resource_ceiling",
+            "result_contract_version",
+            "action_window",
+            "budget_boundary",
+            "protected_reserve",
+            "late_bindings",
+            "experiment_template",
+            "prohibited_consequences",
+        },
+        "routine follow-up",
+    )
+    if routine["materialization_batch_id"] != plan["batch_id"]:
+        raise ProvenanceError("routine follow-up must belong to its materialization batch")
+    if routine["result_contract_version"] != "frontier-batch-result/2":
+        raise ProvenanceError("routine follow-up must write frontier-batch-result/2")
+    if routine["protected_reserve"] != "prohibited":
+        raise ProvenanceError("routine follow-up cannot use protected reserve")
+    if routine["late_bindings"] != [
+        "candidate.id",
+        "candidate.manifest_sha256",
+        "candidate.collection_root",
+    ]:
+        raise ProvenanceError("routine follow-up has an invalid delayed-binding set")
+    template = _mapping(routine["experiment_template"], "routine experiment template")
+    _require_contract(template, "frontier-routine-experiment-template/1")
+    _require_fields(
+        template,
+        {"experiment", "runtime_inputs", "evaluation_target"},
+        "routine experiment template",
+    )
+    experiment = _mapping(template["experiment"], "routine experiment source template")
+    _require_contract(experiment, "frontier-routine-experiment/1")
+    _require_fields(
+        experiment,
+        {
+            "candidate",
+            "scientific_question",
+            "protocol_id",
+            "calibration_id",
+            "sample_ceiling",
+            "resource_ceiling",
+            "evidence_scope",
+            "result_path",
+            "stop_conditions",
+        },
+        "routine experiment source template",
+    )
+    if "experiment_id" in experiment:
+        raise ProvenanceError(
+            "routine experiment source template must omit its derived experiment_id"
+        )
+    if experiment["candidate"] != {
+        "id": "$late.candidate.id",
+        "manifest_sha256": "$late.candidate.manifest_sha256",
+        "collection_root": "$late.candidate.collection_root",
+    }:
+        raise ProvenanceError("routine experiment source has an invalid candidate template")
+    runtime_inputs = _mapping(
+        template["runtime_inputs"], "routine runtime-input template"
+    )
+    _require_fields(
+        runtime_inputs,
+        {"sample_ceiling", "resource_ceiling", "schedule"},
+        "routine runtime-input template",
+    )
+    if (
+        runtime_inputs["sample_ceiling"] != routine["sample_ceiling"]
+        or runtime_inputs["resource_ceiling"] != routine["resource_ceiling"]
+    ):
+        raise ProvenanceError("routine runtime inputs exceed the reviewed slot")
+    target = _mapping(template["evaluation_target"], "routine evaluation target template")
+    if target.get("mode") != "routine-local" or target.get("consequence_limit") != "B evidence only":
+        raise ProvenanceError("routine experiment template exceeds B-evidence-only scope")
+    target_experiment = _mapping(target.get("experiment"), "routine experiment target")
+    if target_experiment.get("experiment_id") != "$derived.experiment.id" or target_experiment.get(
+        "file_sha256"
+    ) != "$derived.experiment.file_sha256":
+        raise ProvenanceError("routine experiment target must use system-derived identity fields")
+    if (
+        target.get("sample_ceiling") != routine["sample_ceiling"]
+        or target.get("resource_ceiling") != routine["resource_ceiling"]
+    ):
+        raise ProvenanceError("routine target exceeds the reviewed sample or resource ceiling")
+    if (
+        experiment["scientific_question"] != routine["scientific_question"]
+        or experiment["protocol_id"] != routine["protocol_id"]
+        or experiment["calibration_id"] != routine["calibration_id"]
+        or experiment["sample_ceiling"] != routine["sample_ceiling"]
+        or experiment["resource_ceiling"] != routine["resource_ceiling"]
+        or experiment["evidence_scope"] != target.get("evidence_scope")
+    ):
+        raise ProvenanceError("routine experiment source differs from its reviewed slot")
+    probe = _replace_tokens(
+        target,
+        {
+            "$late.candidate.id": "candidate-sha256:" + "1" * 64,
+            "$late.candidate.manifest_sha256": "2" * 64,
+            "$late.candidate.collection_root": "sha256:" + "3" * 64,
+            "$entry.origin_decision_root": "frontier-decision-root-sha256:" + "4" * 64,
+            "$entry.origin_authority_root": "frontier-authority-root-sha256:" + "5" * 64,
+            "$entry.template_root": "sha256:" + "6" * 64,
+            "$entry.protocol_content_root": "frontier-content-root-sha256:" + "7" * 64,
+            "$entry.calibration_content_root": "frontier-content-root-sha256:" + "7" * 64,
+            "$entry.protocol_invalidation_key": "sha256:" + "a" * 64,
+            "$derived.experiment.id": "routine-experiment-sha256:" + "8" * 64,
+            "$derived.experiment.file_sha256": "9" * 64,
+        },
+    )
+    target_findings: list[dict[str, str]] = []
+    validate_evaluation_target_contract(probe, target_findings)
+    if target_findings:
+        details = "; ".join(item["detail"] for item in target_findings)
+        raise ProvenanceError(f"routine experiment target is incomplete: {details}")
+    if routine["prohibited_consequences"] != target.get("prohibited_consequences"):
+        raise ProvenanceError(
+            "routine follow-up prohibitions must equal the canonical target prohibitions"
+        )
+    protocol = _one_contract(
+        parsed, "project/decision/entry/", "frontier-evaluation-protocol/1"
+    )
+    calibration = _one_contract(
+        parsed,
+        "project/decision/entry/",
+        "frontier-protocol-calibration-result/1",
+    )
+    _require_fields(
+        protocol,
+        {
+            "protocol_id",
+            "evaluator",
+            "harness",
+            "schema",
+            "scoring",
+            "environment",
+            "evaluation_scope",
+            "comparison_distribution",
+            "sampling",
+            "metrics",
+            "uncertainty",
+            "exposure",
+            "calibration_requirements",
+            "invalidation_key",
+        },
+        "evaluation protocol",
+    )
+    invalidation_body = {
+        key: value
+        for key, value in protocol.items()
+        if key not in {"protocol_id", "invalidation_key", "identity_rule"}
+    }
+    derived_invalidation_key = "sha256:" + hashlib.sha256(
+        json.dumps(
+            invalidation_body,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode()
+    ).hexdigest()
+    if protocol["invalidation_key"] != derived_invalidation_key:
+        raise ProvenanceError("evaluation protocol invalidation key does not derive from protocol semantics")
+    _require_fields(
+        calibration,
+        {
+            "calibration_id",
+            "protocol_id",
+            "protocol_invalidation_key",
+            "environment",
+            "controls",
+            "evidence_manifest",
+            "results",
+            "drift_status",
+        },
+        "protocol calibration result",
+    )
+    if routine["protocol_id"] != protocol["protocol_id"]:
+        raise ProvenanceError("routine follow-up binds a different evaluation protocol")
+    if routine["calibration_id"] != calibration["calibration_id"]:
+        raise ProvenanceError("routine follow-up binds a different protocol calibration")
+    if calibration["protocol_id"] != protocol["protocol_id"]:
+        raise ProvenanceError("protocol calibration binds a different protocol")
+    if calibration["protocol_invalidation_key"] != protocol["invalidation_key"]:
+        raise ProvenanceError("protocol calibration is invalidated by protocol drift")
+    if calibration["drift_status"] != "current":
+        raise ProvenanceError("routine follow-up requires current protocol calibration")
+    return {
+        "slot_id": routine["slot_id"],
+        "materialization_batch_id": routine["materialization_batch_id"],
+        "follow_up_batch_id": routine["follow_up_batch_id"],
+        "route_id": routine["route_id"],
+        "protocol_id": routine["protocol_id"],
+        "calibration_id": routine["calibration_id"],
+        "protocol_invalidation_key": protocol["invalidation_key"],
+        "scientific_question": routine["scientific_question"],
+        "sample_ceiling": routine["sample_ceiling"],
+        "resource_ceiling": routine["resource_ceiling"],
+        "action_window": routine["action_window"],
+        "budget_boundary": routine["budget_boundary"],
+        "template": template,
+        "prohibited_consequences": routine["prohibited_consequences"],
+    }
+
+
+def _replace_tokens(value: Any, replacements: dict[str, str]) -> Any:
+    if isinstance(value, str):
+        return replacements.get(value, value)
+    if isinstance(value, list):
+        return [_replace_tokens(item, replacements) for item in value]
+    if isinstance(value, dict):
+        return {key: _replace_tokens(item, replacements) for key, item in value.items()}
+    return value
 
 
 def _replan_projection(

@@ -177,7 +177,9 @@ The Primary Framing Agent alone writes the problem Brief, Open decisions, and Kn
 
 The Primary Framing Agent creates or selects each worker detail before delegation. The Research Agent writes only research evidence, sources, observations, candidate representations, risks, unknowns, recommendations, and explicitly proposed Contract text. The Grill Agent writes only user answers, authorizations, decision provenance, necessary context, and unresolved user choices. Each worker returns a packet that matches its durable record.
 
-Research and grill workers do not edit the problem Brief, Open decisions, Known limits, core Contract cells, row status, adopted normative rules, epochs, representation revisions, lifecycle assurance metadata, or normative module-contract content.
+The Design Measurement Agent writes only the assigned nonnormative analysis, independent reconstruction when required, exact Contract projection, and finding dispositions in the selected Slot H detail. It is the sole professional author and reviser of measurement design. The Primary Framing Agent remains the sole normative adopter and may adopt or reject a complete projection without editing its measurement meaning.
+
+Research, grill, and measurement-design workers do not edit the problem Brief, Open decisions, Known limits, core Contract cells, row status, adopted normative rules, epochs, representation revisions, lifecycle assurance metadata, or normative module-contract content.
 
 The Review Agent writes valid verdicts and finding text in `review.md`. It can edit review metadata and contract-document frontmatter without changing A-H semantics.
 
@@ -215,7 +217,7 @@ Reviewed at: <ISO-8601 datetime>
 ## R1: <short finding name>
 
 - Affects: <Slot or cross-cutting rule>
-- Work type: <research | grill | reframe | blocker>
+- Work type: <research | grill | measurement-design | reframe | blocker>
 - Evidence: <decisive evidence>
 - Required action: <one action>
 - Complete when: <checkable condition>
@@ -224,11 +226,11 @@ Reviewed at: <ISO-8601 datetime>
 
 A valid review contains exactly one allowed verdict and a Cold-read reconstruction written before details were opened. `PROCEED` has no open finding and says `None` for unexplained terms or relationships. Every other verdict has at least one finding with all six fields.
 
-`Required action` and `Complete when` define the repair work and its checkable completion, not the user reply. Keep the finding schema unchanged. When control returns to the user, derive the reply through [user-facing-return.md](user-facing-return.md).
+`Required action` and `Complete when` define the repair work and its checkable completion, not the user reply. Keep the finding field set unchanged. When control returns to the user, derive the reply through [user-facing-return.md](user-facing-return.md).
 
 The Review Agent initializes each finding to `open`. The Primary Framing Agent sets `complete` only when the completion condition holds and sets `blocked` only with an exact blocker.
 
-Derive the verdict from work types: any `blocker` gives `BLOCKED`; otherwise, any `reframe` or `grill` gives `REFRAME_REQUIRED`; otherwise, factual findings give `RESEARCH_REQUIRED`.
+Derive the verdict from work types: any `blocker` gives `BLOCKED`; otherwise, any `measurement-design`, `reframe`, or `grill` gives `REFRAME_REQUIRED`; otherwise, factual findings give `RESEARCH_REQUIRED`.
 
 A Review Agent accepts an evidence-backed agent default through a `reframe` finding. The Primary Framing Agent records that acceptance, changes the row to `P`, and requests a fresh readiness review.
 
@@ -258,7 +260,7 @@ Any meaningful change to `PROBLEM.md` or a linked contract document invalidates 
 
 A meaningful change can alter legality, ranking, success, measurement, resource feasibility, or result interpretation. Spelling, link repair, and small wording improvements that already passed the current task-understanding check carry no invalidation. A rewrite needed because the Brief failed that check keeps A-H status and the epoch when meaning is unchanged, but it invalidates review assurance: set the core document to draft, remove `verified`, and require a fresh review. Changes only to review metadata do not invalidate themselves.
 
-The linked Slot document is part of the row contract: formulas, quantifiers, distributions, seed rules, and measurement rules in it are normative. A semantic change to a pinned (`P`) contract while retained results exist additionally requires a comparability review and a `log.md` disposition — flag this to the caller; the disposition decision belongs to `review-optimization`.
+The linked Slot document's adopted normative sections are part of the row contract: formulas, quantifiers, distributions, sampling rules, and measurement rules in them are normative. Research, user-decision, and measurement-design proposal sections remain nonnormative until the Primary Framing Agent adopts their content. A semantic change to a pinned (`P`) contract while retained results exist additionally requires a comparability review and a `log.md` disposition — flag this to the caller; the disposition decision belongs to `review-optimization`.
 
 When `REPRESENTATION.md` exists, a parent semantic change also invalidates its parent binding and review assurance. Follow [representation-documents.md](representation-documents.md) without changing the parent epoch solely for representation state.
 
@@ -292,8 +294,9 @@ Keep adopted normative rules, research records, and user-decision records under 
 - The Primary Framing Agent writes adopted normative sections.
 - A Research Agent writes the delegated question and scope, research evidence and sources, code or experiment observations, candidate representations, risks, unknowns, recommendations, and `Proposed Contract text — not adopted`. It can update `generated` and `sources`.
 - A Grill Agent writes user answers, authorizations, decision source and context, and unresolved user choices. It can update `generated`.
+- The Design Measurement Agent writes `Measurement design analysis — not adopted`, `Independent reconstruction — not adopted` when required, `Contract projection — not adopted`, and `Finding dispositions`. It can update `generated` and `sources`.
 
-Proposed Contract text and candidate representations remain nonnormative until the Primary Framing Agent adopts them.
+Proposed Contract text, candidate representations, and measurement-design projections remain nonnormative until the Primary Framing Agent adopts them.
 
 When a default was adopted because the user could not decide, mark it `Decision source: agent default` and give its evidence.
 

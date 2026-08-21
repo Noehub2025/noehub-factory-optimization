@@ -15,8 +15,8 @@ record. Repair the same unspent and unauthorized B draft and call it again.
 
 `SEALED` atomically publishes one portable `project-decision` content root, one
 decision node, one review packet, and one exclusive review assignment. The root
-contains a generated `frontier-review-subject/1` index that enumerates every
-member, every closed collection, the applied `frontier-review-role-adapter/1`,
+contains a generated `frontier-review-subject/2` index that enumerates every
+member, every closed collection, the applied `frontier-review-role-adapter/2`,
 and the derived review-kind semantic projection. The
 reviewer receives that single complete root. A reviewed realization remains
 immutable; a later repair creates another complete root and review, never a
@@ -47,6 +47,8 @@ locator. The review report is separate `review-report` content and the
 attestation payload contains no validator identity. A later-spend check validates
 the persisted Selection and cited project facts; it never reruns the resolver
 under a later workflow.
+
+Current Entry uses `frontier-project-batch-plan/3`. When that plan contains a `frontier-routine-follow-up/1`, the same complete subject must also contain the exact protocol, current calibration, single-use slot, scientific question, experiment template, ceilings, Budget boundary, and prohibitions defined by [Evaluation protocol reuse](evaluation-protocol.md). The review authorizes only the materialization and that conditional screen. The screen is admitted later from derived candidate and implementation-review evidence; it does not require another Entry, review, V, or authority.
 
 Selection must be copied from persisted Reflection without reinterpretation.
 The attested `project-decision` content includes the resolver row, route-set state, direction, affected scope, surviving authority,

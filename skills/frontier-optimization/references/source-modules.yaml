@@ -6,10 +6,12 @@ modules:
       - frontier-optimization/SKILL.md
       - frontier-optimization/agents/openai.yaml
       - frontier-optimization/references/frontier-core.md
+      - frontier-optimization/references/user-facing-handoff.md
       - frontier-optimization/references/provenance-and-identity.md
       - frontier-optimization/references/provenance-rollout.yaml
       - frontier-optimization/references/source-modules.yaml
       - frontier-optimization/scripts/finding_effects.py
+      - frontier-optimization/scripts/evaluation_target_contract.py
   storage-recovery:
     depends_on: [graph-core]
     files:
@@ -19,6 +21,7 @@ modules:
       - frontier-optimization/scripts/frontier_provenance/facade.py
       - frontier-optimization/scripts/frontier_provenance/graph.py
       - frontier-optimization/scripts/frontier_provenance/repository.py
+      - frontier-optimization/scripts/frontier_provenance/routine_admission.py
       - frontier-optimization/scripts/frontier_provenance/review_subject.py
       - frontier-optimization/scripts/frontier_provenance/review_contract.py
       - frontier-optimization/scripts/frontier_provenance/source_modules.py
@@ -53,6 +56,7 @@ modules:
     files:
       - frontier-optimization/references/batch-interface.md
       - frontier-optimization/references/candidate-lifecycle.md
+      - frontier-optimization/references/evaluation-protocol.md
       - frontier-optimization/references/worker-interfaces.md
       - run-frontier-batch/SKILL.md
       - run-frontier-batch/agents/openai.yaml

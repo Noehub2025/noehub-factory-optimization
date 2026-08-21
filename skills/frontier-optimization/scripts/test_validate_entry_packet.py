@@ -246,7 +246,7 @@ def make_workspace(root: Path, frozen: bool = False, target_launcher_id: str | N
         "executor": "Agent",
         "required_inputs": [],
             "identity_contract": BATCH.IDENTITY_CONTRACT,
-            "result_contract_version": BATCH.RESULT_CONTRACT_V1,
+            "result_contract_version": BATCH.RESULT_CONTRACT_V2,
             "workflow_source_binding": copy.deepcopy(workflow_source_binding),
             "workflow_source_identity": workflow_source_binding["source_snapshot"]["identity"],
             "worker_source_member": "workers/run-frontier-batch/SKILL.md",
@@ -1279,9 +1279,12 @@ class EntryPacketSchemaTests(unittest.TestCase):
             for relative in ("SKILL.md", "agents/openai.yaml")
         }
         version_2_only = {
+            "references/evaluation-protocol.md",
             "references/provenance-and-identity.md",
             "references/reflection-analysis.md",
             "references/reflection-calibration.md",
+            "references/user-facing-handoff.md",
+            "scripts/evaluation_target_contract.py",
             "scripts/frontier_provenance_cli.py",
             "scripts/frontier_review_cli.py",
             "scripts/run_workflow_checks.py",

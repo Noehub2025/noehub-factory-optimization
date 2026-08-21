@@ -7,6 +7,78 @@ SKILL_ROOT = Path(__file__).resolve().parents[1]
 
 
 class FrameSkillBundleTests(unittest.TestCase):
+    def test_measurement_design_has_one_author_and_one_adopter(self) -> None:
+        coordinator = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        designer = (
+            SKILL_ROOT.parent / "design-measurement/SKILL.md"
+        ).read_text(encoding="utf-8")
+        contract = (
+            SKILL_ROOT / "references/measurement-design.md"
+        ).read_text(encoding="utf-8")
+        reviewer = (
+            SKILL_ROOT.parent / "review-optimization/SKILL.md"
+        ).read_text(encoding="utf-8")
+        representation_reviewer = (
+            SKILL_ROOT.parent / "review-representation/SKILL.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("sole professional author and reviser", designer)
+        self.assertIn("sole lifecycle coordinator and normative adopter", contract)
+        self.assertIn("adopt or reject its complete projection", coordinator)
+        self.assertIn("do not write the protocol", reviewer)
+        self.assertIn("check only that R8 faithfully stays within", representation_reviewer)
+        self.assertIn("does not select survivors, routes, budgets", designer)
+
+    def test_measurement_design_reuses_readiness_and_routes_its_findings(self) -> None:
+        coordinator = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        documents = (
+            SKILL_ROOT / "references/task-documents.md"
+        ).read_text(encoding="utf-8")
+        reviewer = (
+            SKILL_ROOT.parent / "review-optimization/SKILL.md"
+        ).read_text(encoding="utf-8")
+        contract = (
+            SKILL_ROOT / "references/measurement-design.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("| `measurement-design` | Apply the shared measurement-design route", coordinator)
+        self.assertIn("any `measurement-design`, `reframe`, or `grill` gives `REFRAME_REQUIRED`", documents)
+        self.assertIn("`measurement-design`, `reframe`, or `grill`", reviewer)
+        self.assertIn("does not add a verdict or review branch", contract)
+        self.assertNotIn("measurement-design branch", reviewer)
+
+    def test_revision_context_and_projection_adoption_are_independently_closed(self) -> None:
+        coordinator = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        designer = (
+            SKILL_ROOT.parent / "design-measurement/SKILL.md"
+        ).read_text(encoding="utf-8")
+        contract = (
+            SKILL_ROOT / "references/measurement-design.md"
+        ).read_text(encoding="utf-8")
+        reviewer = (
+            SKILL_ROOT.parent / "review-optimization/SKILL.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("Use `new` only when no current protocol exists", coordinator)
+        self.assertIn("do not supply the current protocol", coordinator)
+        self.assertIn("DESIGN_BLOCKED: fresh revision context required", designer)
+        self.assertIn("Phase A does not read Slot H content", contract)
+        self.assertIn("compare every `slot_d`, `slot_e`, `slot_h`", reviewer)
+        self.assertIn("mechanical adoption error with work type `reframe`", reviewer)
+
+    def test_measurement_depth_follows_consequence_without_persisted_mode(self) -> None:
+        contract = (
+            SKILL_ROOT / "references/measurement-design.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("An unknown proxy can remain compact", contract)
+        self.assertIn("when a proxy controls selection or investment", contract)
+        self.assertIn("Repetition alone is not adaptive reuse", (
+            SKILL_ROOT.parent / "design-measurement/SKILL.md"
+        ).read_text(encoding="utf-8"))
+        self.assertIn("This is not a persistent `light` or `enhanced` mode", contract)
+        self.assertNotIn("design_mode:", contract)
+
     def test_r8_stops_have_explicit_scope_and_surviving_authority(self) -> None:
         contract = (
             SKILL_ROOT / "references/representation-contracts.md"
@@ -72,7 +144,8 @@ class FrameSkillBundleTests(unittest.TestCase):
         representation_stage = coordinator.index("## 4. Enter the representation stage")
         self.assertLess(shared_gate, problem_stage)
         self.assertLess(shared_gate, representation_stage)
-        self.assertIn("Slot H `reframe` finding", coordinator)
+        self.assertIn("For a Slot H implementation finding", coordinator)
+        self.assertIn("do not route professional design to measurement support", coordinator)
         self.assertIn("`measurement-support` branch of `review-optimization`", coordinator)
         self.assertIn("Accept only a fresh `IMPLEMENTATION_READY` result from `review-optimization/1`", coordinator)
         self.assertIn("## Measurement-support branch", reviewer)
@@ -122,10 +195,12 @@ class FrameSkillBundleTests(unittest.TestCase):
     def test_relative_markdown_links_resolve(self) -> None:
         checked_files = (
             SKILL_ROOT / "SKILL.md",
+            SKILL_ROOT / "references/measurement-design.md",
             SKILL_ROOT / "references/user-facing-return.md",
             SKILL_ROOT / "references/task-documents.md",
             SKILL_ROOT / "references/representation-documents.md",
             SKILL_ROOT / "references/frontier-handoff.md",
+            SKILL_ROOT.parent / "design-measurement/SKILL.md",
             SKILL_ROOT.parent / "review-optimization/SKILL.md",
         )
         pattern = re.compile(r"\[[^\]]+\]\(([^)]+\.md)\)")

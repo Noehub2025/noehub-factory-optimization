@@ -110,9 +110,9 @@ uses the portable raw-byte store so a project handoff never depends on Git.
 
 Every new reviewed decision root contains one generated
 `project/decision/review-subject-index.json`. The index uses
-`frontier-review-subject/1`, declares `subject_mode: complete`, and reproduces
+`frontier-review-subject/2`, declares `subject_mode: complete`, and reproduces
 the manifest's complete member and closed-collection sets. It also carries the
-`frontier-review-role-adapter/1` result and its derived review-kind semantic
+`frontier-review-role-adapter/2` result and its derived review-kind semantic
 projection so a reviewer can see exactly what consequence the subject controls.
 Portable verification reruns that adapter against the raw members and rejects
 unknown role contracts, correction or supplement namespaces, external-base
@@ -171,6 +171,8 @@ requires canonical content paths, rejects symbolic links and unexpected files,
 and fails if any workflow-release root is present. A project handoff does not
 package workflow Skills, validators, tests, or source modules.
 
+For a routine-local execution, the execution's `project-state` root contains the late materialization and implementation-review node bytes and proofs required by [Evaluation protocol reuse](evaluation-protocol.md#routine-project-state-closure-and-recovery). `verify-handoff` validates that closure and rebuilds the non-authoritative `slot_id -> execution_root` mapping. A naked node or content reference that is neither graph-reachable nor embedded in that closure fails recovery.
+
 ## Legacy completion
 
 Version 4 is the only writer for new project provenance nodes. Historical
@@ -181,3 +183,5 @@ baseline, result, candidate recovery, and handoff code may read those exact
 objects only through the compatibility adapter. It cannot create a new legacy
 decision, enlarge scope, migrate authority, execute archived workflow code, or
 make a legacy workflow snapshot part of a new project handoff.
+
+Within version 4, the historical review-subject `/1`, role-adapter `/1`, batch-plan `/2`, and result `/1` combination is read-only. Current Entry writing uses review-subject `/2`, role-adapter `/2`, batch-plan `/3`, evaluation-target `/2`, and result `/2`. Mixed combinations cannot create authority or execution.

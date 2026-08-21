@@ -218,7 +218,7 @@ acceptance_scenarios:
   - {number: 6, name: Outside-allocation probe, target: {kind: resolver-fixture, id: outside-allocation-probe}}
   - {number: 7, name: Parent mismatch, target: {kind: resolver-fixture, id: parent-mismatch-after-frontier-work}}
   - {number: 8, name: Protected reserve, target: {kind: resolver-fixture, id: protected-reserve-exact-blocker}}
-  - {number: 9, name: General recovery request, target: {kind: contract-assertion, path: references/frontier-core.md, marker: Grants campaign-opening planning only}}
+  - {number: 9, name: General recovery request, target: {kind: contract-assertion, path: references/user-facing-handoff.md, marker: Grants campaign-opening planning only}}
   - {number: 10, name: No fake alternative, target: {kind: contract-assertion, path: references/entry-review.md, marker: Accept one eligible route without a fake T or tradeoff V}}
   - {number: 11, name: Unfunded validity diagnosis, target: {kind: resolver-fixture, id: unfunded-validity-diagnosis}}
   - {number: 12, name: Unfunded route refresh, target: {kind: resolver-fixture, id: unfunded-route-refresh}}
@@ -242,7 +242,7 @@ acceptance_scenarios:
   - {number: 30, name: Claims boundary, target: {kind: contract-assertion, path: references/closeout-and-claims.md, marker: local optimum}}
   - {number: 31, name: Mid-campaign workflow update, target: {kind: contract-assertion, path: references/frontier-core.md, marker: Any workflow update, including a changed decision rule}}
   - {number: 32, name: Project-only decision node, target: {kind: contract-assertion, path: references/entry-review.md, marker: '`project-decision` content root and an empty payload'}}
-  - {number: 33, name: General reopen request, target: {kind: contract-assertion, path: references/frontier-core.md, marker: Grants campaign-opening planning only}}
+  - {number: 33, name: General reopen request, target: {kind: contract-assertion, path: references/user-facing-handoff.md, marker: Grants campaign-opening planning only}}
   - {number: 34, name: Specific recovery request, target: {kind: regression-test, path: scripts/test_validate_candidate_recovery.py, test: test_requested_identity_mismatch_blocks_before_generation_artifacts}}
   - {number: 35, name: Critical source defect, target: {kind: resolver-fixture, id: hard-authority-stop-dominates-validity}}
   - {number: 36, name: Regression review is not campaign adoption, target: {kind: contract-assertion, path: references/packaging-and-recovery.md, marker: outside campaigns}}

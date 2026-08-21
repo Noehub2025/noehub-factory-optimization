@@ -18,13 +18,14 @@ from .facade import (
     verify_for,
 )
 from .graph import NODE_CONTRACT, verify_chain, verify_node
-from .repository import NodeRepository
+from .repository import NodeRepository, SlotConsumptionIndex
 
 __all__ = [
     "CONTENT_CONTRACT",
     "CONTENT_ROOT_PREFIX",
     "NODE_CONTRACT",
     "NodeRepository",
+    "SlotConsumptionIndex",
     "ProvenanceError",
     "artifact_entry",
     "attest",

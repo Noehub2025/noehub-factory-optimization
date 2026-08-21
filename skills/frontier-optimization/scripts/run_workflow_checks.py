@@ -50,6 +50,7 @@ RECOVERY_TESTS = (
 )
 FRAME_SKILLS = {
     "frame-optimization",
+    "design-measurement",
     "research-optimization",
     "grill-optimization",
     "review-optimization",
@@ -89,6 +90,7 @@ CROSS_CUTTING_REFERENCES = {
     "provenance-and-identity.md",
     "provenance-rollout.yaml",
     "source-modules.yaml",
+    "user-facing-handoff.md",
 }
 
 SCRIPT_TESTS = {

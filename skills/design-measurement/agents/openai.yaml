@@ -1,0 +1,6 @@
+interface:
+  display_name: "Design Measurement"
+  short_description: "Design decision-relevant measurement protocols"
+  default_prompt: "Use $design-measurement in a fresh context to design or repair the selected optimization measurement protocol."
+policy:
+  allow_implicit_invocation: true

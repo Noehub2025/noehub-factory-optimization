@@ -40,7 +40,7 @@ def base_packet() -> dict:
         "work_kind": "code",
         "problem_epoch": 3,
         "representation_revision": 4,
-        "result_contract_version": MODULE.RESULT_CONTRACT_V1,
+        "result_contract_version": MODULE.RESULT_CONTRACT_V2,
         "workflow_source_identity": "sha256:" + HASH,
         "changes_executable_candidate": True,
         "candidate_root_path": "candidates/B900/",
@@ -66,7 +66,7 @@ def base_result() -> dict:
         "work_kind": "code",
         "problem_epoch": 3,
         "representation_revision": 4,
-        "result_contract_version": MODULE.RESULT_CONTRACT_V1,
+        "result_contract_version": MODULE.RESULT_CONTRACT_V2,
         "workflow_source_identity": "sha256:" + HASH,
         "started_at": "2026-08-12T08:01:00Z",
         "ended_at": "2026-08-12T08:02:00Z",
@@ -284,6 +284,76 @@ def diagnostic_evaluation_target() -> dict:
             "prohibited_consequences": sorted(MODULE.DIAGNOSTIC_PROHIBITED_CONSEQUENCES),
         }
     )
+    return target
+
+
+def routine_evaluation_target() -> dict:
+    target = formal_evaluation_target()
+    target.update(
+        {
+            "contract_version": "frontier-evaluation-target/2",
+            "result_contract_version": "frontier-batch-result/2",
+            "mode": "routine-local",
+            "sample_ceiling": {"runs": 16},
+            "resource_ceiling": {"local_minutes": 5},
+            "routine_slot": {
+                "contract_version": "frontier-routine-follow-up/1",
+                "slot_id": "slot-B900-screen",
+                "materialization_batch_id": "B900",
+                "follow_up_batch_id": "B901",
+                "origin_decision_root": "frontier-decision-root-sha256:" + HASH,
+                "origin_authority_root": "frontier-authority-root-sha256:" + HASH,
+                "template_root": "sha256:" + HASH,
+            },
+            "protocol": {
+                "contract_version": "frontier-evaluation-protocol/1",
+                "content_root": "frontier-content-root-sha256:" + HASH,
+                "protocol_id": "protocol-sha256:" + HASH,
+                "invalidation_key": "protocol-key-sha256:" + HASH,
+            },
+            "calibration": {
+                "contract_version": "frontier-protocol-calibration-result/1",
+                "content_root": "frontier-content-root-sha256:" + HASH,
+                "calibration_id": "calibration-sha256:" + HASH,
+                "protocol_invalidation_key": "protocol-key-sha256:" + HASH,
+            },
+            "consequence_limit": "B evidence only",
+            "prohibited_consequences": sorted(
+                {
+                    "E",
+                    "formal Slot H",
+                    "sealed confirmation",
+                    "integration",
+                    "incumbent use",
+                    "promotion",
+                    "submission",
+                    "external action",
+                    "paid action",
+                    "publication",
+                    "strength claim",
+                    "direct next-B authority",
+                }
+            ),
+            "evidence_scope": {
+                "evidence_class": "b-evidence",
+                "exposure": "development",
+                "confirmation": "none",
+                "comparator_scope": "one fixed development comparator",
+                "data_scope": "one fixed development sample",
+                "workload_scope": "one local workload",
+                "scenario_scope": "one named scenario set",
+                "metric_scope": "one predeclared metric set",
+                "mechanism_grain": "whole-package-at-most",
+                "transfer_scope": "local-only",
+            },
+        }
+    )
+    target.pop("slot_h_contract")
+    target["candidate"]["collection_root"] = "sha256:" + HASH
+    target["implementation_review"] = {
+        "result": "IMPLEMENTATION_READY",
+        "derivation": "unique finding-free review of the derived candidate",
+    }
     return target
 
 
@@ -545,6 +615,221 @@ class BatchResultValidationTests(unittest.TestCase):
         result = experiment_result(target, diagnostic=True)
         validation = MODULE.validate(result, "draft", packet)
         self.assertTrue(validation["result_structure_ready"], validation["findings"])
+
+    def test_routine_local_evaluation_accepts_only_b_evidence_scope(self) -> None:
+        target = routine_evaluation_target()
+        packet = experiment_packet(target)
+        packet["result_contract_version"] = "frontier-batch-result/2"
+        result = experiment_result(target)
+        result["result_contract_version"] = "frontier-batch-result/2"
+        result["performance_evaluation_state"] = "routine-local under the pre-authorized slot"
+        result["integration_state"] = "not-authorized"
+        result["results"] = [
+            {
+                "observations": [
+                    {
+                        "metric": "score",
+                        "value": 0.5,
+                        "unit": "points",
+                        "sample_count": 16,
+                    }
+                ],
+                "maximum_consequence": "B evidence only",
+                "evidence_scope": copy.deepcopy(target["evidence_scope"]),
+            }
+        ]
+        result["observed_vs_expected"] = "recorded in structured routine observations"
+        result["recovery_point"] = "routine result recorded; no later consequence authorized"
+        result["engineering_validation"] = []
+        result["new_prerequisites"] = []
+        validation = MODULE.validate(result, "draft", packet)
+        self.assertTrue(validation["result_structure_ready"], validation["findings"])
+
+    def test_routine_local_rejects_invalid_resource_ceilings(self) -> None:
+        for resource_ceiling in (
+            {"local_minutes": 0},
+            {"local_minutes": -1},
+            {"local_minutes": True},
+            {"local_minutes": float("nan")},
+            {"local_minutes": float("inf")},
+            {"": 1},
+        ):
+            target = routine_evaluation_target()
+            target["resource_ceiling"] = resource_ceiling
+            findings: list[dict[str, str]] = []
+            MODULE.validate_evaluation_target_contract(target, findings)
+            self.assertIn(
+                "ROUTINE_RESOURCE_CEILING_INVALID",
+                {finding["code"] for finding in findings},
+            )
+
+    def test_routine_local_rejects_a_missing_later_consequence_prohibition(self) -> None:
+        target = routine_evaluation_target()
+        target["prohibited_consequences"].remove("direct next-B authority")
+        findings: list[dict[str, str]] = []
+        MODULE.validate_evaluation_target_contract(target, findings)
+        self.assertIn(
+            "ROUTINE_PROHIBITIONS_INCOMPLETE",
+            {finding["code"] for finding in findings},
+        )
+
+    def test_routine_local_rejects_confirmation_or_transfer_claims(self) -> None:
+        target = routine_evaluation_target()
+        target["evidence_scope"]["confirmation"] = "confirmed"
+        target["evidence_scope"]["transfer_scope"] = "general"
+        findings: list[dict[str, str]] = []
+        MODULE.validate_evaluation_target_contract(target, findings)
+        self.assertIn(
+            "EVALUATION_SCOPE_EXCEEDS_ROUTINE_LIMIT",
+            {finding["code"] for finding in findings},
+        )
+
+    def test_routine_result_rejects_component_attribution(self) -> None:
+        target = routine_evaluation_target()
+        packet = experiment_packet(target)
+        packet["result_contract_version"] = "frontier-batch-result/2"
+        result = experiment_result(target)
+        result["result_contract_version"] = "frontier-batch-result/2"
+        result["performance_evaluation_state"] = "routine-local under the pre-authorized slot"
+        result["integration_state"] = "not-authorized"
+        result["results"] = [
+            {
+                "observations": [
+                    {
+                        "metric": "score",
+                        "value": 0.5,
+                        "unit": "points",
+                        "sample_count": 16,
+                    }
+                ],
+                "component_attribution": "the changed component caused the whole gain",
+                "maximum_consequence": "B evidence only",
+                "evidence_scope": copy.deepcopy(target["evidence_scope"]),
+            }
+        ]
+        validation = MODULE.validate(result, "draft", packet)
+        self.assertIn(
+            "ROUTINE_RESULT_CLAIM_PRESENT",
+            {finding["code"] for finding in validation["findings"]},
+        )
+
+    def test_routine_result_rejects_narrative_claims_and_direct_follow_up(self) -> None:
+        target = routine_evaluation_target()
+        packet = experiment_packet(target)
+        packet["result_contract_version"] = "frontier-batch-result/2"
+        result = experiment_result(target)
+        result["result_contract_version"] = "frontier-batch-result/2"
+        result["performance_evaluation_state"] = "routine-local under the pre-authorized slot"
+        result["results"] = [
+            {
+                "analysis": "This confirms general superiority and one component caused the gain.",
+                "maximum_consequence": "B evidence only",
+                "evidence_scope": copy.deepcopy(target["evidence_scope"]),
+            }
+        ]
+        result["possible_follow_up"] = "Authorize the next B and promote the candidate"
+        validation = MODULE.validate(result, "draft", packet)
+        codes = {finding["code"] for finding in validation["findings"]}
+        self.assertIn("ROUTINE_RESULT_SCHEMA_INVALID", codes)
+        self.assertIn("ROUTINE_FOLLOW_UP_AUTHORITY_PRESENT", codes)
+        self.assertIn("ROUTINE_RESULT_NARRATIVE_PRESENT", codes)
+
+    def test_routine_result_rejects_top_level_authority_leakage(self) -> None:
+        target = routine_evaluation_target()
+        packet = experiment_packet(target)
+        packet["result_contract_version"] = "frontier-batch-result/2"
+        result = experiment_result(target)
+        result["result_contract_version"] = "frontier-batch-result/2"
+        result["performance_evaluation_state"] = "routine-local under the pre-authorized slot"
+        result["integration_state"] = "not-authorized"
+        result["results"] = [
+            {
+                "observations": [
+                    {
+                        "metric": "score",
+                        "value": 0.5,
+                        "unit": "points",
+                        "sample_count": 16,
+                    }
+                ],
+                "maximum_consequence": "B evidence only",
+                "evidence_scope": copy.deepcopy(target["evidence_scope"]),
+            }
+        ]
+        result["observed_vs_expected"] = "recorded in structured routine observations"
+        result["new_prerequisites"] = ["Promote this candidate and authorize B003 next"]
+        result["scope_deviation"] = "Publish the result externally"
+        validation = MODULE.validate(result, "draft", packet)
+        self.assertIn(
+            "ROUTINE_RESULT_AUTHORITY_LEAKAGE",
+            {finding["code"] for finding in validation["findings"]},
+        )
+
+    def test_routine_result_rejects_extra_sampling_and_nonfinite_values(self) -> None:
+        target = routine_evaluation_target()
+        packet = experiment_packet(target)
+        packet["result_contract_version"] = "frontier-batch-result/2"
+        result = experiment_result(target)
+        result["result_contract_version"] = "frontier-batch-result/2"
+        result["performance_evaluation_state"] = "routine-local under the pre-authorized slot"
+        item = {
+            "observations": [
+                {
+                    "metric": "score",
+                    "value": float("nan"),
+                    "unit": "points",
+                    "sample_count": 999999,
+                }
+            ],
+            "maximum_consequence": "B evidence only",
+            "evidence_scope": copy.deepcopy(target["evidence_scope"]),
+        }
+        result["results"] = [item, copy.deepcopy(item)]
+        result["observed_vs_expected"] = "recorded in structured routine observations"
+        validation = MODULE.validate(result, "draft", packet)
+        codes = {finding["code"] for finding in validation["findings"]}
+        self.assertIn("ROUTINE_RESULT_CONTAINER_INVALID", codes)
+        self.assertIn("ROUTINE_SAMPLE_CEILING_EXCEEDED", codes)
+        self.assertIn("ROUTINE_OBSERVATION_INVALID", codes)
+
+    def test_routine_blocked_before_sampling_accepts_empty_results(self) -> None:
+        target = routine_evaluation_target()
+        packet = experiment_packet(target)
+        packet["result_contract_version"] = "frontier-batch-result/2"
+        result = experiment_result(target)
+        result["result_contract_version"] = "frontier-batch-result/2"
+        result["outcome"] = "blocked"
+        result["performance_evaluation_state"] = (
+            "not-authorized: required local input unavailable"
+        )
+        result["integration_state"] = "not-authorized"
+        result["results"] = []
+        result["observed_vs_expected"] = "no structured routine observation completed"
+        result["failed_checks"] = ["required local input unavailable"]
+        result["recovery_point"] = "routine result recorded; no later consequence authorized"
+        result["engineering_validation"] = []
+        result["new_prerequisites"] = []
+        validation = MODULE.validate(result, "draft", packet)
+        self.assertTrue(validation["result_structure_ready"], validation["findings"])
+
+    def test_routine_completed_measurement_rejects_empty_results(self) -> None:
+        target = routine_evaluation_target()
+        packet = experiment_packet(target)
+        packet["result_contract_version"] = "frontier-batch-result/2"
+        result = experiment_result(target)
+        result["result_contract_version"] = "frontier-batch-result/2"
+        result["performance_evaluation_state"] = "routine-local under the pre-authorized slot"
+        result["integration_state"] = "not-authorized"
+        result["results"] = []
+        result["observed_vs_expected"] = "recorded in structured routine observations"
+        result["recovery_point"] = "routine result recorded; no later consequence authorized"
+        result["engineering_validation"] = []
+        result["new_prerequisites"] = []
+        validation = MODULE.validate(result, "draft", packet)
+        self.assertIn(
+            "ROUTINE_RESULT_CONTAINER_INVALID",
+            {finding["code"] for finding in validation["findings"]},
+        )
 
     def test_diagnostic_only_evaluation_rejects_integration_drift(self) -> None:
         target = diagnostic_evaluation_target()

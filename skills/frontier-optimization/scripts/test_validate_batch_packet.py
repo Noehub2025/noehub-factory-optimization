@@ -127,7 +127,7 @@ def base_packet() -> dict:
         "executor": "Agent",
         "required_inputs": [],
         "identity_contract": MODULE.IDENTITY_CONTRACT,
-        "result_contract_version": MODULE.RESULT_CONTRACT_V1,
+        "result_contract_version": MODULE.RESULT_CONTRACT_V2,
         "workflow_source_binding": {
             "contract_version": "frontier-workflow-source-binding/1",
             "adoption_mode": "entry",
@@ -1279,6 +1279,20 @@ class PacketPreflightTests(unittest.TestCase):
                 "WORK_PLAN_OWNS_AUTHORIZATION",
                 {item["code"] for item in result["findings"]},
             )
+
+    def test_legacy_result_contract_is_read_only_for_new_packets(self) -> None:
+        packet = base_packet()
+        packet["result_contract_version"] = MODULE.RESULT_CONTRACT_V1
+        draft = MODULE.validate(packet, "draft")
+        self.assertIn(
+            "RESULT_CONTRACT_INVALID",
+            {item["code"] for item in draft["findings"]},
+        )
+        audit = MODULE.validate(packet, "audit")
+        self.assertNotIn(
+            "RESULT_CONTRACT_INVALID",
+            {item["code"] for item in audit["findings"]},
+        )
 
 
 if __name__ == "__main__":

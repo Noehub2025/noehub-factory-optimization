@@ -40,6 +40,16 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
         self.assertTrue(plan.run_bundle_validator)
         self.assertFalse(plan.release)
 
+    def test_measurement_designer_change_selects_only_frame_contract_tests(self) -> None:
+        plan = MODULE.select_checks(
+            (".agents/skills/design-measurement/SKILL.md",),
+            "affected",
+        )
+
+        self.assertEqual(plan.tests, (MODULE.FRAME_TEST.as_posix(),))
+        self.assertTrue(plan.run_bundle_validator)
+        self.assertFalse(plan.release)
+
     def test_direction_change_does_not_select_provenance_or_recovery(self) -> None:
         plan = MODULE.select_checks(
             (".agents/skills/frontier-optimization/references/learning-loop.md",),

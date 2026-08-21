@@ -1,6 +1,6 @@
 # Frontier Batch Interface
 
-Load for one selected B before invoking `run-frontier-batch`, validating its result, or resuming it. Load `candidate-lifecycle.md` additionally only when `changes_executable_candidate: true` or implementation-review reuse is in question.
+Load for one selected B before invoking `run-frontier-batch`, validating its result, or resuming it. Load `candidate-lifecycle.md` additionally only when `changes_executable_candidate: true` or implementation-review reuse is in question. Load [Evaluation protocol reuse](evaluation-protocol.md) when `evaluation_target.mode` is `routine-local`.
 
 ## Contents
 
@@ -35,6 +35,8 @@ fact blocks only that consequence and does not reinterpret the immutable
 chain. Strategic dependent spend additionally requires the unchanged decision
 root to contain adopted `REPLAN_READY`. A routine R8 result that uniquely
 selects the next action does not authorize added research.
+
+`freeze_execution` is also the only routine-local admission writer. It derives the candidate and single-use slot from the complete Entry and materialization lineage, checks the finding-free implementation review and live spend gates, and records slot consumption before release. A routine packet or caller-provided digest cannot bypass that writer.
 
 The detailed packet, preflight, adoption, acknowledgment, and execution-start
 schemas below define legacy semantic payloads and the restricted version 1
@@ -123,7 +125,7 @@ changes_executable_candidate: <true | false>
 executor: <Agent, user, tool, service, or team>
 required_inputs: [<identifiers, paths, schemas, or prerequisites>]
 identity_contract: frontier-dispatch-identity/2
-result_contract_version: frontier-batch-result/1
+result_contract_version: frontier-batch-result/2
 decision_root: <exact frontier-decision-root-sha256 identity>
 project_content_roots: [<typed project roots required by this packet>]
 work_plan: <W path or null>

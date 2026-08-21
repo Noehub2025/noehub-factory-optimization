@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+import yaml
 
 from frontier_provenance import NodeRepository, ProvenanceError, attest, bind_authority
 from frontier_provenance.stores import ArtifactSource, ProjectPortableStore
@@ -67,7 +68,7 @@ def write_entry(
     (root / "entry/experiment.yaml").write_bytes(experiment)
     experiment_id = experiment.decode().splitlines()[0].split(": ", 1)[1]
     plan_body = (
-        "contract_version: frontier-project-batch-plan/2\n"
+        "contract_version: frontier-project-batch-plan/3\n"
         "batch_id: B001\n"
         "maximum_spend: {schedules: 1}\n"
         "authorization_gate: exact reviewed authorization\n"
@@ -119,6 +120,211 @@ def write_entry(
         "closed_collections": [],
         "semantic_projection": {"review_stage": "authorization-readiness"},
     }
+
+
+def add_routine_follow_up(root: Path, spec: dict) -> None:
+    protocol_id = "protocol-sha256:" + "1" * 64
+    calibration_id = "calibration-sha256:" + "2" * 64
+    invalidation_key = "pending"
+    template = {
+        "contract_version": "frontier-routine-experiment-template/1",
+        "experiment": {
+            "contract_version": "frontier-routine-experiment/1",
+            "candidate": {
+                "id": "$late.candidate.id",
+                "manifest_sha256": "$late.candidate.manifest_sha256",
+                "collection_root": "$late.candidate.collection_root",
+            },
+            "scientific_question": "Does the exact candidate change the predeclared local metric?",
+            "protocol_id": protocol_id,
+            "calibration_id": calibration_id,
+            "sample_ceiling": {"runs": 16},
+            "resource_ceiling": {"local_minutes": 5},
+            "evidence_scope": {
+                "evidence_class": "b-evidence",
+                "exposure": "development",
+                "confirmation": "none",
+                "comparator_scope": "one fixed development comparator",
+                "data_scope": "one fixed development sample",
+                "workload_scope": "one local workload",
+                "scenario_scope": "one named scenario set",
+                "metric_scope": "one predeclared metric set",
+                "mechanism_grain": "whole-package-at-most",
+                "transfer_scope": "local-only",
+            },
+            "result_path": "project/outcome/B002-result.yaml",
+            "stop_conditions": ["one bounded local screen"],
+        },
+        "runtime_inputs": {
+            "sample_ceiling": {"runs": 16},
+            "resource_ceiling": {"local_minutes": 5},
+            "schedule": {"seeds": [1, 2], "order": "fixed"},
+        },
+        "evaluation_target": {
+            "contract_version": "frontier-evaluation-target/2",
+            "mode": "routine-local",
+            "result_contract_version": "frontier-batch-result/2",
+            "consequence_limit": "B evidence only",
+            "sample_ceiling": {"runs": 16},
+            "resource_ceiling": {"local_minutes": 5},
+            "candidate": {
+                "id": "$late.candidate.id",
+                "root_path": "candidates/B001",
+                "manifest_path": "project/state/candidate-manifest.yaml",
+                "manifest_sha256": "$late.candidate.manifest_sha256",
+                "collection_root": "$late.candidate.collection_root",
+            },
+            "implementation_review": {
+                "result": "IMPLEMENTATION_READY",
+                "derivation": "unique finding-free review of the derived candidate",
+            },
+            "experiment": {
+                "path": "project/state/experiment.yaml",
+                "experiment_id": "$derived.experiment.id",
+                "file_sha256": "$derived.experiment.file_sha256",
+            },
+            "routine_slot": {
+                "contract_version": "frontier-routine-follow-up/1",
+                "slot_id": "slot-B001-screen",
+                "materialization_batch_id": "B001",
+                "follow_up_batch_id": "B002",
+                "origin_decision_root": "$entry.origin_decision_root",
+                "origin_authority_root": "$entry.origin_authority_root",
+                "template_root": "$entry.template_root",
+            },
+            "protocol": {
+                "contract_version": "frontier-evaluation-protocol/1",
+                "content_root": "$entry.protocol_content_root",
+                "protocol_id": protocol_id,
+                "invalidation_key": "$entry.protocol_invalidation_key",
+            },
+            "calibration": {
+                "contract_version": "frontier-protocol-calibration-result/1",
+                "content_root": "$entry.calibration_content_root",
+                "calibration_id": calibration_id,
+                "protocol_invalidation_key": "$entry.protocol_invalidation_key",
+            },
+            "prohibited_consequences": sorted(
+                {
+                    "E",
+                    "formal Slot H",
+                    "sealed confirmation",
+                    "integration",
+                    "incumbent use",
+                    "promotion",
+                    "submission",
+                    "external action",
+                    "paid action",
+                    "publication",
+                    "strength claim",
+                    "direct next-B authority",
+                }
+            ),
+            "evidence_scope": {
+                "evidence_class": "b-evidence",
+                "exposure": "development",
+                "confirmation": "none",
+                "comparator_scope": "one fixed development comparator",
+                "data_scope": "one fixed development sample",
+                "workload_scope": "one local workload",
+                "scenario_scope": "one named scenario set",
+                "metric_scope": "one predeclared metric set",
+                "mechanism_grain": "whole-package-at-most",
+                "transfer_scope": "local-only",
+            },
+        },
+    }
+    plan = {
+        "contract_version": "frontier-project-batch-plan/3",
+        "batch_id": "B001",
+        "maximum_spend": {"schedules": 2},
+        "authorization_gate": "exact reviewed composite authorization",
+        "stop_conditions": ["one materialization and at most one routine follow-up"],
+        "routine_follow_up": {
+            "contract_version": "frontier-routine-follow-up/1",
+            "slot_id": "slot-B001-screen",
+            "materialization_batch_id": "B001",
+            "follow_up_batch_id": "B002",
+            "route_id": "route-1",
+            "protocol_id": protocol_id,
+            "calibration_id": calibration_id,
+            "scientific_question": "Does the exact candidate change the predeclared local metric?",
+            "sample_ceiling": {"runs": 16},
+            "resource_ceiling": {"local_minutes": 5},
+            "result_contract_version": "frontier-batch-result/2",
+            "action_window": "before the Entry expiry",
+            "budget_boundary": {"maximum_spend": 1},
+            "protected_reserve": "prohibited",
+            "late_bindings": [
+                "candidate.id",
+                "candidate.manifest_sha256",
+                "candidate.collection_root",
+            ],
+            "experiment_template": template,
+            "prohibited_consequences": template["evaluation_target"][
+                "prohibited_consequences"
+            ],
+        },
+    }
+    plan_body = yaml.safe_dump(plan, sort_keys=False).encode()
+    (root / "entry/plan.yaml").write_bytes(
+        self_identified("batch_plan_id", "B001-plan-sha256:", plan_body)
+    )
+    protocol = {
+        "contract_version": "frontier-evaluation-protocol/1",
+        "protocol_id": protocol_id,
+        "evaluator": "exact local evaluator version",
+        "harness": "exact harness version",
+        "schema": "exact input and output schema",
+        "scoring": "exact score rule",
+        "environment": "exact local environment",
+        "evaluation_scope": "development only",
+        "comparison_distribution": "predeclared comparator and scenario distribution",
+        "sampling": "fixed seeds and balanced seats",
+        "metrics": ["primary metric"],
+        "uncertainty": "predeclared interval",
+        "exposure": "development",
+        "calibration_requirements": ["self-check once per protocol version"],
+        "invalidation_key": invalidation_key,
+    }
+    invalidation_body = {
+        key: value
+        for key, value in protocol.items()
+        if key not in {"protocol_id", "invalidation_key", "identity_rule"}
+    }
+    invalidation_key = "sha256:" + hashlib.sha256(
+        json.dumps(
+            invalidation_body,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode()
+    ).hexdigest()
+    protocol["invalidation_key"] = invalidation_key
+    calibration = {
+        "contract_version": "frontier-protocol-calibration-result/1",
+        "calibration_id": calibration_id,
+        "protocol_id": protocol_id,
+        "protocol_invalidation_key": invalidation_key,
+        "environment": "exact local environment",
+        "controls": ["incumbent self-comparison"],
+        "evidence_manifest": ["calibration-output.json"],
+        "results": ["measurement path valid"],
+        "drift_status": "current",
+    }
+    (root / "entry/protocol.yaml").write_text(yaml.safe_dump(protocol, sort_keys=False))
+    (root / "entry/calibration.yaml").write_text(
+        yaml.safe_dump(calibration, sort_keys=False)
+    )
+    for name in ("protocol", "calibration"):
+        spec["artifacts"].append(
+            {
+                "logical_name": f"project/decision/entry/{name}.yaml",
+                "path": f"entry/{name}.yaml",
+                "kind": "blob",
+                "behavioral_metadata": {},
+            }
+        )
 
 
 def test_bad_self_identity_returns_not_ready_without_formal_artifacts() -> None:
@@ -315,6 +521,79 @@ def test_valid_entry_seals_one_complete_root_and_one_decision() -> None:
         nodes = list((root / "sealed/nodes/decision").glob("*.json"))
         assert len(nodes) == 1
         assert json.loads(nodes[0].read_text())["node_id"] == result["decision_root"]
+
+
+def test_composite_entry_freezes_one_reusable_protocol_and_one_routine_slot() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        spec = write_entry(root)
+        add_routine_follow_up(root, spec)
+        result = prepare_review(spec, root, root / "sealed")
+        assert result["status"] == "SEALED", result
+        verified = ProjectPortableStore().verify(
+            root / "sealed/snapshot", expected_role="decision"
+        )
+        subject = verified["review_subject"]
+        assert subject["contract_version"] == "frontier-review-subject/2"
+        routine = subject["semantic_projection"]["routine_follow_up"]
+        assert routine["slot_id"] == "slot-B001-screen"
+        assert routine["protocol_invalidation_key"].startswith("sha256:")
+        assert routine["sample_ceiling"] == {"runs": 16}
+
+
+def test_composite_entry_rejects_stale_protocol_calibration() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        spec = write_entry(root)
+        add_routine_follow_up(root, spec)
+        calibration_path = root / "entry/calibration.yaml"
+        calibration = yaml.safe_load(calibration_path.read_text())
+        calibration["protocol_invalidation_key"] = "protocol-key-sha256:" + "9" * 64
+        calibration_path.write_text(yaml.safe_dump(calibration, sort_keys=False))
+        result = prepare_review(spec, root, root / "sealed")
+        assert result["status"] == "NOT_READY"
+        assert "invalidated by protocol drift" in result["findings"][0]["message"]
+
+
+def test_composite_entry_rejects_nonpositive_routine_resource_ceiling() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        spec = write_entry(root)
+        add_routine_follow_up(root, spec)
+        plan_path = root / "entry/plan.yaml"
+        plan = yaml.safe_load(plan_path.read_text())
+        routine = plan["routine_follow_up"]
+        invalid = {"local_minutes": -1}
+        routine["resource_ceiling"] = invalid
+        routine["experiment_template"]["experiment"]["resource_ceiling"] = invalid
+        routine["experiment_template"]["runtime_inputs"]["resource_ceiling"] = invalid
+        routine["experiment_template"]["evaluation_target"]["resource_ceiling"] = invalid
+        plan.pop("batch_plan_id")
+        plan.pop("identity_rule")
+        plan_path.write_bytes(
+            self_identified(
+                "batch_plan_id",
+                "B001-plan-sha256:",
+                yaml.safe_dump(plan, sort_keys=False).encode(),
+            )
+        )
+        result = prepare_review(spec, root, root / "sealed")
+        assert result["status"] == "NOT_READY"
+        assert "finite positive numeric limits" in result["findings"][0]["message"]
+
+
+def test_composite_entry_requires_protocol_key_change_after_evaluator_change() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        spec = write_entry(root)
+        add_routine_follow_up(root, spec)
+        protocol_path = root / "entry/protocol.yaml"
+        protocol = yaml.safe_load(protocol_path.read_text())
+        protocol["evaluator"] = "different evaluator behavior"
+        protocol_path.write_text(yaml.safe_dump(protocol, sort_keys=False))
+        result = prepare_review(spec, root, root / "sealed")
+        assert result["status"] == "NOT_READY"
+        assert "invalidation key does not derive" in result["findings"][0]["message"]
 
 
 def test_complete_review_subject_can_bind_new_authority() -> None:

@@ -124,6 +124,8 @@ Cross-check the representation against the parent contract:
 - check R7 coupling against Slots C through G and its local-to-global claim limits;
 - check R8 harness, baseline, budget, feedback use, first decision-changing check, selection, stopping, old-work policy, measurement identity, permitted decision use, and vacuity decision against Slots D through H and the current epoch.
 
+For measurement, check only that R8 faithfully stays within the adopted `r8_measurement_constraints`: evidence meaning, consequence ceilings, confirmation conditions, forbidden conclusions, adaptive-exposure limits, reuse limits, and invalidation. Do not redesign the protocol, prescribe a technique, or create a representation-owned measurement meaning. When the adopted parent measurement design itself is defective or missing, issue `reframe-problem`; when R8 enlarges or miscopies a valid parent constraint, issue `redesign`.
+
 Apply the canonical R8 vacuity definition from `representation-contracts.md`. Require a nonpositive finding only when current evidence proves that every legal result of the planned check maps to the same allowed next action. Unknown headroom, noise, resolution, representativeness, or proxy usefulness may instead be the explicit target of a bounded first check. Record a finding when engineering evidence is used as strength or when a proxy controls a consequence that Slots D and H do not permit.
 
 For each material factual claim, confirm that its labeled evidence supports the claim and applies to the current version, scale, distribution, and operating conditions. Keep conflicts, user reports, agent defaults, finite diagnostics, and unknowns visible.

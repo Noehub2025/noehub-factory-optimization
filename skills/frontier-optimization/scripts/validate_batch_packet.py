@@ -42,6 +42,7 @@ WRITE_VERBS = re.compile(r"\b(edit|write|create|modify|overwrite|change)\b", re.
 LIFECYCLE_CONTRACT = "frontier-lifecycle-transition/1"
 IDENTITY_CONTRACT = "frontier-dispatch-identity/2"
 RESULT_CONTRACT_V1 = "frontier-batch-result/1"
+RESULT_CONTRACT_V2 = "frontier-batch-result/2"
 ENGINEERING_CHECK_PLAN_CONTRACT = "frontier-engineering-check-plan/1"
 SHA256_IDENTITY = re.compile(r"^sha256:[0-9a-f]{64}$")
 EXPERIMENT_IDENTITY = re.compile(
@@ -487,11 +488,11 @@ def validate_identity_contract(
             "IDENTITY_CONTRACT_INVALID",
             f"identity_contract must be {IDENTITY_CONTRACT}",
         )
-    if phase != "audit" and document.get("result_contract_version") != RESULT_CONTRACT_V1:
+    if phase != "audit" and document.get("result_contract_version") != RESULT_CONTRACT_V2:
         add_finding(
             findings,
             "RESULT_CONTRACT_INVALID",
-            f"result_contract_version must be {RESULT_CONTRACT_V1}",
+            f"current packet writing requires result_contract_version {RESULT_CONTRACT_V2}",
         )
     if phase != "audit":
         try:

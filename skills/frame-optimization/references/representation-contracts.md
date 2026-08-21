@@ -191,11 +191,15 @@ For the requested search scope, record:
 - confirmation, promotion, stopping, and scale-up rules;
 - whether old checkpoints, saved proposals, or cached scores may be reused.
 
+Adopt the current `r8_measurement_constraints` from Slots D, E, and H as a ceiling. These constraints define evidence meaning, maximum consequence, required confirmation, forbidden conclusions, adaptive-exposure limits, reuse limits, and measurement invalidation. R8 chooses survivor, route, budget, and stopping actions within that ceiling; it cannot enlarge or repair the measurement design.
+
 For every result-based stopping trigger, record the trigger, the smallest affected scope (`candidate`, `route`, or `campaign`), the exact identities and authority that survive, the next eligible action, and the reopening condition. Candidate scope ends one immutable candidate and its dependent use. Route scope ends one exact search route while preserving named alternatives. Campaign scope ends all campaign spend authority. Use campaign scope for an aggregate review condition only when every verdict covered by that condition makes all remaining permitted campaign work unavailable. A behavior-bearing repair creates a new candidate, B, authorization, and proposal charge; it stays in the current generation while the campaign remains open.
 
 For the first planned check, name every result branch that would change the next allowed action. A check is **vacuous** only when current evidence proves that every legal result maps to the same allowed next action. Reject known-vacuous candidate or evaluation work before spend. When headroom, noise, resolution, representativeness, or proxy usefulness is unknown, the first bounded check may measure that unknown instead of presupposing its answer.
 
-Use each measurement only for the decision consequence permitted by Slots D and H. An unknown proxy-to-objective relationship may permit bounded diagnosis, screening, or local comparison while stronger promotion, transfer, safety, reliability, or real-objective claims remain unavailable. Recheck vacuity and permitted use when the baseline, measurement meaning, comparison conditions, or decision rule changes.
+Use each measurement only for the decision consequence permitted by Slots D and H. An unknown proxy-to-objective relationship may permit a bounded diagnostic or another low-cost probe without stronger assurance. It cannot control survivor selection, route closure, material allocation, formal confirmation, transfer, safety, reliability, or real-objective claims until the adopted measurement constraints support that consequence. Recheck vacuity and permitted use when the baseline, measurement meaning, comparison conditions, decision rule, or adaptive exposure changes.
+
+Apply the adopted schedule roles and evidence-use limits. Execution checks and reusable calibration do not become strength evidence, and a candidate change alone does not require protocol recalibration. Earlier evidence becomes adaptive exposure only when it guides later generation, tuning, screening, ranking, or selection.
 
 The representation does not need to choose a specific search algorithm when the person or agent doing the work may choose it. In that case, state what they may choose and the feedback, operation, budget, selection, confirmation, and stopping limits that still apply.
 

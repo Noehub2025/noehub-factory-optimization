@@ -36,7 +36,7 @@ Before acknowledging any later B, enumerate terminal B records and E records fro
 4. Infer the strongest useful mechanism supported by the implementation, behavior, and outcome evidence. Distinguish a whole-package effect from evidence that a component was active, necessary, dominant, or numerically responsible.
 5. Record the attribution limit and the R&D implication. An attribution limit creates no diagnosis, research, review, B, or spend by itself.
 6. Interpret comparable history, progress, constraints, or measurement properties only when they can change the addressed or next concrete decision. Preserve every exclusion, adaptive-exposure limit, parent-owned metric, and guardrail that the interpretation uses.
-7. Append the reflection below and bound the conclusion. Engineering and diagnostic-only evidence remains B evidence and creates no E.
+7. Append the reflection below and bound the conclusion. Engineering, diagnostic-only, and routine-local evidence remains B evidence and creates no E. For routine-local evidence, copy the validated structured scope exactly and do not infer confirmation, transfer, component attribution, or comparison beyond it.
 8. Apply the single integrated direction resolver below to the persisted state. Record the first applicable row and its exact result; do not run a second research, R8, Budget, or gate chooser before or after it.
 9. For strategic evidence, technically filter alternatives, resolve user tradeoffs, prepare proposed F2-F4, Budget, Selection, and B state, then freeze that proposal in the replan snapshot.
 10. Adopt a finding-free unchanged `REPLAN_READY`, then append the reviewed project decision root, F2-F4, Budget, Selection, and B records exactly as reviewed.

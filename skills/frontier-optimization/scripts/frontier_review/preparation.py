@@ -21,6 +21,7 @@ from frontier_provenance.review_contract import (
     REVIEW_KINDS,
     validate_and_project,
 )
+from frontier_provenance.review_subject import SUBJECT_CONTRACT
 from frontier_provenance.stores import (
     ArtifactSource,
     ClosedCollection,
@@ -29,7 +30,6 @@ from frontier_provenance.stores import (
 
 
 PREPARATION_CONTRACT = "frontier-review-preparation/1"
-SUBJECT_CONTRACT = "frontier-review-subject/1"
 PACKET_CONTRACT = "frontier-review-packet/1"
 ASSIGNMENT_CONTRACT = "frontier-review-assignment/1"
 INDEX_LOGICAL_NAME = "project/decision/review-subject-index.json"
@@ -409,7 +409,12 @@ def _validate_cross_file_bindings(
                         if candidate.endswith(("_id", "_identity"))
                     )
                 if source is None:
-                    if binding_keys:
+                    delayed_binding = binding_keys and all(
+                        isinstance(mapping[candidate], str)
+                        and mapping[candidate].startswith(("$late.", "$derived."))
+                        for candidate in binding_keys
+                    )
+                    if binding_keys and not delayed_binding:
                         raise ProvenanceError(
                             f"bound project path is absent from the review subject: {value}"
                         )

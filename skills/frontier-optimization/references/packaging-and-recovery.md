@@ -7,21 +7,21 @@
 - Verify recovery without live context
 - Optional cleanup
 - Post-closeout candidate reuse
-- Ten-Skill release and regression rule
+- Eleven-Skill release and regression rule
 - Acceptance scenarios
 
 Load this stage only when the recorded-state router selects an explicit packaging request after a complete closeout. Packaging preserves evidence and makes recovery portable; it creates no campaign, spend, measurement, integration, incumbent, promotion, or claim authority.
 
-For version 3 provenance, export every retained typed node and portable project
+For version 4 provenance, export every retained typed node and portable project
 content root. Verify the exported chain and roots in a directory without
 `.git`. Git commits and signed tags identify workflow releases separately;
 they are never project handoff inputs. Missing objects, unexpected members, or
 changed bytes block publication.
 
 Use `frontier_provenance_cli.py` with `export-handoff` and then
-`verify-handoff` for a version 3 root. That atomic writer includes every
+`verify-handoff` for a version 4 root. That atomic writer includes every
 reachable node and referenced raw object. `package_frontier_handoff.py` below is
-the version 1 closeout packager and cannot package a new version 3 authority
+the version 1 closeout packager and cannot package a new version 4 authority
 chain.
 
 ## Preconditions
@@ -56,6 +56,8 @@ signed tag; it is not part of the project handoff.
 Export stages beside the destination, verifies the complete project chain and
 every content bundle, then publishes atomically. It never reuses or overwrites
 an existing destination.
+
+When the chain contains a routine-local execution, its `project-state` bundle must satisfy the late-object closure in [Evaluation protocol reuse](evaluation-protocol.md). Clean-directory verification reconstructs the slot-consumption mapping from those bytes; it does not require the original repository or a separate database.
 
 ## Verify recovery without live context
 
@@ -103,7 +105,7 @@ Run `scripts/run_workflow_checks.py --mode fast` for a tight editing loop. It ch
 
 Use `--base <revision>` when the check must include committed changes after a known base. Use `--dry-run` to inspect the deterministic plan without running it. The same paths and mode must produce the same plan. A new or unclassified workflow Python file escalates `affected` to the complete suite instead of being skipped. A cross-cutting contract such as Frontier Core, provenance and identity, or the source-module manifest does the same.
 
-Before releasing the workflow bundle, run `scripts/run_workflow_checks.py --mode release` once against a stable candidate. Release mode runs the complete deterministic validator and Slice 7 test suite, reports the slowest tests, and validates the current ten-Skill bundle. The bundle validator owns common Skill metadata, invocation policy, source closure, link, portability, and required-file checks; do not repeat an external per-Skill validator for the same properties. A deployment adapter may run its own packaging check, such as a Claude Code plugin check, but that check does not become project evidence or a second workflow regression policy.
+Before releasing the workflow bundle, run `scripts/run_workflow_checks.py --mode release` once against a stable candidate. Release mode runs the complete deterministic validator and Slice 7 test suite, reports the slowest tests, and validates the current eleven-Skill bundle. The bundle validator owns common Skill metadata, invocation policy, source closure, link, portability, and required-file checks; do not repeat an external per-Skill validator for the same properties. A deployment adapter may run its own packaging check, such as a Claude Code plugin check, but that check does not become project evidence or a second workflow regression policy.
 
 For a workflow development review, provide the selector's printed paths, reasons, commands, and results. The reviewer accepts the selected tier unless an observed failure crosses another module seam, a changed workflow Python path is unclassified, or the candidate is being released. The mere existence of a broader suite is not a reason to require it. After a repair, rerun `affected`; run `release` only once after the candidate is stable.
 
@@ -113,7 +115,7 @@ Produce one source manifest and one fresh release review for the stable workflow
 
 ## Acceptance scenarios
 
-Before control returns to the user, apply the canonical [User-facing handoff](frontier-core.md#user-facing-handoff) to the packaging or recovery outcome and every decision-relevant next action that remains live. Packaging creates no ranking or campaign authority.
+Return the recorded packaging or recovery outcome to the Coordinator. Packaging creates no ranking or campaign authority.
 
 | Scenario | Required durable outcome |
 |---|---|
@@ -127,4 +129,4 @@ Before control returns to the user, apply the canonical [User-facing handoff](fr
 | Context is compacted after acknowledgment, execution-start, result, closeout, or package publication | A fresh Coordinator reconstructs the same next action or blocker from stable artifacts only. |
 | Handoff spans several project decisions | Every object retains only its typed project roots and parent chain; every workflow, validator, worker-interface, deployment, and release identity remains absent. |
 
-Slice 7 passes only when package publication is atomic and authority-neutral, exact candidate recovery fails before mutation on any identity mismatch, a portable package contains every project byte it claims to carry, and the ten-Skill workflow bundle validates. This release result is never a project-strength or Entry-readiness claim.
+Slice 7 passes only when package publication is atomic and authority-neutral, exact candidate recovery fails before mutation on any identity mismatch, a portable package contains every project byte it claims to carry, and the eleven-Skill workflow bundle validates. This release result is never a project-strength or Entry-readiness claim.
