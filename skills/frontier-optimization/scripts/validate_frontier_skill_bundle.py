@@ -28,6 +28,7 @@ VALIDATOR = "optimization-workflow-bundle/4"
 EXPECTED_SKILLS = {
     "frame-optimization": False,
     "design-measurement": True,
+    "design-implementation": True,
     "research-optimization": True,
     "grill-optimization": True,
     "review-optimization": True,

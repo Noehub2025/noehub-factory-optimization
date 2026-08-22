@@ -48,6 +48,7 @@ RECOVERY_TESTS = (
     FRONTIER_SCRIPTS / "test_validate_candidate_recovery.py",
     FRONTIER_SCRIPTS / "test_slice7_end_to_end.py",
 )
+DESIGN_TESTS = (FRONTIER_SCRIPTS / "test_slice7_end_to_end.py",)
 FRAME_SKILLS = {
     "frame-optimization",
     "design-measurement",
@@ -56,6 +57,7 @@ FRAME_SKILLS = {
     "review-optimization",
     "review-representation",
 }
+DESIGN_SKILLS = {"design-implementation"}
 DIRECTION_SKILLS = {"research-frontier", "grill-frontier"}
 
 DIRECTION_REFERENCES = {
@@ -194,6 +196,9 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
 
         if skill in FRAME_SKILLS:
             _add_tests(selected, reasons, (FRAME_TEST,), f"framing Skill changed: {skill}")
+            continue
+        if skill in DESIGN_SKILLS:
+            _add_tests(selected, reasons, DESIGN_TESTS, f"implementation designer changed: {skill}")
             continue
         if skill in DIRECTION_SKILLS:
             _add_tests(selected, reasons, DIRECTION_TESTS, f"direction worker changed: {skill}")

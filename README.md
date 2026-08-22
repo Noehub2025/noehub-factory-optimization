@@ -8,7 +8,7 @@ Before an agent starts changing code, the workflow makes it explain the task in 
 
 The workflow is not tied to a particular benchmark, model, codebase, or optimization method. Use it for tasks such as reducing latency or cost, improving a model or game-playing agent, tuning a configuration, or searching over alternative implementations. It is especially useful when a passing test is not enough to prove that a change is genuinely better.
 
-This repository provides the RSI workflow as eleven reusable Agent Skills. It does not provide a domain-specific optimizer, promise a winning solution, or remove human authority over consequential actions.
+This repository provides the RSI workflow as twelve reusable Agent Skills. It does not provide a domain-specific optimizer, promise a winning solution, or remove human authority over consequential actions.
 
 ## What problem does it solve?
 
@@ -31,7 +31,7 @@ The workflow has two stages.
 | Stage | What happens | Main result |
 |---|---|---|
 | Define the task and search | Explain the real-world task, design the decision-relevant measurement protocol, decide what candidates may look like, and obtain an independent review. | `PROBLEM.md` and `REPRESENTATION.md` |
-| Run the improvement campaign | Choose a starting approach, authorize bounded work, implement and measure candidates separately, learn from results, and close or recover the campaign. | `FRONTIER.md` and records under `frontier/` |
+| Run the improvement campaign | Choose a starting approach, design consequential implementation architecture when needed, authorize bounded work, implement and measure candidates separately, learn from results, and close or recover the campaign. | `FRONTIER.md` and records under `frontier/` |
 
 `PROBLEM.md` answers:
 
@@ -75,6 +75,7 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 
 - One coordinator owns the task definition and search design; another owns the later campaign. Worker Skills cannot silently change either contract.
 - A fresh-context measurement designer can create or repair the complete decision-relevant protocol. The framing coordinator must adopt that projection as a whole before it becomes part of the task contract.
+- A fresh-context implementation designer owns architecture and interface meaning when work changes a consequential technical seam. The campaign coordinator binds that design to delivery records, and a separate reviewer must approve it before development can be authorized.
 - Planning, user authorization, worker acknowledgment, execution start, implementation review, measurement, result adoption, and claims are separate gates. Each gate applies only to the exact files and identities it names.
 - Candidate creation and performance evaluation are separate steps. Passing engineering checks does not prove improvement.
 - A fresh-context, read-only analyst interprets each terminal technical result before seeing the current selection, budget, authority, stopping state, or proposed next action. This keeps the technical meaning of the evidence separate from what the campaign may do next.
@@ -91,7 +92,7 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 
 ## Skills
 
-Install all eleven Skills as one workflow. Normally, users invoke only the two coordinators; the coordinators assign the narrower worker Skills.
+Install all twelve Skills as one workflow. Normally, users invoke only the two coordinators; the coordinators assign the narrower worker Skills.
 
 ### Define the task and search
 
@@ -105,6 +106,7 @@ Install all eleven Skills as one workflow. Normally, users invoke only the two c
 ### Run the improvement campaign
 
 - **[frontier-optimization](./skills/frontier-optimization/SKILL.md)** — Coordinates campaign entry, planning, budget, batch selection, accepted results, closeout, and recovery.
+- **[design-implementation](./skills/design-implementation/SKILL.md)** — Authors or repairs consequential implementation architecture in a fresh context without taking over campaign routing, review, authorization, or execution.
 - **[research-frontier](./skills/research-frontier/SKILL.md)** — Researches one assigned approach landscape or evidence question.
 - **[grill-frontier](./skills/grill-frontier/SKILL.md)** — Collects one user tradeoff or authorization for an exact reviewed choice.
 - **[run-frontier-batch](./skills/run-frontier-batch/SKILL.md)** — Executes one bounded research, design, implementation, or evaluation batch.
@@ -120,6 +122,7 @@ Define the problem
   -> decide how candidates can be represented and searched
   -> independently approve an exact search scope
   -> choose a starting approach and budget
+  -> design consequential implementation architecture in a fresh context when established seams are not sufficient
   -> review and authorize one exact bounded batch when required
   -> deterministically prepare the exact project-only subject for each fresh review
   -> acknowledge the packet and freeze its execution baseline
@@ -156,7 +159,7 @@ Use this route for Codex, Claude Code, Cursor, and other Agent Skills-compatible
 npx skills@latest add Noehub2025/noehub-factory-optimization
 ```
 
-Choose all eleven Skills and the coding agents where you want to install them.
+Choose all twelve Skills and the coding agents where you want to install them.
 
 ### Claude Code plugin
 
@@ -165,7 +168,7 @@ Choose all eleven Skills and the coding agents where you want to install them.
 /plugin install noehub-factory-optimization@noehub
 ```
 
-The plugin installs all eleven Skills as one managed bundle.
+The plugin installs all twelve Skills as one managed bundle.
 
 ### Manual installation
 

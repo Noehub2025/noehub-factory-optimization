@@ -4,20 +4,21 @@
     "name": "Ken Chen",
     "url": "https://github.com/Noehub2025"
   },
-  "description": "Noehub Skills for optimization framing, measurement design, and evidence-gated Frontier campaigns, installable as a Claude Code plugin.",
+  "description": "Noehub Skills for optimization framing, measurement and implementation design, and evidence-gated Frontier campaigns, installable as a Claude Code plugin.",
   "metadata": {
-    "description": "Noehub Skills for optimization framing, measurement design, and evidence-gated Frontier campaigns, installable as a Claude Code plugin."
+    "description": "Noehub Skills for optimization framing, measurement and implementation design, and evidence-gated Frontier campaigns, installable as a Claude Code plugin."
   },
   "plugins": [
     {
       "name": "noehub-factory-optimization",
       "source": "./",
-      "version": "0.12.0",
-      "description": "Frame optimization problems, design measurement in a fresh context, interpret results independently, and run bounded campaigns with typed provenance, closeout, and recovery.",
+      "version": "0.13.0",
+      "description": "Frame optimization problems, design measurement and implementation architecture in fresh contexts, and run bounded campaigns with typed provenance, closeout, and recovery.",
       "category": "engineering",
       "keywords": [
         "optimization",
         "measurement",
+        "architecture",
         "problem-framing",
         "representation",
         "decomposition",

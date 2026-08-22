@@ -45,6 +45,8 @@ modules:
       - frontier-optimization/references/planning-records.md
       - frontier-optimization/references/reflection-analysis.md
       - frontier-optimization/references/reflection-calibration.md
+      - design-implementation/SKILL.md
+      - design-implementation/agents/openai.yaml
       - grill-frontier/SKILL.md
       - grill-frontier/agents/openai.yaml
       - research-frontier/SKILL.md

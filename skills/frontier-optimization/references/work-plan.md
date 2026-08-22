@@ -47,7 +47,7 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 
 ## Design brief
 
-<Coordinator: in plain language, state the design profile and reason, selected architecture shape, stable external seam, decisive user choices, open blockers, and replacement boundary. Keep detail in the indexed concern that owns it.>
+<Design implementation author: in plain language, state the design profile and reason, selected architecture shape, stable external seam, decisive user choices, open blockers, and replacement boundary. Keep detail in the indexed concern that owns it.>
 
 ## Design map
 
@@ -55,7 +55,7 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 |---|---|---|---|---|
 | <architecture, domain, interfaces, flows, decisions, or verification> | <exact path and section plus identity> | <profile trigger> | <specific review or B action> | <draft | current | blocked | not applicable with reason> |
 
-<Coordinator: cover every concern required by the selected profile. A concern absent from this map is outside the design contract. For non-code W, record one not-applicable row with the work kind.>
+<Coordinator: generate this map mechanically from the designer's exact concern paths, triggers, read conditions, and identities. Do not rewrite professional meaning. A concern absent from this map is outside the design contract. For non-code W, record one not-applicable row with the work kind.>
 
 ## User design decisions
 
@@ -67,9 +67,11 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 |---|---|---|---|---|---|
 | <B identifier> | <one independently verifiable behavior or artifact> | <B identifiers or None> | <exact indexed pointers needed by this executor> | <distinguishing check and safe resume point> | <proposed | selected | active | complete | blocked> |
 
+`design/verification.md` is the single source for each technical slice's observable behavior, blocking dependencies, required design inputs, oracle, failure checks, and recovery point. The Coordinator assigns existing B identifiers and copies a concise summary plus exact technical pointers into this table without changing that meaning.
+
 Every selected B must cite this exact `plan_revision` and `design_contract_identity`. Reject a B that names a stale revision, a superseded concern identity, or design inputs outside its Delivery row.
 
-For `module` or `system`, maintain `design/traceability.yaml` as a contract-bearing machine-readable index:
+For `module` or `system`, the Coordinator maintains `design/traceability.yaml` as a contract-bearing machine-readable index. `design-implementation` does not write it:
 
 ```yaml
 work_id: <W identifier>
@@ -98,17 +100,17 @@ Every required evidence destination must be exact, must appear in the selected B
 
 ## Validation
 
-<Coordinator: summarize the gates and point to the authoritative verification sections. Name design review, engineering checks, interface and failure checks, compatibility and global checks, candidate-manifest validation, implementation review, baseline establishment, first performance check, comparison validity, and required evidence without copying their detailed contracts.>
+<Coordinator: summarize lifecycle gates and point to the designer-owned verification sections. Name design review, engineering checks, interface and failure checks, compatibility and global checks, candidate-manifest validation, implementation review, baseline establishment, first performance check, comparison validity, and required evidence without adding technical requirements or copying their detailed contracts.>
 
 State the design-review requirement generically here. Keep the current review identifier, packet path, snapshot path, and review result in frontmatter or other lifecycle records outside the design contract, so a replacement review does not change the contract it reviews.
 
 ## Definition of done
 
-<Coordinator: state the exact observable campaign state required for completion, including current design review and user authorization when code-bearing work is involved, terminal delivery slices, artifacts, tests, immutable candidate identity, implementation review, baseline establishment, and handoff to the first performance check without consuming the required follow-up reserve.>
+<Coordinator: state the exact observable campaign state required for completion, including current design review and user authorization when code-bearing work is involved, terminal delivery slices, artifacts, designer-owned technical oracles, immutable candidate identity, implementation review, baseline establishment, and handoff to the first performance check without consuming the required follow-up reserve. Point to professional requirements rather than rewriting them.>
 
 ## Decisions and discoveries
 
-<Batch worker: append technical evidence, surprises, consequences, and suggested design changes. A suggestion changes no plan term or concern contract. The Coordinator records an accepted contract-bearing change in its assigned sections and concerns under a new plan revision.>
+<Batch worker: append technical evidence, surprises, consequences, and suggested design changes. A suggestion changes no plan term or concern contract. The Coordinator opens and scopes an accepted contract-bearing revision; `design-implementation` updates professional design content, and the Coordinator regenerates only its mechanical bindings.>
 
 ## Recovery
 

@@ -989,6 +989,36 @@ class Slice7ContractTests(unittest.TestCase):
             "exact diagnostic-only exception in `candidate-lifecycle.md`",
         )
 
+    def test_implementation_design_has_one_professional_author_and_a_direct_escape(self) -> None:
+        designer = (
+            SCRIPT_ROOT.parents[1] / "design-implementation/SKILL.md"
+        ).read_text()
+        for fragment in (
+            "may touch multiple files and remain `direct`",
+            "Write only the assigned W `Design brief` and triggered concern files",
+            "Do not write Design map rows, Delivery map rows, `traceability.yaml`",
+            "creates no B, proposal identity, reservation, or spend",
+            "RESULT: DRAFT_READY | DIRECT_ELIGIBLE",
+        ):
+            self.assertIn(fragment, designer)
+
+        self.assert_contract_contains(
+            "technical-design.md",
+            "it may touch multiple files",
+            "does not routinely call the designer to confirm a direct case",
+            "The designer writes only W's Design brief and triggered concern files",
+            "The Coordinator then generates Design map rows, Delivery map rows, `traceability.yaml`",
+        )
+        self.assert_contract_contains(
+            "worker-interfaces.md",
+            "| `design-implementation` |",
+            "only `design-implementation` revises professional design content",
+        )
+        self.assert_contract_contains(
+            "design-review.md",
+            "Introducing this authoring role does not invalidate or reopen an existing unchanged finding-free `DESIGN_READY` design",
+        )
+
     def test_reflection_claim_and_parent_change_routes(self) -> None:
         self.assert_contract_contains(
             "learning-loop.md",

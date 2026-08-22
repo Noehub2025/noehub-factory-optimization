@@ -133,17 +133,21 @@ partial, or supplement-only decision actionable.
 
 ## Static and live verification
 
-`frontier-consequence-gates/1` defines the allowed root role and required live
-facts for each consequence. Unknown consequences fail closed. Each required
-fact must resolve through a verified `live-receipt`; the check time must be on
-or after observation and on or before expiry. A bare boolean or unrelated
-content root is not evidence.
+`frontier-consequence-gates/2` defines the allowed root role and required live
+facts for each consequence. Unknown consequences fail closed. Acknowledgment
+is static-only: it verifies the complete immutable decision, attestation, and
+authority chain with empty live facts and does not evaluate live-attestation
+freshness. Each fact required by an action-taking consequence must resolve
+through a verified `live-receipt`; the check time must be on or after
+observation and on or before expiry. A bare boolean or unrelated content root
+is not evidence.
 
 An immutable attestation has no observation time, expiry, or invalidation rule.
-A live attestation records its observation time and invalidating facts; its
-observation cannot be in the future at check time. Every finding contains only
-a code and one `block`, `repair`, or `advisory` effect. A ready
-attestation cannot contain block or repair findings.
+A live attestation records its observation time and invalidating facts. Every
+consequence other than acknowledgment requires its observation not to be in
+the future and applies its expiry and invalidation facts. Every finding contains
+only a code and one `block`, `repair`, or `advisory` effect. A ready attestation
+cannot contain block or repair findings.
 
 ## Workflow release validation
 

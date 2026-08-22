@@ -1337,7 +1337,6 @@ def test_action_verification_rejects_a_manually_built_partial_decision() -> None
         nodes = {
             node["node_id"]: node for node in (decision, validation, authority)
         }
-        receipt_root = typed_root("live-receipt", "partial")
 
         def resolve(content_root: str) -> dict[str, object]:
             if content_root == decision_root:
@@ -1350,9 +1349,82 @@ def test_action_verification_rejects_a_manually_built_partial_decision() -> None
                 nodes.__getitem__,
                 resolve,
                 consequence="acknowledgment",
-                live_facts={"authority_current": fact(receipt_root)},
-                checked_at="2026-08-17T01:00:00Z",
             )
+
+
+def test_acknowledgment_verifies_complete_static_authority_without_live_facts() -> None:
+    content_root = "frontier-content-root-sha256:" + "6" * 64
+    _, authority, _, _, nodes = chain(content_root)
+
+    result = verify_for(
+        authority["node_id"],
+        nodes.__getitem__,
+        content_resolver,
+        consequence="acknowledgment",
+        live_facts={},
+        checked_at=None,
+    )
+
+    assert result["ready"] is True
+    assert result["consequence_contract"] == "frontier-consequence-gates/2"
+    assert result["live_facts_checked"] == []
+
+
+def test_acknowledgment_does_not_inherit_live_attestation_freshness() -> None:
+    decision = freeze_decision(
+        decision_root=typed_root("project-decision", "live-acknowledgment")
+    )
+    validation = attest(
+        decision,
+        validation_report_root=typed_root("review-report", "live-acknowledgment"),
+        verdict="ready",
+        findings=[],
+        freshness="live",
+        observed_at="2026-08-17T00:00:00Z",
+        expires_at="2026-08-18T00:00:00Z",
+        invalidation_rule={"required_facts": ["inputs_current"]},
+    )
+    authority = build_node(
+        "authority",
+        {},
+        parents=[
+            {"edge": "decision", "node_id": decision["node_id"]},
+            {"edge": "attestation", "node_id": validation["node_id"]},
+        ],
+        artifact_roots=[typed_root("project-authority", "live-acknowledgment")],
+    )
+    nodes = {
+        node["node_id"]: node for node in (decision, validation, authority)
+    }
+
+    without_clock = verify_for(
+        authority["node_id"],
+        nodes.__getitem__,
+        content_resolver,
+        consequence="acknowledgment",
+        live_facts={},
+        checked_at=None,
+    )
+    after_expiry = verify_for(
+        authority["node_id"],
+        nodes.__getitem__,
+        content_resolver,
+        consequence="acknowledgment",
+        live_facts={},
+        checked_at="2030-01-01T00:00:00Z",
+    )
+
+    assert without_clock == after_expiry
+    assert without_clock["ready"] is True
+    with pytest.raises(ProvenanceError, match="live attestation has expired"):
+        verify_for(
+            authority["node_id"],
+            nodes.__getitem__,
+            content_resolver,
+            consequence="execution",
+            live_facts={},
+            checked_at="2030-01-01T00:00:00Z",
+        )
 
 
 def test_live_fact_failure_does_not_reinterpret_static_chain() -> None:
@@ -2033,6 +2105,20 @@ def test_cli_facade_freezes_and_verifies_a_decision() -> None:
             },
             repository,
         )
+        acknowledged = apply_operation(
+            {
+                "contract_version": REQUEST_CONTRACT,
+                "operation": "verify",
+                "root_id": authority["node_id"],
+                "consequence": "acknowledgment",
+                "live_facts": {},
+                "checked_at": None,
+                "content_bindings": bindings,
+            },
+            repository,
+        )
+        assert acknowledged["ready"] is True
+        assert acknowledged["live_facts_checked"] == []
         execution = apply_operation(
             {
                 "contract_version": REQUEST_CONTRACT,

@@ -333,7 +333,7 @@ class FrontierSkillBundleTests(unittest.TestCase):
                     path.write_text(path.read_text().replace(old, new, 1))
                     self.assertNotEqual([], direction_resolver_contract_findings(root))
 
-    def test_live_eleven_skill_bundle_is_valid_and_content_addressed(self) -> None:
+    def test_live_expected_skill_bundle_is_valid_and_content_addressed(self) -> None:
         skills_root = SCRIPT.parents[2]
         result = MODULE.validate(skills_root)
         self.assertTrue(result["bundle_ready"], result["findings"])

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Design Implementation"
+  short_description: "Author implementation designs for Frontier work"
+  default_prompt: "Use $design-implementation in a fresh context to author or repair the assigned Frontier implementation design."
+policy:
+  allow_implicit_invocation: true

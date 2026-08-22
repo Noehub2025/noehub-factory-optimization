@@ -1,11 +1,12 @@
 # Frontier Campaign Cycle: Result Adoption, Evidence Learning, and Next-Batch Selection
 
-Load after `frontier-core.md` selects a planned or running campaign with one selected B or a proven-safe parallel set and current spend authority. This stage executes and adopts:
+Load after `frontier-core.md` selects a planned or running campaign with one selected B or a proven-safe parallel set and current spend authority, or selects a recorded `drafting` or `repair-required` W design action under planning authority. This stage handles:
 
 - one simple non-code B with no W; or
 - one `direct` code B with no W, ending at the materialized-candidate checkpoint;
 - one complex non-code B under a current W;
-- one `module` or `system` design checkpoint or code slice under a current W; or
+- one professional `module` or `system` design draft or revision under a current W with no B or spend;
+- one evidence-producing design checkpoint or code slice under a current W; or
 - one human-input B with its request and validation contract in B or W;
 - one diagnostic-only experiment B under the exact candidate-lifecycle exception;
 - one routine-local experiment B admitted through the exact single-use slot reviewed with its materialization B;
@@ -33,10 +34,10 @@ External action, code-bearing `mixed` work, campaign closeout, and completion of
 - Load [Candidate lifecycle](candidate-lifecycle.md), [Review snapshots](review-snapshots.md), and [Implementation review](implementation-review.md) only for code-bearing work, a diagnostic-only experiment, or an implementation-review reuse check. Load [Evaluation protocol reuse](evaluation-protocol.md) only for protocol calibration, a composite Entry slot, or a routine-local experiment.
 - Load [Result adoption](result-adoption.md) only after a worker result exists, when freezing a materialized candidate review, adopting diagnostic evidence, or validating and adopting E.
 - Load [Work plan](work-plan.md) when B cites W. Load only W frontmatter, Current state, the selected Delivery row, its applicable Validation and Definition-of-done terms, Recovery, and Design-map rows whose `Read when` condition matches the action.
-- Load [Technical design](technical-design.md) only while choosing, drafting, repairing, or changing a `module` or `system` design. Load [Design review](design-review.md) only when freezing, reviewing, or adopting that design.
+- Load [Technical design](technical-design.md) only while proving direct eligibility, preparing a design assignment, or mechanically adopting or reviewing a `module` or `system` design. `design-implementation` authors and repairs the professional content. Load [Design review](design-review.md) only when freezing, reviewing, or adopting that design.
 - Load [Learning loop](learning-loop.md) after a terminal B, an uncovered E, or a pending strategic replan. Load [Evidence records](evidence-records.md) only for a controlling D or X action.
 - Load [Claim records](claim-records.md) only when exact external wording or a claim-review request appears. Do not load [Claim review](claim-review.md) in this slice.
-- Load [Worker interfaces](worker-interfaces.md) before invoking `run-frontier-batch` or `review-frontier`.
+- Load [Worker interfaces](worker-interfaces.md) before invoking `design-implementation`, `run-frontier-batch`, or `review-frontier`.
 
 Do not reload `technical-design.md` to execute a `ready` design. Follow W's matching `Read when` pointers and load only the exact concern contracts required by the selected B. Do not load learning-loop, evidence, or claim references before their triggers occur.
 
@@ -122,7 +123,8 @@ After direction resolution, choose one row below only to load the files that own
 | Current action | Load | Completion criterion |
 |---|---|---|
 | Execute one simple non-code B | [Batch interface](batch-interface.md) and [Planning records](planning-records.md) | One bounded W-free result is durably waiting or reported; worker evidence has no adopted campaign meaning |
-| Execute complex non-code, shared W, design, or human-input work | [Work plan](work-plan.md); add [Technical design](technical-design.md) only for profile selection or a contract change | Exact W revision and Delivery row govern the B; only assigned progress or discoveries change worker-side |
+| Author or repair a module or system design | [Work plan](work-plan.md) and [Technical design](technical-design.md), then `design-implementation` in a fresh context | Designer writes only the assigned Design brief and concern bodies; the Coordinator mechanically binds exact pointers, or records the returned owner or blocker; no B, reservation, or spend is created |
+| Execute complex non-code, shared W, design-evidence, or human-input work | [Work plan](work-plan.md); add [Technical design](technical-design.md) only when the evidence changes a contract | Exact W revision and Delivery row govern the B; only assigned progress or discoveries change worker-side |
 | Materialize, recover, review, or measure an executable candidate | [Candidate lifecycle](candidate-lifecycle.md), then [Result adoption](result-adoption.md) when a result exists | Candidate stops at the correct review gate; implementation and measurement remain separate B records |
 | Validate a result, reconcile spend, freeze implementation review, or append E | [Result adoption](result-adoption.md) | Result meaning, spend, recovery, candidate review, and E eligibility are durably dispositioned |
 | Reflect, diagnose, research, replan, join, or select the next B | [Learning loop](learning-loop.md); add [Campaign state](campaign-state.md) or [Evidence records](evidence-records.md) only for the record being written | Every terminal B and uncovered E has one controlling reflection and the same state yields the same next action or blocker |

@@ -31,12 +31,13 @@ If the router returns `PARENT_REVIEW_REQUIRED`, load no stage file and continue 
 | Read or update T, V, B, E, or Q | [Planning records](references/planning-records.md) |
 | Read or update D or X | [Evidence records](references/evidence-records.md) |
 | Read or update C or A | [Claim records](references/claim-records.md) |
-| Create or revise W | [Work plan](references/work-plan.md) |
+| Create a W scaffold or update W lifecycle and mechanical bindings | [Work plan](references/work-plan.md) |
 | Delegate any worker | [Worker interfaces](references/worker-interfaces.md), then the action-specific packet or review reference |
 | Freeze, review, validate, or adopt any review snapshot | [Review snapshots](references/review-snapshots.md) |
 | Freeze or verify an authority-bearing identity | [Provenance and identity](references/provenance-and-identity.md) |
 | Plan executable candidate work during Entry | [Entry code planning](references/entry-code-planning.md) |
-| Choose a code-design profile, draft or repair a module or system design, or change a design contract | [Technical design](references/technical-design.md) |
+| Prove a direct profile or prepare a module or system design assignment | [Technical design](references/technical-design.md) |
+| Author or repair a module or system design | [Technical design](references/technical-design.md), then `design-implementation` in a fresh context |
 | Manage executable candidate identities | [Candidate lifecycle](references/candidate-lifecycle.md) |
 | Reuse an evaluation protocol or admit, adopt, or recover a pre-authorized routine screen | [Evaluation protocol reuse](references/evaluation-protocol.md) |
 | Freeze or review an Entry plan | [Entry review](references/entry-review.md) |
@@ -51,16 +52,19 @@ If the router returns `PARENT_REVIEW_REQUIRED`, load no stage file and continue 
 
 Do not load a reference merely because it may become relevant later. Every template and normative interface has one owner in this table.
 
-For a recorded W, load Technical design when `design_status` is `drafting`, `review-pending`, or `repair-required`, or when new evidence requires a contract-bearing design change. Do not load it merely because an executing B cites a `ready` module or system design; use W's `Read when` pointers to load only the concern contracts needed for that action.
+For a recorded W, load Technical design when `design_status` is `drafting`, `review-pending`, or `repair-required`, or when new evidence requires a contract-bearing design change. The Coordinator fixes the assignment and invokes `design-implementation`; it does not draft or repair professional design content. Do not load Technical design or invoke the designer merely because an executing B cites a `ready` design; use W's `Read when` pointers to load only the concern contracts needed for that action.
 
 ## Coordinate workers
 
-Before delegation, create the target, fix its parent versions, allowed paths, result path, and completion check. Invoke only:
+Before delegation, create the target and fix its parent versions, allowed paths, completion check, and result path when that worker owns one. `design-implementation` writes its assigned W sections and returns an invocation outcome; allocate no separate design-result artifact. Invoke only:
 
 - `research-frontier` for one evidence question;
 - `grill-frontier` for one unresolved user-owned tradeoff or exact execution authorization;
+- `design-implementation` in a fresh context for one new, revised, or repair-required module or system design;
 - `run-frontier-batch` for one exact B packet;
 - `review-frontier` in a fresh context for one immutable Entry, strategic replan, technical design, candidate implementation, or claim snapshot.
+
+Implementation-design authoring is planning, not a B. Before invoking `design-implementation`, create one W scaffold with fixed Purpose, Scope, parents, source base, exclusions, and exclusive design write sections. After the designer returns, generate Design map, Delivery map, traceability, and design identity mechanically from its exact design pointers without rewriting professional meaning. When design requires executable evidence, route the returned `EVIDENCE_REQUIRED` through the existing research, prototype, or B rules instead of letting design work execute it.
 
 For a user authorization tied to a concrete B packet, apply [Entry review](references/entry-review.md) from structural validation through post-answer adoption. Apply the Frontier Core finding effects at every validator and review seam. Pass the mutable draft through the single `prepare_review` interface before allocating an R identifier or dispatching a reviewer. A `NOT_READY` draft remains ordinary work in the same B; repair it without creating a snapshot, decision, packet, supplement, or recovery chain. Ask only after `AUTHORIZATION_READY` with no block or repair finding; accept authority only after the frozen adoption validator returns `ENTRY_READY` for the unchanged target.
 
@@ -72,7 +76,7 @@ For code-bearing authorization, freeze the source-derived target specification b
 
 Dispatch every B through the [Batch Interface state machine](references/batch-interface.md#dispatch-state-machine). Perform only the Coordinator-owned rows; require packet preflight to prove result-contract compatibility and source-derived project design, source-base, and authorization-target bindings before Entry review. For experiment work, require the canonical nested target to bind the complete candidate root and derive the experiment identity from the exact contract bytes; reject copied experiment identities in prose fields. For code-bearing work, require a frozen engineering check plan whose selected units, content-addressed effect evidence, positive effect limits, and engineering-only consequence agree. Run the shared candidate-package validator and enforce the forward-only inventory, staged checks, completed evidence, final manifest, result sequence before result adoption. Require the Entry review artifact itself to bind its exact packet and complete portable review subject. Workflow, Skill, validator, Slice 7, bundle, and workflow-test bytes never enter the review subject, B packet, or ordinary Entry completion check. For every Coordinator file that authorization may change, bind complete pre- and post-state bytes through `frontier-post-adoption-state/1`; do not use patches or drift exclusions. Require `run-frontier-batch` to return after acknowledgment, and invoke it again only after the baseline tool has recomputed the packet, adoption, acknowledgment, and execution-start chain. The tool must reproduce authorization from the Entry subject, verify the exact reviewed live post-state separately, and reject every other live project change. For the first B of a planned campaign, authorize the structured lifecycle rule from Batch Interface, instantiate its UTC values only after accepted acknowledgment, and freeze its exact receipt and post-transition bytes in one portable `project-state` root. Rerun result validation and the bound execution chain byte for byte before adopting a terminal outcome or preparing another review subject.
 
-Delegation is complete only when the assigned worker has written its exclusive result, the result satisfies the packet's completion check, and this Skill has either adopted its checked meaning or recorded the exact blocker and recovery point.
+Delegation is complete only when the assigned worker has written its exclusive result, or the designer has written its assigned professional sections and returned its invocation outcome; the applicable completion check passes; and this Skill has either adopted the checked meaning or recorded the exact blocker and recovery point.
 
 New lifecycle objects use the current typed Provenance writer. The detailed version 1 identity fields remain available only through its bounded completion adapter.
 

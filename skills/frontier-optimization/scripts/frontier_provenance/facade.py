@@ -17,11 +17,11 @@ from .routine_admission import validate_routine_admission
 
 
 READY_VERDICTS = {"ready", "blocked", "repair"}
-CONSEQUENCE_CONTRACT = "frontier-consequence-gates/1"
+CONSEQUENCE_CONTRACT = "frontier-consequence-gates/2"
 CONSEQUENCES = {
     "audit": ({"decision", "attestation", "authority", "execution", "outcome"}, set()),
     "review": ({"decision", "attestation"}, set()),
-    "acknowledgment": ({"authority"}, {"authority_current"}),
+    "acknowledgment": ({"authority"}, set()),
     "execution": (
         {"authority", "execution"},
         {"authority_current", "budget_current", "reservation_current", "inputs_current", "resources_available"},
@@ -363,19 +363,25 @@ def verify_for(
     }
     facts = dict(live_facts or {})
     required = set(required_facts)
-    for node in nodes:
-        if node["role"] == "attestation" and node["payload"].get("freshness") == "live":
-            rule = node["payload"]["invalidation_rule"]
-            required.update(rule["required_facts"])
-            if checked_at is None:
-                raise ProvenanceError("live attestation verification requires checked_at")
-            checked = _instant(checked_at)
-            observed = _instant(node["payload"]["observed_at"])
-            if observed > checked:
-                raise ProvenanceError("live attestation observation is in the future")
-            expires_at = node["payload"].get("expires_at")
-            if expires_at is not None and checked > _instant(expires_at):
-                raise ProvenanceError("live attestation has expired")
+    if consequence != "acknowledgment":
+        for node in nodes:
+            if (
+                node["role"] == "attestation"
+                and node["payload"].get("freshness") == "live"
+            ):
+                rule = node["payload"]["invalidation_rule"]
+                required.update(rule["required_facts"])
+                if checked_at is None:
+                    raise ProvenanceError(
+                        "live attestation verification requires checked_at"
+                    )
+                checked = _instant(checked_at)
+                observed = _instant(node["payload"]["observed_at"])
+                if observed > checked:
+                    raise ProvenanceError("live attestation observation is in the future")
+                expires_at = node["payload"].get("expires_at")
+                if expires_at is not None and checked > _instant(expires_at):
+                    raise ProvenanceError("live attestation has expired")
     unresolved: list[str] = []
     if required and checked_at is None:
         raise ProvenanceError("live consequence verification requires checked_at")

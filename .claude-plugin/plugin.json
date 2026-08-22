@@ -1,7 +1,7 @@
 {
   "name": "noehub-factory-optimization",
-  "version": "0.12.0",
-  "description": "Evidence-gated optimization framing, fresh-context measurement design, and Frontier campaigns with typed project provenance, execution, result interpretation, closeout, and recovery.",
+  "version": "0.13.0",
+  "description": "Evidence-gated optimization framing, fresh-context measurement and implementation design, and Frontier campaigns with typed provenance, execution, interpretation, closeout, and recovery.",
   "author": {
     "name": "Ken Chen"
   },
@@ -10,6 +10,7 @@
   "keywords": [
     "optimization",
     "measurement",
+    "architecture",
     "problem-framing",
     "representation",
     "decomposition",
@@ -29,6 +30,7 @@
     "./skills/review-optimization",
     "./skills/review-representation",
     "./skills/frontier-optimization",
+    "./skills/design-implementation",
     "./skills/research-frontier",
     "./skills/grill-frontier",
     "./skills/run-frontier-batch",

@@ -2,19 +2,21 @@
 
 Load only when freezing a `module` or `system` design, invoking `review-frontier` with `review_kind: design`, or validating its artifact. `direct` has no design review.
 
-Create the packet after W, applicable concerns, repository evidence, design-choice V records, and planned slices are complete. Every new design-contract identity requires a new immutable snapshot and fresh-context review. Use a new path per attempt and preserve nonpositive reviews. Include no expected verdict, suspected defect, or proposed repair.
+Create the packet after `design-implementation` has completed the professional Design brief and applicable concern bodies, and the Coordinator has mechanically completed W maps, traceability, identities, repository evidence, design-choice V records, and planned-slice bindings. Every new design-contract identity requires a new immutable snapshot and fresh-context review. Use a new path per attempt and preserve nonpositive reviews. Include no expected verdict, suspected defect, or proposed repair.
 
 ## Review method
 
 1. Verify parents, reviewed scope, route, repository evidence, W revision, design-contract identity, profile, every indexed concern identity, normalized traceability identity, V, and planned slice.
-2. Check the profile against task and repository facts. Require every triggered concern and reject any concern that W does not index. W remains a short brief and map; detailed meaning has one owning concern.
+2. Check the profile against task and repository facts. Require every triggered concern and reject any concern that W does not index. W remains a short brief and map; `design-implementation` owns professional meaning once in the Design brief and applicable concern bodies, while Coordinator fields remain mechanical or lifecycle-only.
 3. Review applicable architecture, responsibilities, dependencies, integration placement, domain meaning, state ownership, lifecycle, invariants, interfaces, callers, runtime data and control flow, failures, recovery, migration, compatibility, rollback, replacement boundaries, and any human-input schema, provenance, quality, confidentiality, acceptance, and evidence-only terms.
 4. Check technical eligibility before preference. Every user-owned tradeoff needed by a reviewed slice has eligible options, an evidence-bounded recommendation, adopted V, consequences, and reconsideration trigger. Design preference is not development authorization.
-5. Trace each behavior to its owning module, interface, flow, and distinguishing verification. Require the machine-readable traceability file to list every slice's exact required design inputs and repository-relative evidence destinations. Each code-bearing B delivers one observable vertical slice, reads only exact required inputs, names real blocking edges, and preserves a recovery point.
+5. Trace each behavior to its owning module, interface, flow, and distinguishing verification. Require `verification.md` to own each technical slice's behavior, blocking dependencies, design inputs, oracle, failure checks, and recovery point. Require the Coordinator-generated Delivery map and machine-readable traceability file to bind those exact pointers to B identifiers and repository-relative evidence destinations without semantic drift. Each code-bearing B delivers one observable vertical slice and reads only exact required inputs.
 6. Perform a cold-read implementation check. Return a finding if a developer must invent entity meaning, responsibility, interface contract, state owner, runtime transition, failure response, user value decision, test oracle, or slice boundary. An executor choice passes only when a concern labels and bounds it.
 7. Return exactly `DESIGN_READY`, `DESIGN_REPAIR_REQUIRED`, `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED`, or `BLOCKED`. A positive result has no finding and no unresolved item blocking the reviewed slice.
 
 `DESIGN_READY` means only that the exact reviewed design is technically ready. Coordinator adoption records that verdict; neither the verdict nor its adoption authorizes candidate development. Development starts only after fresh `AUTHORIZATION_READY`, a separate user authorization V, and finding-free Coordinator adoption validation bind the exact design-contract identity and affected code-bearing scope.
+
+A nonpositive review changes no design content. The Coordinator scopes a new revision and returns the complete findings to `design-implementation`; the designer repairs professional content, and the Coordinator regenerates only its mechanical bindings before another review. Introducing this authoring role does not invalidate or reopen an existing unchanged finding-free `DESIGN_READY` design.
 
 ## Packet
 

@@ -97,7 +97,7 @@ Adopt each answer as V. A user choice cannot widen scope, waive measurement, pro
 
 ## 6. Plan the first observable work
 
-Create the first B from its sole template. Create W only when the work is complex, spans checkpoints, or needs a technical-design map. Do not create empty W or design-concern scaffolding to satisfy a form. A complex non-code W uses one reasoned `not applicable` Design-map row and no technical-design concern files. Every selected B must precommit:
+Create the first B from its sole template. Create W only when the work is complex, spans checkpoints, or needs a technical-design map. Do not create empty W or design-concern scaffolding to satisfy a form. For a module or system design, the Coordinator creates only the bounded W scaffold and invokes `design-implementation`; it does not author professional design content. A complex non-code W uses one reasoned `not applicable` Design-map row and no technical-design concern files. Every selected B must precommit:
 
 - decision hypothesis;
 - expected observation;

@@ -17,19 +17,19 @@ If no usable project structure exists, or the proposal materially changes the to
 
 ## Choose the design profile
 
-Load [Technical design](technical-design.md) and choose `direct`, `module`, or `system` from repository facts and change scope.
+Load [Technical design](technical-design.md). The Coordinator may choose `direct` only when every direct condition is supported by repository facts and change scope. Otherwise create a W scaffold and invoke `design-implementation` in a fresh context; the designer selects `module` or `system` and authors the professional design.
 
-- `direct`: the exact B fully specifies one local reversible change through an established seam. No design W or design review is required.
-- `module`: create W and the triggered concern files for one component or stable seam.
-- `system`: create W and every applicable concern file for cross-component, state-ownership, migration, external-operation, or coordinated-rollout work.
+- `direct`: the exact B fully specifies one bounded reversible behavior change through established seams. It may touch multiple files when ownership, interfaces, schemas, lifecycle, dependency direction, failure semantics, and migration remain unchanged. No design W or design review is required.
+- `module`: `design-implementation` writes the Design brief and triggered concern files for one module or stable seam.
+- `system`: `design-implementation` writes the Design brief and every applicable concern file for cross-module interaction, state ownership, migration, external operation, or coordinated rollout.
 
-Load [Work plan](work-plan.md) only for `module` or `system`. Resolve every user-owned design choice as V before freezing the design.
+Load [Work plan](work-plan.md) only for `module` or `system`. The Coordinator owns the W scaffold, lifecycle, Design map, Delivery map, traceability, and identities; it mechanically binds the designer's exact pointers without rewriting professional meaning. Resolve every user-owned design choice as V and return contract-bearing answers to the designer before freezing the design.
 
 ## Separate the gates
 
 For `module` or `system`:
 
-1. Complete the W map and applicable concern contracts.
+1. Require `design-implementation` to return `DRAFT_READY`, then complete the W map and traceability mechanically from its exact concern and technical-slice pointers.
 2. Load [Design review](design-review.md) and adopt only `DESIGN_READY` for an unchanged design identity.
 3. Complete the machine-readable W traceability binding, draft the first code B packet, run finding-free draft and frozen structural preflight from `batch-interface.md`, and preserve its exact identity.
 4. Freeze a complete authorization-readiness Entry snapshot and adopt only a finding-free `AUTHORIZATION_READY` for the exact target.
@@ -38,6 +38,8 @@ For `module` or `system`:
 For `direct`, record reproducible profile evidence, complete every packet field except `packet_id`, run finding-free draft preflight, insert only the computed identity, freeze the packet, reproduce the same PASS artifact in frozen preflight, obtain `AUTHORIZATION_READY`, and only then ask the user to authorize that reviewed packet, preflight, source base, scope, spend, and stop boundary.
 
 Design preference, Coordinator design adoption, `DESIGN_READY`, and packet structural preflight do not authorize development. Any contract-bearing design or traceability change creates a new `plan_revision` and invalidates its review, authorization-readiness verdict, and every development authorization bound to the old identity.
+
+Design authoring itself is planning and creates no B, proposal identity, reservation, or spend. When the designer returns `EVIDENCE_REQUIRED`, obtain only the named executable evidence through the existing research, prototype, or B path, then start a scoped design revision.
 
 ## Plan candidate identity and review
 

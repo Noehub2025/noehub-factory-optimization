@@ -26,15 +26,17 @@ the outcome binds execution plus produced content roots. Store nodes with
 `scripts/frontier_provenance_cli.py`. Do not copy full ancestry or individual
 file digests into descendants.
 
-Before acknowledgment, execution, spend, external action, or outcome
-publication, run `verify` for the named consequence and supply the applicable
-live facts. Static ancestry may be reused; current authority, Budget and
-reservation, expiry or action window, resource availability, known prior
-external effects, and starting-state drift may not. A false or unresolved live
-fact blocks only that consequence and does not reinterpret the immutable
-chain. Strategic dependent spend additionally requires the unchanged decision
-root to contain adopted `REPLAN_READY`. A routine R8 result that uniquely
-selects the next action does not authorize added research.
+Before acknowledgment, run `verify` with empty live facts and `checked_at:
+null`. This static-only consequence proves the complete immutable decision,
+attestation, and authority chain. Before execution, spend, external action, or
+outcome publication, run `verify` for the named consequence and supply its
+live facts. Current authority, Budget and reservation, expiry or action window,
+resource availability, known prior external effects, and starting-state drift
+may not be reused from static ancestry. A false or unresolved live fact blocks
+only that consequence and does not reinterpret the immutable chain. Strategic
+dependent spend additionally requires the unchanged decision root to contain
+adopted `REPLAN_READY`. A routine R8 result that uniquely selects the next
+action does not authorize added research.
 
 `freeze_execution` is also the only routine-local admission writer. It derives the candidate and single-use slot from the complete Entry and materialization lineage, checks the finding-free implementation review and live spend gates, and records slot consumption before release. A routine packet or caller-provided digest cannot bypass that writer.
 
@@ -353,7 +355,7 @@ Authorization-readiness review supplies the full semantic gate after this struct
 
 ## Batch acknowledgment
 
-Before work or spend, `run-frontier-batch` writes the assigned acknowledgment. It confirms the packet as received; it does not create authority or repair a bad packet.
+Before work or spend, `run-frontier-batch` writes the assigned acknowledgment. It confirms the packet as received; it does not create authority or repair a bad packet. This phase verifies exact immutable identities and requires no current-state receipt, observation time, or expiry. A later authority, Budget, reservation, input, resource, or project-state change leaves the acknowledgment intact and blocks at the applicable execution or spend gate.
 
 ```yaml
 acknowledgment_id: <B identifier plus SHA-256 of canonical acknowledgment bytes with this field omitted>
