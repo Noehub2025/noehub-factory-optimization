@@ -297,7 +297,7 @@ def make_workspace(root: Path, frozen: bool = False, target_launcher_id: str | N
         "candidate_root_path": "candidates/B900-example/",
         "candidate_package_inventory_path": "artifacts/frontier/B900/package-inventory.yaml",
         "candidate_manifest_path": "artifacts/frontier/B900/candidate-manifest.yaml",
-        "engineering_check_plan": {
+            "engineering_check_plan": {
             "contract_version": BATCH.ENGINEERING_CHECK_PLAN_CONTRACT,
             "checks": [
                 {
@@ -306,6 +306,7 @@ def make_workspace(root: Path, frozen: bool = False, target_launcher_id: str | N
                     "selection": "exact",
                     "selected_units": ["tests.test_unit"],
                     "declared_effects": ["local-code-execution"],
+                    "effect_costs": {"local-code-execution": 1},
                     "effect_evidence": [
                         {
                             "path": "artifacts/frontier/B900-direct-profile.yaml",
@@ -315,13 +316,29 @@ def make_workspace(root: Path, frozen: bool = False, target_launcher_id: str | N
                 }
             ],
             "effect_limits": {"local-code-execution": 1},
-            "evidence_use": "engineering-only",
-        },
-        "artifact_paths": [
-            "candidates/B900-example/",
-            "artifacts/frontier/B900/package-inventory.yaml",
-            "artifacts/frontier/B900/candidate-manifest.yaml",
-            "artifacts/frontier/B900/result-validation.json",
+                "evidence_use": "engineering-only",
+            },
+            "publication_policy": {
+                "contract_version": BATCH.PUBLICATION_POLICY_CONTRACT,
+                "charge_event": BATCH.FIRST_IDENTITY_CHARGE,
+                "charge_amount": "1 proposal attempt",
+                "charge_basis": {
+                    "kind": "parent-rule",
+                    "path": "artifacts/frontier/B900-direct-profile.yaml",
+                    "file_sha256": MODULE.sha256_bytes(direct_raw),
+                    "locator": "fixture parent charges first candidate identity",
+                },
+                "repair_mode": "prohibited",
+                "effect_scope": "deterministic-local-checks-only",
+                "authoritative_output_path": "artifacts/frontier/B900/package-inventory.yaml",
+                "engineering_evidence_path": "artifacts/frontier/B900/engineering-evidence.json",
+            },
+            "artifact_paths": [
+                "candidates/B900-example/",
+                "artifacts/frontier/B900/package-inventory.yaml",
+                "artifacts/frontier/B900/candidate-manifest.yaml",
+                "artifacts/frontier/B900/engineering-evidence.json",
+                "artifacts/frontier/B900/result-validation.json",
             "artifacts/frontier/B900/result.yaml",
         ],
         "acknowledgment_path": "artifacts/frontier/B900/acknowledgment.yaml",

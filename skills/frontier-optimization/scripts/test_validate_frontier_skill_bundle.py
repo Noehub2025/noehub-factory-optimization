@@ -641,27 +641,13 @@ class FrontierSkillBundleTests(unittest.TestCase):
         )[0]
         semantic_markers = (
             "A B is one bounded objective, authority, evidence, and spend envelope",
-            "authorized objective and substantive target identity are unchanged",
-            "acceptance, evaluation, comparison, and expected-observation semantics are unchanged",
-            "frozen inputs and the resolved dependency and runtime identity are unchanged",
-            (
-                "allowed operations, write paths, access, external effects, "
-                "and the spend ceiling are unchanged"
-            ),
-            "creates no additional sampling or selection opportunity",
-            (
-                "every failed try, repair, and later observation is preserved "
-                "at a distinct assigned evidence path"
-            ),
-            "mechanically verifies evidence under the already authorized acceptance rule",
-            "does not produce or select substantive observations or redefine their interpretation",
-            "Changing a candidate or other work product",
-            "Do not add a universal retry count",
-            "a prior external effect is unknown",
-            (
-                "After the authoritative result exists, any continuation requires "
-                "a new immutable B packet"
-            ),
+            "An authoritative output is the first immutable work product",
+            "An explicit parent or R8 rule wins",
+            "Never relabel a runnable or tested identity as a draft",
+            "silence in historical bytes never grants a new repair loop",
+            "every real effect and resource use is counted cumulatively across all attempts",
+            "Model training, experiments, and external work may use the seam only for deterministic construction",
+            "After authoritative output publication or the immutable result",
         )
         for marker in semantic_markers:
             with self.subTest(marker=marker):
@@ -669,6 +655,57 @@ class FrontierSkillBundleTests(unittest.TestCase):
         for task_specific_term in ("pytest", "JUnit", "Kaggle", "B027", "B028"):
             with self.subTest(task_specific_term=task_specific_term):
                 self.assertNotIn(task_specific_term, section)
+
+    def test_prepublication_fidelity_repair_is_parent_first_across_roles(self) -> None:
+        skills_root = SCRIPT.parents[2]
+        documents = {
+            "lifecycle": (
+                skills_root
+                / "frontier-optimization/references/candidate-lifecycle.md"
+            ).read_text(),
+            "worker": (skills_root / "run-frontier-batch/SKILL.md").read_text(),
+            "entry": (
+                skills_root / "frontier-optimization/references/entry-review.md"
+            ).read_text(),
+            "implementation_review": (
+                skills_root
+                / "frontier-optimization/references/implementation-review.md"
+            ).read_text(),
+            "learning": (
+                skills_root / "frontier-optimization/references/learning-loop.md"
+            ).read_text(),
+        }
+        required = {
+            "lifecycle": (
+                "If the parent charges its first named identity event",
+                "If the parent permits publication after engineering checks",
+            ),
+            "worker": (
+                "An already frozen packet keeps its recorded charge and inventory ordering",
+                "If it explicitly permits post-check publication",
+            ),
+            "entry": (
+                "parent- or R8-owned proposal charge event",
+                "first identity event charged by a parent rule must not be bypassed",
+            ),
+            "implementation_review": (
+                "Reconstruct the parent-owned charge event",
+                "last passing transient snapshot and the official inventory",
+            ),
+            "learning": (
+                "A pre-publication engineering-check failure has not entered this resolver path",
+            ),
+        }
+        for role, markers in required.items():
+            for marker in markers:
+                with self.subTest(role=role, marker=marker):
+                    self.assertIn(marker, documents[role])
+
+        self.assertNotIn(
+            "Implement one observable slice, then use the bound "
+            "`validate_candidate_package.py --write-inventory`",
+            documents["worker"],
+        )
 
     def test_measurement_use_and_vacuity_rules_are_consistent_across_gates(self) -> None:
         skills_root = SCRIPT.parents[2]

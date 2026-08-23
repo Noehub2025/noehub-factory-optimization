@@ -243,6 +243,7 @@ class Slice7EndToEndTests(unittest.TestCase):
                             "selection": "exact",
                             "selected_units": ["tests.test_unit"],
                             "declared_effects": ["local-code-execution"],
+                            "effect_costs": {"local-code-execution": 1},
                             "effect_evidence": [
                                 {
                                     "path": "src/input.txt",
@@ -253,6 +254,21 @@ class Slice7EndToEndTests(unittest.TestCase):
                     ],
                     "effect_limits": {"local-code-execution": 1},
                     "evidence_use": "engineering-only",
+                },
+                "publication_policy": {
+                    "contract_version": BATCH.PUBLICATION_POLICY_CONTRACT,
+                    "charge_event": BATCH.FIRST_IDENTITY_CHARGE,
+                    "charge_amount": "1 proposal attempt",
+                    "charge_basis": {
+                        "kind": "parent-rule",
+                        "path": "src/input.txt",
+                        "file_sha256": sha256_file(source),
+                        "locator": "fixture parent charges first candidate identity",
+                    },
+                    "repair_mode": "prohibited",
+                    "effect_scope": "deterministic-local-checks-only",
+                    "authoritative_output_path": "artifacts/frontier/B900/package-inventory.yaml",
+                    "engineering_evidence_path": "artifacts/frontier/B900/engineering/evidence.json",
                 },
                 "artifact_paths": [
                     "candidates/B900-example/",
@@ -766,7 +782,10 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "changes_executable_candidate": True,
                 "planned_spend": "1 proposal attempt",
                 "actual_spend": "1 proposal attempt",
-                "accounting_evidence": candidate_id,
+                "accounting_evidence": (
+                    f"authoritative output {packet['candidate_package_inventory_path']} "
+                    f"sha256:{inventory['inventory_sha256']}"
+                ),
                 "artifacts": [packet["candidate_manifest_path"]],
                 "work_plan": None,
                 "design_review": None,

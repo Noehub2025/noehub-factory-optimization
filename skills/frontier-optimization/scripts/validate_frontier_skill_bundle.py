@@ -175,7 +175,7 @@ RESULT_CONTRACT_REQUIREMENTS = {
         "without rerunning the measurement",
     ),
     "frontier-optimization/scripts/validate_batch_packet.py": (
-        'VALIDATOR = "frontier-batch-packet-preflight/8"',
+        'VALIDATOR = "frontier-batch-packet-preflight/9"',
         'ENGINEERING_CHECK_PLAN_CONTRACT = "frontier-engineering-check-plan/1"',
         "ENGINEERING_EFFECT_CONFLICT",
         "validate_packet_result_contract",
@@ -185,7 +185,7 @@ RESULT_CONTRACT_REQUIREMENTS = {
         "RESULT_CONTRACT_V1",
     ),
     "frontier-optimization/scripts/validate_batch_result.py": (
-        'VALIDATOR = "frontier-batch-result-preflight/6"',
+        'VALIDATOR = "frontier-batch-result-preflight/7"',
         "validate_evaluation_target_contract",
         "EXPERIMENT_LEGACY_BINDING_PRESENT",
         "DIAGNOSTIC_PERFORMANCE_STATE_INVALID",
@@ -265,8 +265,8 @@ FINDING_EFFECT_REQUIREMENTS = {
         "frontier-authorization-adoption/6",
     ),
     "frontier-optimization/references/batch-interface.md": (
-        "frontier-batch-packet-preflight/8",
-        "frontier-batch-result-preflight/6",
+        "frontier-batch-packet-preflight/9",
+        "frontier-batch-result-preflight/7",
         '"blocking_findings": []',
         '"repair_findings": []',
         '"advisories": []',

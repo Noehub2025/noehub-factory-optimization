@@ -58,18 +58,23 @@ Advance one row at a time. A failed or missing row preserves earlier artifacts a
 
 ## Boundary-preserving continuation
 
-A B is one bounded objective, authority, evidence, and spend envelope; it is not one command or one internal try. Before publishing the immutable result, the worker may repair execution-support machinery and continue within the same B only when all of these invariants remain true:
+A B is one bounded objective, authority, evidence, and spend envelope; it is not one command or one internal try. An authoritative output is the first immutable work product intended to carry identity, spend, authority, adoption, or later-use consequences. Before freezing a new code-bearing packet, or any other packet that requests pre-publication repair, resolve that output's parent-owned charge event in `publication_policy`. An explicit parent or R8 rule wins. If the parent is silent, the new policy must explicitly record the workflow default: authoritative publication after the assigned deterministic checks pass. Omitting the policy grants no repair loop. Never relabel a runnable or tested identity as a draft to evade a parent rule that charges the first created, runnable, tested, sampled, or exposed identity. An already frozen packet keeps its recorded charge event and publication order; silence in historical bytes never grants a new repair loop.
+
+Before publishing the immutable result, the worker may repair execution-support machinery. When the resolved charge event permits publication after deterministic checks, the worker may also repair a transient work product's fidelity to the unchanged authorized specification before authoritative publication. This applies equally to code, configuration, documents, and other deterministic local construction. Either continuation is allowed only when all of these invariants remain true:
 
 - the authorized objective and substantive target identity are unchanged;
 - acceptance, evaluation, comparison, and expected-observation semantics are unchanged;
 - frozen inputs and the resolved dependency and runtime identity are unchanged; an equivalent launcher is allowed only when it resolves to that same identity;
 - allowed operations, write paths, access, external effects, and the spend ceiling are unchanged;
-- the continuation creates no additional sampling or selection opportunity; any stochastic, human, or side-effecting retry must already be part of the authorized protocol, account for every attempt, and establish the prior side effect; and
-- every failed try, repair, and later observation is preserved at a distinct assigned evidence path and included in the final artifacts and engineering-validation record.
+- the continuation creates no additional sampling or selection opportunity; any stochastic, human, or side-effecting retry must already be part of the authorized protocol, account for every attempt, and establish the prior side effect;
+- every real effect and resource use is counted cumulatively across all attempts; and
+- the engineering-validation record preserves an ordered summary of attempted snapshot identities, check outcomes, cumulative effects, and necessary failure logs. It need not retain a complete copy of every superseded transient package.
 
-Execution-support machinery launches, captures, serializes, transports, inventories, or mechanically verifies evidence under the already authorized acceptance rule. It does not produce or select substantive observations or redefine their interpretation. Changing a candidate or other work product, data, prompt, evaluator, test meaning, acceptance rule, comparison control, or sampling plan is a substantive change rather than support repair.
+Execution-support machinery launches, captures, serializes, transports, inventories, or mechanically verifies evidence under the already authorized acceptance rule. It does not produce or select substantive observations or redefine their interpretation. A pre-publication fidelity repair may change transient work-product bytes only to satisfy the same frozen mechanism, design, interface, schema, acceptance meaning, and deterministic checks. It may not use a result to choose another mechanism, route, algorithm, parameter option, representation, data, prompt, evaluator, test meaning, acceptance rule, comparison control, or sampling plan. Any such choice is a substantive change and exits this continuation. Model training, experiments, and external work may use the seam only for deterministic construction, formatting, schema, or consistency checks before any sampling, feedback, comparison, exposure, or external action.
 
-Existing `maximum_spend`, `stop_conditions`, and `forced_halts` bound this continuation; a packet may set a stricter task-specific limit. Do not add a universal retry count. Treat a repaired support failure as intermediate engineering evidence, not an unresolved `failed_checks` item. Publish a truthful terminal result when an invariant changes, the existing bounds are exhausted, a prior external effect is unknown, or the repair cannot complete inside assigned paths. After the authoritative result exists, any continuation requires a new immutable B packet and every otherwise applicable review or authorization. Never rewrite a historical B or its evidence.
+Formal measurement, sealed or hidden evidence, selection-producing evaluation, human judgment, remote or paid work, physical action, publication, and other material external effects are never part of a free pre-publication repair loop. Only `work_kind: code`, `design`, or `prototype` may opt into post-check publication. `research`, `mixed`, `experiment`, `human_input`, and `external_action` use their normal one-way effect boundary. Existing `maximum_spend`, `effect_limits`, `stop_conditions`, and `forced_halts` apply cumulatively and bound every attempt; a packet may set a stricter task-specific limit. Do not add a universal retry count.
+
+When the parent charges the first identity named by its rule, whether created, runnable, tested, sampled, or exposed, reaching that event consumes the charge and the packet follows the publication-first path without a free behavior repair. When the parent permits post-check publication, content-address each transient snapshot and check it only in the assigned isolated environment. After the checks pass, write the authoritative output once and require its bytes and identity to equal the final passing transient snapshot. For executable candidates, transient and official package inventories implement this generic seam; the final manifest remains later in the existing dependency chain. Treat a repaired support or fidelity failure as intermediate engineering evidence, not an unresolved `failed_checks` item. Publish a truthful terminal result when an invariant changes, the cumulative bounds are exhausted, a prior effect is unknown, or the repair cannot complete inside assigned paths. After authoritative output publication or the immutable result, a behavior-bearing continuation requires a new immutable B packet and every otherwise applicable review or authorization. Never rewrite a historical B or its evidence.
 
 ## Authorization-target specification
 
@@ -168,7 +173,7 @@ coordinator_lifecycle_transition: <null when campaign is already running; otherw
 execution_baseline_root: <exclusive Coordinator-owned subtree in which freeze_execution_baseline.py creates one content-addressed snapshot directory>
 execution_start_path: <stable Coordinator-owned path assigned only to this batch>
 candidate_root_path: <complete candidate-package root for code-bearing work; otherwise null>
-candidate_package_inventory_path: <assigned immutable pre-execution inventory path for code-bearing work; otherwise null>
+candidate_package_inventory_path: <assigned official immutable inventory path written at the parent-owned charge event for code-bearing work; otherwise null>
 candidate_manifest_path: <assigned stable path or null>
 engineering_check_plan:
   contract_version: frontier-engineering-check-plan/1
@@ -178,9 +183,19 @@ engineering_check_plan:
     selection: <full-repository | exact | other>
     selected_units: [<every collected or otherwise selected test/check unit>]
     declared_effects: [<task-neutral effect classes the command can exercise>]
+    effect_costs: {<declared effect>: <positive conservative occurrence count per invocation>}
     effect_evidence: [{path: <source used to classify effects>, file_sha256: <lowercase digest>}]
-  effect_limits: {<effect class>: <nonnegative maximum occurrence count>}
+  effect_limits: {<effect class>: <positive cumulative maximum occurrence count across all attempts>}
   evidence_use: engineering-only
+publication_policy:
+  contract_version: frontier-authoritative-output-publication/1
+  charge_event: <first-parent-chargeable-identity | authoritative-publication-after-engineering-checks>
+  charge_amount: <normalized amount and unit recorded when authoritative publication occurs>
+  charge_basis: {kind: <parent-rule | workflow-default>, path: <exact owning parent or R8 bytes>, file_sha256: <lowercase digest>, locator: <exact rule location or reviewed absence location>}
+  repair_mode: <prohibited | deterministic-fidelity-only>
+  effect_scope: deterministic-local-checks-only
+  authoritative_output_path: <official immutable output; candidate_package_inventory_path for code-bearing work>
+  engineering_evidence_path: <assigned frontier-engineering-evidence/1 path>
 implementation_review_gate: <required before first Slot H measurement, integration, or incumbent use; exact diagnostic-only exception under candidate-lifecycle.md; reusable review with exact unchanged identity; or null>
 evaluation_target: <for experiment work, the canonical nested binding below; otherwise null>
 preparation_role: <why this work is necessary on the baseline path or null>
@@ -191,7 +206,7 @@ implementation_validation: <exact checks or WORK.md section>
 implementation_definition_of_done: <exact conditions or WORK.md section>
 permitted_operations: [<substantive operations or modules and the execution-support operations needed to preserve and validate their evidence>]
 allowed_feedback: <exact information>
-maximum_spend: <amount and unit>
+maximum_spend: <maximum amount and unit; the charge event and publication charge live only in publication_policy>
 accounting_source: <path or system>
 authorization_gate: <finding-free authorization-readiness review followed by exact user V and Coordinator Entry adoption; direct spend-readiness when no user authorization applies; adopted REPLAN_READY for a strategic later change; adopted implementation review before first Slot H measurement, integration, or incumbent use; exact diagnostic-only path under candidate-lifecycle.md; or exact later campaign-cycle Selection authority>
 authorization_boundary: {scope: <exact reviewed scope>, maximum_spend: <same value as maximum_spend>, stop_boundary: <single exact boundary>, result_path: <same value as result_packet_path>}
@@ -216,9 +231,9 @@ prohibited_actions: [<actions and claims>]
 
 Do not compute `packet_id` yet. First complete the deterministic structural preflight below. Only a finding-free draft may be serialized canonically without `packet_id`, hashed, given the preflight's exact `computed_packet_id`, and frozen at `packet_path`. Rerun frozen preflight and require byte-identical PASS output before freezing an authorization-readiness project snapshot. Never overwrite the packet after that point. `identity_contract`, `decision_root`, typed project content roots, `design_contract_binding`, `source_base_binding`, `authorization_boundary`, and the source-derived authorization-target specification make the project authority inputs immutable without creating an identity cycle. Workflow release, Skill, validator implementation, test, and source-module roots are forbidden. This preflight establishes packet structure, not user authorization. A later user V must cite the final target, immutable packet, preflight, finding-free authorization-readiness review, design or direct identity, source base, scope, spend, and stop boundary.
 
-For code-bearing work, freeze the engineering check plan before packet identity. A check declares every effect it can exercise, including local simulation or evaluator fixtures even when their results are engineering evidence only. Every declared effect requires a positive maximum; a zero or missing maximum is a structural conflict. `full-repository` means every collected unit is frozen in `selected_units`; use a non-executing discovery command when the test runner provides one. Entry review verifies the content-addressed effect evidence and rejects an opaque command whose effects are not bounded. The worker repeats this comparison before starting any check and blocks rather than learning a prohibited effect by executing it. Local engineering fixtures remain distinct from candidate performance measurement: `evidence_use: engineering-only` cannot support comparison, promotion, incumbent use, or a strength claim.
+For code-bearing work and any non-code packet that opts into post-check publication, freeze the engineering check plan and publication policy before packet identity. A check declares every effect it can exercise, including local simulation or evaluator fixtures even when their results are engineering evidence only. Every declared effect requires a positive maximum; a zero or missing maximum is a structural conflict. `full-repository` means every collected unit is frozen in `selected_units`; use a non-executing discovery command when the test runner provides one. Entry review verifies the content-addressed effect evidence and rejects an opaque command whose effects are not bounded. The worker repeats this comparison before starting any check and blocks rather than learning a prohibited effect by executing it. Local engineering fixtures remain distinct from candidate performance measurement: `evidence_use: engineering-only` cannot support comparison, promotion, incumbent use, or a strength claim.
 
-The package inventory and final manifest follow Candidate Lifecycle's single forward dependency chain. The inventory exists before runtime staging. Completed engineering evidence binds that inventory, and the final manifest then binds both. Result validation and the result bind the final manifest; the manifest never binds those downstream artifacts.
+The package inventory and final manifest follow Candidate Lifecycle's single forward dependency chain. The applicable transient or official inventory exists before its runtime staging. Under post-check publication, the official inventory is written only after the last passing transient inventory and must be byte-identical to it. Completed engineering evidence binds the official inventory, and the final manifest then binds both. Result validation and the result bind the final manifest; the manifest never binds those downstream artifacts.
 
 For `work_kind: experiment`, use one result-binding shape in both packet and result:
 
@@ -295,14 +310,14 @@ The draft already contains every field except `packet_id`, including `packet_pre
 
 ```json
 {
-  "validator": "frontier-batch-packet-preflight/8",
+  "validator": "frontier-batch-packet-preflight/9",
   "batch_id": "<B identifier>",
   "packet_path": "<packet path>",
   "packet_payload_sha256": "<SHA-256>",
   "computed_packet_id": "<exact future packet_id>",
   "packet_structure_ready": true,
   "result_contract_probe": {
-    "validator": "frontier-batch-result-preflight/6",
+    "validator": "frontier-batch-result-preflight/7",
     "validation_id": "<complete synthetic experiment-result draft validation identity, or null when not applicable>"
   },
   "checks": {
@@ -498,7 +513,7 @@ human_input_state: <not-applicable | requested | waiting-for-input | received-un
 human_input_artifacts: [<response path, stable identity, and provenance metadata; or none>]
 human_input_validation: [<schema, provenance, and quality check with evidence; or none>]
 human_input_evidence_limit: <why accepted data remains evidence rather than a technical conclusion, E, or user value choice; or not applicable>
-engineering_validation: [<check, result, and evidence>]
+engineering_validation: [<check, result, and evidence; for post-check publication, exactly one binding to frontier-engineering-evidence/1>]
 implementation_definition_of_done: <met | not_met | not_applicable, with evidence>
 results: [<diagnostic evidence with its consequence limit, or measurement, uncertainty, legality, and comparison-validity evidence from an authorized Slot H evaluation B; always [] for code-bearing materialization>]
 observed_vs_expected: <observed evidence against the packet's expected observation; no campaign decision>
@@ -511,6 +526,8 @@ scope_deviation: <None or exact deviation>
 
 Candidate identity, manifest, source result, engineering evidence, and materialization state belong only in their dedicated fields. Never place them in `results` to make a materialization result nonempty.
 
+For post-check publication, `frontier-engineering-evidence/1` records the copied charge event, charge amount, and authoritative output path, an ordered `attempts` list, the packet's `effect_limits`, derived `effects`, final `status`, `evidence_use: engineering-only`, and `official_output`. Each attempt has consecutive `sequence`, a unique content-addressed `snapshot_id` whose digest equals its snapshot-manifest or inventory file SHA-256, the checks actually run with exact frozen IDs and results, one content-addressed combined `frontier-engineering-check-report/1`, `pass` or `fail`, and per-effect counts. The combined report binds the snapshot, ordered check IDs, frozen command digests, exit status, and log digests. The validator derives each attempt's effects from the frozen per-invocation `effect_costs`; the worker cannot lower them after execution. An attempt is `pass` if and only if every frozen check ran in order and passed. A completed result requires exactly the final attempt to pass; its official output must be byte-identical to that snapshot. For either supported charge event, result accounting must bind the policy charge amount to the official identity. A terminal failure may preserve zero or more failed attempts and cumulative effects but has no official output, final candidate manifest, or formal candidate identity. The result validator rejects missing check coverage, cumulative overrun, an all-pass attempt relabeled as failure, changed policy, missing charge, or final-output drift.
+
 Before the immutable result path exists, the worker serializes a temporary draft without `result_packet_id` and runs:
 
 ```bash
@@ -522,6 +539,8 @@ python .agents/skills/frontier-optimization/scripts/validate_batch_result.py \
 Only a finding-free draft may receive the validator's `computed_result_packet_id`. Validate that completed temporary form with `--phase frozen` to another temporary path and require byte-identical output to the assigned `result_validation_path`. Only then atomically place the validated bytes at `result_packet_path`. Never use the authoritative result path as the draft or overwrite it after validation. The Coordinator reruns frozen validation and requires byte-identical output before accepting a terminal result, writing the terminal-outcome meaning, or freezing an implementation-review snapshot. An invalid draft is preserved only at a non-authoritative diagnostic path and cannot become an accepted terminal result.
 
 Compute `result_packet_id` after every other result field resolves. A current result is publishable only after the result validator re-reads the three structured dispatch bindings, verifies the exact execution-start identity and live baseline, and recomputes the authority chain contained in execution-start. After the authoritative result exists, a resumed attempt uses a new immutable packet and exclusive acknowledgment, execution-baseline, execution-start, result-validation, and result paths. Before that publication, use [Boundary-preserving continuation](#boundary-preserving-continuation) when its invariants hold. `completed`, `interrupted`, `failed`, `blocked`, and `waiting_for_input` are all reportable outcomes. The first four end the current execution attempt; `waiting_for_input` preserves a paused recovery point. `actual_spend: unknown` is also valid evidence; it forces a new-spend halt until the Coordinator can establish the remaining budget. A result packet is worker evidence only. It never edits a concern contract, creates or updates E, turns human data into a technical conclusion or value choice, adopts a candidate, promotes an incumbent, or changes campaign meaning by itself.
+
+An already-frozen version 4 project dispatch may complete result publication through the project-only nested-binding compatibility path when its acknowledgment uses `frontier-project-batch-acknowledgment/1` and its execution-start uses `frontier-project-execution-start/1`. This path is recovery only: the validator must recompute both exact-byte self-identities; the exact packet and preflight identities and their nested acknowledgment bindings; the execution-verification path, file digest, root, and finding-free result; the complete decision-to-execution typed graph; all four role-specific portable content roots; and the exact packet, preflight, and acknowledgment bytes preserved in the execution baseline. Other acknowledgment fields remain frozen by the acknowledgment self-identity and baseline copy but grant no separately inferred authority. A missing field, mixed contract shape, unsafe path, digest mismatch, parent mismatch, incomplete review subject, non-ready execution verification, or baseline-byte mismatch fails closed. The adapter never rewrites a project record, creates authority, changes spend, or imports workflow identity into project state.
 
 Draft or frozen publication requires the project packet's supported `result_contract_version` copied exactly from that packet. A released B continues only through its exact project decision root, packet, preflight, acknowledgment, execution-start, baseline, result format, and result identities. A workflow update does not change any of them; a packet whose own project result format is unsupported remains audit-only.
 

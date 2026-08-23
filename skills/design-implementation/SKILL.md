@@ -37,11 +37,27 @@ Inspect the current modules, callers, state, dependencies, runtime flow, failure
 - a route, solution identity, or investment change returns `PARENT_REVIEW_REQUIRED`;
 - a measurement meaning change returns to the measurement owner;
 - a user-owned cost, lock-in, maintenance, migration, privacy, or operating tradeoff returns `USER_DECISION_REQUIRED` with technically eligible options and a recommendation; and
-- a conclusion that requires code execution, a prototype, an experiment, controlled input, an external effect, or protected resources returns `EVIDENCE_REQUIRED` with the smallest decision-changing evidence request.
+- a conclusion that needs a lower-consequence observation from code execution, a prototype, an experiment, controlled input, an external effect, or protected resources returns `EVIDENCE_REQUIRED` with the smallest decision-changing evidence request; do not disguise the normal formal proposal as free design evidence.
 
 Read-only design work is planning. It creates no B, proposal identity, reservation, or spend.
 
 This step is complete when every unresolved item has one owner and no hidden execution is needed to support the proposed design.
+
+## Challenge decisive feasibility claims
+
+Apply [Technical design](../frontier-optimization/references/technical-design.md#test-decisive-feasibility-claims) only when a planned `module` or `system` slice depends on an unestablished, falsifiable claim that determines whether complete delivery is possible. The claim may concern one capability or several constraints. Do not trigger this work from novelty, complexity, first implementation, a missing final deliverable, first-identity charging, or ordinary implementation risk alone.
+
+Identify every decisive claim, starting with the weakest, and answer:
+
+1. Which required capability or interaction depends on the claim?
+2. Which conditions and constraints must hold?
+3. What complete realization satisfies them?
+4. Which parts of that realization are supported by current grounds and which remain assumed?
+5. Is there a lower-consequence, affordable, reachable observation that can falsify or materially strengthen the claim?
+
+Use analysis, proof, inspection, same-condition examples, demonstrations, tests, prototypes, or other grounds appropriate to the deliverable. When current grounds support a credible end-to-end realization and no decisive claim remains unresolved, continue toward `DRAFT_READY` with ordinary implementation risk left to the normal B and R8. When the design itself conflicts or omits a required capability, repair it. Return `EVIDENCE_REQUIRED` only for the observation described in question 5. If only the formal proposal can supply the observation, preserve its parent-owned consequence and return the exact parent decision or blocker instead of creating a recursive evidence request.
+
+This step is complete when every decisive claim has positive grounds or one exact existing return boundary; do not enumerate non-blocking risks or create a separate feasibility artifact.
 
 ## Author the existing design contract
 

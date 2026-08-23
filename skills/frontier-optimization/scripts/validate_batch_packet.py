@@ -37,13 +37,16 @@ except ImportError as exc:  # pragma: no cover - exercised by the CLI environmen
     raise SystemExit("PyYAML is required to validate Frontier batch packets") from exc
 
 
-VALIDATOR = "frontier-batch-packet-preflight/8"
+VALIDATOR = "frontier-batch-packet-preflight/9"
 WRITE_VERBS = re.compile(r"\b(edit|write|create|modify|overwrite|change)\b", re.I)
 LIFECYCLE_CONTRACT = "frontier-lifecycle-transition/1"
 IDENTITY_CONTRACT = "frontier-dispatch-identity/2"
 RESULT_CONTRACT_V1 = "frontier-batch-result/1"
 RESULT_CONTRACT_V2 = "frontier-batch-result/2"
 ENGINEERING_CHECK_PLAN_CONTRACT = "frontier-engineering-check-plan/1"
+PUBLICATION_POLICY_CONTRACT = "frontier-authoritative-output-publication/1"
+FIRST_IDENTITY_CHARGE = "first-parent-chargeable-identity"
+POST_CHECK_CHARGE = "authoritative-publication-after-engineering-checks"
 SHA256_IDENTITY = re.compile(r"^sha256:[0-9a-f]{64}$")
 EXPERIMENT_IDENTITY = re.compile(
     r"\b[A-Za-z0-9._-]+-experiment-sha256:[0-9a-f]{64}\b"
@@ -118,6 +121,7 @@ PACKET_ALLOWED_FIELDS = PACKET_REQUIRED_FIELDS | {
     "candidate_package_inventory_path",
     "candidate_manifest_path",
     "engineering_check_plan",
+    "publication_policy",
     "implementation_review_gate",
     "evaluation_target",
     "preparation_role",
@@ -315,7 +319,14 @@ def validate_engineering_check_plan(
     repo_root: Path | None,
     findings: list[dict[str, str]],
 ) -> None:
-    if phase == "audit" or document.get("changes_executable_candidate") is not True:
+    policy = document.get("publication_policy")
+    post_check_publication = (
+        isinstance(policy, dict) and policy.get("charge_event") == POST_CHECK_CHARGE
+    )
+    if phase == "audit" or (
+        document.get("changes_executable_candidate") is not True
+        and not post_check_publication
+    ):
         return
     plan = document.get("engineering_check_plan")
     if not isinstance(plan, dict):
@@ -358,12 +369,12 @@ def validate_engineering_check_plan(
                 or not effect.strip()
                 or not isinstance(maximum, int)
                 or isinstance(maximum, bool)
-                or maximum < 0
+                or maximum <= 0
             ):
                 add_finding(
                     findings,
                     "ENGINEERING_EFFECT_LIMIT_INVALID",
-                    f"effect_limits[{effect!r}] must be a nonnegative integer",
+                    f"effect_limits[{effect!r}] must be a positive integer",
                 )
     checks = plan.get("checks")
     if not isinstance(checks, list) or not checks:
@@ -374,6 +385,7 @@ def validate_engineering_check_plan(
         )
         return
     seen_ids: set[str] = set()
+    declared_effects: set[str] = set()
     root = repo_root.resolve() if repo_root is not None else None
     for index, check in enumerate(checks):
         prefix = f"engineering_check_plan.checks[{index}]"
@@ -383,6 +395,7 @@ def validate_engineering_check_plan(
             "selection",
             "selected_units",
             "declared_effects",
+            "effect_costs",
             "effect_evidence",
         }
         if not isinstance(check, dict) or set(check) != expected_fields:
@@ -436,12 +449,29 @@ def validate_engineering_check_plan(
             )
             effects = []
         for effect in effects:
+            declared_effects.add(effect)
             if not isinstance(limits.get(effect), int) or limits.get(effect, 0) <= 0:
                 add_finding(
                     findings,
                     "ENGINEERING_EFFECT_CONFLICT",
                     f"{prefix} declares effect {effect!r} but its authorized maximum is absent or zero",
                 )
+        effect_costs = check.get("effect_costs")
+        if (
+            not isinstance(effect_costs, dict)
+            or set(effect_costs) != set(effects)
+            or any(
+                not isinstance(value, int)
+                or isinstance(value, bool)
+                or value <= 0
+                for value in effect_costs.values()
+            )
+        ):
+            add_finding(
+                findings,
+                "ENGINEERING_EFFECT_COST_INVALID",
+                f"{prefix}.effect_costs must assign each declared effect one positive conservative cost per invocation",
+            )
         evidence = check.get("effect_evidence")
         if not isinstance(evidence, list) or not evidence:
             add_finding(
@@ -470,6 +500,12 @@ def validate_engineering_check_plan(
                         )
             except (IdentityBindingError, OSError) as exc:
                 add_finding(findings, "ENGINEERING_EFFECT_EVIDENCE_INVALID", str(exc))
+    if set(limits) != declared_effects:
+        add_finding(
+            findings,
+            "ENGINEERING_EFFECT_LIMIT_INVALID",
+            "engineering_check_plan.effect_limits keys must exactly equal the union of checks[].declared_effects",
+        )
 
 
 def validate_identity_contract(
@@ -1059,6 +1095,174 @@ def validate_traceability(
             )
 
 
+def validate_publication_policy(
+    document: dict[str, Any],
+    phase: str,
+    repo_root: Path | None,
+    artifacts: list[PathSpec],
+    findings: list[dict[str, str]],
+) -> None:
+    policy = document.get("publication_policy")
+    if policy is None:
+        if phase in {"draft", "frozen"} and document.get("changes_executable_candidate") is True:
+            add_finding(
+                findings,
+                "PUBLICATION_POLICY_REQUIRED",
+                "a new code-bearing packet must explicitly resolve its parent-owned charge event",
+            )
+        return
+    expected_fields = {
+        "contract_version",
+        "charge_event",
+        "charge_amount",
+        "charge_basis",
+        "repair_mode",
+        "effect_scope",
+        "authoritative_output_path",
+        "engineering_evidence_path",
+    }
+    if not isinstance(policy, dict) or set(policy) != expected_fields:
+        add_finding(
+            findings,
+            "PUBLICATION_POLICY_INVALID",
+            "publication_policy must contain exactly contract_version, charge_event, charge_amount, charge_basis, repair_mode, effect_scope, authoritative_output_path, and engineering_evidence_path",
+        )
+        return
+    if policy.get("contract_version") != PUBLICATION_POLICY_CONTRACT:
+        add_finding(
+            findings,
+            "PUBLICATION_POLICY_INVALID",
+            f"publication_policy.contract_version must be {PUBLICATION_POLICY_CONTRACT}",
+        )
+    charge_event = policy.get("charge_event")
+    if charge_event not in {FIRST_IDENTITY_CHARGE, POST_CHECK_CHARGE}:
+        add_finding(
+            findings,
+            "PUBLICATION_POLICY_INVALID",
+            "publication_policy.charge_event is not supported",
+        )
+    if not isinstance(policy.get("charge_amount"), str) or not policy["charge_amount"].strip():
+        add_finding(
+            findings,
+            "PUBLICATION_POLICY_INVALID",
+            "publication_policy.charge_amount must be a nonempty amount and unit",
+        )
+    basis = policy.get("charge_basis")
+    if (
+        not isinstance(basis, dict)
+        or set(basis) != {"kind", "path", "file_sha256", "locator"}
+        or basis.get("kind") not in {"parent-rule", "workflow-default"}
+        or not isinstance(basis.get("path"), str)
+        or not basis["path"].strip()
+        or not isinstance(basis.get("file_sha256"), str)
+        or not SHA256_IDENTITY.fullmatch("sha256:" + basis["file_sha256"])
+        or not isinstance(basis.get("locator"), str)
+        or not basis["locator"].strip()
+    ):
+        add_finding(
+            findings,
+            "PUBLICATION_POLICY_INVALID",
+            "publication_policy.charge_basis requires kind, parent path, lowercase file_sha256, and an exact rule or parent-silence locator",
+        )
+    elif repo_root is not None:
+        try:
+            _, basis_path = resolve_repo_file(
+                repo_root,
+                basis["path"],
+                "publication_policy.charge_basis.path",
+            )
+            observed = sha256_bytes(basis_path.read_bytes())
+            if observed != basis["file_sha256"]:
+                raise IdentityBindingError(
+                    "publication_policy.charge_basis file SHA-256 mismatch"
+                )
+        except (IdentityBindingError, OSError) as exc:
+            add_finding(findings, "PUBLICATION_POLICY_BASIS_INVALID", str(exc))
+    output_path = policy.get("authoritative_output_path")
+    evidence_path = policy.get("engineering_evidence_path")
+    for field, value in (
+        ("authoritative_output_path", output_path),
+        ("engineering_evidence_path", evidence_path),
+    ):
+        if not isinstance(value, str) or not value.strip():
+            add_finding(
+                findings,
+                "PUBLICATION_POLICY_INVALID",
+                f"publication_policy.{field} must be a nonempty project path",
+            )
+            continue
+        try:
+            parsed = parse_path_entry(value, f"publication_policy.{field}")
+        except ValueError as exc:
+            add_finding(findings, "PUBLICATION_POLICY_INVALID", str(exc))
+            continue
+        if not any(covers(artifact, parsed) for artifact in artifacts):
+            add_finding(
+                findings,
+                "PUBLICATION_POLICY_PATH_UNASSIGNED",
+                f"publication_policy.{field} must be covered by artifact_paths",
+            )
+    if (
+        document.get("changes_executable_candidate") is True
+        and output_path != document.get("candidate_package_inventory_path")
+    ):
+        add_finding(
+            findings,
+            "PUBLICATION_POLICY_OUTPUT_MISMATCH",
+            "code-bearing publication_policy.authoritative_output_path must equal candidate_package_inventory_path",
+        )
+    if output_path == evidence_path:
+        add_finding(
+            findings,
+            "PUBLICATION_POLICY_INVALID",
+            "authoritative output and engineering evidence require distinct paths",
+        )
+    if charge_event == FIRST_IDENTITY_CHARGE:
+        if not isinstance(basis, dict) or basis.get("kind") != "parent-rule":
+            add_finding(
+                findings,
+                "PUBLICATION_POLICY_PARENT_REQUIRED",
+                "first-identity charging requires an explicit parent-rule basis",
+            )
+        if policy.get("repair_mode") != "prohibited":
+            add_finding(
+                findings,
+                "PUBLICATION_POLICY_INVALID",
+                "first-identity charging requires repair_mode: prohibited",
+            )
+    elif charge_event == POST_CHECK_CHARGE:
+        if policy.get("repair_mode") != "deterministic-fidelity-only":
+            add_finding(
+                findings,
+                "PUBLICATION_POLICY_INVALID",
+                "post-check publication requires repair_mode: deterministic-fidelity-only",
+            )
+        if policy.get("effect_scope") != "deterministic-local-checks-only":
+            add_finding(
+                findings,
+                "PUBLICATION_POLICY_EFFECT_SCOPE_INVALID",
+                "post-check publication permits deterministic-local-checks-only",
+            )
+        if document.get("work_kind") not in {"code", "design", "prototype"} or document.get("evaluation_target") is not None:
+            add_finding(
+                findings,
+                "PUBLICATION_POLICY_SELECTION_FORBIDDEN",
+                "post-check fidelity repair is limited to code, design, or prototype work with no evaluation target",
+            )
+        if document.get("human_input_request") is not None:
+            add_finding(
+                findings,
+                "PUBLICATION_POLICY_EXTERNAL_EFFECT_FORBIDDEN",
+                "human input cannot use post-check fidelity repair",
+            )
+    if policy.get("effect_scope") != "deterministic-local-checks-only":
+        add_finding(
+            findings,
+            "PUBLICATION_POLICY_EFFECT_SCOPE_INVALID",
+            "publication_policy.effect_scope must be deterministic-local-checks-only",
+        )
+
+
 def validate(
     document: dict[str, Any], phase: str, repo_root: Path | None = None
 ) -> dict[str, Any]:
@@ -1067,8 +1271,6 @@ def validate(
 
     validate_identity_contract(document, phase, repo_root, findings)
     validate_canonical_identity_ownership(document, phase, findings)
-    validate_engineering_check_plan(document, phase, repo_root, findings)
-
     allowed_code, errors = parse_path_list(document, "allowed_code_paths")
     parse_errors.extend(errors)
     artifacts, errors = parse_path_list(document, "artifact_paths")
@@ -1139,6 +1341,9 @@ def validate(
 
     for error in parse_errors:
         add_finding(findings, "INVALID_PATH_SCHEMA", error)
+
+    validate_publication_policy(document, phase, repo_root, artifacts, findings)
+    validate_engineering_check_plan(document, phase, repo_root, findings)
 
     worker_paths = list(allowed_code) + list(artifacts)
     if candidate_root is not None:

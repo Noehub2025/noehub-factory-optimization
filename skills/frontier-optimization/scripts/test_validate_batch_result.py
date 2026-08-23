@@ -266,6 +266,15 @@ def seed_materialized_candidate(root: Path, packet: dict, result: dict) -> None:
     result["candidate_manifest"] = packet["candidate_manifest_path"]
     result["candidate_identity"] = candidate_id
     result["source_result_identity"] = {"package_sha256": package_sha256}
+    policy = packet.get("publication_policy")
+    if isinstance(policy, dict):
+        charge_amount = policy.get("charge_amount")
+        result["planned_spend"] = charge_amount
+        result["actual_spend"] = charge_amount
+        result["accounting_evidence"] = (
+            f"authoritative output {packet['candidate_package_inventory_path']} "
+            f"sha256:{inventory['inventory_sha256']}"
+        )
 
 
 def diagnostic_evaluation_target() -> dict:
@@ -434,7 +443,700 @@ def bound_result_workspace(root: Path) -> tuple[dict, dict, Path]:
     return packet, result, execution_start_path
 
 
+def write_check_report(
+    root: Path,
+    relative: str,
+    snapshot_id: str,
+    result: str,
+) -> dict[str, str]:
+    log = f"local-check: {result}\n"
+    report = {
+        "contract_version": MODULE.ENGINEERING_CHECK_REPORT_CONTRACT,
+        "snapshot_id": snapshot_id,
+        "checks": [
+            {
+                "id": "local-check",
+                "argv_sha256": MODULE.command_sha256(["local-check"]),
+                "result": result,
+                "exit_status": 0 if result == "pass" else (None if result == "blocked" else 1),
+                "log": log,
+                "log_sha256": hashlib.sha256(log.encode()).hexdigest(),
+            }
+        ],
+    }
+    path = root / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report, sort_keys=True) + "\n")
+    return {
+        "path": relative,
+        "file_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+    }
+
+
+def post_check_publication_workspace(root: Path) -> tuple[dict, dict, Path]:
+    packet = base_packet()
+    packet["engineering_check_plan"] = {
+        "contract_version": "frontier-engineering-check-plan/1",
+        "checks": [
+            {
+                "id": "local-check",
+                "command": ["local-check"],
+                "effect_costs": {"local-check": 1},
+            }
+        ],
+        "effect_limits": {"local-check": 2},
+        "evidence_use": "engineering-only",
+    }
+    evidence_relative = "artifacts/frontier/B900/prepublication-evidence.json"
+    packet["publication_policy"] = {
+        "contract_version": "frontier-authoritative-output-publication/1",
+        "charge_event": MODULE.POST_CHECK_CHARGE,
+        "charge_amount": "1 proposal attempt",
+        "charge_basis": {
+            "kind": "workflow-default",
+            "path": "parents/R8.yaml",
+            "file_sha256": "a" * 64,
+            "locator": "reviewed parent set contains no charge event",
+        },
+        "repair_mode": "deterministic-fidelity-only",
+        "effect_scope": "deterministic-local-checks-only",
+        "authoritative_output_path": packet["candidate_package_inventory_path"],
+        "engineering_evidence_path": evidence_relative,
+    }
+    result = base_result()
+    seed_materialized_candidate(root, packet, result)
+    inventory_path = root / packet["candidate_package_inventory_path"]
+    inventory_digest = hashlib.sha256(inventory_path.read_bytes()).hexdigest()
+    reports: list[dict[str, str]] = []
+    snapshots = ("snapshot-sha256:" + "b" * 64, "snapshot-sha256:" + inventory_digest)
+    for sequence, (snapshot_id, check_result) in enumerate(
+        zip(snapshots, ("fail", "pass")),
+        start=1,
+    ):
+        report_relative = f"artifacts/frontier/B900/check-report-{sequence}.json"
+        report_path = root / report_relative
+        log = f"local-check: {check_result}\n"
+        report_document = {
+            "contract_version": MODULE.ENGINEERING_CHECK_REPORT_CONTRACT,
+            "snapshot_id": snapshot_id,
+            "checks": [
+                {
+                    "id": "local-check",
+                    "argv_sha256": MODULE.command_sha256(["local-check"]),
+                    "result": check_result,
+                    "exit_status": 0 if check_result == "pass" else 1,
+                    "log": log,
+                    "log_sha256": hashlib.sha256(log.encode()).hexdigest(),
+                }
+            ],
+        }
+        report_path.write_text(json.dumps(report_document, sort_keys=True) + "\n")
+        reports.append(
+            {
+                "path": report_relative,
+                "file_sha256": hashlib.sha256(report_path.read_bytes()).hexdigest(),
+            }
+        )
+    evidence = {
+        "contract_version": MODULE.ENGINEERING_EVIDENCE_CONTRACT,
+        "publication_policy": {
+            "charge_event": MODULE.POST_CHECK_CHARGE,
+            "charge_amount": "1 proposal attempt",
+            "authoritative_output_path": packet["candidate_package_inventory_path"],
+        },
+        "attempts": [
+            {
+                "sequence": 1,
+                "snapshot_id": snapshots[0],
+                "snapshot_file_sha256": "b" * 64,
+                "outcome": "fail",
+                "checks": [{"id": "local-check", "result": "fail"}],
+                "check_report": reports[0],
+                "effects": {"local-check": 1},
+            },
+            {
+                "sequence": 2,
+                "snapshot_id": snapshots[1],
+                "snapshot_file_sha256": inventory_digest,
+                "outcome": "pass",
+                "checks": [{"id": "local-check", "result": "pass"}],
+                "check_report": reports[1],
+                "effects": {"local-check": 1},
+            },
+        ],
+        "effect_limits": {"local-check": 2},
+        "effects": {"local-check": 2},
+        "status": "pass",
+        "official_output": {
+            "path": packet["candidate_package_inventory_path"],
+            "file_sha256": inventory_digest,
+        },
+        "evidence_use": "engineering-only",
+    }
+    evidence_path = root / evidence_relative
+    evidence_path.parent.mkdir(parents=True, exist_ok=True)
+    evidence_path.write_text(json.dumps(evidence, sort_keys=True) + "\n")
+    result["engineering_validation"] = [
+        {
+            "contract_version": MODULE.ENGINEERING_EVIDENCE_CONTRACT,
+            "path": evidence_relative,
+            "file_sha256": hashlib.sha256(evidence_path.read_bytes()).hexdigest(),
+        }
+    ]
+    result["planned_spend"] = packet["publication_policy"]["charge_amount"]
+    result["actual_spend"] = packet["publication_policy"]["charge_amount"]
+    result["accounting_evidence"] = (
+        f"authoritative output {packet['candidate_package_inventory_path']} "
+        f"sha256:{inventory_digest}"
+    )
+    return packet, result, evidence_path
+
+
 class BatchResultValidationTests(unittest.TestCase):
+    def test_post_check_fail_repair_pass_binds_final_official_output(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, _ = post_check_publication_workspace(root)
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            self.assertTrue(validation["result_structure_ready"], validation["findings"])
+
+    def test_post_check_rejects_cumulative_effect_limit_exceeded(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, evidence_path = post_check_publication_workspace(root)
+            evidence = json.loads(evidence_path.read_text())
+            packet["engineering_check_plan"]["effect_limits"]["local-check"] = 1
+            evidence["effect_limits"]["local-check"] = 1
+            evidence_path.write_text(json.dumps(evidence, sort_keys=True) + "\n")
+            result["engineering_validation"][0]["file_sha256"] = hashlib.sha256(
+                evidence_path.read_bytes()
+            ).hexdigest()
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            self.assertIn(
+                "PREPUBLICATION_EFFECT_LIMIT_EXCEEDED",
+                {finding["code"] for finding in validation["findings"]},
+            )
+
+    def test_post_check_rejects_final_snapshot_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, evidence_path = post_check_publication_workspace(root)
+            evidence = json.loads(evidence_path.read_text())
+            evidence["attempts"][-1]["snapshot_file_sha256"] = "c" * 64
+            evidence_path.write_text(json.dumps(evidence, sort_keys=True) + "\n")
+            result["engineering_validation"][0]["file_sha256"] = hashlib.sha256(
+                evidence_path.read_bytes()
+            ).hexdigest()
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            self.assertIn(
+                "PREPUBLICATION_FINAL_SNAPSHOT_MISMATCH",
+                {finding["code"] for finding in validation["findings"]},
+            )
+
+    def test_post_check_effect_exhaustion_can_end_without_official_output(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet = base_packet()
+            evidence_relative = "artifacts/frontier/B900/prepublication-evidence.json"
+            packet["engineering_check_plan"] = {
+                "contract_version": "frontier-engineering-check-plan/1",
+                "checks": [
+                    {
+                        "id": "local-check",
+                        "command": ["local-check"],
+                        "effect_costs": {"local-check": 1},
+                    }
+                ],
+                "effect_limits": {"local-check": 1},
+                "evidence_use": "engineering-only",
+            }
+            packet["publication_policy"] = {
+                "contract_version": "frontier-authoritative-output-publication/1",
+                "charge_event": MODULE.POST_CHECK_CHARGE,
+                "charge_amount": "1 proposal attempt",
+                "charge_basis": {
+                    "kind": "workflow-default",
+                    "path": "parents/R8.yaml",
+                    "file_sha256": "a" * 64,
+                    "locator": "reviewed parent set contains no charge event",
+                },
+                "repair_mode": "deterministic-fidelity-only",
+                "effect_scope": "deterministic-local-checks-only",
+                "authoritative_output_path": packet["candidate_package_inventory_path"],
+                "engineering_evidence_path": evidence_relative,
+            }
+            report_binding = write_check_report(
+                root,
+                "artifacts/frontier/B900/check-report-1.json",
+                "snapshot-sha256:" + "b" * 64,
+                "fail",
+            )
+            evidence = {
+                "contract_version": MODULE.ENGINEERING_EVIDENCE_CONTRACT,
+                "publication_policy": {
+                    "charge_event": MODULE.POST_CHECK_CHARGE,
+                    "charge_amount": "1 proposal attempt",
+                    "authoritative_output_path": packet["candidate_package_inventory_path"],
+                },
+                "attempts": [
+                    {
+                        "sequence": 1,
+                        "snapshot_id": "snapshot-sha256:" + "b" * 64,
+                        "snapshot_file_sha256": "b" * 64,
+                        "outcome": "fail",
+                        "checks": [{"id": "local-check", "result": "fail"}],
+                        "check_report": report_binding,
+                        "effects": {"local-check": 1},
+                    }
+                ],
+                "effect_limits": {"local-check": 1},
+                "effects": {"local-check": 1},
+                "status": "fail",
+                "official_output": None,
+                "evidence_use": "engineering-only",
+            }
+            evidence_path = root / evidence_relative
+            evidence_path.parent.mkdir(parents=True, exist_ok=True)
+            evidence_path.write_text(json.dumps(evidence, sort_keys=True) + "\n")
+            result = base_result()
+            result.update(
+                {
+                    "outcome": "failed",
+                    "materialization_state": "partial",
+                    "candidate_manifest": None,
+                    "candidate_identity": None,
+                    "source_result_identity": None,
+                    "implementation_review_state": "not-applicable",
+                    "engineering_validation": [
+                        {
+                            "contract_version": MODULE.ENGINEERING_EVIDENCE_CONTRACT,
+                            "path": evidence_relative,
+                            "file_sha256": hashlib.sha256(
+                                evidence_path.read_bytes()
+                            ).hexdigest(),
+                        }
+                    ],
+                }
+            )
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            self.assertTrue(validation["result_structure_ready"], validation["findings"])
+
+    def test_post_check_publication_supports_deterministic_noncode_output(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output_relative = "artifacts/frontier/B900/design.md"
+            evidence_relative = "artifacts/frontier/B900/prepublication-evidence.json"
+            output_path = root / output_relative
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text("# Frozen design\n")
+            output_digest = hashlib.sha256(output_path.read_bytes()).hexdigest()
+            packet = base_packet()
+            packet.update(
+                {
+                    "work_kind": "design",
+                    "changes_executable_candidate": False,
+                    "engineering_check_plan": {
+                        "contract_version": "frontier-engineering-check-plan/1",
+                        "checks": [
+                            {
+                                "id": "local-check",
+                                "command": ["local-check"],
+                                "effect_costs": {"local-check": 1},
+                            }
+                        ],
+                        "effect_limits": {"local-check": 1},
+                        "evidence_use": "engineering-only",
+                    },
+                    "publication_policy": {
+                        "contract_version": "frontier-authoritative-output-publication/1",
+                        "charge_event": MODULE.POST_CHECK_CHARGE,
+                        "charge_amount": "1 proposal attempt",
+                        "charge_basis": {
+                            "kind": "workflow-default",
+                            "path": "parents/R8.yaml",
+                            "file_sha256": "a" * 64,
+                            "locator": "reviewed parent set contains no charge event",
+                        },
+                        "repair_mode": "deterministic-fidelity-only",
+                        "effect_scope": "deterministic-local-checks-only",
+                        "authoritative_output_path": output_relative,
+                        "engineering_evidence_path": evidence_relative,
+                    },
+                }
+            )
+            report_binding = write_check_report(
+                root,
+                "artifacts/frontier/B900/check-report-1.json",
+                "snapshot-sha256:" + output_digest,
+                "pass",
+            )
+            evidence = {
+                "contract_version": MODULE.ENGINEERING_EVIDENCE_CONTRACT,
+                "publication_policy": {
+                    "charge_event": MODULE.POST_CHECK_CHARGE,
+                    "charge_amount": "1 proposal attempt",
+                    "authoritative_output_path": output_relative,
+                },
+                "attempts": [
+                    {
+                        "sequence": 1,
+                        "snapshot_id": "snapshot-sha256:" + output_digest,
+                        "snapshot_file_sha256": output_digest,
+                        "outcome": "pass",
+                        "checks": [{"id": "local-check", "result": "pass"}],
+                        "check_report": report_binding,
+                        "effects": {"local-check": 1},
+                    }
+                ],
+                "effect_limits": {"local-check": 1},
+                "effects": {"local-check": 1},
+                "status": "pass",
+                "official_output": {
+                    "path": output_relative,
+                    "file_sha256": output_digest,
+                },
+                "evidence_use": "engineering-only",
+            }
+            evidence_path = root / evidence_relative
+            evidence_path.write_text(json.dumps(evidence, sort_keys=True) + "\n")
+            result = base_result()
+            result.update(
+                {
+                    "work_kind": "design",
+                    "changes_executable_candidate": False,
+                    "materialization_state": "not-applicable",
+                    "candidate_manifest": None,
+                    "candidate_identity": None,
+                    "source_result_identity": None,
+                    "implementation_review_state": "not-applicable",
+                    "engineering_validation": [
+                        {
+                            "contract_version": MODULE.ENGINEERING_EVIDENCE_CONTRACT,
+                            "path": evidence_relative,
+                            "file_sha256": hashlib.sha256(
+                                evidence_path.read_bytes()
+                            ).hexdigest(),
+                        }
+                    ],
+                }
+            )
+            result["planned_spend"] = "1 proposal attempt"
+            result["actual_spend"] = "1 proposal attempt"
+            result["accounting_evidence"] = (
+                f"authoritative output {output_relative} sha256:{output_digest}"
+            )
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            self.assertTrue(validation["result_structure_ready"], validation["findings"])
+
+    def test_post_check_rejects_boolean_effect_accounting(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, evidence_path = post_check_publication_workspace(root)
+            evidence = json.loads(evidence_path.read_text())
+            evidence["attempts"][0]["effects"]["local-check"] = True
+            evidence["effects"]["local-check"] = 2
+            evidence_path.write_text(json.dumps(evidence, sort_keys=True) + "\n")
+            result["engineering_validation"][0]["file_sha256"] = hashlib.sha256(
+                evidence_path.read_bytes()
+            ).hexdigest()
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            self.assertIn(
+                "PREPUBLICATION_EFFECT_ACCOUNTING_INVALID",
+                {finding["code"] for finding in validation["findings"]},
+            )
+
+    def test_post_check_rejects_unstructured_check_report_even_when_rehashed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, evidence_path = post_check_publication_workspace(root)
+            evidence = json.loads(evidence_path.read_text())
+            report_binding = evidence["attempts"][-1]["check_report"]
+            report_path = root / report_binding["path"]
+            report_path.write_text("check was not run\n")
+            report_binding["file_sha256"] = hashlib.sha256(
+                report_path.read_bytes()
+            ).hexdigest()
+            evidence_path.write_text(json.dumps(evidence, sort_keys=True) + "\n")
+            result["engineering_validation"][0]["file_sha256"] = hashlib.sha256(
+                evidence_path.read_bytes()
+            ).hexdigest()
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            self.assertIn(
+                "PREPUBLICATION_CHECK_REPORT_INVALID",
+                {finding["code"] for finding in validation["findings"]},
+            )
+
+    def test_post_check_pass_exit_status_requires_integer_zero(self) -> None:
+        for invalid_status in (False, 0.0):
+            with self.subTest(exit_status=invalid_status), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                packet, result, evidence_path = post_check_publication_workspace(root)
+                evidence = json.loads(evidence_path.read_text())
+                report_binding = evidence["attempts"][-1]["check_report"]
+                report_path = root / report_binding["path"]
+                report = json.loads(report_path.read_text())
+                report["checks"][0]["exit_status"] = invalid_status
+                report_path.write_text(json.dumps(report, sort_keys=True) + "\n")
+                report_binding["file_sha256"] = hashlib.sha256(
+                    report_path.read_bytes()
+                ).hexdigest()
+                evidence_path.write_text(json.dumps(evidence, sort_keys=True) + "\n")
+                result["engineering_validation"][0]["file_sha256"] = hashlib.sha256(
+                    evidence_path.read_bytes()
+                ).hexdigest()
+
+                validation = MODULE.validate(
+                    result,
+                    "draft",
+                    packet,
+                    repo_root=root,
+                    check_dispatch=False,
+                )
+
+                self.assertIn(
+                    "PREPUBLICATION_CHECK_REPORT_INVALID",
+                    {finding["code"] for finding in validation["findings"]},
+                )
+
+    def test_post_check_rejects_zero_effects_when_checks_ran(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, evidence_path = post_check_publication_workspace(root)
+            evidence = json.loads(evidence_path.read_text())
+            for attempt in evidence["attempts"]:
+                attempt["effects"] = {"local-check": 0}
+            evidence["effects"] = {"local-check": 0}
+            evidence_path.write_text(json.dumps(evidence, sort_keys=True) + "\n")
+            result["engineering_validation"][0]["file_sha256"] = hashlib.sha256(
+                evidence_path.read_bytes()
+            ).hexdigest()
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            self.assertIn(
+                "PREPUBLICATION_EFFECT_ACCOUNTING_INVALID",
+                {finding["code"] for finding in validation["findings"]},
+            )
+
+    def test_post_check_rejects_all_pass_attempt_relabelled_as_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, evidence_path = post_check_publication_workspace(root)
+            evidence = json.loads(evidence_path.read_text())
+            evidence["attempts"][-1]["outcome"] = "fail"
+            evidence_path.write_text(json.dumps(evidence, sort_keys=True) + "\n")
+            result["engineering_validation"][0]["file_sha256"] = hashlib.sha256(
+                evidence_path.read_bytes()
+            ).hexdigest()
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            self.assertIn(
+                "PREPUBLICATION_ATTEMPT_OUTCOME_INVALID",
+                {finding["code"] for finding in validation["findings"]},
+            )
+
+    def test_first_identity_publication_cannot_omit_policy_charge(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet = base_packet()
+            packet["publication_policy"] = {
+                "contract_version": "frontier-authoritative-output-publication/1",
+                "charge_event": "first-parent-chargeable-identity",
+                "charge_amount": "1 proposal attempt",
+                "charge_basis": {
+                    "kind": "parent-rule",
+                    "path": "parents/R8.yaml",
+                    "file_sha256": "a" * 64,
+                    "locator": "fixture first identity rule",
+                },
+                "repair_mode": "prohibited",
+                "effect_scope": "deterministic-local-checks-only",
+                "authoritative_output_path": packet["candidate_package_inventory_path"],
+                "engineering_evidence_path": "artifacts/frontier/B900/engineering-evidence.json",
+            }
+            result = base_result()
+            seed_materialized_candidate(root, packet, result)
+            result["actual_spend"] = "0 proposal attempts"
+            result["accounting_evidence"] = "none"
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            self.assertIn(
+                "PUBLICATION_CHARGE_ACCOUNTING_INVALID",
+                {finding["code"] for finding in validation["findings"]},
+            )
+
+    def test_post_check_final_attempt_must_cover_every_frozen_check(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, _ = post_check_publication_workspace(root)
+            packet["engineering_check_plan"]["checks"].append(
+                {
+                    "id": "second-check",
+                    "command": ["second-check"],
+                    "effect_costs": {"local-check": 1},
+                }
+            )
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            self.assertIn(
+                "PREPUBLICATION_ATTEMPT_OUTCOME_INVALID",
+                {finding["code"] for finding in validation["findings"]},
+            )
+
+    def test_post_check_snapshot_id_must_match_snapshot_digest(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, evidence_path = post_check_publication_workspace(root)
+            evidence = json.loads(evidence_path.read_text())
+            evidence["attempts"][-1]["snapshot_id"] = "snapshot-sha256:" + "c" * 64
+            evidence_path.write_text(json.dumps(evidence, sort_keys=True) + "\n")
+            result["engineering_validation"][0]["file_sha256"] = hashlib.sha256(
+                evidence_path.read_bytes()
+            ).hexdigest()
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            self.assertIn(
+                "PREPUBLICATION_SNAPSHOT_ID_INVALID",
+                {finding["code"] for finding in validation["findings"]},
+            )
+
+    def test_post_check_completed_publication_requires_charge_accounting(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, _ = post_check_publication_workspace(root)
+            result["actual_spend"] = "0 proposal attempts"
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            self.assertIn(
+                "PUBLICATION_CHARGE_ACCOUNTING_INVALID",
+                {finding["code"] for finding in validation["findings"]},
+            )
+
+    def test_post_check_failed_code_cannot_leave_formal_candidate_residue(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, evidence_path = post_check_publication_workspace(root)
+            evidence = json.loads(evidence_path.read_text())
+            evidence["attempts"] = evidence["attempts"][:1]
+            evidence["effects"] = {"local-check": 1}
+            evidence["status"] = "fail"
+            evidence["official_output"] = None
+            evidence_path.write_text(json.dumps(evidence, sort_keys=True) + "\n")
+            result["engineering_validation"][0]["file_sha256"] = hashlib.sha256(
+                evidence_path.read_bytes()
+            ).hexdigest()
+            result["outcome"] = "failed"
+            result["materialization_state"] = "partial"
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            codes = {finding["code"] for finding in validation["findings"]}
+            self.assertIn("PREPUBLICATION_TERMINAL_EVIDENCE_INVALID", codes)
+            self.assertIn("PREPUBLICATION_TERMINAL_CANDIDATE_INVALID", codes)
+
     def test_result_identity_serialization_error_is_repair_not_hard_block(self) -> None:
         result = base_result()
         result["result_packet_id"] = "B900-result-sha256:stale"
@@ -458,6 +1160,132 @@ class BatchResultValidationTests(unittest.TestCase):
             packet, result, _ = bound_result_workspace(root)
             validation = MODULE.validate(result, "draft", packet, repo_root=root)
             self.assertTrue(validation["result_structure_ready"], validation["findings"])
+
+    def test_project_dispatch_recovery_uses_the_exact_nested_compatibility_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            preflight_path = root / "artifacts/frontier/B900/preflight.json"
+            acknowledgment_path = root / "artifacts/frontier/B900/acknowledgment.yaml"
+            execution_start_path = root / "artifacts/frontier/B900/execution-start.yaml"
+            preflight_path.parent.mkdir(parents=True)
+            preflight_path.write_text(
+                json.dumps({"preflight_id": "B900-preflight-sha256:exact"}) + "\n"
+            )
+            acknowledgment_path.write_text(
+                "acknowledgment_id: B900-acknowledgment-sha256:exact\n"
+                f"contract_version: {MODULE.PROJECT_ACKNOWLEDGMENT_CONTRACT}\n"
+            )
+            execution_start_path.write_text(
+                "execution_start_id: B900-execution-start-sha256:exact\n"
+                f"contract_version: {MODULE.PROJECT_EXECUTION_START_CONTRACT}\n"
+            )
+            result = base_result()
+            result["packet_preflight"] = {
+                "path": preflight_path.relative_to(root).as_posix(),
+                "identity_field": "preflight_id",
+                "identity": "B900-preflight-sha256:exact",
+                "file_sha256": hashlib.sha256(preflight_path.read_bytes()).hexdigest(),
+            }
+            result["acknowledgment"] = {
+                "path": acknowledgment_path.relative_to(root).as_posix(),
+                "identity_field": "acknowledgment_id",
+                "identity": "B900-acknowledgment-sha256:exact",
+                "file_sha256": hashlib.sha256(acknowledgment_path.read_bytes()).hexdigest(),
+            }
+            result["execution_start"] = {
+                "path": execution_start_path.relative_to(root).as_posix(),
+                "identity_field": "execution_start_id",
+                "identity": "B900-execution-start-sha256:exact",
+                "file_sha256": hashlib.sha256(execution_start_path.read_bytes()).hexdigest(),
+            }
+            packet = base_packet()
+            packet["identity_contract"] = MODULE.IDENTITY_CONTRACT
+            findings: list[dict[str, str]] = []
+
+            with mock.patch.object(MODULE, "verify_project_nested_dispatch") as verify:
+                MODULE.validate_dispatch_bindings(result, packet, root, findings)
+
+            verify.assert_called_once()
+            self.assertEqual([], findings)
+
+    def test_project_dispatch_recovery_fails_closed_on_any_compatibility_error(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            preflight_path = root / "preflight.json"
+            acknowledgment_path = root / "acknowledgment.yaml"
+            execution_start_path = root / "execution-start.yaml"
+            preflight_path.write_text(
+                json.dumps({"preflight_id": "B900-preflight-sha256:exact"}) + "\n"
+            )
+            acknowledgment_path.write_text(
+                "acknowledgment_id: B900-acknowledgment-sha256:exact\n"
+                f"contract_version: {MODULE.PROJECT_ACKNOWLEDGMENT_CONTRACT}\n"
+            )
+            execution_start_path.write_text(
+                "execution_start_id: B900-execution-start-sha256:exact\n"
+                f"contract_version: {MODULE.PROJECT_EXECUTION_START_CONTRACT}\n"
+            )
+            result = base_result()
+            for field, path, identity_field, identity in (
+                (
+                    "packet_preflight",
+                    preflight_path,
+                    "preflight_id",
+                    "B900-preflight-sha256:exact",
+                ),
+                (
+                    "acknowledgment",
+                    acknowledgment_path,
+                    "acknowledgment_id",
+                    "B900-acknowledgment-sha256:exact",
+                ),
+                (
+                    "execution_start",
+                    execution_start_path,
+                    "execution_start_id",
+                    "B900-execution-start-sha256:exact",
+                ),
+            ):
+                result[field] = {
+                    "path": path.relative_to(root).as_posix(),
+                    "identity_field": identity_field,
+                    "identity": identity,
+                    "file_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                }
+            packet = base_packet()
+            packet["identity_contract"] = MODULE.IDENTITY_CONTRACT
+            findings: list[dict[str, str]] = []
+
+            with mock.patch.object(
+                MODULE,
+                "verify_project_nested_dispatch",
+                side_effect=ValueError("nested packet digest changed"),
+            ):
+                MODULE.validate_dispatch_bindings(result, packet, root, findings)
+
+            self.assertEqual(
+                ["PROJECT_DISPATCH_RECOVERY_FAILED"],
+                [finding["code"] for finding in findings],
+            )
+            self.assertIn("nested packet digest changed", findings[0]["detail"])
+
+    def test_exact_line_identity_rejects_duplicate_identity_fields(self) -> None:
+        body = b"contract_version: exact\n"
+        expected = "prefix:" + hashlib.sha256(body).hexdigest()
+        self.assertEqual(
+            expected,
+            MODULE.omitted_line_identity(
+                b"record_id: value\n" + body,
+                "record_id",
+                "prefix:",
+            ),
+        )
+        with self.assertRaisesRegex(ValueError, "exactly one"):
+            MODULE.omitted_line_identity(
+                b"record_id: one\nrecord_id: two\n" + body,
+                "record_id",
+                "prefix:",
+            )
 
     def test_released_source_bound_packet_keeps_versioned_result_contract(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

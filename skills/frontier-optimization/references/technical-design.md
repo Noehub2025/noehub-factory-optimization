@@ -72,7 +72,25 @@ For `module` or `system`, the Coordinator creates a W scaffold with fixed Purpos
 
 The designer writes only W's Design brief and triggered concern files. The Coordinator then generates Design map rows, Delivery map rows, `traceability.yaml`, design identities, review lifecycle, and B bindings from the exact professional pointers. This mechanical adoption may add identifiers and paths but may not rewrite architecture, domain meaning, interface behavior, flows, technical slices, or verification.
 
-Design authoring is planning and creates no B, proposal identity, reservation, or spend. If a conclusion requires code execution, a prototype, an experiment, controlled input, an external effect, or protected resources, the designer returns `EVIDENCE_REQUIRED`; the Coordinator obtains that evidence through the existing Q or B path.
+Design authoring is planning and creates no B, proposal identity, reservation, or spend. If a conclusion requires a lower-consequence observation from code execution, a prototype, an experiment, controlled input, an external effect, or protected resources, the designer returns `EVIDENCE_REQUIRED`; the Coordinator obtains that evidence through the existing Q or B path. Do not relabel a runnable, tested, chargeable, irreversible, or protected-resource realization as free design evidence.
+
+## Test decisive feasibility claims
+
+Apply this check inside the existing cold-read implementability work for `module` and `system`; it is not a new gate and does not change the `direct` profile. A decisive feasibility claim is an unestablished, falsifiable claim on which complete delivery of a planned slice depends. It may concern one required capability or several constraints that must hold together. Novelty, complexity, first implementation, absence of a final deliverable, first-identity charging, and ordinary implementation risk do not establish such a claim by themselves.
+
+For every decisive claim, require positive, reviewable grounds for at least one credible end-to-end realization under the same relevant conditions and acceptance meaning. Grounds may come from analysis, proof, inspection, a same-condition example, demonstration, test, prototype, or another direct source appropriate to the deliverable. Negative examples, internal consistency, or a future acceptance plan alone do not establish feasibility.
+
+Decide evidence routing separately from whether the claim needs review. Return `EVIDENCE_REQUIRED` only when current grounds are insufficient and one lower-consequence observation is affordable, reachable, and capable of changing the design verdict. If no such observation exists, do not create a recursive evidence gate or weaken readiness: use current grounds to establish a credible realization, revise the design to remove the unsupported dependency, return the exact parent-owned formal-risk decision, or return the exact blocker when no legal path remains. Work that only the normal formal proposal can test stays subject to its parent and R8 consequence; design work cannot make that proposal free.
+
+Use these questions without creating a new field or artifact:
+
+1. Which claim determines whether the complete slice can be delivered?
+2. Which capabilities or interactions depend on it?
+3. Which conditions and constraints must hold?
+4. What end-to-end realization do the current grounds actually support, and what remains assumed?
+5. Is there a lower-consequence observation that can falsify or materially strengthen the claim?
+
+Address every decisive claim before design review, starting with the weakest. Do not enumerate non-blocking risks merely to fill the design.
 
 ## Resolve user-owned design choices
 

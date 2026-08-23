@@ -12,7 +12,10 @@ Create the packet after `design-implementation` has completed the professional D
 4. Check technical eligibility before preference. Every user-owned tradeoff needed by a reviewed slice has eligible options, an evidence-bounded recommendation, adopted V, consequences, and reconsideration trigger. Design preference is not development authorization.
 5. Trace each behavior to its owning module, interface, flow, and distinguishing verification. Require `verification.md` to own each technical slice's behavior, blocking dependencies, design inputs, oracle, failure checks, and recovery point. Require the Coordinator-generated Delivery map and machine-readable traceability file to bind those exact pointers to B identifiers and repository-relative evidence destinations without semantic drift. Each code-bearing B delivers one observable vertical slice and reads only exact required inputs.
 6. Perform a cold-read implementation check. Return a finding if a developer must invent entity meaning, responsibility, interface contract, state owner, runtime transition, failure response, user value decision, test oracle, or slice boundary. An executor choice passes only when a concern labels and bounds it.
-7. Return exactly `DESIGN_READY`, `DESIGN_REPAIR_REQUIRED`, `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED`, or `BLOCKED`. A positive result has no finding and no unresolved item blocking the reviewed slice.
+7. Apply [decisive feasibility](technical-design.md#test-decisive-feasibility-claims). Identify every unestablished, falsifiable claim that determines whether the complete slice can be delivered, starting with the weakest. Attack its positive grounds by seeking a counterexample or checking the claimed end-to-end realization under the same relevant conditions and acceptance meaning. Do not enumerate non-blocking risks, but do not return `DESIGN_READY` while another decisive claim remains unresolved.
+8. Return exactly `DESIGN_READY`, `DESIGN_REPAIR_REQUIRED`, `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED`, or `BLOCKED`. A positive result has no finding and no unresolved item blocking the reviewed slice.
+
+Use `DESIGN_REPAIR_REQUIRED` when the reviewed design itself shows a conflict, omits a required capability, or lacks a complete realization that design revision can supply. Use `EVIDENCE_REQUIRED` only when current grounds are insufficient and one lower-consequence observation is affordable, reachable, and capable of changing the verdict. Use `DESIGN_READY` only when every decisive claim has positive, reviewable grounds for a credible end-to-end realization; ordinary implementation risk may remain. When no lower-consequence observation exists, do not treat that absence as readiness and do not create a recursive evidence gate: decide from the current grounds, return the parent-owned formal-risk boundary, or return the exact blocker when no legal path remains. A future acceptance plan, internal consistency, or negative examples alone are not feasibility evidence.
 
 `DESIGN_READY` means only that the exact reviewed design is technically ready. Coordinator adoption records that verdict; neither the verdict nor its adoption authorizes candidate development. Development starts only after fresh `AUTHORIZATION_READY`, a separate user authorization V, and finding-free Coordinator adoption validation bind the exact design-contract identity and affected code-bearing scope.
 
@@ -83,7 +86,7 @@ Maximum consequence: technical design readiness for the exact snapshot only; no 
 - Technical decisions, V records, and open ownership: <pass or findings>
 - Human input contract and evidence-only boundary: <pass, not applicable, or findings>
 - Verification traceability, slices, blocking edges, and recovery: <pass or findings>
-- Cold-read implementability and lifecycle boundaries: <pass or findings>
+- Cold-read implementability, decisive feasibility, and lifecycle boundaries: <pass or findings>
 
 ## Findings
 

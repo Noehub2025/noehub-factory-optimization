@@ -186,6 +186,7 @@ def base_packet() -> dict:
                     "selection": "exact",
                     "selected_units": ["tests.test_unit"],
                     "declared_effects": ["local-code-execution"],
+                    "effect_costs": {"local-code-execution": 1},
                     "effect_evidence": [
                         {
                             "path": direct_binding["path"],
@@ -197,11 +198,27 @@ def base_packet() -> dict:
             "effect_limits": {"local-code-execution": 1},
             "evidence_use": "engineering-only",
         },
+        "publication_policy": {
+            "contract_version": MODULE.PUBLICATION_POLICY_CONTRACT,
+            "charge_event": MODULE.FIRST_IDENTITY_CHARGE,
+            "charge_amount": "1 proposal attempt",
+            "charge_basis": {
+                "kind": "parent-rule",
+                "path": direct_binding["path"],
+                "file_sha256": direct_binding["file_sha256"],
+                "locator": "fixture parent proposal identity rule",
+            },
+            "repair_mode": "prohibited",
+            "effect_scope": "deterministic-local-checks-only",
+            "authoritative_output_path": "artifacts/frontier/B900/package-inventory.yaml",
+            "engineering_evidence_path": "artifacts/frontier/B900/engineering-evidence.json",
+        },
         "artifact_paths": [
             "candidates/B900/",
             "artifacts/frontier/B900/result.yaml",
             "artifacts/frontier/B900/package-inventory.yaml",
             "artifacts/frontier/B900/candidate-manifest.yaml",
+            "artifacts/frontier/B900/engineering-evidence.json",
         ],
         "acknowledgment_path": "artifacts/frontier/B900/acknowledgment.yaml",
         "result_validation_path": "artifacts/frontier/B900/result-validation.json",
@@ -359,6 +376,146 @@ def seed_evaluation_sources(root: Path, target: dict) -> None:
 
 
 class PacketPreflightTests(unittest.TestCase):
+    def test_new_code_packet_requires_explicit_publication_policy(self) -> None:
+        packet = base_packet()
+        packet.pop("publication_policy")
+
+        result = MODULE.validate(packet, "draft")
+
+        self.assertIn(
+            "PUBLICATION_POLICY_REQUIRED",
+            {item["code"] for item in result["findings"]},
+        )
+
+    def test_historical_silence_does_not_enable_post_check_repair(self) -> None:
+        packet = base_packet()
+        packet.pop("publication_policy")
+
+        result = MODULE.validate(packet, "audit", REPO_ROOT)
+
+        self.assertNotIn(
+            "PUBLICATION_POLICY_REQUIRED",
+            {item["code"] for item in result["findings"]},
+        )
+
+    def test_current_frozen_code_packet_requires_publication_policy(self) -> None:
+        packet = base_packet()
+        packet.pop("publication_policy")
+        digest = hashlib.sha256(MODULE.canonical_payload(packet)).hexdigest()
+        packet["packet_id"] = MODULE.computed_packet_id(packet, digest)
+
+        result = MODULE.validate(packet, "frozen")
+
+        self.assertIn(
+            "PUBLICATION_POLICY_REQUIRED",
+            {item["code"] for item in result["findings"]},
+        )
+
+    def test_publication_policy_parent_bytes_are_content_addressed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet = base_packet()
+            seed_identity_sources(root, packet)
+            packet["publication_policy"]["charge_basis"]["file_sha256"] = "0" * 64
+
+            result = MODULE.validate(packet, "draft", root)
+
+            self.assertIn(
+                "PUBLICATION_POLICY_BASIS_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_parent_first_identity_policy_prohibits_free_repair(self) -> None:
+        packet = base_packet()
+        packet["publication_policy"]["repair_mode"] = "deterministic-fidelity-only"
+
+        result = MODULE.validate(packet, "draft", REPO_ROOT)
+
+        self.assertIn(
+            "PUBLICATION_POLICY_INVALID",
+            {item["code"] for item in result["findings"]},
+        )
+
+    def test_post_check_policy_requires_deterministic_local_nonselection_work(self) -> None:
+        packet = base_packet()
+        packet["publication_policy"].update(
+            {
+                "charge_event": MODULE.POST_CHECK_CHARGE,
+                "charge_basis": {
+                    "kind": "workflow-default",
+                    "path": packet["design_contract_binding"]["path"],
+                    "file_sha256": packet["design_contract_binding"]["file_sha256"],
+                    "locator": "reviewed parent set contains no charge event",
+                },
+                "repair_mode": "deterministic-fidelity-only",
+            }
+        )
+
+        result = MODULE.validate(packet, "draft", REPO_ROOT)
+        self.assertNotIn(
+            "PUBLICATION_POLICY_INVALID",
+            {item["code"] for item in result["findings"]},
+        )
+
+        packet["work_kind"] = "experiment"
+        result = MODULE.validate(packet, "draft", REPO_ROOT)
+        self.assertIn(
+            "PUBLICATION_POLICY_SELECTION_FORBIDDEN",
+            {item["code"] for item in result["findings"]},
+        )
+
+        for ineligible_kind in ("research", "mixed", "external_action", "human_input"):
+            packet["work_kind"] = ineligible_kind
+            result = MODULE.validate(packet, "draft", REPO_ROOT)
+            self.assertIn(
+                "PUBLICATION_POLICY_SELECTION_FORBIDDEN",
+                {item["code"] for item in result["findings"]},
+            )
+
+        packet["work_kind"] = "code"
+        packet["human_input_request"] = "ask a person to choose the best output"
+        result = MODULE.validate(packet, "draft", REPO_ROOT)
+        self.assertIn(
+            "PUBLICATION_POLICY_EXTERNAL_EFFECT_FORBIDDEN",
+            {item["code"] for item in result["findings"]},
+        )
+
+    def test_post_check_policy_supports_deterministic_noncode_output(self) -> None:
+        packet = base_packet()
+        packet.update(
+            {
+                "work_kind": "design",
+                "changes_executable_candidate": False,
+                "allowed_code_paths": [],
+                "candidate_root_path": None,
+                "candidate_package_inventory_path": None,
+                "candidate_manifest_path": None,
+            }
+        )
+        packet["publication_policy"].update(
+            {
+                "charge_event": MODULE.POST_CHECK_CHARGE,
+                "charge_basis": {
+                    "kind": "workflow-default",
+                    "path": packet["design_contract_binding"]["path"],
+                    "file_sha256": packet["design_contract_binding"]["file_sha256"],
+                    "locator": "reviewed parent set contains no charge event",
+                },
+                "repair_mode": "deterministic-fidelity-only",
+                "authoritative_output_path": "artifacts/frontier/B900/design.md",
+            }
+        )
+        packet["artifact_paths"].append("artifacts/frontier/B900/design.md")
+
+        result = MODULE.validate(packet, "draft")
+
+        policy_codes = {
+            item["code"]
+            for item in result["findings"]
+            if item["code"].startswith("PUBLICATION_POLICY")
+        }
+        self.assertEqual(set(), policy_codes)
+
     def test_code_packet_requires_pre_execution_inventory_path(self) -> None:
         packet = base_packet()
         packet.pop("candidate_package_inventory_path")
@@ -389,6 +546,7 @@ class PacketPreflightTests(unittest.TestCase):
             "tests/test_harness.py::test_evaluator_fixture"
         ]
         check["declared_effects"] = ["local-evaluator-fixture"]
+        check["effect_costs"] = {"local-evaluator-fixture": 1}
         packet["engineering_check_plan"]["effect_limits"] = {
             "local-evaluator-fixture": 0
         }
@@ -397,6 +555,30 @@ class PacketPreflightTests(unittest.TestCase):
 
         self.assertIn(
             "ENGINEERING_EFFECT_CONFLICT",
+            {item["code"] for item in result["findings"]},
+        )
+
+    def test_unused_or_zero_engineering_effect_limit_is_rejected(self) -> None:
+        packet = base_packet()
+        packet["engineering_check_plan"]["effect_limits"]["unused-effect"] = 0
+
+        result = MODULE.validate(packet, "draft", REPO_ROOT)
+
+        self.assertIn(
+            "ENGINEERING_EFFECT_LIMIT_INVALID",
+            {item["code"] for item in result["findings"]},
+        )
+
+    def test_engineering_check_effect_cost_must_be_positive(self) -> None:
+        packet = base_packet()
+        packet["engineering_check_plan"]["checks"][0]["effect_costs"] = {
+            "local-code-execution": 0
+        }
+
+        result = MODULE.validate(packet, "draft", REPO_ROOT)
+
+        self.assertIn(
+            "ENGINEERING_EFFECT_COST_INVALID",
             {item["code"] for item in result["findings"]},
         )
 
@@ -663,7 +845,7 @@ class PacketPreflightTests(unittest.TestCase):
         self.assertEqual(result["checks"]["result_contract_compatibility"], "PASS")
         self.assertEqual(
             result["result_contract_probe"]["validator"],
-            "frontier-batch-result-preflight/6",
+            "frontier-batch-result-preflight/7",
         )
         self.assertTrue(result["result_contract_probe"]["validation_id"])
         frozen = copy.deepcopy(packet)
@@ -1150,7 +1332,9 @@ class PacketPreflightTests(unittest.TestCase):
                         "artifacts/frontier/B900/weed-tests.json",
                         "artifacts/frontier/B900/plant-shape-tests.json",
                         "artifacts/frontier/B900/result.yaml",
+                        "artifacts/frontier/B900/package-inventory.yaml",
                         "artifacts/frontier/B900/candidate-manifest.yaml",
+                        "artifacts/frontier/B900/engineering-evidence.json",
                     ],
                 }
             )
