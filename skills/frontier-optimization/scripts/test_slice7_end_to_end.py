@@ -1026,7 +1026,7 @@ class Slice7ContractTests(unittest.TestCase):
             "it may touch multiple files",
             "does not routinely call the designer to confirm a direct case",
             "The designer writes only W's Design brief and triggered concern files",
-            "The Coordinator then generates Design map rows, Delivery map rows, `traceability.yaml`",
+            "The Coordinator then generates Design map rows, stable Delivery map rows, `traceability.yaml`",
         )
         self.assert_contract_contains(
             "worker-interfaces.md",

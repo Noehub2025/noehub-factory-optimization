@@ -76,6 +76,14 @@ instead of accepting unknown identity text. The outer identity of a composite
 design index may use an exact top-level omit-line SHA-256 rule while its nested
 concern and traceability checks remain owned by Design review.
 
+## Current Design-to-Entry seam
+
+For a current W-backed Entry, consume one unchanged adopted `DESIGN_READY` identity whose Delivery map and `traceability.yaml` use stable technical slices. Bind the exact B to one reviewed slice, the exact execution `source_base_identity`, required design inputs, worker write surface, execution-frozen inputs, and internal output paths. Confirm that this realization satisfies the reviewed behavior, source compatibility, interface, oracle, failure, and recovery conditions without rewriting them. A different B, attempt namespace, execution source, or internal path is a different Entry realization and authority; it does not reopen Design unless it changes those stable technical conditions.
+
+Distinguish the repository-evidence snapshot used to support Design review from the execution source used by Entry. Entry may use a different source only under compatibility conditions already stated by Design. If an exact ancestor, preserved byte set, pre-migration state, or other source identity is itself design meaning, Entry must match it. Return `ENTRY_REPAIR_REQUIRED` when realization details are incomplete or incompatible, and `DESIGN_REPAIR_REQUIRED` through the owning design path when compatibility meaning itself is missing or must change.
+
+Require Entry outputs to cover every obligation of the selected verification slice, but do not require Design to preassign repository-relative internal evidence destinations. Treat an exact path as Design-owned only when a real caller or operator outside the current B or attempt depends on it as a stable interface. Current Design review must reject a new B-keyed `batches` traceability shape; only an exact historical design identity with an already adopted valid `DESIGN_READY` may retain that shape for audit under its original authority.
+
 The detailed version 1 packet below remains available only when the object
 itself selects the bounded completion adapter. It cannot create a new Entry,
 decision, packet, review, or authorization.

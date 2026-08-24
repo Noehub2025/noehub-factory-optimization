@@ -77,6 +77,7 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 - A fresh-context measurement designer can create or repair the complete decision-relevant protocol. The framing coordinator must adopt that projection as a whole before it becomes part of the task contract.
 - A fresh-context implementation designer owns architecture and interface meaning when work changes a consequential technical seam. The campaign coordinator binds that design to delivery records, and a separate reviewer must approve it before development can be authorized.
 - A consequential implementation design must positively ground every decisive feasibility claim under the relevant conditions. Missing final implementation, novelty, or ordinary implementation risk alone does not justify another evidence gate.
+- Implementation design owns stable technical slices and their verification meaning. Entry later binds one exact batch, execution source, worker surface, and internal output paths, so a new attempt or path does not silently rewrite approved architecture.
 - Planning, user authorization, worker acknowledgment, execution start, implementation review, measurement, result adoption, and claims are separate gates. Each gate applies only to the exact files and identities it names.
 - Candidate creation and performance evaluation are separate steps. Passing engineering checks does not prove improvement.
 - A parent-owned publication policy fixes when an authoritative output becomes chargeable. Only an explicit post-check policy permits deterministic fidelity repair before publication, with cumulative effect accounting; measurement, human judgment, remote work, and other consequential effects remain outside that loop.
@@ -91,6 +92,7 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 - Independent reviews use fixed copies of the evidence and an agent that has not seen the drafting conversation. If that independent review is unavailable, the workflow reports a blocker instead of readiness.
 - Campaign state is recovered from repository files and their recorded versions, not from conversation history.
 - Portable project handoffs can be verified offline from exact project bytes and their typed provenance chain; they do not depend on copied workflow implementation files.
+- Project result recovery distinguishes legacy and current dispatch shapes as a fail-closed union, rejects mixed bindings, and rehashes every current frozen input before publication.
 
 ## Skills
 

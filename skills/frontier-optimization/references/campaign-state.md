@@ -134,7 +134,7 @@ Selection:
 - Campaign-baseline choice: <chosen T, recommendation, V identifier, and decisive tradeoff; or sole eligible T and evidence>
 - Repository structure: <existing structure and integration recommendation; or absent structure, user-approved V, and approved layout>
 - Candidate interface and code integration: <existing or user-approved seam, source, tests, configuration, artifact convention, and stable shared paths; or not applicable>
-- Design profile and map: <direct with evidence; current W revision, immutable design contract identity, indexed concerns, and affected B bindings; or not applicable>
+- Design profile and map: <direct with evidence; or current W revision, immutable design contract identity, indexed concerns, stable Delivery slices, design-review repository evidence, and any exact source identity required by design meaning; never future B assignments or internal realization paths; or not applicable>
 - Design review: <adopted DESIGN_READY identity, pending design B, or not applicable under direct profile>
 - Development authorization: <external AUTHORIZATION_READY, exact V, Coordinator ENTRY_READY adoption, and frozen adoption validation bound to the target; pending readiness review; not applicable for non-code-bearing work>
 - Implementation review gate: <required review before first measurement, integration, or incumbent use; reusable prior review and exact unchanged identity; or not applicable>

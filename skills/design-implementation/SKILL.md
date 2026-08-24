@@ -13,7 +13,7 @@ Require:
 
 - one canonical Frontier task and exact project decision root;
 - mode `new`, `revision`, or `repair`;
-- one Coordinator-created W scaffold with fixed Purpose, Scope, parents, source base, exclusions, and exact writable sections and concern paths;
+- one Coordinator-created W scaffold with fixed Purpose, semantic Scope, parents, source requirements, design-review repository evidence, exclusions, and exact writable sections and concern paths;
 - the fixed route and behavior target, existing repository seams, runtime and resource constraints, and adopted user decisions;
 - for `revision`, the current design and the evidence that requires a contract-bearing change; and
 - for `repair`, the complete current design-review findings.
@@ -63,11 +63,13 @@ This step is complete when every decisive claim has positive grounds or one exac
 
 Write only the assigned W `Design brief` and triggered concern files. For `module` or `system`, cover architecture, interfaces, flows, and verification; add domain or decisions only when their triggers apply. Apply security, performance, reliability, compatibility, migration, and rollback requirements in the owning concern when they materially affect the design.
 
-In `verification.md`, make each technical slice a single source of truth for its observable behavior, blocking dependencies, exact design inputs, distinguishing oracle, failure checks, and safe recovery point. The Coordinator later maps those exact pointers to existing B identifiers and evidence destinations.
+In `verification.md`, make each technical slice a single source of truth for its observable behavior, stable prerequisites, exact design inputs, distinguishing oracle, failure checks, and safe recovery point. The Coordinator later maps those pointers to stable Delivery and traceability rows; Entry separately binds one exact B, execution source, and internal output paths.
+
+For any implementation-form restriction that materially affects a slice, apply [Technical design: Constrain effects, not convenient forms](../frontier-optimization/references/technical-design.md#constrain-effects-not-convenient-forms). State the current protection rationale and causal relation; do not optimize the design for an easy syntactic check.
 
 Use schemas, examples, state tables, or sequence descriptions when prose would allow incompatible implementations. Bound local reversible executor choices instead of deciding incidental implementation details.
 
-Do not write Design map rows, Delivery map rows, `traceability.yaml`, design identities, lifecycle fields, V, B, Selection, Budget, review artifacts, candidate code, or campaign records. The Coordinator generates those mechanical bindings without changing professional meaning.
+Do not write Design map rows, Delivery map rows, `traceability.yaml`, design identities, lifecycle fields, V, B, Selection, Budget, review artifacts, candidate code, or campaign records. The Coordinator generates stable concern and slice bindings without changing professional meaning; it does not assign a future B or internal execution path into Design.
 
 This step is complete when the assigned design files contain one coherent design and no other actor must fill a professional section.
 

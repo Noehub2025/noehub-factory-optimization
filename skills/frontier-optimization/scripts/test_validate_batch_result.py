@@ -17,7 +17,16 @@ from pathlib import Path
 import yaml
 
 import validate_candidate_package as PACKAGE
+from frontier_provenance import (
+    NodeRepository,
+    attest,
+    bind_authority,
+    freeze_execution,
+)
+from frontier_provenance.stores import ArtifactSource, ProjectPortableStore
+from frontier_review import prepare_review
 from test_freeze_execution_baseline import write_bound_dispatch_draft
+from test_frontier_review_preparation import write_entry
 
 
 SCRIPT = Path(__file__).with_name("validate_batch_result.py")
@@ -27,6 +36,349 @@ MODULE = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
 HASH = "a" * 64
+
+
+def file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def file_binding(path: Path, root: Path, identity_field: str, identity: str) -> dict:
+    return {
+        "path": path.relative_to(root).as_posix(),
+        "identity_field": identity_field,
+        "identity": identity,
+        "file_sha256": file_sha256(path),
+    }
+
+
+def write_line_identified_yaml(
+    path: Path, document: dict, identity_field: str, prefix: str
+) -> dict:
+    payload = yaml.safe_dump(document, sort_keys=False, allow_unicode=True).encode()
+    identity = prefix + hashlib.sha256(payload).hexdigest()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(f"{identity_field}: {identity}\n".encode() + payload)
+    return yaml.safe_load(path.read_text())
+
+
+def write_project_dispatch_fixture(root: Path, family: str) -> tuple[dict, dict, Path]:
+    """Create one complete typed project dispatch without mocking validation."""
+
+    if family not in {"current", "legacy"}:
+        raise ValueError(f"unsupported dispatch family: {family}")
+
+    frozen_input = root / "project/input.txt"
+    frozen_input.parent.mkdir(parents=True)
+    frozen_input.write_bytes(b"frozen input\n")
+    frozen_inputs = [
+        {
+            "path": frozen_input.relative_to(root).as_posix(),
+            "scope": "file",
+            "identity": "sha256:" + file_sha256(frozen_input),
+        }
+    ]
+
+    spec = write_entry(root)
+    plan_path = root / "entry/plan.yaml"
+    common = {
+        "contract_version": MODULE.PROJECT_BATCH_PLAN_CONTRACT,
+        "batch_id": "B001",
+        "campaign_generation": 2,
+        "route_id": "T900",
+        "parallel_set": None,
+        "work_kind": "code",
+        "problem_epoch": 3,
+        "representation_revision": 4,
+        "result_contract_version": MODULE.RESULT_CONTRACT_V2,
+        "identity_contract": MODULE.IDENTITY_CONTRACT,
+        "changes_executable_candidate": False,
+        "candidate_root_path": "candidates/B001/",
+        "candidate_package_inventory_path": "artifacts/frontier/B001/package-inventory.yaml",
+        "candidate_manifest_path": "artifacts/frontier/B001/candidate-manifest.yaml",
+        "result_validation_path": "artifacts/frontier/B001/result-validation.json",
+        "result_packet_path": "artifacts/frontier/B001/result.yaml",
+        "execution_baseline_root": "artifacts/frontier/B001/execution-baseline",
+        "maximum_spend": {"proposal_attempts": 1},
+        "authorization_gate": "exact reviewed authorization",
+        "stop_conditions": ["one result"],
+    }
+    preflight_path: Path | None = None
+    preflight: dict | None = None
+    if family == "current":
+        common["execution_frozen_inputs"] = frozen_inputs
+        packet = write_line_identified_yaml(
+            plan_path, common, "batch_plan_id", "B001-plan-sha256:"
+        )
+        dispatch_identity = packet["batch_plan_id"]
+    else:
+        common.update(
+            {
+                "packet_path": plan_path.relative_to(root).as_posix(),
+                "packet_preflight_path": "artifacts/frontier/B001/preflight.json",
+                "workflow_source_identity": "sha256:" + HASH,
+            }
+        )
+        packet_payload = yaml.safe_dump(
+            common, sort_keys=False, allow_unicode=True
+        ).encode()
+        packet = {
+            **common,
+            "packet_id": "B001-packet-sha256:"
+            + hashlib.sha256(packet_payload).hexdigest(),
+        }
+        plan_path.write_text(yaml.safe_dump(packet, sort_keys=False, allow_unicode=True))
+        dispatch_identity = packet["packet_id"]
+        preflight_path = root / packet["packet_preflight_path"]
+        preflight_path.parent.mkdir(parents=True, exist_ok=True)
+        preflight_payload = {
+            "computed_packet_id": packet["packet_id"],
+            "packet_payload_sha256": hashlib.sha256(packet_payload).hexdigest(),
+            "packet_structure_ready": True,
+            "blocking_findings": [],
+            "repair_findings": [],
+        }
+        preflight = {
+            "preflight_id": "B001-packet-preflight-sha256:"
+            + hashlib.sha256(
+                json.dumps(
+                    preflight_payload,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                ).encode()
+            ).hexdigest(),
+            **preflight_payload,
+        }
+        preflight_path.write_text(
+            json.dumps(preflight, sort_keys=True, separators=(",", ":")) + "\n"
+        )
+
+    decision_parent = root / "artifacts/frontier/B001/entry-R900-complete"
+    prepared = prepare_review(spec, root, decision_parent)
+    assert prepared["status"] == "SEALED", prepared
+    decision_bundle = decision_parent / "snapshot"
+    repository = NodeRepository(decision_parent / "nodes")
+    decision = repository.load(prepared["decision_root"])
+
+    entry_review_path = root / "artifacts/frontier/B001/entry-R900.md"
+    entry_review_path.parent.mkdir(parents=True, exist_ok=True)
+    entry_review_path.write_text("# Entry review\n\nResult: AUTHORIZATION_READY\n")
+    review_bundle = entry_review_path.with_name(
+        f"{entry_review_path.stem}-review-report"
+    )
+    review_content = ProjectPortableStore().capture(
+        "review",
+        [ArtifactSource("project/review/entry-R900.md", entry_review_path)],
+        review_bundle,
+        project_root=root,
+    )
+    attestation = attest(
+        decision,
+        validation_report_root=review_content["content_root"],
+        verdict="ready",
+        findings=[],
+    )
+
+    authority_source = root / "artifacts/frontier/B001/authority.yaml"
+    authority_source.write_text("decision: exact reviewed authorization\n")
+    authority_bundle = root / "artifacts/frontier/B001/authority-content"
+    authority_content = ProjectPortableStore().capture(
+        "authority",
+        [ArtifactSource("project/authority/authorization.yaml", authority_source)],
+        authority_bundle,
+        project_root=root,
+    )
+    authority = bind_authority(
+        authority_root=authority_content["content_root"],
+        decision=decision,
+        validation=attestation,
+        decision_bundle=decision_bundle,
+    )
+    repository.write_all((attestation, authority))
+
+    plan_binding = {
+        "path": plan_path.relative_to(root).as_posix(),
+        ("plan_id" if family == "current" else "packet_id"): dispatch_identity,
+        "file_sha256": file_sha256(plan_path),
+    }
+    acknowledgment_document = {
+        "contract_version": MODULE.PROJECT_ACKNOWLEDGMENT_CONTRACT,
+        "batch_id": "B001",
+        "acknowledgment": "accepted",
+        "batch_plan": plan_binding,
+        "decision_root": decision["node_id"],
+        "decision_content": {
+            "path": decision_bundle.relative_to(root).as_posix(),
+            "root": prepared["content_root"],
+            "manifest_file_sha256": file_sha256(decision_bundle / "manifest.json"),
+        },
+        "entry_review": {
+            "path": entry_review_path.relative_to(root).as_posix(),
+            "result": "AUTHORIZATION_READY",
+            "file_sha256": file_sha256(entry_review_path),
+        },
+        "entry_attestation": attestation["node_id"],
+        "authority": {
+            "node": authority["node_id"],
+            "content_path": authority_bundle.relative_to(root).as_posix(),
+            "content_root": authority_content["content_root"],
+            "content_manifest_sha256": file_sha256(authority_bundle / "manifest.json"),
+        },
+    }
+    if family == "legacy":
+        assert preflight_path is not None and preflight is not None
+        acknowledgment_document["packet_preflight"] = {
+            "path": preflight_path.relative_to(root).as_posix(),
+            "preflight_id": preflight["preflight_id"],
+            "file_sha256": file_sha256(preflight_path),
+        }
+    acknowledgment_path = root / "artifacts/frontier/B001/acknowledgment.yaml"
+    acknowledgment = write_line_identified_yaml(
+        acknowledgment_path,
+        acknowledgment_document,
+        "acknowledgment_id",
+        "B001-acknowledgment-sha256:",
+    )
+
+    state_document = {
+        "decision_root": decision["node_id"],
+        "authority_id": authority["node_id"],
+        "acknowledgment": {"identity": acknowledgment["acknowledgment_id"]},
+        "plan": {"identity": dispatch_identity},
+        "worker_may_start": False,
+        "release_condition": (
+            "exact execution-start.yaml with finding-free execution verification"
+        ),
+    }
+    if family == "current":
+        state_document["execution_frozen_inputs"] = copy.deepcopy(frozen_inputs)
+    state_path = root / "artifacts/frontier/B001/execution-state.yaml"
+    state_path.write_text(yaml.safe_dump(state_document, sort_keys=False))
+    state_sources = [
+        ArtifactSource("project/state/plan.yaml", plan_path),
+        ArtifactSource("project/state/acknowledgment.yaml", acknowledgment_path),
+        ArtifactSource("project/state/execution-state.yaml", state_path),
+    ]
+    if family == "legacy":
+        assert preflight_path is not None
+        state_sources.append(
+            ArtifactSource("project/state/preflight.json", preflight_path)
+        )
+    else:
+        state_sources.append(
+            ArtifactSource(
+                "project/state/frozen-inputs/project/input.txt", frozen_input
+            )
+        )
+    execution_bundle = root / packet["execution_baseline_root"]
+    execution_content = ProjectPortableStore().capture(
+        "state", state_sources, execution_bundle, project_root=root
+    )
+    execution = freeze_execution(
+        authority=authority,
+        starting_state_root=execution_content["content_root"],
+    )
+    repository.write(execution)
+
+    verification_path = root / "artifacts/frontier/B001/execution-verification.json"
+    verification_path.write_text(
+        json.dumps(
+            {
+                "ready": True,
+                "unresolved_live_facts": [],
+                "static_chain_verified": True,
+                "root_id": execution["node_id"],
+                "consequence": "execution",
+            },
+            sort_keys=True,
+        )
+        + "\n"
+    )
+    start_document = {
+        "contract_version": MODULE.PROJECT_EXECUTION_START_CONTRACT,
+        "batch_id": "B001",
+        "campaign_generation": packet["campaign_generation"],
+        "plan_id": dispatch_identity,
+        "acknowledgment_id": acknowledgment["acknowledgment_id"],
+        "candidate_root": packet["candidate_root_path"],
+        "result_validation": packet["result_validation_path"],
+        "result": packet["result_packet_path"],
+        "worker_may_start": True,
+        "decision_root": decision["node_id"],
+        "authority_id": authority["node_id"],
+        "execution_node": execution["node_id"],
+        "starting_state_root": execution_content["content_root"],
+        "execution_verification": {
+            "path": verification_path.relative_to(root).as_posix(),
+            "file_sha256": file_sha256(verification_path),
+            "ready": True,
+            "unresolved_live_facts": [],
+        },
+    }
+    execution_start_path = root / "artifacts/frontier/B001/execution-start.yaml"
+    execution_start = write_line_identified_yaml(
+        execution_start_path,
+        start_document,
+        "execution_start_id",
+        "B001-execution-start-sha256:",
+    )
+
+    result = base_result()
+    result.update(
+        {
+            "result_packet_path": packet["result_packet_path"],
+            "batch_id": packet["batch_id"],
+            "campaign_generation": packet["campaign_generation"],
+            "route_id": packet["route_id"],
+            "parallel_set": packet["parallel_set"],
+            "work_kind": packet["work_kind"],
+            "problem_epoch": packet["problem_epoch"],
+            "representation_revision": packet["representation_revision"],
+            "result_contract_version": packet["result_contract_version"],
+            "changes_executable_candidate": False,
+            "outcome": "blocked",
+            "materialization_state": "not-started",
+            "acknowledgment": file_binding(
+                acknowledgment_path,
+                root,
+                "acknowledgment_id",
+                acknowledgment["acknowledgment_id"],
+            ),
+            "execution_start": file_binding(
+                execution_start_path,
+                root,
+                "execution_start_id",
+                execution_start["execution_start_id"],
+            ),
+        }
+    )
+    if family == "current":
+        for field in MODULE.LEGACY_RESULT_BINDING_FIELDS:
+            result.pop(field, None)
+        result.update(
+            {
+                "batch_plan": file_binding(
+                    plan_path, root, "batch_plan_id", packet["batch_plan_id"]
+                ),
+                "decision_root": decision["node_id"],
+            }
+        )
+    else:
+        assert preflight_path is not None and preflight is not None
+        result.update(
+            {
+                "packet_path": packet["packet_path"],
+                "packet_id": packet["packet_id"],
+                "workflow_source_identity": packet["workflow_source_identity"],
+                "packet_preflight": file_binding(
+                    preflight_path,
+                    root,
+                    "preflight_id",
+                    preflight["preflight_id"],
+                ),
+            }
+        )
+    return packet, result, frozen_input
 
 
 def base_packet() -> dict:
@@ -109,6 +461,42 @@ def base_result() -> dict:
         "possible_follow_up": None,
         "scope_deviation": "None",
     }
+
+
+def current_project_packet() -> dict:
+    packet = base_packet()
+    for field in (
+        "packet_path",
+        "packet_id",
+        "packet_preflight_path",
+        "workflow_source_identity",
+        "workflow_source_binding",
+    ):
+        packet.pop(field, None)
+    packet.update(
+        {
+            "contract_version": MODULE.PROJECT_BATCH_PLAN_CONTRACT,
+            "batch_plan_id": "B900-plan-sha256:" + "b" * 64,
+            "identity_contract": MODULE.IDENTITY_CONTRACT,
+            "execution_frozen_inputs": [],
+        }
+    )
+    return packet
+
+
+def current_project_result(packet: dict | None = None) -> dict:
+    packet = packet or current_project_packet()
+    result = base_result()
+    for field in MODULE.LEGACY_RESULT_BINDING_FIELDS:
+        result.pop(field, None)
+    result["batch_plan"] = {
+        "path": "artifacts/frontier/B900/B900-plan.yaml",
+        "identity_field": "batch_plan_id",
+        "identity": packet["batch_plan_id"],
+        "file_sha256": "c" * 64,
+    }
+    result["decision_root"] = "frontier-decision-root-sha256:" + "d" * 64
+    return result
 
 
 def formal_evaluation_target() -> dict:
@@ -1174,6 +1562,14 @@ class BatchResultValidationTests(unittest.TestCase):
             acknowledgment_path.write_text(
                 "acknowledgment_id: B900-acknowledgment-sha256:exact\n"
                 f"contract_version: {MODULE.PROJECT_ACKNOWLEDGMENT_CONTRACT}\n"
+                "batch_plan:\n"
+                "  path: artifacts/frontier/B900/packet.yaml\n"
+                "  packet_id: B900-packet-sha256:example\n"
+                f"  file_sha256: {HASH}\n"
+                "packet_preflight:\n"
+                "  path: artifacts/frontier/B900/preflight.json\n"
+                "  preflight_id: B900-preflight-sha256:exact\n"
+                f"  file_sha256: {hashlib.sha256(preflight_path.read_bytes()).hexdigest()}\n"
             )
             execution_start_path.write_text(
                 "execution_start_id: B900-execution-start-sha256:exact\n"
@@ -1200,6 +1596,7 @@ class BatchResultValidationTests(unittest.TestCase):
             }
             packet = base_packet()
             packet["identity_contract"] = MODULE.IDENTITY_CONTRACT
+            packet["packet_preflight_path"] = "artifacts/frontier/B900/preflight.json"
             findings: list[dict[str, str]] = []
 
             with mock.patch.object(MODULE, "verify_project_nested_dispatch") as verify:
@@ -1220,6 +1617,14 @@ class BatchResultValidationTests(unittest.TestCase):
             acknowledgment_path.write_text(
                 "acknowledgment_id: B900-acknowledgment-sha256:exact\n"
                 f"contract_version: {MODULE.PROJECT_ACKNOWLEDGMENT_CONTRACT}\n"
+                "batch_plan:\n"
+                "  path: artifacts/frontier/B900/packet.yaml\n"
+                "  packet_id: B900-packet-sha256:example\n"
+                f"  file_sha256: {HASH}\n"
+                "packet_preflight:\n"
+                "  path: preflight.json\n"
+                "  preflight_id: B900-preflight-sha256:exact\n"
+                f"  file_sha256: {hashlib.sha256(preflight_path.read_bytes()).hexdigest()}\n"
             )
             execution_start_path.write_text(
                 "execution_start_id: B900-execution-start-sha256:exact\n"
@@ -1254,6 +1659,7 @@ class BatchResultValidationTests(unittest.TestCase):
                 }
             packet = base_packet()
             packet["identity_contract"] = MODULE.IDENTITY_CONTRACT
+            packet["packet_preflight_path"] = "preflight.json"
             findings: list[dict[str, str]] = []
 
             with mock.patch.object(
@@ -1268,6 +1674,389 @@ class BatchResultValidationTests(unittest.TestCase):
                 [finding["code"] for finding in findings],
             )
             self.assertIn("nested packet digest changed", findings[0]["detail"])
+
+    def test_project_dispatch_shape_uses_complete_fields_not_contract_version(self) -> None:
+        legacy = base_packet()
+        legacy.update(
+            {
+                "contract_version": MODULE.PROJECT_BATCH_PLAN_CONTRACT,
+                "packet_preflight_path": "artifacts/frontier/B900/preflight.json",
+            }
+        )
+        legacy_ack = {
+            "batch_plan": {
+                "path": legacy["packet_path"],
+                "packet_id": legacy["packet_id"],
+                "file_sha256": HASH,
+            },
+            "packet_preflight": {
+                "path": legacy["packet_preflight_path"],
+                "preflight_id": "B900-preflight-sha256:" + HASH,
+                "file_sha256": HASH,
+            },
+        }
+        current = current_project_packet()
+        current_ack = {
+            "batch_plan": {
+                "path": "artifacts/frontier/B900/B900-plan.yaml",
+                "plan_id": current["batch_plan_id"],
+                "file_sha256": HASH,
+            }
+        }
+
+        self.assertEqual(
+            "legacy-packet-preflight",
+            MODULE.classify_project_dispatch_shape(legacy, legacy_ack),
+        )
+        self.assertEqual(
+            "current-batch-plan",
+            MODULE.classify_project_dispatch_shape(current, current_ack),
+        )
+
+        mixed = copy.deepcopy(current)
+        mixed["packet_id"] = "B900-packet-sha256:" + HASH
+        partial_ack = copy.deepcopy(current_ack)
+        partial_ack["packet_preflight"] = None
+        for bad_packet, bad_ack in (
+            (mixed, current_ack),
+            (current, partial_ack),
+            ({**current, "workflow_source_identity": "sha256:" + HASH}, current_ack),
+        ):
+            with self.subTest(packet=bad_packet, acknowledgment=bad_ack):
+                with self.assertRaisesRegex(ValueError, "mixed and partial"):
+                    MODULE.classify_project_dispatch_shape(bad_packet, bad_ack)
+
+    def test_current_project_result_requires_decision_root_and_forbids_legacy_family(self) -> None:
+        packet = current_project_packet()
+        result = current_project_result(packet)
+
+        accepted = MODULE.validate(
+            result,
+            "draft",
+            packet,
+            check_dispatch=False,
+        )
+        accepted_codes = {finding["code"] for finding in accepted["findings"]}
+        self.assertNotIn("REQUIRED_FIELD_MISSING", accepted_codes)
+        self.assertNotIn("PROJECT_RESULT_BINDING_FAMILY_INVALID", accepted_codes)
+        self.assertNotIn("PROJECT_DECISION_ROOT_INVALID", accepted_codes)
+        self.assertNotIn("PACKET_BINDING_MISMATCH", accepted_codes)
+
+        for field, value, code in (
+            ("decision_root", None, "PROJECT_DECISION_ROOT_INVALID"),
+            ("workflow_source_identity", "sha256:" + HASH, "PROJECT_RESULT_BINDING_FAMILY_INVALID"),
+            ("packet_id", "B900-packet-sha256:" + HASH, "PROJECT_RESULT_BINDING_FAMILY_INVALID"),
+            ("packet_preflight", {}, "PROJECT_RESULT_BINDING_FAMILY_INVALID"),
+        ):
+            changed = copy.deepcopy(result)
+            if value is None:
+                changed.pop(field)
+            else:
+                changed[field] = value
+            validation = MODULE.validate(
+                changed,
+                "draft",
+                packet,
+                check_dispatch=False,
+            )
+            codes = {finding["code"] for finding in validation["findings"]}
+            self.assertIn(code, codes, field)
+
+    def test_legacy_project_result_schema_remains_unchanged_for_batch_plan_v3(self) -> None:
+        packet = base_packet()
+        packet.update(
+            {
+                "contract_version": MODULE.PROJECT_BATCH_PLAN_CONTRACT,
+                "packet_preflight_path": "artifacts/frontier/B900/preflight.json",
+            }
+        )
+        result = base_result()
+
+        validation = MODULE.validate(
+            result,
+            "draft",
+            packet,
+            check_dispatch=False,
+        )
+
+        codes = {finding["code"] for finding in validation["findings"]}
+        self.assertNotIn("REQUIRED_FIELD_MISSING", codes)
+        self.assertNotIn("PROJECT_RESULT_BINDING_FAMILY_INVALID", codes)
+        self.assertNotIn("PROJECT_DECISION_ROOT_INVALID", codes)
+        self.assertNotIn("PROJECT_DISPATCH_SHAPE_INVALID", codes)
+
+        mixed = copy.deepcopy(result)
+        mixed["batch_plan"] = {
+            "path": packet["packet_path"],
+            "identity_field": "batch_plan_id",
+            "identity": "B900-plan-sha256:" + HASH,
+            "file_sha256": HASH,
+        }
+        mixed_validation = MODULE.validate(
+            mixed,
+            "draft",
+            packet,
+            check_dispatch=False,
+        )
+        self.assertIn(
+            "PROJECT_RESULT_BINDING_FAMILY_INVALID",
+            {finding["code"] for finding in mixed_validation["findings"]},
+        )
+
+    def test_current_project_frozen_inputs_match_typed_baseline_and_live_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = root / "project/first.txt"
+            second = root / "project/second.txt"
+            first.parent.mkdir(parents=True)
+            first.write_bytes(b"first\n")
+            second.write_bytes(b"second\n")
+            frozen = [
+                {
+                    "path": path.relative_to(root).as_posix(),
+                    "scope": "file",
+                    "identity": "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest(),
+                }
+                for path in (first, second)
+            ]
+            packet = {"execution_frozen_inputs": frozen}
+            state = {"execution_frozen_inputs": copy.deepcopy(frozen)}
+            baseline = {
+                f"project/state/frozen-inputs/{entry['path']}":
+                (root / entry["path"]).read_bytes()
+                for entry in frozen
+            }
+
+            MODULE.verify_current_execution_frozen_inputs(
+                packet=packet,
+                state=state,
+                baseline_raw=baseline,
+                repo_root=root,
+            )
+
+            live_drift = copy.deepcopy(baseline)
+            first.write_bytes(b"changed live bytes\n")
+            with self.assertRaisesRegex(ValueError, "live frozen input drift"):
+                MODULE.verify_current_execution_frozen_inputs(
+                    packet=packet,
+                    state=state,
+                    baseline_raw=live_drift,
+                    repo_root=root,
+                )
+
+            first.write_bytes(b"first\n")
+            baseline_drift = copy.deepcopy(baseline)
+            baseline_drift[f"project/state/frozen-inputs/{frozen[0]['path']}"] = b"changed baseline\n"
+            with self.assertRaisesRegex(ValueError, "baseline differs"):
+                MODULE.verify_current_execution_frozen_inputs(
+                    packet=packet,
+                    state=state,
+                    baseline_raw=baseline_drift,
+                    repo_root=root,
+                )
+
+            incomplete_state = {"execution_frozen_inputs": frozen[:1]}
+            with self.assertRaisesRegex(ValueError, "complete frozen-input list"):
+                MODULE.verify_current_execution_frozen_inputs(
+                    packet=packet,
+                    state=incomplete_state,
+                    baseline_raw=baseline,
+                    repo_root=root,
+                )
+
+            extra_baseline = copy.deepcopy(baseline)
+            extra_baseline["project/state/frozen-inputs/project/extra.txt"] = b"extra\n"
+            with self.assertRaisesRegex(ValueError, "exactly the complete frozen inputs"):
+                MODULE.verify_current_execution_frozen_inputs(
+                    packet=packet,
+                    state=state,
+                    baseline_raw=extra_baseline,
+                    repo_root=root,
+                )
+
+    def test_current_project_dispatch_validates_end_to_end_in_draft_and_frozen_phases(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, _ = write_project_dispatch_fixture(root, "current")
+
+            draft = MODULE.validate(
+                result, "draft", packet, repo_root=root, check_dispatch=True
+            )
+            self.assertTrue(draft["result_structure_ready"], draft["findings"])
+            frozen = copy.deepcopy(result)
+            frozen["result_packet_id"] = draft["computed_result_packet_id"]
+            self.assertEqual(
+                draft,
+                MODULE.validate(
+                    frozen, "frozen", packet, repo_root=root, check_dispatch=True
+                ),
+            )
+
+    def test_current_project_dispatch_rechecks_live_frozen_inputs_in_both_phases(self) -> None:
+        for phase in ("draft", "frozen"):
+            with self.subTest(phase=phase), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                packet, result, frozen_input = write_project_dispatch_fixture(
+                    root, "current"
+                )
+                if phase == "frozen":
+                    result["result_packet_id"] = MODULE.computed_result_id(
+                        result,
+                        hashlib.sha256(MODULE.canonical_payload(result)).hexdigest(),
+                    )
+                frozen_input.write_bytes(b"live drift after execution freeze\n")
+
+                validation = MODULE.validate(
+                    result, phase, packet, repo_root=root, check_dispatch=True
+                )
+
+                failures = [
+                    finding
+                    for finding in validation["findings"]
+                    if finding["code"] == "PROJECT_DISPATCH_RECOVERY_FAILED"
+                ]
+                self.assertEqual(1, len(failures), validation["findings"])
+                self.assertIn("live frozen input drift", failures[0]["detail"])
+
+    def test_current_project_dispatch_rejects_execution_baseline_byte_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, _ = write_project_dispatch_fixture(root, "current")
+            bundle = root / packet["execution_baseline_root"]
+            manifest = json.loads((bundle / "manifest.json").read_text())
+            frozen_member = next(
+                item
+                for item in manifest["artifacts"]
+                if item["logical_name"]
+                == "project/state/frozen-inputs/project/input.txt"
+            )
+            object_path = (
+                bundle
+                / "objects"
+                / frozen_member["content_sha256"][:2]
+                / frozen_member["content_sha256"]
+            )
+            object_path.write_bytes(b"mutated baseline bytes\n")
+
+            validation = MODULE.validate(
+                result, "draft", packet, repo_root=root, check_dispatch=True
+            )
+
+            failures = [
+                finding
+                for finding in validation["findings"]
+                if finding["code"] == "PROJECT_DISPATCH_RECOVERY_FAILED"
+            ]
+            self.assertEqual(1, len(failures), validation["findings"])
+            self.assertFalse(validation["result_structure_ready"])
+
+    def test_legacy_project_dispatch_validates_complete_v3_chain_end_to_end(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, _ = write_project_dispatch_fixture(root, "legacy")
+
+            draft = MODULE.validate(
+                result, "draft", packet, repo_root=root, check_dispatch=True
+            )
+            self.assertTrue(draft["result_structure_ready"], draft["findings"])
+            frozen = copy.deepcopy(result)
+            frozen["result_packet_id"] = draft["computed_result_packet_id"]
+            self.assertEqual(
+                draft,
+                MODULE.validate(
+                    frozen, "frozen", packet, repo_root=root, check_dispatch=True
+                ),
+            )
+
+    def test_project_dispatch_union_rejects_every_missing_mixed_and_extra_family_field(self) -> None:
+        legacy = base_packet()
+        legacy["packet_preflight_path"] = "artifacts/frontier/B900/preflight.json"
+        legacy_ack = {
+            "batch_plan": {
+                "path": legacy["packet_path"],
+                "packet_id": legacy["packet_id"],
+                "file_sha256": HASH,
+            },
+            "packet_preflight": {
+                "path": legacy["packet_preflight_path"],
+                "preflight_id": "B900-preflight-sha256:" + HASH,
+                "file_sha256": HASH,
+            },
+        }
+        current = current_project_packet()
+        current_ack = {
+            "batch_plan": {
+                "path": "artifacts/frontier/B900/B900-plan.yaml",
+                "plan_id": current["batch_plan_id"],
+                "file_sha256": HASH,
+            }
+        }
+        cases: list[tuple[str, dict, dict]] = []
+
+        for field in ("packet_path", "packet_id", "packet_preflight_path"):
+            changed = copy.deepcopy(legacy)
+            changed.pop(field)
+            cases.append((f"legacy packet missing {field}", changed, legacy_ack))
+        changed = copy.deepcopy(current)
+        changed.pop("batch_plan_id")
+        cases.append(("current packet missing batch_plan_id", changed, current_ack))
+
+        for field, value in (
+            ("packet_path", "artifacts/frontier/B900/packet.yaml"),
+            ("packet_id", "B900-packet-sha256:" + HASH),
+            ("packet_preflight_path", "artifacts/frontier/B900/preflight.json"),
+            ("workflow_source_identity", "sha256:" + HASH),
+            ("workflow_source_binding", {"root": "sha256:" + HASH}),
+        ):
+            changed = copy.deepcopy(current)
+            changed[field] = value
+            cases.append((f"current packet mixed extra {field}", changed, current_ack))
+        changed = copy.deepcopy(legacy)
+        changed["batch_plan_id"] = "B900-plan-sha256:" + HASH
+        cases.append(("legacy packet mixed extra batch_plan_id", changed, legacy_ack))
+
+        for family, packet, acknowledgment in (
+            ("current", current, current_ack),
+            ("legacy", legacy, legacy_ack),
+        ):
+            changed = copy.deepcopy(acknowledgment)
+            changed.pop("batch_plan")
+            cases.append(
+                (f"{family} acknowledgment missing batch_plan", packet, changed)
+            )
+            for field in tuple(acknowledgment["batch_plan"]):
+                changed = copy.deepcopy(acknowledgment)
+                changed["batch_plan"].pop(field)
+                cases.append(
+                    (f"{family} acknowledgment plan missing {field}", packet, changed)
+                )
+            changed = copy.deepcopy(acknowledgment)
+            changed["batch_plan"][
+                "packet_id" if family == "current" else "plan_id"
+            ] = "mixed"
+            cases.append(
+                (f"{family} acknowledgment plan has mixed identity field", packet, changed)
+            )
+
+        for field in tuple(legacy_ack["packet_preflight"]):
+            changed = copy.deepcopy(legacy_ack)
+            changed["packet_preflight"].pop(field)
+            cases.append((f"legacy preflight missing {field}", legacy, changed))
+        changed = copy.deepcopy(legacy_ack)
+        changed["packet_preflight"]["plan_id"] = "extra"
+        cases.append(("legacy preflight has extra current field", legacy, changed))
+        changed = copy.deepcopy(legacy_ack)
+        changed.pop("packet_preflight")
+        cases.append(("legacy acknowledgment missing preflight", legacy, changed))
+        for value in (None, copy.deepcopy(legacy_ack["packet_preflight"])):
+            changed = copy.deepcopy(current_ack)
+            changed["packet_preflight"] = value
+            cases.append(("current acknowledgment has extra preflight", current, changed))
+
+        for label, packet, acknowledgment in cases:
+            with self.subTest(case=label):
+                with self.assertRaisesRegex(ValueError, "mixed and partial"):
+                    MODULE.classify_project_dispatch_shape(packet, acknowledgment)
 
     def test_exact_line_identity_rejects_duplicate_identity_fields(self) -> None:
         body = b"contract_version: exact\n"

@@ -19,14 +19,14 @@ plan_revision: <integer>
 problem_epoch: <integer>
 representation_revision: <integer>
 affected_routes: [<T identifiers>]
-affected_batches: [<B identifiers>]
+affected_batches: [<B identifiers or none; lifecycle-only, never part of design delivery authority>]
 design_profile: <module | system | not-applicable>
 design_status: <not-required | drafting | review-pending | ready | repair-required | superseded>
 design_contract_identity: <immutable identity of the design-contract sections and indexed concerns, pending, or not applicable>
 design_review: <adopted DESIGN_READY path and identity, pending review path, or not applicable; lifecycle-only and never copied into a contract-bearing section>
 input_state: <not-required | request-pending | waiting-for-input | received-unvalidated | accepted-as-evidence | rejected>
 repository_structure_disposition: <existing-integrated | absent-awaiting-user | user-approved-new | not-applicable>
-source_base_identity: <commit and dirty-state identity, immutable source snapshot, or not applicable>
+source_base_identity: <exact repository evidence snapshot used for design review, an exact source identity required by design meaning, or not applicable; not the later Entry execution source by default>
 candidate_interface: <existing or user-approved seam, or not applicable>
 generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 ---
@@ -39,7 +39,7 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 
 ## Scope
 
-<Coordinator: name routes, batches, repository areas, allowed code paths, worker-forbidden paths, execution-frozen inputs, callers, dependencies, and excluded work.>
+<Coordinator: name routes, semantic repository areas, source requirements and compatibility conditions, true interfaces, callers, dependencies, and excluded work. Keep future B assignments, attempt namespaces, worker paths, execution-frozen inputs, and internal review, evidence, recovery, or result destinations in Entry.>
 
 ## Current state
 
@@ -63,13 +63,13 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 
 ## Delivery map
 
-| Slice | Observable delivery | Blocked by | Required design inputs | Check and recovery point | Status |
-|---|---|---|---|---|---|
-| <B identifier> | <one independently verifiable behavior or artifact> | <B identifiers or None> | <exact indexed pointers needed by this executor> | <distinguishing check and safe resume point> | <proposed | selected | active | complete | blocked> |
+| Slice | Observable delivery | Blocked by | Required design inputs | Check and recovery point |
+|---|---|---|---|---|
+| <stable technical name and exact verification section identity> | <one independently verifiable behavior or artifact> | <stable prerequisite slice or technical condition, or None> | <exact indexed pointers needed by an executor> | <distinguishing check and safe resume point> |
 
-`design/verification.md` is the single source for each technical slice's observable behavior, blocking dependencies, required design inputs, oracle, failure checks, and recovery point. The Coordinator assigns existing B identifiers and copies a concise summary plus exact technical pointers into this table without changing that meaning.
+`design/verification.md` is the single source for each technical slice's observable behavior, stable prerequisites, required design inputs, oracle, failure checks, and recovery point. The Coordinator copies a concise summary plus exact technical pointers into this table without changing that meaning. Selection and Entry later bind one exact B and execution realization; their status and paths never enter this contract-bearing table.
 
-Every selected B must cite this exact `plan_revision` and `design_contract_identity`. Reject a B that names a stale revision, a superseded concern identity, or design inputs outside its Delivery row.
+Every selected B must cite this exact `plan_revision`, `design_contract_identity`, and stable slice identity. Reject a B that names a stale revision, a superseded concern identity, or design inputs outside its selected slice.
 
 For `module` or `system`, the Coordinator maintains `design/traceability.yaml` as a contract-bearing machine-readable index. `design-implementation` does not write it:
 
@@ -77,14 +77,16 @@ For `module` or `system`, the Coordinator maintains `design/traceability.yaml` a
 work_id: <W identifier>
 plan_revision: <integer>
 design_contract_identity: <identity, omitted when hashing this file>
-batches:
-  <B identifier>:
-    delivery_identity: <exact Delivery row or section identity>
+slices:
+  <stable technical slice name>:
+    verification_pointer: <exact path, section, and immutable identity>
+    delivery_identity: <exact Delivery row identity>
     required_design_inputs: [<exact concern pointers and identities>]
-    evidence_destinations: [<repository-relative worker output paths>]
 ```
 
-Every required evidence destination must be exact, must appear in the selected B worker write surface, and must match the owning verification contract. Add the normalized traceability-file hash to the design index and design identity.
+Add the normalized traceability-file hash to the design index and design identity. Entry binds the selected stable slice to one exact B, execution source, worker write surface, and internal output paths, then proves that those realization details satisfy the owning verification contract. A path belongs to Design only when a real caller or operator outside the current B or attempt depends on that exact path as a stable interface.
+
+The `slices` shape is required for every new design identity, including a new revision of an older W. An exact design identity with an already adopted valid `DESIGN_READY` may retain its historical `batches` shape for audit under its original authority; it cannot receive a new `DESIGN_READY`, new B assignment, or broader path authority from that form.
 
 ## Human input contracts
 

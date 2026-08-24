@@ -431,9 +431,18 @@ def test_design_composite_outer_identity_rule_is_supported() -> None:
         )
         concern_without_binding = b"---\nwork_id: W005\n---\n\n# Architecture\n"
         concern_digest = hashlib.sha256(concern_without_binding).hexdigest()
+        verification_without_binding = (
+            b"---\nwork_id: W005\n---\n\n# Verification\n\n## Scheduler core\n"
+        )
+        verification_digest = hashlib.sha256(verification_without_binding).hexdigest()
         trace_without_binding = (
             b"work_id: W005\n"
-            b"identity_rule: SHA-256 of these UTF-8 bytes with the design_contract_identity line omitted\n"
+            + b"identity_rule: SHA-256 of these UTF-8 bytes with the design_contract_identity line omitted\n"
+            + b"slices:\n"
+            + b"  scheduler-core:\n"
+            + f"    verification_pointer: design/verification.md#scheduler-core@sha256:{verification_digest}\n".encode()
+            + b"    delivery_identity: delivery-root\n"
+            + b"    required_design_inputs: [architecture.md]\n"
         )
         trace_digest = hashlib.sha256(trace_without_binding).hexdigest()
         remaining = (
@@ -442,8 +451,8 @@ def test_design_composite_outer_identity_rule_is_supported() -> None:
             "problem_epoch: 5\n"
             "representation_revision: 1\n"
             "route: T009\n"
-            "delivery: {B057: delivery-root}\n"
-            f"concerns_normalized: {{architecture.md: {concern_digest}}}\n"
+            "delivery: {scheduler-core: delivery-root}\n"
+            f"concerns_normalized: {{architecture.md: {concern_digest}, verification.md: {verification_digest}}}\n"
             "supporting_inputs:\n"
             f"  source-base.yaml: {source_id}\n"
             f"  traceability.yaml.normalized: {trace_digest}\n"
@@ -458,10 +467,20 @@ def test_design_composite_outer_identity_rule_is_supported() -> None:
             + f"design_contract_identity: {design_id}\n".encode()
             + b"---\n\n# Architecture\n"
         )
+        (root / "design/verification.md").write_bytes(
+            b"---\nwork_id: W005\n"
+            + f"design_contract_identity: {design_id}\n".encode()
+            + b"---\n\n# Verification\n\n## Scheduler core\n"
+        )
         (root / "design/traceability.yaml").write_bytes(
             b"work_id: W005\n"
             + f"design_contract_identity: {design_id}\n".encode()
             + b"identity_rule: SHA-256 of these UTF-8 bytes with the design_contract_identity line omitted\n"
+            + b"slices:\n"
+            + b"  scheduler-core:\n"
+            + f"    verification_pointer: design/verification.md#scheduler-core@sha256:{verification_digest}\n".encode()
+            + b"    delivery_identity: delivery-root\n"
+            + b"    required_design_inputs: [architecture.md]\n"
         )
         spec = {
             "contract_version": PREPARATION_CONTRACT,
@@ -486,7 +505,12 @@ def test_design_composite_outer_identity_rule_is_supported() -> None:
                         "kind": "blob",
                         "behavioral_metadata": {},
                     }
-                    for name in ("architecture.md", "source-base.yaml", "traceability.yaml")
+                    for name in (
+                        "architecture.md",
+                        "source-base.yaml",
+                        "traceability.yaml",
+                        "verification.md",
+                    )
                 ],
             ],
             "closed_collections": [
@@ -498,6 +522,7 @@ def test_design_composite_outer_identity_rule_is_supported() -> None:
                         "project/decision/design/W005/index.yaml",
                         "project/decision/design/W005/source-base.yaml",
                         "project/decision/design/W005/traceability.yaml",
+                        "project/decision/design/W005/verification.md",
                     ],
                 }
             ],

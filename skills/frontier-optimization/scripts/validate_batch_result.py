@@ -55,6 +55,7 @@ ENGINEERING_CHECK_REPORT_CONTRACT = "frontier-engineering-check-report/1"
 POST_CHECK_CHARGE = "authoritative-publication-after-engineering-checks"
 PROJECT_ACKNOWLEDGMENT_CONTRACT = "frontier-project-batch-acknowledgment/1"
 PROJECT_EXECUTION_START_CONTRACT = "frontier-project-execution-start/1"
+PROJECT_BATCH_PLAN_CONTRACT = "frontier-project-batch-plan/3"
 SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
 SNAPSHOT_ID = re.compile(r"^(?:sha256:|[A-Za-z0-9._-]+-sha256:)[0-9a-f]{64}$")
 OUTCOMES = {"completed", "interrupted", "failed", "blocked", "waiting_for_input"}
@@ -111,6 +112,14 @@ REQUIRED_FIELDS = {
     "possible_follow_up",
     "scope_deviation",
 }
+LEGACY_RESULT_BINDING_FIELDS = {
+    "packet_path",
+    "packet_id",
+    "packet_preflight",
+    "workflow_source_identity",
+}
+CURRENT_PROJECT_RESULT_BINDING_FIELDS = {"batch_plan", "decision_root"}
+COMMON_REQUIRED_FIELDS = REQUIRED_FIELDS - LEGACY_RESULT_BINDING_FIELDS
 MATERIALIZATION_BINDING_FIELDS = {
     "candidate_manifest",
     "candidate_identity",
@@ -159,6 +168,56 @@ PACKET_BINDINGS = {
     "changes_executable_candidate": "changes_executable_candidate",
     "result_packet_path": "result_packet_path",
 }
+CURRENT_PROJECT_PACKET_BINDINGS = {
+    result_field: packet_field
+    for result_field, packet_field in PACKET_BINDINGS.items()
+    if result_field not in LEGACY_RESULT_BINDING_FIELDS
+}
+
+
+def current_project_plan_requested(packet: dict[str, Any] | None) -> bool:
+    """Return whether a packet declares the batch_plan_id result-binding family."""
+
+    return isinstance(packet, dict) and "batch_plan_id" in packet
+
+
+def classify_project_dispatch_shape(
+    packet: dict[str, Any], acknowledgment: dict[str, Any]
+) -> str:
+    """Recognize only one complete legacy or current project dispatch shape."""
+
+    legacy_packet_fields = {"packet_path", "packet_id", "packet_preflight_path"}
+    current_packet_fields = {"batch_plan_id"}
+    legacy_present = legacy_packet_fields & packet.keys()
+    current_present = current_packet_fields & packet.keys()
+    plan_binding = acknowledgment.get("batch_plan")
+    preflight_present = "packet_preflight" in acknowledgment
+
+    complete_legacy = (
+        legacy_present == legacy_packet_fields
+        and not current_present
+        and isinstance(plan_binding, dict)
+        and set(plan_binding) == {"path", "packet_id", "file_sha256"}
+        and isinstance(acknowledgment.get("packet_preflight"), dict)
+        and set(acknowledgment["packet_preflight"])
+        == {"path", "preflight_id", "file_sha256"}
+    )
+    complete_current = (
+        current_present == current_packet_fields
+        and not legacy_present
+        and not ({"workflow_source_identity", "workflow_source_binding"} & packet.keys())
+        and isinstance(plan_binding, dict)
+        and set(plan_binding) == {"path", "plan_id", "file_sha256"}
+        and not preflight_present
+    )
+    if complete_legacy:
+        return "legacy-packet-preflight"
+    if complete_current:
+        return "current-batch-plan"
+    raise ValueError(
+        "project dispatch must use exactly one complete packet_id/preflight or "
+        "batch_plan_id binding family; mixed and partial forms are invalid"
+    )
 
 
 def canonical_payload(document: dict[str, Any]) -> bytes:
@@ -176,13 +235,98 @@ def validate_packet_bindings(
 ) -> None:
     if packet is None:
         return
-    for result_field, packet_field in PACKET_BINDINGS.items():
+    bindings = (
+        CURRENT_PROJECT_PACKET_BINDINGS
+        if current_project_plan_requested(packet)
+        else PACKET_BINDINGS
+    )
+    for result_field, packet_field in bindings.items():
         if document.get(result_field) != packet.get(packet_field):
             add_finding(
                 findings,
                 "PACKET_BINDING_MISMATCH",
                 f"result {result_field} {document.get(result_field)!r} does not match packet {packet_field} {packet.get(packet_field)!r}",
             )
+
+
+def validate_result_binding_family(
+    document: dict[str, Any],
+    packet: dict[str, Any] | None,
+    findings: list[dict[str, str]],
+) -> None:
+    """Require the result binding family selected by the immutable project plan."""
+
+    if not current_project_plan_requested(packet):
+        for field in sorted(REQUIRED_FIELDS - document.keys()):
+            add_finding(findings, "REQUIRED_FIELD_MISSING", field)
+        for field in sorted(CURRENT_PROJECT_RESULT_BINDING_FIELDS & document.keys()):
+            add_finding(
+                findings,
+                "PROJECT_RESULT_BINDING_FAMILY_INVALID",
+                f"legacy packet_id result must omit current field {field}",
+            )
+        return
+
+    legacy_packet_fields = {"packet_path", "packet_id", "packet_preflight_path"}
+    forbidden_current_packet_fields = legacy_packet_fields | {
+        "workflow_source_identity",
+        "workflow_source_binding",
+    }
+    if forbidden_current_packet_fields & packet.keys():
+        add_finding(
+            findings,
+            "PROJECT_DISPATCH_SHAPE_INVALID",
+            "batch_plan_id project plan must not mix legacy packet, preflight, or workflow-source fields",
+        )
+    plan_id = packet.get("batch_plan_id")
+    if not isinstance(plan_id, str) or not re.fullmatch(
+        rf"{re.escape(str(packet.get('batch_id', '')))}-plan(?:-r[0-9]+)?-sha256:[0-9a-f]{{64}}",
+        plan_id,
+    ):
+        add_finding(
+            findings,
+            "PROJECT_DISPATCH_SHAPE_INVALID",
+            "batch_plan_id project plan requires one exact content-addressed plan identity",
+        )
+    required = COMMON_REQUIRED_FIELDS | CURRENT_PROJECT_RESULT_BINDING_FIELDS
+    for field in sorted(required - document.keys()):
+        add_finding(findings, "REQUIRED_FIELD_MISSING", field)
+    for field in sorted(LEGACY_RESULT_BINDING_FIELDS & document.keys()):
+        add_finding(
+            findings,
+            "PROJECT_RESULT_BINDING_FAMILY_INVALID",
+            f"current batch_plan_id result must omit legacy field {field}",
+        )
+    plan_binding = document.get("batch_plan")
+    if not isinstance(plan_binding, dict) or set(plan_binding) != {
+        "path",
+        "identity_field",
+        "identity",
+        "file_sha256",
+    }:
+        add_finding(
+            findings,
+            "PROJECT_RESULT_BINDING_FAMILY_INVALID",
+            "current batch_plan_id result requires one complete batch_plan file binding",
+        )
+    elif (
+        plan_binding.get("identity_field") != "batch_plan_id"
+        or plan_binding.get("identity") != packet.get("batch_plan_id")
+    ):
+        add_finding(
+            findings,
+            "PROJECT_RESULT_BINDING_FAMILY_INVALID",
+            "current result batch_plan identity must equal the immutable batch_plan_id",
+        )
+    decision_root = document.get("decision_root")
+    if not isinstance(decision_root, str) or not re.fullmatch(
+        r"frontier-decision-root-sha256:[0-9a-f]{64}", decision_root
+    ):
+        add_finding(
+            findings,
+            "PROJECT_DECISION_ROOT_INVALID",
+            "current batch_plan_id result requires one typed decision_root",
+        )
 
 
 def load_baseline_tool() -> Any:
@@ -243,11 +387,111 @@ def resolve_project_directory(repo_root: Path, value: Any, role: str) -> tuple[s
     return relative, resolved
 
 
+def verify_current_execution_frozen_inputs(
+    *,
+    packet: dict[str, Any],
+    state: dict[str, Any],
+    baseline_raw: dict[str, bytes],
+    repo_root: Path,
+) -> None:
+    """Recheck every current-plan frozen input against typed baseline and live bytes."""
+
+    frozen_inputs = packet.get("execution_frozen_inputs")
+    if not isinstance(frozen_inputs, list) or not frozen_inputs:
+        raise ValueError("current project plan requires nonempty execution_frozen_inputs")
+    if state.get("execution_frozen_inputs") != frozen_inputs:
+        raise ValueError(
+            "typed project execution state does not preserve the complete frozen-input list"
+        )
+
+    expected_baseline_members: dict[str, bytes] = {}
+    seen_paths: set[str] = set()
+    baseline_tool = load_baseline_tool()
+    for index, entry in enumerate(frozen_inputs):
+        if not isinstance(entry, dict) or set(entry) != {"path", "scope", "identity"}:
+            raise ValueError(
+                f"execution_frozen_inputs[{index}] requires exactly path, scope, and identity"
+            )
+        try:
+            relative = normalize_repo_path(
+                entry.get("path"), f"execution_frozen_inputs[{index}].path"
+            )
+            reject_symlink_components(
+                repo_root.resolve(), relative, f"execution_frozen_inputs[{index}].path"
+            )
+        except IdentityBindingError as exc:
+            raise ValueError(str(exc)) from exc
+        if relative in seen_paths:
+            raise ValueError("execution_frozen_inputs paths must be unique")
+        seen_paths.add(relative)
+        identity = entry.get("identity")
+        if not isinstance(identity, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", identity):
+            raise ValueError(
+                f"execution_frozen_inputs[{index}].identity must be one lowercase SHA-256"
+            )
+        live_path = (repo_root.resolve() / relative).resolve()
+        try:
+            live_path.relative_to(repo_root.resolve())
+        except ValueError as exc:
+            raise ValueError(
+                f"execution_frozen_inputs[{index}].path resolves outside the repository"
+            ) from exc
+        logical_prefix = f"project/state/frozen-inputs/{relative}"
+        if entry.get("scope") == "file":
+            if not live_path.is_file() or live_path.is_symlink():
+                raise ValueError(f"frozen live file is missing or unsafe: {relative}")
+            live_raw = live_path.read_bytes()
+            observed = f"sha256:{hashlib.sha256(live_raw).hexdigest()}"
+            if observed != identity:
+                raise ValueError(
+                    f"live frozen input drift for {relative}: declared {identity}, observed {observed}"
+                )
+            expected_baseline_members[logical_prefix] = live_raw
+        elif entry.get("scope") == "subtree":
+            if not live_path.is_dir() or live_path.is_symlink():
+                raise ValueError(f"frozen live subtree is missing or unsafe: {relative}")
+            try:
+                members, observed = baseline_tool.subtree_inventory(live_path)
+            except (
+                OSError,
+                ValueError,
+                IdentityBindingError,
+                baseline_tool.BaselineError,
+            ) as exc:
+                raise ValueError(f"cannot inventory frozen subtree {relative}: {exc}") from exc
+            if observed != identity:
+                raise ValueError(
+                    f"live frozen input drift for {relative}: declared {identity}, observed {observed}"
+                )
+            for member in members:
+                member_path = live_path / member["path"]
+                expected_baseline_members[
+                    f"{logical_prefix}/{member['path']}"
+                ] = member_path.read_bytes()
+        else:
+            raise ValueError(
+                f"execution_frozen_inputs[{index}].scope must be file or subtree"
+            )
+
+    observed_names = {
+        name for name in baseline_raw if name.startswith("project/state/frozen-inputs/")
+    }
+    if observed_names != set(expected_baseline_members):
+        raise ValueError(
+            "typed project execution baseline does not contain exactly the complete frozen inputs"
+        )
+    for logical_name, expected_raw in expected_baseline_members.items():
+        if baseline_raw.get(logical_name) != expected_raw:
+            raise ValueError(
+                f"typed project execution baseline differs from live frozen input {logical_name}"
+            )
+
+
 def verify_project_nested_dispatch(
     *,
     document: dict[str, Any],
     packet: dict[str, Any],
-    preflight: Any,
+    preflight: Any | None,
     acknowledgment: Any,
     execution_start: Any,
     repo_root: Path,
@@ -284,78 +528,110 @@ def verify_project_nested_dispatch(
     if acknowledgment.identity != expected_ack_id or execution_start.identity != expected_start_id:
         raise ValueError("project dispatch self-identity does not derive from exact bytes")
 
+    shape = classify_project_dispatch_shape(packet, ack)
+    current_plan = shape == "current-batch-plan"
+    result_plan_binding = document.get("batch_plan") if current_plan else None
+    packet_locator = (
+        result_plan_binding.get("path")
+        if isinstance(result_plan_binding, dict)
+        else document.get("packet_path")
+    )
     packet_relative, packet_path = resolve_repo_file(
-        repo_root, document.get("packet_path"), "packet_path"
+        repo_root,
+        packet_locator,
+        "batch_plan.path" if current_plan else "packet_path",
     )
     packet_raw = packet_path.read_bytes()
     if read_yaml(packet_path, "project packet") != packet:
         raise ValueError("project dispatch packet bytes differ from the supplied packet")
-    packet_payload = dict(packet)
-    packet_payload.pop("packet_id", None)
-    packet_payload_sha256 = hashlib.sha256(
-        yaml.safe_dump(packet_payload, sort_keys=False, allow_unicode=True).encode()
-    ).hexdigest()
-    expected_packet_id = f"{batch_id}-packet-sha256:{packet_payload_sha256}"
-    if packet.get("packet_id") != expected_packet_id:
-        raise ValueError("project packet identity does not derive from canonical packet bytes")
+    if current_plan:
+        plan_id = packet.get("batch_plan_id")
+        if not isinstance(plan_id, str) or not re.fullmatch(
+            rf"{re.escape(batch_id)}-plan(?:-r[0-9]+)?-sha256:[0-9a-f]{{64}}",
+            plan_id,
+        ):
+            raise ValueError("current project batch_plan_id has an unsupported shape")
+        expected_plan_id = omitted_line_identity(
+            packet_raw,
+            "batch_plan_id",
+            plan_id.rsplit(":", 1)[0] + ":",
+        )
+        if plan_id != expected_plan_id:
+            raise ValueError("current project plan identity does not derive from exact bytes")
+        if not isinstance(result_plan_binding, dict) or (
+            result_plan_binding.get("path") != packet_relative
+            or result_plan_binding.get("identity_field") != "batch_plan_id"
+            or result_plan_binding.get("identity") != plan_id
+            or result_plan_binding.get("file_sha256")
+            != hashlib.sha256(packet_raw).hexdigest()
+        ):
+            raise ValueError("current project result does not bind the exact plan bytes")
+        dispatch_plan_id = plan_id
+        packet_payload_sha256 = None
+    else:
+        packet_payload = dict(packet)
+        packet_payload.pop("packet_id", None)
+        packet_payload_sha256 = hashlib.sha256(
+            yaml.safe_dump(packet_payload, sort_keys=False, allow_unicode=True).encode()
+        ).hexdigest()
+        expected_packet_id = f"{batch_id}-packet-sha256:{packet_payload_sha256}"
+        if packet.get("packet_id") != expected_packet_id:
+            raise ValueError("project packet identity does not derive from canonical packet bytes")
+        dispatch_plan_id = packet.get("packet_id")
 
     plan_binding = ack.get("batch_plan")
     ack_preflight = ack.get("packet_preflight")
-    if not isinstance(plan_binding, dict) or set(plan_binding) != {
-        "path",
-        "packet_id",
-        "file_sha256",
-    }:
-        raise ValueError("project acknowledgment batch_plan binding is incomplete")
-    if not isinstance(ack_preflight, dict) or set(ack_preflight) != {
-        "path",
-        "preflight_id",
-        "file_sha256",
-    }:
-        raise ValueError("project acknowledgment packet_preflight binding is incomplete")
+    plan_identity_field = "plan_id" if current_plan else "packet_id"
     if (
-        plan_binding.get("path") != packet_relative
-        or plan_binding.get("packet_id") != packet.get("packet_id")
+        not isinstance(plan_binding, dict)
+        or plan_binding.get("path") != packet_relative
+        or plan_binding.get(plan_identity_field) != dispatch_plan_id
         or plan_binding.get("file_sha256") != hashlib.sha256(packet_raw).hexdigest()
     ):
         raise ValueError("project acknowledgment does not bind the exact packet bytes")
-    if (
-        ack_preflight.get("path") != preflight.relative_path
-        or ack_preflight.get("preflight_id") != preflight.identity
-        or ack_preflight.get("file_sha256") != preflight.file_sha256
-    ):
-        raise ValueError("project acknowledgment does not bind the exact preflight bytes")
-    preflight_document = preflight.document
-    if not isinstance(preflight_document, dict):
-        raise ValueError("project packet preflight must contain a mapping")
-    preflight_payload = dict(preflight_document)
-    declared_preflight_id = preflight_payload.pop("preflight_id", None)
-    expected_preflight_id = (
-        f"{batch_id}-packet-preflight-sha256:"
-        + hashlib.sha256(
-            json.dumps(
-                preflight_payload,
-                sort_keys=True,
-                separators=(",", ":"),
-                ensure_ascii=False,
-            ).encode()
-        ).hexdigest()
-    )
-    if (
-        declared_preflight_id != expected_preflight_id
-        or preflight.identity != expected_preflight_id
-        or preflight_document.get("computed_packet_id") != packet.get("packet_id")
-        or preflight_document.get("packet_payload_sha256") != packet_payload_sha256
-        or preflight_document.get("packet_structure_ready") is not True
-        or preflight_document.get("blocking_findings") != []
-        or preflight_document.get("repair_findings") != []
-    ):
-        raise ValueError("project packet preflight is not exact and finding-free")
+    if current_plan:
+        if ack_preflight is not None or preflight is not None:
+            raise ValueError("current batch_plan_id dispatch must not contain legacy preflight")
+    else:
+        if not isinstance(ack_preflight, dict) or preflight is None:
+            raise ValueError("legacy project acknowledgment preflight is incomplete")
+        if (
+            ack_preflight.get("path") != preflight.relative_path
+            or ack_preflight.get("preflight_id") != preflight.identity
+            or ack_preflight.get("file_sha256") != preflight.file_sha256
+        ):
+            raise ValueError("project acknowledgment does not bind the exact preflight bytes")
+        preflight_document = preflight.document
+        if not isinstance(preflight_document, dict):
+            raise ValueError("project packet preflight must contain a mapping")
+        preflight_payload = dict(preflight_document)
+        declared_preflight_id = preflight_payload.pop("preflight_id", None)
+        expected_preflight_id = (
+            f"{batch_id}-packet-preflight-sha256:"
+            + hashlib.sha256(
+                json.dumps(
+                    preflight_payload,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                ).encode()
+            ).hexdigest()
+        )
+        if (
+            declared_preflight_id != expected_preflight_id
+            or preflight.identity != expected_preflight_id
+            or preflight_document.get("computed_packet_id") != packet.get("packet_id")
+            or preflight_document.get("packet_payload_sha256") != packet_payload_sha256
+            or preflight_document.get("packet_structure_ready") is not True
+            or preflight_document.get("blocking_findings") != []
+            or preflight_document.get("repair_findings") != []
+        ):
+            raise ValueError("project packet preflight is not exact and finding-free")
 
     expected_start_values = {
         "batch_id": batch_id,
         "campaign_generation": packet.get("campaign_generation"),
-        "plan_id": packet.get("packet_id"),
+        "plan_id": dispatch_plan_id,
         "acknowledgment_id": acknowledgment.identity,
         "candidate_root": packet.get("candidate_root_path"),
         "result_validation": packet.get("result_validation_path"),
@@ -370,6 +646,8 @@ def verify_project_nested_dispatch(
         raise ValueError("project acknowledgment is not accepted for this batch")
     if ack.get("decision_root") != start.get("decision_root"):
         raise ValueError("project acknowledgment and execution-start bind different decisions")
+    if current_plan and document.get("decision_root") != ack.get("decision_root"):
+        raise ValueError("current project result binds a different decision_root")
 
     verification_binding = start.get("execution_verification")
     if not isinstance(verification_binding, dict) or set(verification_binding) != {
@@ -502,9 +780,10 @@ def verify_project_nested_dispatch(
     baseline_raw = PortableBundleStore().read_artifacts(execution_bundle)
     exact_baseline_members = {
         "project/state/plan.yaml": packet_raw,
-        "project/state/preflight.json": preflight.raw,
         "project/state/acknowledgment.yaml": acknowledgment.raw,
     }
+    if not current_plan:
+        exact_baseline_members["project/state/preflight.json"] = preflight.raw
     for logical_name, expected_raw in exact_baseline_members.items():
         if baseline_raw.get(logical_name) != expected_raw:
             raise ValueError(
@@ -519,12 +798,19 @@ def verify_project_nested_dispatch(
         state.get("decision_root") != decision_id
         or state.get("authority_id") != authority_id
         or state.get("acknowledgment", {}).get("identity") != acknowledgment.identity
-        or state.get("plan", {}).get("identity") != packet.get("packet_id")
+        or state.get("plan", {}).get("identity") != dispatch_plan_id
         or state.get("worker_may_start") is not False
         or state.get("release_condition")
         != "exact execution-start.yaml with finding-free execution verification"
     ):
         raise ValueError("project execution-state evidence does not bind the dispatch chain")
+    if current_plan:
+        verify_current_execution_frozen_inputs(
+            packet=packet,
+            state=state,
+            baseline_raw=baseline_raw,
+            repo_root=repo_root,
+        )
 
 
 def validate_dispatch_bindings(
@@ -543,12 +829,6 @@ def validate_dispatch_bindings(
         )
         return
     try:
-        preflight = load_file_binding(
-            repo_root,
-            document.get("packet_preflight"),
-            "packet_preflight",
-            expected_identity_field="preflight_id",
-        )
         acknowledgment = load_file_binding(
             repo_root,
             document.get("acknowledgment"),
@@ -579,6 +859,28 @@ def validate_dispatch_bindings(
     ) or start.get("contract_version") == PROJECT_EXECUTION_START_CONTRACT
     if project_dispatch:
         try:
+            if not isinstance(acknowledgment.document, dict):
+                raise ValueError("project acknowledgment must contain a mapping")
+            shape = classify_project_dispatch_shape(packet, acknowledgment.document)
+            preflight = None
+            if shape == "current-batch-plan":
+                plan_binding = load_file_binding(
+                    repo_root,
+                    document.get("batch_plan"),
+                    "batch_plan",
+                    expected_identity_field="batch_plan_id",
+                )
+                if plan_binding.document != packet:
+                    raise ValueError(
+                        "result batch_plan binding does not reproduce the supplied project plan"
+                    )
+            else:
+                preflight = load_file_binding(
+                    repo_root,
+                    document.get("packet_preflight"),
+                    "packet_preflight",
+                    expected_identity_field="preflight_id",
+                )
             verify_project_nested_dispatch(
                 document=document,
                 packet=packet,
@@ -587,8 +889,25 @@ def validate_dispatch_bindings(
                 execution_start=execution_start,
                 repo_root=repo_root,
             )
-        except (KeyError, OSError, ValueError, yaml.YAMLError, ProvenanceError) as exc:
+        except (
+            IdentityBindingError,
+            KeyError,
+            OSError,
+            ValueError,
+            yaml.YAMLError,
+            ProvenanceError,
+        ) as exc:
             add_finding(findings, "PROJECT_DISPATCH_RECOVERY_FAILED", str(exc))
+        return
+    try:
+        preflight = load_file_binding(
+            repo_root,
+            document.get("packet_preflight"),
+            "packet_preflight",
+            expected_identity_field="preflight_id",
+        )
+    except IdentityBindingError as exc:
+        add_finding(findings, "DISPATCH_CHAIN_BINDING_INVALID", str(exc))
         return
     if start.get("packet_id") != packet.get("packet_id"):
         add_finding(
@@ -1921,8 +2240,7 @@ def validate(
             "RESULT_CONTRACT_LEGACY_WRITE_FORBIDDEN",
             f"current result writing requires {RESULT_CONTRACT_V2}",
         )
-    for field in sorted(REQUIRED_FIELDS - document.keys()):
-        add_finding(findings, "REQUIRED_FIELD_MISSING", field)
+    validate_result_binding_family(document, packet, findings)
     if document.get("work_kind") == "experiment":
         if "evaluation_target" not in document:
             add_finding(findings, "REQUIRED_FIELD_MISSING", "evaluation_target")

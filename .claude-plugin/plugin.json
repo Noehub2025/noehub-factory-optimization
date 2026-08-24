@@ -1,7 +1,7 @@
 {
   "name": "noehub-factory-optimization",
-  "version": "0.14.0",
-  "description": "Evidence-gated optimization with feasibility-grounded design, bounded pre-publication fidelity repair, typed provenance, execution, interpretation, closeout, and recovery.",
+  "version": "0.15.0",
+  "description": "Evidence-gated optimization with stable design slices, Entry-bound execution, fail-closed project recovery, typed provenance, interpretation, and closeout.",
   "author": {
     "name": "Ken Chen"
   },

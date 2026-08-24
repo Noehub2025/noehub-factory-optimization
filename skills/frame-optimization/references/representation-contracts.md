@@ -185,11 +185,15 @@ Link the executable Slot H harness and current-epoch baseline.
 For the requested search scope, record:
 
 - starting options and total budget;
+- when the parent Budget uses proposal, candidate, attempt, or an equivalent search-opportunity unit, the first observable event that consumes that unit, the amount charged, and the controlling basis; otherwise record `not applicable`;
+- whether deterministic local construction and engineering checks may precede that event; any permitted pre-charge repair must preserve one frozen substantive target and may use only non-selection-producing feedback;
 - whether later proposals may use earlier proposal, validation, or evaluation results;
 - who or what selects the next proposal when that choice is delegated;
 - survivor ranking and tie handling;
 - confirmation, promotion, stopping, and scale-up rules;
 - whether old checkpoints, saved proposals, or cached scores may be reused.
+
+Pre-charge construction may repair fidelity to the unchanged mechanism, algorithm, substantive parameter alternative, representation, inputs, evaluator, acceptance meaning, comparison controls, sampling plan, design, interface, and checks. Formatting, compilation settings, or local implementation shape may change when they do not change that frozen target or create a choice among substantive alternatives. Performance, evaluator, hidden, human, remote, or other selection-producing feedback ends this allowance. All existing preparation, time, compute, effect, attempt, and total-resource limits continue to accumulate; absence of a proposal charge is not an unlimited retry allowance.
 
 Adopt the current `r8_measurement_constraints` from Slots D, E, and H as a ceiling. These constraints define evidence meaning, maximum consequence, required confirmation, forbidden conclusions, adaptive-exposure limits, reuse limits, and measurement invalidation. R8 chooses survivor, route, budget, and stopping actions within that ceiling; it cannot enlarge or repair the measurement design.
 

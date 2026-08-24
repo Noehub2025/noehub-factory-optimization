@@ -5,6 +5,7 @@
 - [W is the map](#w-is-the-map)
 - [Choose the profile](#choose-the-profile)
 - [Assign the professional author](#assign-the-professional-author)
+- [Constrain effects, not convenient forms](#constrain-effects-not-convenient-forms)
 - [Resolve user-owned design choices](#resolve-user-owned-design-choices)
 - [Concern contracts](#concern-contracts)
 - [Delivery slices](#delivery-slices)
@@ -68,9 +69,9 @@ The Coordinator may choose `direct` only from complete recorded evidence. It doe
 
 ## Assign the professional author
 
-For `module` or `system`, the Coordinator creates a W scaffold with fixed Purpose, Scope, parents, source base, exclusions, adopted user decisions, and exclusive write sections. Invoke `design-implementation` in a fresh context with mode `new`, `revision`, or `repair`.
+For `module` or `system`, the Coordinator creates a W scaffold with fixed Purpose, semantic Scope, parents, source requirements, design-review repository evidence, exclusions, adopted user decisions, and exclusive write sections. Invoke `design-implementation` in a fresh context with mode `new`, `revision`, or `repair`.
 
-The designer writes only W's Design brief and triggered concern files. The Coordinator then generates Design map rows, Delivery map rows, `traceability.yaml`, design identities, review lifecycle, and B bindings from the exact professional pointers. This mechanical adoption may add identifiers and paths but may not rewrite architecture, domain meaning, interface behavior, flows, technical slices, or verification.
+The designer writes only W's Design brief and triggered concern files. The Coordinator then generates Design map rows, stable Delivery map rows, `traceability.yaml`, design identities, and review lifecycle from the exact professional pointers. This mechanical adoption may add stable concern or slice identities but may not assign a future B, attempt namespace, internal evidence destination, or runtime status to Design, and may not rewrite architecture, domain meaning, interface behavior, flows, technical slices, or verification.
 
 Design authoring is planning and creates no B, proposal identity, reservation, or spend. If a conclusion requires a lower-consequence observation from code execution, a prototype, an experiment, controlled input, an external effect, or protected resources, the designer returns `EVIDENCE_REQUIRED`; the Coordinator obtains that evidence through the existing Q or B path. Do not relabel a runnable, tested, chargeable, irreversible, or protected-resource realization as free design evidence.
 
@@ -91,6 +92,10 @@ Use these questions without creating a new field or artifact:
 5. Is there a lower-consequence observation that can falsify or materially strengthen the claim?
 
 Address every decisive claim before design review, starting with the weakest. Do not enumerate non-blocking risks merely to fill the design.
+
+## Constrain effects, not convenient forms
+
+When an implementation-form restriction materially affects a planned slice, name the behavior, interface, invariant, risk, or verification property it protects and explain the causal relation. A reviewer may require repair when that current protection basis is absent or contradicted, or may cite one concrete Design-compatible realization showing that the restriction makes the slice infeasible or materially more complex without a current protection rationale. The reviewer need not prove that the restriction has no value in every setting; the Design owns the current rationale. A theoretically narrower rule, an unenumerated alternative, unfamiliarity, novelty, complexity, or ordinary implementation risk is not a finding by itself. If the restriction does not materially affect the current slice, treat it at most as an advisory.
 
 ## Resolve user-owned design choices
 
@@ -143,24 +148,28 @@ For each decision, record status, alternatives, technical eligibility, recommend
 
 Trigger for every `module` or `system` design.
 
-Map each requirement and failure behavior to an observable test oracle. State unit, interface, integration, compatibility, migration, rollback, performance, security, global, and comparison-integrity checks as applicable; fixtures; and evidence paths.
+Map each requirement and failure behavior to an observable test oracle. State unit, interface, integration, compatibility, migration, rollback, performance, security, global, and comparison-integrity checks as applicable; fixtures; evidence meaning and format; producer and consumer roles; and any stable external-interface path.
 
-Make each technical slice's observable behavior, blocking dependencies, exact design inputs, distinguishing oracle, failure checks, and safe recovery point authoritative here. The Coordinator later maps those exact pointers to existing B identifiers, worker paths, and evidence destinations without changing their meaning.
+Make each technical slice's observable behavior, stable prerequisite, exact design inputs, distinguishing oracle, failure checks, and safe recovery point authoritative here. Entry later binds one exact B, execution source, worker paths, and internal output destinations to that reviewed slice without changing its meaning.
 
 Use examples, schemas, state tables, or sequence descriptions whenever prose permits incompatible implementations. A design is not ready while a developer must invent entity meaning, responsibility, interface contract, state owner, runtime transition, failure response, user decision, oracle, or slice boundary.
 
 ## Delivery slices
 
-`design-implementation` plans vertical slices that each deliver one observable result through the real seam and records their exact contracts in `verification.md`. The Coordinator summarizes each slice in W's existing Delivery map, assigns its B identifier, and points to the exact technical contract. Do not make an executor read unrelated concerns.
+`design-implementation` plans vertical slices that each deliver one observable result through the real seam and records their exact contracts in `verification.md`. The Coordinator summarizes each slice in W's Delivery map under a stable technical name or immutable verification pointer. Entry, not Design, later assigns an exact B and realization paths. Do not make an executor read unrelated concerns.
 
 A design, research, or non-code prototype B may resolve one open question. Its worker may only report evidence and proposed wording. It changes no design contract until the Coordinator adopts a new W revision and concern identity.
 
 ## Review and revision
 
-The design contract identity binds W Purpose, Scope, Design brief, Design map, User design decisions, Delivery map, applicable Human input contracts, Validation, Definition of done, every indexed concern identity, and normalized `traceability.yaml`. It excludes lifecycle input state, progress, discoveries, recovery, and outcome. Current development authorization is not stored in W at all.
+The design contract identity binds W Purpose, semantic Scope, Design brief, Design map, User design decisions, stable Delivery map, applicable Human input contracts, Validation, Definition of done, every indexed concern identity, the exact repository-evidence snapshot used for review, and normalized `traceability.yaml`. It excludes future execution assignment, attempt namespace, internal review or recovery paths, internal evidence destinations, runtime status, lifecycle input state, progress, discoveries, recovery, outcome, and current development authorization.
+
+The review evidence snapshot proves which repository facts supported the Design. Entry separately binds the exact execution `source_base_identity`. A later execution source may differ only under compatibility conditions already stated by Design. When an exact source identity is itself design meaning—for example a required fixed ancestor, preserved bytes, or pre-migration state—Design must state that constraint and Entry must satisfy it; Entry may not invent a compatibility rule.
+
+For new design identities, `traceability.yaml` indexes stable technical slices rather than B realizations. A design identity that already had an adopted, valid `DESIGN_READY` before this authoring rule keeps its exact historical `batches` form for audit under its original authority. Every later design identity, including a new revision of that W, uses the stable-slice form; a new design review must not return `DESIGN_READY` for the historical B-keyed form. This is a prospective change to the existing traceability contract shape, not a new contract family, version field, or identity algorithm.
 
 Keep review-attempt identifiers, packet paths, snapshot paths, pending-review state, and adopted-review identity only in W frontmatter and other lifecycle records outside those contract-bearing sections. A contract-bearing section may require an independent versioned review and state its checks, but it must not name the review attempt that will review that same contract. Otherwise each replacement review changes the object being reviewed and creates an identity cycle.
 
-A contract-bearing change creates a new W revision and invalidates dependent `DESIGN_READY` and external development authorization. The executor only proposes the discovery; the Coordinator opens the revision and fixes its scope, `design-implementation` updates the owning professional contract, the Coordinator regenerates traceability and affected B bindings, a fresh reviewer reviews the new immutable design, and the user separately reauthorizes every affected development scope after authorization-readiness review. Lifecycle evidence alone does not change the revision. When design changes parent legality, solution identity, permitted operations, module scope, measurement, or promotion, stop and return to the owning parent stage.
+A contract-bearing change creates a new W revision and invalidates dependent `DESIGN_READY` and external development authorization. The executor only proposes the discovery; the Coordinator opens the revision and fixes its scope, `design-implementation` updates the owning professional contract, the Coordinator regenerates stable traceability, a fresh reviewer reviews the new immutable design, and the user separately reauthorizes every affected development scope after authorization-readiness review. Lifecycle evidence alone does not change the revision. When design changes parent legality, solution identity, permitted operations, module scope, measurement, or promotion, stop and return to the owning parent stage.
 
 Design planning is complete when the designer has returned `DRAFT_READY`, the Coordinator's mechanical map and traceability cover every triggered concern and exact technical-slice pointer without semantic drift, every user choice resolves, and the frozen snapshot is ready for `design-review.md`. The invocation result is not a W lifecycle state or readiness verdict; only `review-frontier` may return `DESIGN_READY`.
