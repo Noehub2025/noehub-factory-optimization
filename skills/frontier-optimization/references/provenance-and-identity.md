@@ -177,15 +177,13 @@ package workflow Skills, validators, tests, or source modules.
 
 For a routine-local execution, the execution's `project-state` root contains the late materialization and implementation-review node bytes and proofs required by [Evaluation protocol reuse](evaluation-protocol.md#routine-project-state-closure-and-recovery). `verify-handoff` validates that closure and rebuilds the non-authoritative `slot_id -> execution_root` mapping. A naked node or content reference that is neither graph-reachable nor embedded in that closure fails recovery.
 
-## Legacy completion
+## Historical audit compatibility
 
 Version 4 is the only writer for new project provenance nodes. Historical
-version 1 objects remain byte-identical. The repository-local
-`.frontier/provenance-rollout.yaml` fixes the exact old authority and scope
-eligible for audit or bounded completion. Legacy Entry, packet, adoption,
-baseline, result, candidate recovery, and handoff code may read those exact
-objects only through the compatibility adapter. It cannot create a new legacy
-decision, enlarge scope, migrate authority, execute archived workflow code, or
-make a legacy workflow snapshot part of a new project handoff.
+version 1 objects remain byte-identical and readable only through audit tools.
+They cannot enter a current Entry, review, authority, execution, result
+adoption, recovery action, or project handoff. Before installing the current
+runtime, close or explicitly migrate every active authority or execution that
+still depends on an older contract; do not keep parallel runtime interfaces.
 
-Within version 4, the historical review-subject `/1`, role-adapter `/1`, batch-plan `/2`, and result `/1` combination is read-only. Current Entry writing uses review-subject `/2`, role-adapter `/2`, batch-plan `/3`, evaluation-target `/2`, and result `/2`. Mixed combinations cannot create authority or execution.
+Within version 4, the historical review-subject `/1`, role-adapter `/1`, batch-plan `/2`, and result `/1` combination is audit-only. Current Entry writing and runtime use review-subject `/2`, role-adapter `/2`, batch-plan `/3`, evaluation-target `/2`, and result `/2`. Historical and mixed combinations cannot create review consequences, authority, execution, or result adoption.

@@ -230,7 +230,7 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "reject automatic research at every selection",
             "Reject routine research, any routine use of protected reserve",
             "`project-decision` content root and an empty payload",
-            "Every section, rule, field, and example after this heading applies only to the historical version 1 packet",
+            "Every section, rule, field, and example after this heading describes the historical version 1 packet for audit only",
         ),
         "closeout-and-claims.md": (
             "Preserve final direction state",
@@ -641,13 +641,14 @@ class FrontierSkillBundleTests(unittest.TestCase):
         )[0]
         semantic_markers = (
             "A B is one bounded objective, authority, evidence, and spend envelope",
-            "An authoritative output is the first immutable work product",
-            "An explicit parent or R8 rule wins",
-            "Never relabel a runnable or tested identity as a draft",
-            "silence in historical bytes never grants a new repair loop",
-            "every real effect and resource use is counted cumulatively across all attempts",
-            "Model training, experiments, and external work may use the seam only for deterministic construction",
-            "After authoritative output publication or the immutable result",
+            "Do not copy that rule into another packet policy",
+            "The worker owns a mutable work breakdown",
+            "One execution-start may support several sequential worker invocations",
+            "Record every real effect and resource use cumulatively",
+            "A realization is review-ready only when the complete B output",
+            "When implementation review returns a fidelity finding",
+            "uses the official inventory identity as the idempotency key",
+            "After authoritative publication or the immutable result",
         )
         for marker in semantic_markers:
             with self.subTest(marker=marker):
@@ -677,20 +678,20 @@ class FrontierSkillBundleTests(unittest.TestCase):
         }
         required = {
             "lifecycle": (
-                "If the parent charges its first named identity event",
-                "If the parent permits publication after engineering checks",
+                "A fidelity finding may return to step 6 inside the same B",
+                "uses its `inventory_id` as the idempotency key",
             ),
             "worker": (
-                "An already frozen packet keeps its recorded charge and inventory ordering",
-                "If it explicitly permits post-check publication",
+                "A fidelity finding returns to the same working loop",
+                "If an independent review repeats the same finding",
             ),
             "entry": (
-                "parent- or R8-owned proposal charge event",
-                "first identity event charged by a parent rule must not be bypassed",
+                "parent- or R8-owned charge rule",
+                "Do not accept a copied publication policy",
             ),
             "implementation_review": (
-                "Reconstruct the parent-owned charge event",
-                "last passing transient snapshot and the official inventory",
+                "complete all-pass realization ready for prepublication review",
+                "IMPLEMENTATION_READY` permits only authoritative publication",
             ),
             "learning": (
                 "A pre-publication engineering-check failure has not entered this resolver path",

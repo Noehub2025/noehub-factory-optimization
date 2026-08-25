@@ -90,6 +90,6 @@ When measurement completes, the single routine result item contains only measure
 
 ## Version support and cutover
 
-The exact historical combination `frontier-review-subject/1`, `frontier-review-role-adapter/1`, `frontier-project-batch-plan/2`, and `frontier-batch-result/1` remains readable for audit and explicit already-started completion. Current writing uses subject `/2`, role adapter `/2`, plan `/3`, evaluation target `/2`, and result `/2`. Reject mixed combinations.
+The exact historical combination `frontier-review-subject/1`, `frontier-review-role-adapter/1`, `frontier-project-batch-plan/2`, and `frontier-batch-result/1` remains readable only for audit. Current writing and runtime use subject `/2`, role adapter `/2`, plan `/3`, evaluation target `/2`, and result `/2`. Reject historical or mixed combinations from current review, authority, execution, and result adoption.
 
-Cut over only when there is no sealed but unbound decision, unanswered user authorization, accepted acknowledgment without execution start, running execution, or incomplete transition. Preserve historical bytes and identities. Close an old unexecuted Entry and rebuild it under current contracts; never reinterpret an old implementation review as current readiness.
+Install the current runtime only when no active authority or execution still depends on an older contract. Preserve historical bytes and identities. Close an old unexecuted Entry and rebuild it under current contracts; never reinterpret an old implementation review as current readiness.

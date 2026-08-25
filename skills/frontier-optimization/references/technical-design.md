@@ -150,13 +150,15 @@ Trigger for every `module` or `system` design.
 
 Map each requirement and failure behavior to an observable test oracle. State unit, interface, integration, compatibility, migration, rollback, performance, security, global, and comparison-integrity checks as applicable; fixtures; evidence meaning and format; producer and consumer roles; and any stable external-interface path.
 
-Make each technical slice's observable behavior, stable prerequisite, exact design inputs, distinguishing oracle, failure checks, and safe recovery point authoritative here. Entry later binds one exact B, execution source, worker paths, and internal output destinations to that reviewed slice without changing its meaning.
+Make each delivery slice's observable behavior, stable prerequisites, exact design inputs, distinguishing oracle, failure checks, and safe recovery point authoritative here. A delivery slice is a stable obligation, not the executor's mutable work breakdown. Entry later binds the exact obligations one B must satisfy to its execution source, worker paths, and internal output destinations without changing their meaning.
 
 Use examples, schemas, state tables, or sequence descriptions whenever prose permits incompatible implementations. A design is not ready while a developer must invent entity meaning, responsibility, interface contract, state owner, runtime transition, failure response, user decision, oracle, or slice boundary.
 
 ## Delivery slices
 
-`design-implementation` plans vertical slices that each deliver one observable result through the real seam and records their exact contracts in `verification.md`. The Coordinator summarizes each slice in W's Delivery map under a stable technical name or immutable verification pointer. Entry, not Design, later assigns an exact B and realization paths. Do not make an executor read unrelated concerns.
+`design-implementation` defines vertical delivery obligations that each produce one observable result through the real seam and records their exact contracts in `verification.md`. Together they must cover the complete realization and its integration check. The Coordinator summarizes each obligation in W's Delivery map under a stable technical name and immutable verification pointer. Entry, not Design, later assigns an exact B and realization paths. One B may satisfy several obligations before one formal publication; obligations never create their own B, candidate, proposal, review, or charge lifecycle. Do not make an executor read unrelated concerns.
+
+Execution owns its mutable work breakdown and may add, remove, merge, replace, or reorder internal steps while the B envelope and delivery obligations remain satisfied. Evidence that an obligation, seam, ownership, acceptance meaning, or load-bearing design assumption must change returns to `design-implementation` as a scoped revision. A local defect, failed check, or inconvenient implementation shape remains implementation feedback.
 
 A design, research, or non-code prototype B may resolve one open question. Its worker may only report evidence and proposed wording. It changes no design contract until the Coordinator adopts a new W revision and concern identity.
 

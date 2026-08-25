@@ -25,7 +25,9 @@ from validate_candidate_package import validate_candidate_package
 from frontier_provenance.content import ProvenanceError
 from frontier_provenance.compatibility import require_v1_completion
 from frontier_provenance.facade import verify_for
+from frontier_provenance.handoff import verify_handoff
 from frontier_provenance.repository import NodeRepository
+from frontier_provenance.review_subject import require_current_review_subject
 from frontier_provenance.stores import PortableBundleStore, ProjectPortableStore
 from evaluation_target_contract import (
     DIAGNOSTIC_PROHIBITED_CONSEQUENCES,
@@ -708,9 +710,12 @@ def verify_project_nested_dispatch(
         or decision_result.get("content_root") != ack.get("decision_content", {}).get("root")
         or authority_result.get("content_root") != authority_content.get("content_root")
         or execution_result.get("content_root") != start.get("starting_state_root")
-        or decision_result.get("review_subject", {}).get("subject_mode") != "complete"
     ):
         raise ValueError("project dispatch portable content roots do not match the records")
+    if current_plan:
+        require_current_review_subject(
+            decision_result.get("review_subject"), expected_kind="entry"
+        )
     require_file_sha256(
         decision_bundle / "manifest.json",
         decision_content.get("manifest_file_sha256"),
@@ -1260,11 +1265,14 @@ def validate_materialization_boundary(
                 f"code-bearing materialization requires {field}: not-authorized",
             )
     if document.get("materialization_state") == "materialized-stopped":
-        if document.get("implementation_review_state") != "pending":
+        if document.get("implementation_review_state") not in {
+            "pending",
+            "IMPLEMENTATION_READY",
+        }:
             add_finding(
                 findings,
                 "IMPLEMENTATION_REVIEW_STATE_INVALID",
-                "materialized-stopped result requires implementation_review_state: pending",
+                "materialized-stopped result requires pending legacy review or prepublication IMPLEMENTATION_READY",
             )
         for field in ("candidate_manifest", "candidate_identity", "source_result_identity"):
             if document.get(field) is None or document.get(field) == "":
@@ -1288,6 +1296,15 @@ def validate_materialized_candidate_sources(
         return
     if not isinstance(packet, dict) or repo_root is None:
         return
+    if (
+        not isinstance(packet.get("publication_policy"), dict)
+        and document.get("implementation_review_state") != "IMPLEMENTATION_READY"
+    ):
+        add_finding(
+            findings,
+            "PREPUBLICATION_IMPLEMENTATION_REVIEW_MISSING",
+            "current materialization requires IMPLEMENTATION_READY before official publication",
+        )
     if document.get("candidate_manifest") != packet.get("candidate_manifest_path"):
         add_finding(
             findings,
@@ -1319,6 +1336,93 @@ def validate_materialized_candidate_sources(
         )
 
 
+def validate_review_repair_history(
+    evidence: dict[str, Any],
+    earlier_passes: list[int],
+    repo_root: Path,
+    findings: list[dict[str, str]],
+) -> None:
+    """Bind every replaced all-pass realization to one nonpositive review."""
+    history = evidence.get("review_repair_history", [])
+    if not isinstance(history, list):
+        add_finding(
+            findings,
+            "PREPUBLICATION_REVIEW_REPAIR_HISTORY_INVALID",
+            "review_repair_history must be a list",
+        )
+        return
+    seen: list[int] = []
+    for index, item in enumerate(history):
+        if (
+            not isinstance(item, dict)
+            or set(item) != {"after_attempt_sequence", "review_chain"}
+            or not isinstance(item.get("after_attempt_sequence"), int)
+            or isinstance(item.get("after_attempt_sequence"), bool)
+        ):
+            add_finding(
+                findings,
+                "PREPUBLICATION_REVIEW_REPAIR_HISTORY_INVALID",
+                f"review_repair_history[{index}] requires after_attempt_sequence and review_chain",
+            )
+            continue
+        sequence = item["after_attempt_sequence"]
+        seen.append(sequence)
+        chain = item.get("review_chain")
+        if (
+            not isinstance(chain, dict)
+            or set(chain) != {"path", "handoff_id"}
+            or not isinstance(chain.get("path"), str)
+            or not isinstance(chain.get("handoff_id"), str)
+        ):
+            add_finding(
+                findings,
+                "PREPUBLICATION_REVIEW_REPAIR_HISTORY_INVALID",
+                f"review_repair_history[{index}].review_chain requires path and handoff_id",
+            )
+            continue
+        try:
+            relative = normalize_repo_path(chain["path"], "review_chain.path")
+            handoff_root = repo_root.resolve() / relative
+            verified = verify_handoff(handoff_root)
+            root_node = NodeRepository(handoff_root / "nodes").load(verified["root_id"])
+        except (IdentityBindingError, OSError, ProvenanceError) as exc:
+            add_finding(
+                findings,
+                "PREPUBLICATION_REVIEW_REPAIR_HISTORY_INVALID",
+                f"cannot verify review repair handoff for attempt {sequence}: {exc}",
+            )
+            continue
+        if verified.get("handoff_id") != chain["handoff_id"]:
+            add_finding(
+                findings,
+                "PREPUBLICATION_REVIEW_REPAIR_HISTORY_INVALID",
+                f"review handoff identity mismatch for attempt {sequence}",
+            )
+        payload = root_node.get("payload") if isinstance(root_node, dict) else None
+        review_findings = payload.get("findings") if isinstance(payload, dict) else None
+        if (
+            root_node.get("role") != "attestation"
+            or not isinstance(payload, dict)
+            or payload.get("verdict") != "repair"
+            or not isinstance(review_findings, list)
+            or not any(
+                isinstance(finding, dict) and finding.get("effect") == "repair"
+                for finding in review_findings
+            )
+        ):
+            add_finding(
+                findings,
+                "PREPUBLICATION_REVIEW_REPAIR_HISTORY_INVALID",
+                f"attempt {sequence} must bind a nonpositive implementation repair attestation",
+            )
+    if seen != earlier_passes:
+        add_finding(
+            findings,
+            "PREPUBLICATION_REVIEW_REPAIR_HISTORY_INVALID",
+            "review_repair_history must bind every nonfinal passing attempt exactly once and in order",
+        )
+
+
 def validate_prepublication_engineering_evidence(
     document: dict[str, Any],
     packet: dict[str, Any] | None,
@@ -1328,7 +1432,16 @@ def validate_prepublication_engineering_evidence(
     if not isinstance(packet, dict):
         return
     policy = packet.get("publication_policy")
-    if not isinstance(policy, dict) or policy.get("charge_event") != POST_CHECK_CHARGE:
+    if isinstance(policy, dict):
+        if policy.get("charge_event") != POST_CHECK_CHARGE:
+            return
+        output_relative = policy.get("authoritative_output_path")
+    elif (
+        document.get("changes_executable_candidate") is True
+        and document.get("materialization_state") == "materialized-stopped"
+    ):
+        output_relative = packet.get("candidate_package_inventory_path")
+    else:
         return
     validation_items = document.get("engineering_validation")
     bindings = [
@@ -1341,7 +1454,7 @@ def validate_prepublication_engineering_evidence(
         add_finding(
             findings,
             "PREPUBLICATION_EVIDENCE_BINDING_INVALID",
-            "post-check publication requires exactly one frontier-engineering-evidence/1 binding in engineering_validation",
+            "reviewed publication requires exactly one frontier-engineering-evidence/1 binding in engineering_validation",
         )
         return
     binding = bindings[0]
@@ -1354,7 +1467,10 @@ def validate_prepublication_engineering_evidence(
         return
     evidence_path = binding.get("path")
     expected_digest = binding.get("file_sha256")
-    if evidence_path != policy.get("engineering_evidence_path"):
+    if (
+        isinstance(policy, dict)
+        and evidence_path != policy.get("engineering_evidence_path")
+    ):
         add_finding(
             findings,
             "PREPUBLICATION_EVIDENCE_BINDING_INVALID",
@@ -1364,7 +1480,7 @@ def validate_prepublication_engineering_evidence(
         add_finding(
             findings,
             "PREPUBLICATION_EVIDENCE_UNVERIFIED",
-            "post-check publication requires repo_root to verify engineering evidence",
+            "reviewed publication requires repo_root to verify engineering evidence",
         )
         return
     if not isinstance(evidence_path, str) or not isinstance(expected_digest, str) or not SHA256_HEX.fullmatch(expected_digest):
@@ -1405,16 +1521,23 @@ def validate_prepublication_engineering_evidence(
             "PREPUBLICATION_EVIDENCE_INVALID",
             "engineering evidence must remain engineering-only",
         )
-    expected_policy = {
-        "charge_event": POST_CHECK_CHARGE,
-        "charge_amount": policy.get("charge_amount"),
-        "authoritative_output_path": policy.get("authoritative_output_path"),
-    }
-    if evidence.get("publication_policy") != expected_policy:
+    expected_policy = (
+        {
+            "charge_event": POST_CHECK_CHARGE,
+            "charge_amount": policy.get("charge_amount"),
+            "authoritative_output_path": output_relative,
+        }
+        if isinstance(policy, dict)
+        else None
+    )
+    legacy_policy = evidence.get("publication_policy")
+    if legacy_policy is not None and (
+        expected_policy is None or legacy_policy != expected_policy
+    ):
         add_finding(
             findings,
             "PREPUBLICATION_POLICY_MISMATCH",
-            "engineering evidence must copy the packet charge event and authoritative output path exactly",
+            "a historical engineering-evidence policy copy must equal the packet policy",
         )
     plan = packet.get("engineering_check_plan")
     limits = plan.get("effect_limits") if isinstance(plan, dict) else None
@@ -1454,7 +1577,7 @@ def validate_prepublication_engineering_evidence(
         add_finding(
             findings,
             "PREPUBLICATION_CHECK_PLAN_INVALID",
-            "post-check evidence requires a nonempty packet check plan with unique IDs",
+            "reviewed publication evidence requires a nonempty packet check plan with unique IDs",
         )
         planned_check_ids = []
     if (
@@ -1763,22 +1886,34 @@ def validate_prepublication_engineering_evidence(
                 f"cumulative effect {effect!r} is {total}, above maximum {maximum}",
             )
     published = document.get("outcome") == "completed"
+    if published and pass_positions:
+        validate_review_repair_history(
+            evidence,
+            pass_positions[:-1],
+            repo_root,
+            findings,
+        )
     official_output = evidence.get("official_output")
     if published:
-        if not attempts or pass_positions != [len(attempts)] or evidence.get("status") != "pass":
+        if (
+            not attempts
+            or not pass_positions
+            or pass_positions[-1] != len(attempts)
+            or evidence.get("status") != "pass"
+        ):
             add_finding(
                 findings,
                 "PREPUBLICATION_FINAL_PASS_MISSING",
-                "completed post-check publication requires exactly the final attempt to pass",
+                "completed reviewed publication requires the final attempt to pass",
             )
         if not isinstance(official_output, dict) or set(official_output) != {"path", "file_sha256"}:
             add_finding(
                 findings,
                 "PREPUBLICATION_OFFICIAL_OUTPUT_INVALID",
-                "completed post-check publication requires one official output binding",
+                "completed reviewed publication requires one official output binding",
             )
             return
-        if official_output.get("path") != policy.get("authoritative_output_path"):
+        if official_output.get("path") != output_relative:
             add_finding(
                 findings,
                 "PREPUBLICATION_OFFICIAL_OUTPUT_INVALID",
@@ -1818,7 +1953,6 @@ def validate_prepublication_engineering_evidence(
                 "PREPUBLICATION_TERMINAL_EVIDENCE_INVALID",
                 "a non-materialized post-check result must contain no passing attempt or official output",
             )
-        output_relative = policy.get("authoritative_output_path")
         if isinstance(output_relative, str):
             output_path = (repo_root.resolve() / output_relative).resolve()
             try:
@@ -1871,7 +2005,7 @@ def validate_publication_charge(
     repo_root: Path | None,
     findings: list[dict[str, str]],
 ) -> None:
-    """Bind either supported publication event to the one official output charge."""
+    """Bind the recorded spend to the official identity without owning the ledger."""
     if (
         not isinstance(packet, dict)
         or document.get("outcome") != "completed"
@@ -1879,15 +2013,21 @@ def validate_publication_charge(
     ):
         return
     policy = packet.get("publication_policy")
-    if not isinstance(policy, dict):
-        return
-    output_relative = policy.get("authoritative_output_path")
-    charge_amount = policy.get("charge_amount")
+    output_relative = (
+        policy.get("authoritative_output_path")
+        if isinstance(policy, dict)
+        else packet.get("candidate_package_inventory_path")
+    )
+    charge_amount = (
+        policy.get("charge_amount")
+        if isinstance(policy, dict)
+        else document.get("planned_spend")
+    )
     if repo_root is None or not isinstance(output_relative, str):
         add_finding(
             findings,
             "PUBLICATION_CHARGE_ACCOUNTING_UNVERIFIED",
-            "a current authoritative publication requires repo_root and its policy output path",
+            "a current authoritative publication requires repo_root and its official output path",
         )
         return
     try:
@@ -1896,7 +2036,8 @@ def validate_publication_charge(
             output_relative,
             "publication_policy.authoritative_output_path",
         )
-        output_digest = hashlib.sha256(output_path.read_bytes()).hexdigest()
+        output_raw = output_path.read_bytes()
+        output_digest = hashlib.sha256(output_raw).hexdigest()
     except (IdentityBindingError, OSError) as exc:
         add_finding(
             findings,
@@ -1904,18 +2045,40 @@ def validate_publication_charge(
             f"cannot bind publication charge to the official output: {exc}",
         )
         return
-    expected_accounting = (
-        f"authoritative output {output_relative} sha256:{output_digest}"
-    )
+    if isinstance(policy, dict):
+        expected_accounting = (
+            f"authoritative output {output_relative} sha256:{output_digest}"
+        )
+    else:
+        try:
+            inventory = yaml.safe_load(output_raw)
+        except yaml.YAMLError as exc:
+            add_finding(
+                findings,
+                "PUBLICATION_CHARGE_ACCOUNTING_UNVERIFIED",
+                f"cannot read the official inventory identity: {exc}",
+            )
+            return
+        inventory_id = inventory.get("inventory_id") if isinstance(inventory, dict) else None
+        if not isinstance(inventory_id, str) or not inventory_id:
+            add_finding(
+                findings,
+                "PUBLICATION_CHARGE_ACCOUNTING_UNVERIFIED",
+                "the current official inventory does not contain an inventory_id",
+            )
+            return
+        expected_accounting = f"official inventory {inventory_id}"
     if (
-        document.get("planned_spend") != charge_amount
+        not isinstance(charge_amount, str)
+        or not charge_amount.strip()
+        or document.get("planned_spend") != charge_amount
         or document.get("actual_spend") != charge_amount
         or document.get("accounting_evidence") != expected_accounting
     ):
         add_finding(
             findings,
             "PUBLICATION_CHARGE_ACCOUNTING_INVALID",
-            "every current authoritative publication must record the policy charge amount and bind it to the official output identity",
+            "authoritative publication must record equal planned and actual spend and bind that accounting evidence to the official output identity",
         )
 
 

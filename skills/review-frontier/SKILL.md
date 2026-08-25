@@ -1,6 +1,6 @@
 ---
 name: review-frontier
-description: Review one immutable Frontier Entry plan, strategic replan, technical design, materialized or post-closeout-reused candidate implementation, or claim set in a fresh context. Use only when frontier-optimization supplies one fixed project snapshot, exact parent bindings, exclusive review path, and completion check.
+description: Review one immutable Frontier Entry plan, strategic replan, technical design, prepublication or post-closeout-reused implementation, or claim set in a fresh context. Use only when frontier-optimization supplies one fixed project snapshot, exact parent bindings, exclusive review path, and completion check.
 ---
 
 # Review Frontier
@@ -9,9 +9,9 @@ Audit one Coordinator packet independently. Write one verdict artifact. Preserve
 
 ## Select one review branch
 
-1. Require `review_kind: entry | replan | design | implementation | claims`, the exact `decision_root`, one immutable review packet, one portable `project-decision` root, its generated `frontier-review-subject/1` index, one assigned review path, and a project-only completion check. The index must say `subject_mode: complete` and enumerate every manifest member and closed collection. A base-plus-supplement, replacement order, correction overlay, or decision root that binds only changed files is not a review subject.
+1. Require `review_kind: entry | replan | design | implementation | claims`, the exact `decision_root`, one immutable review packet, one portable `project-decision` root, its preparation-generated current review-subject index, one assigned review path, and a project-only completion check. The index must say `subject_mode: complete` and enumerate every manifest member and closed collection. A base-plus-supplement, replacement order, correction overlay, or decision root that binds only changed files is not a review subject.
    The installed workflow may change between review invocations. That change never changes the reviewed project snapshot, review identity, or prior verdict; apply the current review method only to the unchanged project facts.
-2. Verify the typed project provenance chain and use the installed [review branch registry](../frontier-optimization/references/review-branches.md) selected by `review_kind`. Workflow release validation occurs before installation; Skill, validator, bundle, and workflow-test bytes are not project review inputs. Eligible version 1 completion uses only its exact-inventory legacy adapter.
+2. Verify the typed project provenance chain and use the installed [review branch registry](../frontier-optimization/references/review-branches.md) selected by `review_kind`. Workflow release validation occurs before installation; Skill, validator, bundle, and workflow-test bytes are not project review inputs. Historical version 1 subjects are closed audit records, not current review inputs.
 3. Match `review_kind` to exactly one registry row. Load only that row's action contract and permitted supporting references.
 4. Verify the portable project content root, subject index, content-addressed project evidence, and required project inputs before judging the branch. Workflow, Skill, validator, Slice 7, bundle, and workflow-test bytes are outside the review evidence. Return `BLOCKED` when a parent, project input, identity, complete member, or assigned path is missing, inconsistent, or mutable.
 5. Apply the selected action contract exactly. It owns the review method, packet schema, allowed verdicts, maximum consequence, and artifact schema.

@@ -31,6 +31,9 @@ from .review_subject import validate_review_subject
 
 
 DEFAULT_GIT_REF = "refs/frontier/provenance/current"
+FROZEN_INPUT_PREFIX = "project/state/frozen-inputs/"
+
+
 @dataclass(frozen=True)
 class ArtifactSource:
     logical_name: str
@@ -599,6 +602,30 @@ class PortableBundleStore:
 class ProjectPortableStore:
     """Capture project bytes through a role that fixes the content domain."""
 
+    @staticmethod
+    def _validate_frozen_input_names(
+        role: str, sources: list[ArtifactSource], project_root: Path
+    ) -> None:
+        if role != "state":
+            return
+        resolved_root = project_root.resolve()
+        for source in sources:
+            logical_name = normalize_logical_name(source.logical_name)
+            if not logical_name.startswith(FROZEN_INPUT_PREFIX):
+                continue
+            resolved_source = source.path.resolve()
+            try:
+                relative = resolved_source.relative_to(resolved_root).as_posix()
+            except ValueError as exc:
+                raise ProvenanceError(
+                    f"project artifact is outside project_root: {resolved_source}"
+                ) from exc
+            if logical_name.removeprefix(FROZEN_INPUT_PREFIX) != relative:
+                raise ProvenanceError(
+                    "frozen input logical name must match its project-relative "
+                    f"source path: {logical_name} != {FROZEN_INPUT_PREFIX}{relative}"
+                )
+
     def capture(
         self,
         role: str,
@@ -611,8 +638,10 @@ class ProjectPortableStore:
         domain = PROJECT_ROLE_DOMAINS.get(role)
         if domain is None:
             raise ProvenanceError(f"unsupported project content role: {role!r}")
+        source_list = list(sources)
+        self._validate_frozen_input_names(role, source_list, project_root)
         return PortableBundleStore()._capture_domain(
-            sources,
+            source_list,
             destination,
             domain=domain,
             closed_collections=closed_collections,
@@ -622,6 +651,8 @@ class ProjectPortableStore:
     def verify(
         self, destination: Path, *, expected_role: str | None = None
     ) -> dict[str, Any]:
+        """Verify stored bytes, not their historical source-path eligibility."""
+
         result = PortableBundleStore().verify(destination)
         if result["domain"] not in PROJECT_DOMAINS:
             raise ProvenanceError("project store cannot verify a workflow release")

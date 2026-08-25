@@ -440,7 +440,7 @@ def base_result() -> dict:
         "experiment_identity": None,
         "resolved_configuration_identity": None,
         "dependency_identity": "lock-sha256:example",
-        "implementation_review_state": "pending",
+        "implementation_review_state": "IMPLEMENTATION_READY",
         "materialization_state": "materialized-stopped",
         "performance_evaluation_state": "not-authorized",
         "integration_state": "not-authorized",
@@ -618,6 +618,16 @@ def seed_materialized_candidate(root: Path, packet: dict, result: dict) -> None:
     )
     source_path = root / "artifacts/frontier/B900/source-base.yaml"
     source_path.write_text("source_base_identity: source-sha256:example\n")
+    review_path = root / "artifacts/frontier/B900/implementation-review.md"
+    review_path.write_text(
+        "---\n"
+        "type: Optimization Frontier Implementation Review\n"
+        "status: complete\n"
+        "review_result: IMPLEMENTATION_READY\n"
+        f"candidate_id: {candidate_id}\n"
+        "---\n\n"
+        f"Candidate: {candidate_id}\n"
+    )
     manifest = {
         "manifest_contract": PACKAGE.FINAL_MANIFEST_CONTRACT,
         "manifest_state": "final",
@@ -640,6 +650,12 @@ def seed_materialized_candidate(root: Path, packet: dict, result: dict) -> None:
                 "file_sha256": hashlib.sha256(evidence_path.read_bytes()).hexdigest(),
             }
         ],
+        "implementation_review": {
+            "path": review_path.relative_to(root).as_posix(),
+            "file_sha256": hashlib.sha256(review_path.read_bytes()).hexdigest(),
+            "review_result": "IMPLEMENTATION_READY",
+            "candidate_id": candidate_id,
+        },
         "recovery_artifacts": [
             {
                 "role": "source-base",
@@ -981,10 +997,83 @@ def post_check_publication_workspace(root: Path) -> tuple[dict, dict, Path]:
 
 
 class BatchResultValidationTests(unittest.TestCase):
+    def test_review_repair_history_accepts_one_nonpositive_review_per_earlier_pass(self) -> None:
+        evidence = {
+            "review_repair_history": [
+                {
+                    "after_attempt_sequence": 1,
+                    "review_chain": {
+                        "path": "artifacts/frontier/B900/review-handoff",
+                        "handoff_id": "frontier-provenance-handoff-sha256:" + "a" * 64,
+                    },
+                }
+            ]
+        }
+        findings: list[dict[str, str]] = []
+        attestation = {
+            "role": "attestation",
+            "payload": {
+                "verdict": "repair",
+                "findings": [{"effect": "repair", "code": "IMPLEMENTATION_FIDELITY"}],
+            },
+        }
+        with mock.patch.object(
+            MODULE,
+            "verify_handoff",
+            return_value={
+                "root_id": "frontier-node-sha256:" + "b" * 64,
+                "handoff_id": evidence["review_repair_history"][0]["review_chain"]["handoff_id"],
+            },
+        ), mock.patch.object(MODULE, "NodeRepository") as repository:
+            repository.return_value.load.return_value = attestation
+            MODULE.validate_review_repair_history(evidence, [1], Path("."), findings)
+
+        self.assertEqual([], findings)
+
+    def test_review_repair_history_rejects_an_unbound_earlier_pass(self) -> None:
+        findings: list[dict[str, str]] = []
+
+        MODULE.validate_review_repair_history(
+            {"review_repair_history": []}, [1], Path("."), findings
+        )
+
+        self.assertIn(
+            "PREPUBLICATION_REVIEW_REPAIR_HISTORY_INVALID",
+            {finding["code"] for finding in findings},
+        )
+
     def test_post_check_fail_repair_pass_binds_final_official_output(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             packet, result, _ = post_check_publication_workspace(root)
+
+            validation = MODULE.validate(
+                result,
+                "draft",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+
+            self.assertTrue(validation["result_structure_ready"], validation["findings"])
+
+    def test_current_reviewed_publication_derives_output_without_policy_copy(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, evidence_path = post_check_publication_workspace(root)
+            packet.pop("publication_policy")
+            evidence = json.loads(evidence_path.read_text())
+            evidence.pop("publication_policy")
+            evidence_path.write_text(json.dumps(evidence, sort_keys=True) + "\n")
+            result["engineering_validation"][0]["file_sha256"] = hashlib.sha256(
+                evidence_path.read_bytes()
+            ).hexdigest()
+            inventory = yaml.safe_load(
+                (root / packet["candidate_package_inventory_path"]).read_text()
+            )
+            result["accounting_evidence"] = (
+                f"official inventory {inventory['inventory_id']}"
+            )
 
             validation = MODULE.validate(
                 result,
@@ -1526,21 +1615,24 @@ class BatchResultValidationTests(unittest.TestCase):
             self.assertIn("PREPUBLICATION_TERMINAL_CANDIDATE_INVALID", codes)
 
     def test_result_identity_serialization_error_is_repair_not_hard_block(self) -> None:
-        result = base_result()
-        result["result_packet_id"] = "B900-result-sha256:stale"
-        validation = MODULE.validate(
-            result,
-            "frozen",
-            base_packet(),
-            check_dispatch=False,
-        )
-        mismatch = [
-            finding
-            for finding in validation["repair_findings"]
-            if finding["code"] == "RESULT_ID_MISMATCH"
-        ]
-        self.assertEqual(1, len(mismatch))
-        self.assertEqual([], validation["blocking_findings"])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, _ = post_check_publication_workspace(root)
+            result["result_packet_id"] = "B900-result-sha256:stale"
+            validation = MODULE.validate(
+                result,
+                "frozen",
+                packet,
+                repo_root=root,
+                check_dispatch=False,
+            )
+            mismatch = [
+                finding
+                for finding in validation["repair_findings"]
+                if finding["code"] == "RESULT_ID_MISMATCH"
+            ]
+            self.assertEqual(1, len(mismatch))
+            self.assertEqual([], validation["blocking_findings"])
 
     def test_new_result_recomputes_complete_dispatch_chain(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -2193,14 +2285,22 @@ class BatchResultValidationTests(unittest.TestCase):
             )
 
     def test_valid_materialization_draft_and_frozen_outputs_are_identical(self) -> None:
-        packet = base_packet()
-        draft = base_result()
-        draft_validation = MODULE.validate(draft, "draft", packet)
-        self.assertTrue(draft_validation["result_structure_ready"], draft_validation["findings"])
-        frozen = copy.deepcopy(draft)
-        frozen["result_packet_id"] = draft_validation["computed_result_packet_id"]
-        frozen_validation = MODULE.validate(frozen, "frozen", packet)
-        self.assertEqual(draft_validation, frozen_validation)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, draft, _ = post_check_publication_workspace(root)
+            draft_validation = MODULE.validate(
+                draft, "draft", packet, repo_root=root, check_dispatch=False
+            )
+            self.assertTrue(
+                draft_validation["result_structure_ready"],
+                draft_validation["findings"],
+            )
+            frozen = copy.deepcopy(draft)
+            frozen["result_packet_id"] = draft_validation["computed_result_packet_id"]
+            frozen_validation = MODULE.validate(
+                frozen, "frozen", packet, repo_root=root, check_dispatch=False
+            )
+            self.assertEqual(draft_validation, frozen_validation)
 
     def test_materialization_rejects_nonempty_results(self) -> None:
         result = base_result()

@@ -72,6 +72,16 @@ def create_final_package(root: Path) -> tuple[str, str, str]:
         )
         + "\n"
     )
+    review_path = root / "artifacts/frontier/B900/implementation-review.md"
+    review_path.write_text(
+        "---\n"
+        "type: Optimization Frontier Implementation Review\n"
+        "status: complete\n"
+        "review_result: IMPLEMENTATION_READY\n"
+        f"candidate_id: {candidate_id}\n"
+        "---\n\n"
+        f"Candidate: {candidate_id}\n"
+    )
     packet_path = root / "artifacts/frontier/B900/packet.yaml"
     packet_path.write_text("batch_id: B900\n")
     manifest_path = root / "artifacts/frontier/B900/candidate-manifest.yaml"
@@ -91,6 +101,12 @@ def create_final_package(root: Path) -> tuple[str, str, str]:
                     "file_sha256": hashlib.sha256(evidence_path.read_bytes()).hexdigest(),
                 }
             ],
+            "implementation_review": {
+                "path": review_path.relative_to(root).as_posix(),
+                "file_sha256": hashlib.sha256(review_path.read_bytes()).hexdigest(),
+                "review_result": "IMPLEMENTATION_READY",
+                "candidate_id": candidate_id,
+            },
             "recovery_artifacts": [
                 {
                     "role": "packet",
@@ -253,6 +269,41 @@ class CandidatePackageTests(unittest.TestCase):
             )
             self.assertTrue(result["staged"], result["findings"])
 
+    def test_inventory_publication_is_idempotent_for_identical_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate_id, _ = create_package(root)
+            path = "artifacts/frontier/B900/package-inventory.yaml"
+
+            first = MODULE.write_candidate_inventory(
+                root, "candidates/B900-example/", path, candidate_id
+            )
+            retry = MODULE.write_candidate_inventory(
+                root, "candidates/B900-example/", path, candidate_id
+            )
+
+            self.assertEqual(first["publication_status"], "created")
+            self.assertEqual(retry["publication_status"], "already-present-identical")
+            self.assertEqual(first["inventory_id"], retry["inventory_id"])
+            self.assertEqual(first["inventory_sha256"], retry["inventory_sha256"])
+
+    def test_inventory_publication_rejects_conflicting_retry(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate_id, _ = create_package(root)
+            path = "artifacts/frontier/B900/package-inventory.yaml"
+            MODULE.write_candidate_inventory(
+                root, "candidates/B900-example/", path, candidate_id
+            )
+            (root / path).write_text("conflict\n")
+
+            with self.assertRaisesRegex(
+                MODULE.IdentityBindingError, "already exists with different bytes"
+            ):
+                MODULE.write_candidate_inventory(
+                    root, "candidates/B900-example/", path, candidate_id
+                )
+
     def test_cli_inventory_then_stage_requires_no_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -338,6 +389,59 @@ class CandidatePackageTests(unittest.TestCase):
                 require_final_manifest=True,
             )
             self.assertTrue(result["package_ready"], result["findings"])
+
+    def test_final_manifest_requires_positive_review_of_exact_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate_id, _, _ = create_final_package(root)
+            manifest_path = root / "artifacts/frontier/B900/candidate-manifest.yaml"
+            manifest = yaml.safe_load(manifest_path.read_text())
+            manifest.pop("implementation_review")
+            manifest_path.write_text(yaml.safe_dump(manifest, sort_keys=False))
+            result = MODULE.validate_candidate_package(
+                root,
+                "candidates/B900-example/",
+                "artifacts/frontier/B900/candidate-manifest.yaml",
+                expected_candidate_id=candidate_id,
+                require_final_manifest=True,
+            )
+            self.assertFalse(result["package_ready"])
+            self.assertIn(
+                "IMPLEMENTATION_REVIEW_BINDING_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
+
+    def test_manifest_cannot_relabel_a_nonpositive_review_as_ready(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            candidate_id, _, _ = create_final_package(root)
+            manifest_path = root / "artifacts/frontier/B900/candidate-manifest.yaml"
+            manifest = yaml.safe_load(manifest_path.read_text())
+            review_path = root / manifest["implementation_review"]["path"]
+            review_path.write_text(
+                "---\n"
+                "type: Optimization Frontier Implementation Review\n"
+                "status: complete\n"
+                "review_result: IMPLEMENTATION_REPAIR_REQUIRED\n"
+                f"candidate_id: {candidate_id}\n"
+                "---\n"
+            )
+            manifest["implementation_review"]["file_sha256"] = hashlib.sha256(
+                review_path.read_bytes()
+            ).hexdigest()
+            manifest_path.write_text(yaml.safe_dump(manifest, sort_keys=False))
+            result = MODULE.validate_candidate_package(
+                root,
+                "candidates/B900-example/",
+                "artifacts/frontier/B900/candidate-manifest.yaml",
+                expected_candidate_id=candidate_id,
+                require_final_manifest=True,
+            )
+            self.assertFalse(result["package_ready"])
+            self.assertIn(
+                "IMPLEMENTATION_REVIEW_BINDING_INVALID",
+                {item["code"] for item in result["findings"]},
+            )
 
     def test_preliminary_manifest_cannot_publish_materialized_result(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

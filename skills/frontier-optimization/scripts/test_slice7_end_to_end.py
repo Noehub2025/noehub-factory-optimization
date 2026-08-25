@@ -717,6 +717,18 @@ class Slice7EndToEndTests(unittest.TestCase):
                 )
                 + "\n"
             )
+            implementation_review_path = (
+                root / "artifacts/frontier/B900/implementation-review.md"
+            )
+            implementation_review_path.write_text(
+                "---\n"
+                "type: Optimization Frontier Implementation Review\n"
+                "status: complete\n"
+                "review_result: IMPLEMENTATION_READY\n"
+                f"candidate_id: {candidate_id}\n"
+                "---\n\n"
+                f"Candidate: {candidate_id}\n"
+            )
             manifest = {
                 "manifest_contract": CANDIDATE_PACKAGE.FINAL_MANIFEST_CONTRACT,
                 "manifest_state": "final",
@@ -743,6 +755,12 @@ class Slice7EndToEndTests(unittest.TestCase):
                         "file_sha256": sha256_file(engineering_path),
                     }
                 ],
+                "implementation_review": {
+                    "path": implementation_review_path.relative_to(root).as_posix(),
+                    "file_sha256": sha256_file(implementation_review_path),
+                    "review_result": "IMPLEMENTATION_READY",
+                    "candidate_id": candidate_id,
+                },
                 "recovery_artifacts": [
                     {
                         "role": "source-base",
@@ -799,7 +817,7 @@ class Slice7EndToEndTests(unittest.TestCase):
                 "experiment_identity": None,
                 "resolved_configuration_identity": None,
                 "dependency_identity": "explicit-none",
-                "implementation_review_state": "pending",
+                "implementation_review_state": "IMPLEMENTATION_READY",
                 "materialization_state": "materialized-stopped",
                 "performance_evaluation_state": "not-authorized",
                 "integration_state": "not-authorized",

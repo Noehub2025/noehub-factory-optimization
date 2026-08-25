@@ -9,20 +9,12 @@ from .content import ProvenanceError
 from .review_contract import (
     ENTRY_STAGES,
     ROLE_ADAPTER_CONTRACT,
-    ROLE_ADAPTER_CONTRACT_V1,
-    ROLE_ADAPTER_CONTRACT_V2,
     REVIEW_KINDS,
     validate_and_project,
 )
 
 
-SUBJECT_CONTRACT_V1 = "frontier-review-subject/1"
-SUBJECT_CONTRACT_V2 = "frontier-review-subject/2"
-SUBJECT_CONTRACT = SUBJECT_CONTRACT_V2
-SUBJECT_ADAPTER_PAIRS = {
-    SUBJECT_CONTRACT_V1: ROLE_ADAPTER_CONTRACT_V1,
-    SUBJECT_CONTRACT_V2: ROLE_ADAPTER_CONTRACT_V2,
-}
+SUBJECT_CONTRACT = "frontier-review-subject/2"
 INDEX_LOGICAL_NAME = "project/decision/review-subject-index.json"
 
 
@@ -52,11 +44,10 @@ def validate_review_subject(
     }
     if not isinstance(index, dict) or set(index) != required:
         raise ProvenanceError("review subject index has unknown or missing fields")
-    expected_adapter = SUBJECT_ADAPTER_PAIRS.get(index["contract_version"])
-    if expected_adapter is None:
-        raise ProvenanceError("review subject contract is unsupported")
-    if index["role_adapter"] != expected_adapter:
-        raise ProvenanceError("review subject and role adapter versions cannot be mixed")
+    if index["contract_version"] != SUBJECT_CONTRACT:
+        raise ProvenanceError("review subject must use the current contract")
+    if index["role_adapter"] != ROLE_ADAPTER_CONTRACT:
+        raise ProvenanceError("review subject must use the current role adapter")
     if index["review_kind"] not in REVIEW_KINDS:
         raise ProvenanceError("review subject kind is invalid")
     if index["subject_mode"] != "complete":
@@ -93,8 +84,31 @@ def validate_review_subject(
         {name: raw_by_name[name] for name in expected_members},
         review_stage=review_stage,
         closed_collections=manifest["closed_collections"],
-        role_adapter=index["role_adapter"],
     )
     if projection != derived:
         raise ProvenanceError("review subject semantic projection disagrees with its members")
     return index
+
+
+def require_current_review_subject(
+    value: Any, *, expected_kind: str | None = None
+) -> dict[str, Any]:
+    """Return one verified current complete subject of the expected review kind."""
+
+    if (
+        not isinstance(value, dict)
+        or value.get("contract_version") != SUBJECT_CONTRACT
+        or value.get("role_adapter") != ROLE_ADAPTER_CONTRACT
+        or value.get("subject_mode") != "complete"
+        or value.get("review_kind") not in REVIEW_KINDS
+        or not isinstance(value.get("semantic_projection"), dict)
+    ):
+        raise ProvenanceError(
+            "current consequence requires a verified complete review subject; "
+            "the complete subject must use the current contract"
+        )
+    if expected_kind is not None and value["review_kind"] != expected_kind:
+        raise ProvenanceError(
+            f"current consequence requires a {expected_kind} review subject"
+        )
+    return value

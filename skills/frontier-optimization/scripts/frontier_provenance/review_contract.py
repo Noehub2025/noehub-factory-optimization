@@ -13,10 +13,7 @@ from evaluation_target_contract import validate_evaluation_target_contract
 from .content import ProvenanceError
 
 
-ROLE_ADAPTER_CONTRACT_V1 = "frontier-review-role-adapter/1"
-ROLE_ADAPTER_CONTRACT_V2 = "frontier-review-role-adapter/2"
-ROLE_ADAPTER_CONTRACT = ROLE_ADAPTER_CONTRACT_V2
-SUPPORTED_ROLE_ADAPTERS = {ROLE_ADAPTER_CONTRACT_V1, ROLE_ADAPTER_CONTRACT_V2}
+ROLE_ADAPTER_CONTRACT = "frontier-review-role-adapter/2"
 REVIEW_KINDS = {"entry", "replan", "design", "implementation", "claims"}
 ENTRY_STAGES = {"authorization-readiness", "spend-readiness"}
 OVERLAY_ROLES = {"repair", "correction", "supplement", "overlay"}
@@ -36,23 +33,16 @@ def validate_and_project(
     *,
     review_stage: str | None = None,
     closed_collections: list[dict[str, Any]] | None = None,
-    role_adapter: str = ROLE_ADAPTER_CONTRACT,
 ) -> dict[str, Any]:
     """Validate one complete role set and derive its semantic projection."""
 
     if review_kind not in REVIEW_KINDS:
         raise ProvenanceError(f"unsupported review kind: {review_kind!r}")
-    if role_adapter not in SUPPORTED_ROLE_ADAPTERS:
-        raise ProvenanceError(f"unsupported review role adapter: {role_adapter!r}")
     parsed = {name: _parse(name, raw) for name, raw in raw_by_name.items()}
     _reject_overlay_semantics(parsed)
     collections = closed_collections or []
     return {
-        "entry": (
-            _legacy_entry_projection
-            if role_adapter == ROLE_ADAPTER_CONTRACT_V1
-            else _entry_projection
-        ),
+        "entry": _entry_projection,
         "replan": _replan_projection,
         "design": lambda parsed, stage, collections: _design_projection(
             parsed, stage, collections, raw_by_name
@@ -119,6 +109,7 @@ def _entry_projection(
         {"batch_id", "maximum_spend", "authorization_gate", "stop_conditions"},
         "entry batch plan",
     )
+    delivery_scope = _validate_delivery_scope(parsed, plan)
     work_objects = [
         document
         for name, document in parsed.items()
@@ -182,28 +173,137 @@ def _entry_projection(
         "authority_target": authority_target,
         "later_spend_gate": later_spend_gate,
     }
+    if delivery_scope is not None:
+        projection["delivery_scope"] = delivery_scope
     routine = plan.get("routine_follow_up")
     if routine is not None:
         projection["routine_follow_up"] = _routine_follow_up_projection(parsed, plan)
     return _substantive(projection)
 
 
-def _legacy_entry_projection(
-    parsed: dict[str, Any], review_stage: str | None, collections: list[dict[str, Any]]
-) -> dict[str, Any]:
-    """Read the exact pre-cutover Entry shape without making it writable again."""
+def _validate_delivery_scope(
+    parsed: dict[str, Any], plan: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Validate the stable delivery obligations selected by one W-backed B."""
 
-    rewritten = dict(parsed)
-    legacy = _one_contract(
-        rewritten, "project/decision/entry/", "frontier-project-batch-plan/2"
+    profile = plan.get("design_profile")
+    scope = plan.get("delivery_scope")
+    if profile not in {"module", "system"}:
+        if scope not in (None, []):
+            raise ProvenanceError(
+                "delivery_scope is available only to module or system work"
+            )
+        return None
+
+    _require_fields(
+        plan,
+        {
+            "work_plan",
+            "work_plan_revision",
+            "design_contract_identity",
+            "required_design_inputs",
+            "delivery_scope",
+        },
+        "W-backed entry batch plan",
     )
-    current = dict(legacy)
-    current["contract_version"] = "frontier-project-batch-plan/3"
-    for name, document in list(rewritten.items()):
-        if document is legacy:
-            rewritten[name] = current
-            break
-    return _entry_projection(rewritten, review_stage, collections)
+    if (
+        not isinstance(scope, list)
+        or not all(isinstance(item, str) and item.strip() for item in scope)
+        or len(scope) != len(set(scope))
+    ):
+        raise ProvenanceError(
+            "W-backed entry delivery_scope must be a nonempty unique list of delivery identities"
+        )
+
+    traceability_matches = [
+        document
+        for name, document in parsed.items()
+        if name.startswith("project/decision/design/")
+        and name.endswith("/traceability.yaml")
+        and isinstance(document, dict)
+        and document.get("design_contract_identity")
+        == plan["design_contract_identity"]
+    ]
+    if len(traceability_matches) != 1:
+        raise ProvenanceError(
+            "W-backed entry review requires one matching design traceability object"
+        )
+    traceability = traceability_matches[0]
+    slices = _mapping(traceability.get("slices"), "design traceability slices")
+    by_delivery: dict[str, dict[str, Any]] = {}
+    for name, value in slices.items():
+        item = _mapping(value, f"design traceability slice {name}")
+        delivery_identity = item.get("delivery_identity")
+        if (
+            not isinstance(delivery_identity, str)
+            or not delivery_identity.strip()
+            or delivery_identity in by_delivery
+        ):
+            raise ProvenanceError(
+                "design traceability contains an invalid or duplicate delivery identity"
+            )
+        by_delivery[delivery_identity] = item
+
+    unknown = sorted(set(scope) - by_delivery.keys())
+    if unknown:
+        raise ProvenanceError(f"entry delivery_scope contains unknown obligations {unknown}")
+    for delivery_identity in scope:
+        item = by_delivery[delivery_identity]
+        prerequisites = item.get("prerequisites")
+        required_inputs = item.get("required_design_inputs")
+        if (
+            not isinstance(prerequisites, list)
+            or not all(
+                isinstance(prerequisite, str) and prerequisite.strip()
+                for prerequisite in prerequisites
+            )
+            or len(prerequisites) != len(set(prerequisites))
+            or not isinstance(required_inputs, list)
+            or not required_inputs
+        ):
+            raise ProvenanceError(
+                "selected delivery_scope obligation has invalid traceability"
+            )
+    missing_prerequisites = sorted(
+        {
+            prerequisite
+            for delivery_identity in scope
+            for prerequisite in by_delivery[delivery_identity]["prerequisites"]
+            if prerequisite not in scope
+        }
+    )
+    if missing_prerequisites:
+        raise ProvenanceError(
+            "entry delivery_scope omits prerequisite obligations "
+            f"{missing_prerequisites}"
+        )
+
+    plan_inputs = plan["required_design_inputs"]
+    if not isinstance(plan_inputs, list):
+        raise ProvenanceError("W-backed entry required_design_inputs must be a list")
+    encoded_plan_inputs = {_stable_value(item) for item in plan_inputs}
+    uncovered_inputs = sorted(
+        {
+            _stable_value(required_input)
+            for delivery_identity in scope
+            for required_input in by_delivery[delivery_identity][
+                "required_design_inputs"
+            ]
+            if _stable_value(required_input) not in encoded_plan_inputs
+        }
+    )
+    if uncovered_inputs:
+        raise ProvenanceError(
+            "entry required_design_inputs do not cover delivery_scope requirements"
+        )
+    return {
+        "design_contract_identity": plan["design_contract_identity"],
+        "deliveries": sorted(scope),
+    }
+
+
+def _stable_value(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
 def _routine_follow_up_projection(
@@ -562,7 +662,9 @@ def _omit_exact_line(raw: bytes, field: str) -> str:
 
 
 def _implementation_projection(
-    parsed: dict[str, Any], review_stage: str | None, collections: list[dict[str, Any]]
+    parsed: dict[str, Any],
+    review_stage: str | None,
+    collections: list[dict[str, Any]],
 ) -> dict[str, Any]:
     if review_stage is not None:
         raise ProvenanceError("implementation does not accept review_stage")
@@ -571,15 +673,51 @@ def _implementation_projection(
         "project/decision/implementation/",
         "frontier-project-implementation-review-input/1",
     )
-    _require_fields(decision, {"affected_scope", "candidate", "reviewed_design"}, "implementation input")
+    fields = {
+        "affected_scope",
+        "candidate",
+        "reviewed_design",
+        "publication_state",
+        "execution_start",
+        "engineering_state",
+        "allowed_feedback",
+    }
+    _require_fields(decision, fields, "implementation input")
+    if decision["publication_state"] not in {
+        "prepublication",
+        "published-recovery",
+    }:
+        raise ProvenanceError("implementation publication_state is invalid")
+    if decision["publication_state"] == "prepublication":
+        if not isinstance(decision["execution_start"], str) or not decision[
+            "execution_start"
+        ].strip():
+            raise ProvenanceError(
+                "prepublication implementation review requires execution_start"
+            )
+        engineering_state = decision["engineering_state"]
+        if (
+            not isinstance(engineering_state, dict)
+            or engineering_state.get("status") != "pass"
+            or not isinstance(engineering_state.get("final_attempt"), int)
+            or isinstance(engineering_state.get("final_attempt"), bool)
+            or engineering_state.get("final_attempt") <= 0
+        ):
+            raise ProvenanceError(
+                "prepublication implementation review requires one positive final all-pass engineering state"
+            )
+        if not isinstance(decision["allowed_feedback"], str) or not decision[
+            "allowed_feedback"
+        ].strip():
+            raise ProvenanceError(
+                "prepublication implementation review requires allowed_feedback"
+            )
     if not any(
         item.get("logical_name", "").startswith("project/decision/candidate")
         for item in collections
     ):
         raise ProvenanceError("implementation review requires a closed candidate collection")
-    return _substantive(
-        {field: decision[field] for field in ("affected_scope", "candidate", "reviewed_design")}
-    )
+    return _substantive({field: decision[field] for field in fields})
 
 
 def _claims_projection(

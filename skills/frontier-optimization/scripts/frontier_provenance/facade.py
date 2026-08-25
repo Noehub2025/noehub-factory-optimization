@@ -14,6 +14,7 @@ from .graph import build_node, collect_chain
 from .stores import ProjectPortableStore
 from .repository import NodeRepository
 from .routine_admission import validate_routine_admission
+from .review_subject import require_current_review_subject
 
 
 READY_VERDICTS = {"ready", "blocked", "repair"}
@@ -160,14 +161,11 @@ def bind_authority(
         or decision_content.get("domain") != "project-decision"
         or len(decision_roots) != 1
         or decision_content.get("content_root") != decision_roots[0]
-        or not isinstance(decision_content.get("review_subject"), dict)
-        or decision_content["review_subject"].get("subject_mode") != "complete"
-        or decision_content["review_subject"].get("contract_version")
-        != "frontier-review-subject/2"
     ):
         raise ProvenanceError(
             "new authority requires the verified complete subject of its reviewed decision"
         )
+    require_current_review_subject(decision_content.get("review_subject"))
     return build_node(
         "authority",
         {},
@@ -351,11 +349,9 @@ def verify_for(
         ]
         if len(decision_roots) != 1:
             raise ProvenanceError("action consequence requires one reviewed decision")
-        subject = resolved_content[decision_roots[0]].get("review_subject")
-        if not isinstance(subject, dict) or subject.get("subject_mode") != "complete":
-            raise ProvenanceError(
-                "action consequence requires a verified complete review subject"
-            )
+        require_current_review_subject(
+            resolved_content[decision_roots[0]].get("review_subject")
+        )
     chain = {
         "root_id": root_id,
         "root_role": root["role"],

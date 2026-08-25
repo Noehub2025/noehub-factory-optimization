@@ -67,9 +67,9 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 |---|---|---|---|---|
 | <stable technical name and exact verification section identity> | <one independently verifiable behavior or artifact> | <stable prerequisite slice or technical condition, or None> | <exact indexed pointers needed by an executor> | <distinguishing check and safe resume point> |
 
-`design/verification.md` is the single source for each technical slice's observable behavior, stable prerequisites, required design inputs, oracle, failure checks, and recovery point. The Coordinator copies a concise summary plus exact technical pointers into this table without changing that meaning. Selection and Entry later bind one exact B and execution realization; their status and paths never enter this contract-bearing table.
+`design/verification.md` is the single source for each delivery obligation's observable behavior, stable prerequisites, required design inputs, oracle, failure checks, and recovery point. The Coordinator copies a concise summary plus exact technical pointers into this table without changing that meaning. Selection and Entry later bind one exact B and execution realization; their status, paths, mutable work breakdown, and execution order never enter this contract-bearing table. One B may satisfy several obligations. An obligation is not independently published or charged unless a parent explicitly selected it as a standalone objective.
 
-Every selected B must cite this exact `plan_revision`, `design_contract_identity`, and stable slice identity. Reject a B that names a stale revision, a superseded concern identity, or design inputs outside its selected slice.
+Every selected W-backed B must cite this exact `plan_revision`, `design_contract_identity`, and a nonempty unordered `delivery_scope` containing every stable delivery identity it must satisfy. Reject a B that names a stale revision, a superseded concern identity, an unknown delivery identity, a scope missing one of its prerequisites, or design inputs outside that scope.
 
 For `module` or `system`, the Coordinator maintains `design/traceability.yaml` as a contract-bearing machine-readable index. `design-implementation` does not write it:
 
@@ -81,10 +81,11 @@ slices:
   <stable technical slice name>:
     verification_pointer: <exact path, section, and immutable identity>
     delivery_identity: <exact Delivery row identity>
+    prerequisites: [<delivery identities required by this obligation, or none>]
     required_design_inputs: [<exact concern pointers and identities>]
 ```
 
-Add the normalized traceability-file hash to the design index and design identity. Entry binds the selected stable slice to one exact B, execution source, worker write surface, and internal output paths, then proves that those realization details satisfy the owning verification contract. A path belongs to Design only when a real caller or operator outside the current B or attempt depends on that exact path as a stable interface.
+Add the normalized traceability-file hash to the design index and design identity. `design_contract_identity` binds the owning design contract, not the traceability file itself. Before sealing, Entry captures the exact traceability source named by its plan and verifies that source's whole-file SHA-256. Entry binds `delivery_scope` to one exact B, execution source, worker write surface, and internal output paths, then proves that the complete scope satisfies the owning verification contracts. A reused prerequisite remains in `delivery_scope`; the B may satisfy it from a bound input instead of rebuilding it. A path belongs to Design only when a real caller or operator outside the current B or attempt depends on that exact path as a stable interface.
 
 The `slices` shape is required for every new design identity, including a new revision of an older W. An exact design identity with an already adopted valid `DESIGN_READY` may retain its historical `batches` shape for audit under its original authority; it cannot receive a new `DESIGN_READY`, new B assignment, or broader path authority from that form.
 
@@ -123,4 +124,4 @@ State the design-review requirement generically here. Keep the current review id
 <Coordinator: after checking the batch result, record completed, blocked, superseded, or active work and stable artifact links.>
 ```
 
-A route states why work may improve the objective. W maps design and delivery. B authorizes one slice, its inputs, and spend. Engineering completion does not prove optimization success.
+A route states why work may improve the objective. W maps design and stable delivery obligations. B authorizes one bounded objective, its unordered `delivery_scope`, inputs, and spend envelope. The worker's mutable work breakdown is implementation detail, not a separate B or proposal. Engineering completion does not prove optimization success.

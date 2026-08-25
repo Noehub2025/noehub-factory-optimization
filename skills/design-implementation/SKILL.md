@@ -63,7 +63,7 @@ This step is complete when every decisive claim has positive grounds or one exac
 
 Write only the assigned W `Design brief` and triggered concern files. For `module` or `system`, cover architecture, interfaces, flows, and verification; add domain or decisions only when their triggers apply. Apply security, performance, reliability, compatibility, migration, and rollback requirements in the owning concern when they materially affect the design.
 
-In `verification.md`, make each technical slice a single source of truth for its observable behavior, stable prerequisites, exact design inputs, distinguishing oracle, failure checks, and safe recovery point. The Coordinator later maps those pointers to stable Delivery and traceability rows; Entry separately binds one exact B, execution source, and internal output paths.
+In `verification.md`, make each delivery slice a stable, verifiable obligation with one observable behavior, prerequisite set, exact design inputs, distinguishing oracle, failure checks, and safe recovery point. Together the obligations must cover one complete realization. They do not prescribe the executor's mutable work breakdown or execution order. The Coordinator later maps those pointers to stable Delivery and traceability rows; Entry binds the exact delivery obligations one B must satisfy.
 
 For any implementation-form restriction that materially affects a slice, apply [Technical design: Constrain effects, not convenient forms](../frontier-optimization/references/technical-design.md#constrain-effects-not-convenient-forms). State the current protection rationale and causal relation; do not optimize the design for an easy syntactic check.
 
@@ -75,7 +75,9 @@ This step is complete when the assigned design files contain one coherent design
 
 ## Finish at cold-read implementability
 
-Return `DRAFT_READY` only when a fresh executor can implement every planned slice without inventing entity meaning, responsibility, interface behavior, state ownership, runtime transitions, failure response, compatibility behavior, test oracle, or recovery boundary. For `repair`, resolve every finding in the revised design or return the exact remaining blocker; create no separate finding-disposition artifact.
+Return `DRAFT_READY` only when a fresh executor can implement every planned slice in dependency order, integrate the complete realization, and recover after any slice without inventing entity meaning, responsibility, interface behavior, state ownership, runtime transitions, failure response, compatibility behavior, test oracle, or recovery boundary. For `repair`, resolve every finding in the revised design or return the exact remaining blocker; create no separate finding-disposition artifact.
+
+If execution evidence shows only that the order or internal split is inefficient, keep the design contract unchanged and let the Batch record a revised next action. If it shows that a slice cannot deliver its observable result without changing a public seam, ownership, lifecycle, acceptance meaning, or another load-bearing design assumption, identify the affected contract and return it to the Coordinator for a scoped design revision. Do not turn ordinary implementation defects into design changes or let an executor invent missing contract meaning.
 
 Return exactly:
 

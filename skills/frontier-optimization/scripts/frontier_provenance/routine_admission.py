@@ -17,6 +17,7 @@ from evaluation_target_contract import (
 
 from .content import ProvenanceError, canonical_json
 from .graph import verify_node
+from .review_subject import require_current_review_subject
 
 
 ADMISSION_LOGICAL_NAME = "project/state/routine-admission.yaml"
@@ -79,14 +80,9 @@ def validate_routine_admission(
     verify_node(decision)
     decision_content_root = decision["artifact_roots"][0]
     decision_content = resolve_content(decision_content_root)
-    subject = decision_content.get("review_subject")
-    if (
-        not isinstance(subject, dict)
-        or subject.get("contract_version") != "frontier-review-subject/2"
-        or subject.get("review_kind") != "entry"
-        or subject.get("subject_mode") != "complete"
-    ):
-        raise ProvenanceError("routine admission requires a current complete Entry subject")
+    subject = require_current_review_subject(
+        decision_content.get("review_subject"), expected_kind="entry"
+    )
     projection = subject.get("semantic_projection", {}).get("routine_follow_up")
     if not isinstance(projection, dict):
         raise ProvenanceError("Entry did not pre-authorize a routine follow-up")
@@ -443,16 +439,10 @@ def _validate_implementation_review(
         for item in attestation["payload"].get("findings", [])
     ):
         raise ProvenanceError("routine admission requires a finding-free implementation review")
-    subject = resolve_content(decision["artifact_roots"][0]).get("review_subject")
-    if (
-        not isinstance(subject, dict)
-        or subject.get("contract_version") != "frontier-review-subject/2"
-        or subject.get("review_kind") != "implementation"
-        or subject.get("subject_mode") != "complete"
-    ):
-        raise ProvenanceError(
-            "implementation review decision is not a current complete implementation subject"
-        )
+    subject = require_current_review_subject(
+        resolve_content(decision["artifact_roots"][0]).get("review_subject"),
+        expected_kind="implementation",
+    )
     reviewed = subject.get("semantic_projection", {}).get("candidate")
     if reviewed != candidate:
         raise ProvenanceError("implementation review covers a different candidate")

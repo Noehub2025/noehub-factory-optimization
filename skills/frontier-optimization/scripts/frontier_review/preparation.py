@@ -48,6 +48,10 @@ SELF_ID_SHA_RULE = re.compile(
     r"^SHA-256 of these UTF-8 bytes with the (?P<field>[A-Za-z][A-Za-z0-9_]*) "
     r"line omitted(?:;.*)?$"
 )
+DESIGN_TRACEABILITY_IDENTITY_RULE = (
+    "SHA-256 of these UTF-8 bytes with the design_contract_identity line omitted"
+)
+SHA256_DIGEST = re.compile(r"^[0-9a-f]{64}$")
 RECORD_HEADING = re.compile(
     r"^#{1,6}\s+([A-Z]{1,3}\d{3})\b([^\n]*)$", re.MULTILINE
 )
@@ -265,17 +269,24 @@ def _read_and_validate(spec: dict[str, Any], project_root: Path) -> dict[str, An
                 f"one project file has multiple review roles: {resolved}"
             )
         source_by_path[resolved] = source
-        parsed = _parse_document(resolved, raw)
+        parsed = _parse_document(resolved, raw, logical_name=source.logical_name)
         parsed_by_name[source.logical_name] = parsed
         declared = _validate_self_identity(
             resolved,
             raw,
             parsed,
             logical_name=source.logical_name,
-            review_kind=spec["review_kind"],
         )
         if declared:
             self_ids_by_path[resolved] = declared
+
+    _validate_entry_design_traceability_binding(
+        spec,
+        parsed_by_name,
+        raw_by_name,
+        source_by_path,
+        root,
+    )
 
     collection_projection = [
         {"logical_name": item.logical_name, "members": list(item.members)}
@@ -295,8 +306,9 @@ def _read_and_validate(spec: dict[str, Any], project_root: Path) -> dict[str, An
     }
 
 
-def _parse_document(path: Path, raw: bytes) -> Any:
-    if path.suffix.lower() not in {".yaml", ".yml", ".json"}:
+def _parse_document(path: Path, raw: bytes, *, logical_name: str) -> Any:
+    is_traceability = _is_design_traceability_logical_name(logical_name)
+    if not is_traceability and path.suffix.lower() not in {".yaml", ".yml", ".json"}:
         return None
     try:
         return yaml.safe_load(raw)
@@ -310,20 +322,13 @@ def _validate_self_identity(
     parsed: Any,
     *,
     logical_name: str,
-    review_kind: str,
 ) -> dict[str, str]:
     if not isinstance(parsed, dict) or "identity_rule" not in parsed:
         return {}
     rule = parsed["identity_rule"]
     if not isinstance(rule, str):
         raise ProvenanceError(f"identity_rule must be text: {path}")
-    if (
-        review_kind == "design"
-        and logical_name.startswith("project/decision/design/")
-        and logical_name.endswith("/traceability.yaml")
-        and rule
-        == "SHA-256 of these UTF-8 bytes with the design_contract_identity line omitted"
-    ):
+    if _is_design_traceability_normalization_rule(logical_name, parsed):
         return {}
     match = SELF_ID_RULE.fullmatch(rule)
     prefixless = SELF_ID_RULE_WITHOUT_PREFIX.fullmatch(rule)
@@ -349,6 +354,103 @@ def _validate_self_identity(
             f"{path} declares {declared}, but final raw bytes derive {expected}"
         )
     return {field: declared}
+
+
+def _is_design_traceability_logical_name(logical_name: str) -> bool:
+    return logical_name.startswith(
+        "project/decision/design/"
+    ) and logical_name.endswith("/traceability.yaml")
+
+
+def _is_design_traceability_normalization_rule(
+    logical_name: str, document: dict[str, Any]
+) -> bool:
+    if not _is_design_traceability_logical_name(logical_name):
+        return False
+    if document.get("identity_rule") != DESIGN_TRACEABILITY_IDENTITY_RULE:
+        return False
+    if not isinstance(document.get("design_contract_identity"), str):
+        raise ProvenanceError(
+            "design traceability normalization requires design_contract_identity"
+        )
+    return True
+
+
+def _validate_entry_design_traceability_binding(
+    spec: dict[str, Any],
+    parsed_by_name: dict[str, Any],
+    raw_by_name: dict[str, bytes],
+    source_by_path: dict[Path, ArtifactSource],
+    project_root: Path,
+) -> None:
+    """Bind one W-backed Entry to the exact captured traceability source."""
+
+    if spec["review_kind"] != "entry":
+        return
+    plans = [
+        document
+        for logical_name, document in parsed_by_name.items()
+        if logical_name.startswith("project/decision/entry/")
+        and isinstance(document, dict)
+        and document.get("contract_version") == "frontier-project-batch-plan/3"
+    ]
+    if len(plans) != 1 or plans[0].get("design_profile") not in {"module", "system"}:
+        return
+    plan = plans[0]
+    binding = plan.get("design_traceability")
+    if not isinstance(binding, dict):
+        raise ProvenanceError(
+            "W-backed entry design_traceability binding must be a mapping"
+        )
+    path_value = binding.get("path")
+    if not isinstance(path_value, str) or not path_value.strip():
+        raise ProvenanceError(
+            "W-backed entry design_traceability path must be nonempty text"
+        )
+    expected_digest = _sha256_digest(binding.get("sha256"))
+
+    bound_path = Path(path_value)
+    if not bound_path.is_absolute():
+        bound_path = project_root / bound_path
+    bound_path = bound_path.resolve()
+    try:
+        bound_path.relative_to(project_root)
+    except ValueError as exc:
+        raise ProvenanceError(
+            "W-backed entry design_traceability path is outside project_root"
+        ) from exc
+    bound_source = source_by_path.get(bound_path)
+    if bound_source is None:
+        raise ProvenanceError(
+            "W-backed entry design_traceability path is absent from the review subject"
+        )
+
+    design_identity = plan.get("design_contract_identity")
+    matching_names = [
+        logical_name
+        for logical_name, document in parsed_by_name.items()
+        if _is_design_traceability_logical_name(logical_name)
+        and isinstance(document, dict)
+        and document.get("design_contract_identity") == design_identity
+    ]
+    if len(matching_names) != 1 or bound_source.logical_name != matching_names[0]:
+        raise ProvenanceError(
+            "W-backed entry design_traceability path does not carry the canonical traceability role"
+        )
+    actual_digest = hashlib.sha256(raw_by_name[bound_source.logical_name]).hexdigest()
+    if actual_digest != expected_digest:
+        raise ProvenanceError(
+            "W-backed entry design_traceability whole-file SHA-256 does not match the plan binding"
+        )
+
+
+def _sha256_digest(value: Any) -> str:
+    if not isinstance(value, str):
+        raise ProvenanceError("W-backed entry design_traceability sha256 must be text")
+    digest = value.removeprefix("sha256:")
+    if SHA256_DIGEST.fullmatch(digest) is None:
+        raise ProvenanceError("W-backed entry design_traceability sha256 is invalid")
+    return digest
 
 
 def _omit_top_level_field(raw: bytes, field: str) -> str:

@@ -44,6 +44,8 @@ from frontier_provenance.stores import (
 )
 from frontier_provenance.handoff import export_handoff, verify_handoff
 from frontier_provenance.graph import build_node
+from frontier_provenance.review_contract import validate_and_project
+from frontier_provenance.review_subject import require_current_review_subject
 from frontier_provenance_cli import (
     REQUEST_CONTRACT,
     apply_operation,
@@ -115,7 +117,13 @@ def content_resolver(content_root: str) -> dict[str, object]:
         },
     }
     if TEST_DOMAINS[content_root] == "project-decision":
-        result["review_subject"] = {"subject_mode": "complete"}
+        result["review_subject"] = {
+            "contract_version": "frontier-review-subject/2",
+            "role_adapter": "frontier-review-role-adapter/2",
+            "review_kind": "entry",
+            "subject_mode": "complete",
+            "semantic_projection": {"affected_scope": "test decision"},
+        }
     return result
 
 
@@ -632,6 +640,7 @@ def routine_execution_fixture(root: Path) -> dict[str, object]:
             "verified": True,
             "review_subject": {
                 "contract_version": "frontier-review-subject/2",
+                "role_adapter": "frontier-review-role-adapter/2",
                 "review_kind": "entry",
                 "subject_mode": "complete",
                 "semantic_projection": {
@@ -668,6 +677,7 @@ def routine_execution_fixture(root: Path) -> dict[str, object]:
             "verified": True,
             "review_subject": {
                 "contract_version": "frontier-review-subject/2",
+                "role_adapter": "frontier-review-role-adapter/2",
                 "review_kind": "implementation",
                 "subject_mode": "complete",
                 "semantic_projection": {
@@ -1174,6 +1184,68 @@ def test_project_capture_allows_task_and_technology_names() -> None:
             project_root=root,
         )
         assert result["domain"] == "project-state"
+
+
+def test_project_capture_accepts_exact_frozen_input_source_path() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        source = root / "records" / "decision" / "digest.json"
+        source.parent.mkdir(parents=True)
+        source.write_text('{"decision":"exact"}\n')
+        bundle = root / "bundle"
+
+        result = ProjectPortableStore().capture(
+            "state",
+            [
+                ArtifactSource(
+                    "project/state/frozen-inputs/records/decision/digest.json",
+                    source,
+                )
+            ],
+            bundle,
+            project_root=root,
+        )
+
+        assert result["domain"] == "project-state"
+        assert ProjectPortableStore().verify(bundle, expected_role="state")[
+            "verified"
+        ] is True
+
+
+@pytest.mark.parametrize(
+    "logical_suffix",
+    (
+        "decision.json",
+        "records/decision/alias.json",
+        "records/decision/object",
+    ),
+)
+def test_project_capture_rejects_inexact_frozen_input_source_path(
+    logical_suffix: str,
+) -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        source = root / "records" / "decision" / "digest.json"
+        source.parent.mkdir(parents=True)
+        source.write_text('{"decision":"same bytes"}\n')
+        bundle = root / "bundle"
+
+        with pytest.raises(
+            ProvenanceError,
+            match="frozen input logical name must match its project-relative source path",
+        ):
+            ProjectPortableStore().capture(
+                "state",
+                [
+                    ArtifactSource(
+                        f"project/state/frozen-inputs/{logical_suffix}", source
+                    )
+                ],
+                bundle,
+                project_root=root,
+            )
+
+        assert not bundle.exists()
 
 
 @pytest.mark.parametrize(
@@ -1735,7 +1807,13 @@ def test_expired_live_receipt_cannot_be_replayed_for_spend() -> None:
             },
         }
         if TEST_DOMAINS[root] == "project-decision":
-            result["review_subject"] = {"subject_mode": "complete"}
+            result["review_subject"] = {
+                "contract_version": "frontier-review-subject/2",
+                "role_adapter": "frontier-review-role-adapter/2",
+                "review_kind": "entry",
+                "subject_mode": "complete",
+                "semantic_projection": {"affected_scope": "expired receipt test"},
+            }
         return result
 
     result = verify_for(
@@ -2267,3 +2345,266 @@ def test_rollout_closes_legacy_entry_packet_and_authority_writers() -> None:
             )
             assert result.returncode == 2
             assert b"legacy" in result.stderr
+
+
+def _w_backed_entry_subject(delivery_scope: list[str]) -> dict[str, bytes]:
+    design_identity = "W900-design-sha256:" + "d" * 64
+    documents: dict[str, object] = {
+        "project/decision/parents/handoff.yaml": {
+            "contract_version": "framing-handoff/1"
+        },
+        "project/decision/selection/evidence-state.yaml": {
+            "contract_version": "frontier-selection-evidence-state/1",
+            "event_id": "X900",
+            "budget": {"ceiling": 4, "actual": 0},
+            "selection": {"primary": "B900"},
+            "authority": {"current": "planning-only"},
+            "resolver": {"first_applicable_row": 12},
+            "route_set": {"state": "complete"},
+        },
+        "project/decision/entry/plan.yaml": {
+            "contract_version": "frontier-project-batch-plan/3",
+            "batch_id": "B900",
+            "maximum_spend": {"proposals": 1},
+            "authorization_gate": "exact reviewed authorization",
+            "stop_conditions": ["one terminal result"],
+            "design_profile": "module",
+            "work_plan": "W900",
+            "work_plan_revision": 4,
+            "design_contract_identity": design_identity,
+            "required_design_inputs": ["architecture.md", "interfaces.md"],
+            "delivery_scope": delivery_scope,
+        },
+        "project/decision/entry/work.yaml": {
+            "contract_version": "frontier-project-code-work/1",
+            "batch_id": "B900",
+        },
+        "project/decision/entry/target.yaml": {
+            "contract_version": "frontier-project-authorization-target/1",
+            "target_id": "V900-target-sha256:" + "a" * 64,
+            "decision_id": "V900",
+            "batch_id": "B900",
+            "scope": "complete W900 realization",
+            "maximum_spend": {"proposals": 1},
+            "stop_boundary": "one terminal result",
+            "authorization_question": "Authorize this realization?",
+            "authorize_consequence": "permit one bounded execution",
+        },
+        "project/decision/design/W900/traceability.yaml": {
+            "design_contract_identity": design_identity,
+            "slices": {
+                "foundation": {
+                    "delivery_identity": "delivery-foundation",
+                    "prerequisites": [],
+                    "required_design_inputs": ["architecture.md"],
+                },
+                "integration": {
+                    "delivery_identity": "delivery-integration",
+                    "prerequisites": ["delivery-foundation"],
+                    "required_design_inputs": ["interfaces.md"],
+                },
+            },
+        },
+    }
+    raw = {
+        name: yaml.safe_dump(document, sort_keys=False).encode()
+        for name, document in documents.items()
+    }
+    raw.update(
+        {
+            "project/decision/state/frontier.md": b"# Frontier\n",
+            "project/decision/state/ledger.md": b"# Ledger\n",
+            "project/decision/state/log.md": b"# Log\n",
+            "project/decision/parents/problem.md": b"# Problem\n",
+            "project/decision/parents/representation.md": b"# Representation\n",
+        }
+    )
+    return raw
+
+
+def test_w_backed_entry_projects_unordered_dependency_complete_delivery_scope() -> None:
+    projection = validate_and_project(
+        "entry",
+        _w_backed_entry_subject(["delivery-integration", "delivery-foundation"]),
+        review_stage="authorization-readiness",
+    )
+
+    assert projection["delivery_scope"] == {
+        "design_contract_identity": "W900-design-sha256:" + "d" * 64,
+        "deliveries": ["delivery-foundation", "delivery-integration"],
+    }
+
+
+def test_w_backed_entry_rejects_scope_without_delivery_prerequisite() -> None:
+    with pytest.raises(ProvenanceError, match="omits prerequisite obligations"):
+        validate_and_project(
+            "entry",
+            _w_backed_entry_subject(["delivery-integration"]),
+            review_stage="authorization-readiness",
+        )
+
+
+@pytest.mark.parametrize(
+    ("delivery_scope", "message"),
+    [
+        ([], "missing substantive fields"),
+        (
+            ["delivery-foundation", "delivery-foundation"],
+            "nonempty unique list",
+        ),
+        (["delivery-unknown"], "unknown obligations"),
+    ],
+)
+def test_w_backed_entry_rejects_invalid_delivery_scope(
+    delivery_scope: list[str], message: str
+) -> None:
+    with pytest.raises(ProvenanceError, match=message):
+        validate_and_project(
+            "entry",
+            _w_backed_entry_subject(delivery_scope),
+            review_stage="authorization-readiness",
+        )
+
+
+def test_w_backed_entry_requires_inputs_for_every_scoped_delivery() -> None:
+    raw = _w_backed_entry_subject(
+        ["delivery-foundation", "delivery-integration"]
+    )
+    plan = yaml.safe_load(raw["project/decision/entry/plan.yaml"])
+    plan["required_design_inputs"] = ["architecture.md"]
+    raw["project/decision/entry/plan.yaml"] = yaml.safe_dump(
+        plan, sort_keys=False
+    ).encode()
+
+    with pytest.raises(ProvenanceError, match="do not cover"):
+        validate_and_project(
+            "entry", raw, review_stage="authorization-readiness"
+        )
+
+
+def test_w_backed_entry_does_not_revalidate_unselected_delivery_details() -> None:
+    raw = _w_backed_entry_subject(["delivery-foundation"])
+    traceability = yaml.safe_load(
+        raw["project/decision/design/W900/traceability.yaml"]
+    )
+    traceability["slices"]["integration"].pop("prerequisites")
+    traceability["slices"]["integration"].pop("required_design_inputs")
+    raw["project/decision/design/W900/traceability.yaml"] = yaml.safe_dump(
+        traceability, sort_keys=False
+    ).encode()
+
+    projection = validate_and_project(
+        "entry", raw, review_stage="authorization-readiness"
+    )
+
+    assert projection["delivery_scope"]["deliveries"] == ["delivery-foundation"]
+
+
+def test_same_batch_accepts_revised_delivery_scope_as_new_entry_realization() -> None:
+    first = validate_and_project(
+        "entry",
+        _w_backed_entry_subject(["delivery-foundation"]),
+        review_stage="authorization-readiness",
+    )
+    revised = validate_and_project(
+        "entry",
+        _w_backed_entry_subject(["delivery-foundation", "delivery-integration"]),
+        review_stage="authorization-readiness",
+    )
+
+    assert first["delivery_scope"] != revised["delivery_scope"]
+
+
+def test_current_review_subject_rejects_historical_contract() -> None:
+    subject = {
+        "contract_version": "frontier-review-subject/1",
+        "role_adapter": "frontier-review-role-adapter/1",
+        "review_kind": "entry",
+        "subject_mode": "complete",
+        "semantic_projection": {"affected_scope": "historical"},
+    }
+
+    with pytest.raises(ProvenanceError, match="current consequence"):
+        require_current_review_subject(subject, expected_kind="entry")
+
+
+def test_current_implementation_review_projects_prepublication_state() -> None:
+    decision = {
+        "contract_version": "frontier-project-implementation-review-input/1",
+        "affected_scope": "exact working realization",
+        "candidate": {"id": "B900-candidate-sha256:" + "a" * 64},
+        "reviewed_design": "W900-design-sha256:" + "b" * 64,
+        "publication_state": "prepublication",
+        "execution_start": "B900-execution-start-sha256:" + "c" * 64,
+        "engineering_state": {"final_attempt": 2, "status": "pass"},
+        "allowed_feedback": "fidelity to the unchanged reviewed target",
+    }
+    projection = validate_and_project(
+        "implementation",
+        {
+            "project/decision/implementation/input.yaml": yaml.safe_dump(
+                decision, sort_keys=False
+            ).encode()
+        },
+        closed_collections=[
+            {
+                "logical_name": "project/decision/candidate-working",
+                "members": ["project/decision/implementation/input.yaml"],
+            }
+        ],
+    )
+
+    assert projection["publication_state"] == "prepublication"
+    assert projection["engineering_state"]["status"] == "pass"
+
+
+def test_current_implementation_review_rejects_missing_publication_state() -> None:
+    decision = {
+        "contract_version": "frontier-project-implementation-review-input/1",
+        "affected_scope": "exact realization",
+        "candidate": {"id": "B900-candidate-sha256:" + "a" * 64},
+        "reviewed_design": "W900-design-sha256:" + "b" * 64,
+    }
+    with pytest.raises(ProvenanceError, match="missing substantive fields"):
+        validate_and_project(
+            "implementation",
+            {
+                "project/decision/implementation/input.yaml": yaml.safe_dump(
+                    decision, sort_keys=False
+                ).encode()
+            },
+            closed_collections=[
+                {
+                    "logical_name": "project/decision/candidate-working",
+                    "members": ["project/decision/implementation/input.yaml"],
+                }
+            ],
+        )
+
+
+def test_current_implementation_review_rejects_nonpassing_engineering_state() -> None:
+    decision = {
+        "contract_version": "frontier-project-implementation-review-input/1",
+        "affected_scope": "exact working realization",
+        "candidate": {"id": "B900-candidate-sha256:" + "a" * 64},
+        "reviewed_design": "W900-design-sha256:" + "b" * 64,
+        "publication_state": "prepublication",
+        "execution_start": "B900-execution-start-sha256:" + "c" * 64,
+        "engineering_state": {"final_attempt": 2, "status": "fail"},
+        "allowed_feedback": "fidelity to the unchanged reviewed target",
+    }
+    with pytest.raises(ProvenanceError, match="final all-pass"):
+        validate_and_project(
+            "implementation",
+            {
+                "project/decision/implementation/input.yaml": yaml.safe_dump(
+                    decision, sort_keys=False
+                ).encode()
+            },
+            closed_collections=[
+                {
+                    "logical_name": "project/decision/candidate-working",
+                    "members": ["project/decision/implementation/input.yaml"],
+                }
+            ],
+        )

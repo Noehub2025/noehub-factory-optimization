@@ -32,7 +32,6 @@ INVENTORY_CONTRACT = "frontier-candidate-package-inventory/1"
 FINAL_MANIFEST_CONTRACT = "frontier-candidate-manifest/3"
 LEGACY_FINAL_MANIFEST_CONTRACT = "frontier-candidate-manifest/2"
 DOWNSTREAM_MANIFEST_ROLES = {
-    "implementation-review",
     "result",
     "result-validation",
 }
@@ -81,6 +80,24 @@ def resolve_output(repo_root: Path, raw: Any, field: str) -> tuple[str, Path]:
         raise IdentityBindingError(f"{field} resolves outside the repository") from exc
     if path.exists() or path.is_symlink():
         raise IdentityBindingError(f"{field} must not already exist")
+    return relative, path
+
+
+def resolve_publication_output(
+    repo_root: Path, raw: Any, field: str
+) -> tuple[str, Path]:
+    """Resolve an immutable output while allowing byte-identical retries."""
+    relative = normalize_repo_path(raw, field)
+    root = repo_root.resolve()
+    reject_symlink_components(root, relative, field)
+    path = root / relative
+    resolved_parent = path.parent.resolve()
+    try:
+        resolved_parent.relative_to(root)
+    except ValueError as exc:
+        raise IdentityBindingError(f"{field} resolves outside the repository") from exc
+    if path.is_symlink() or (path.exists() and not path.is_file()):
+        raise IdentityBindingError(f"{field} exists but is not a safe regular file")
     return relative, path
 
 
@@ -167,12 +184,40 @@ def derive_candidate_inventory(
 def write_candidate_inventory(
     repo_root: Path, candidate_root: Any, inventory_path: Any, candidate_id: Any
 ) -> dict[str, Any]:
-    """Write one immutable pre-execution inventory without requiring a manifest."""
-    relative, path = resolve_output(repo_root, inventory_path, "package_inventory_path")
+    """Publish one inventory, accepting only a byte-identical retry."""
+    relative, path = resolve_publication_output(
+        repo_root, inventory_path, "package_inventory_path"
+    )
     document = derive_candidate_inventory(repo_root, candidate_root, candidate_id)
     raw = yaml.safe_dump(document, sort_keys=False, allow_unicode=True).encode()
+
+    def result(status: str) -> dict[str, Any]:
+        return {
+            "validator": VALIDATOR,
+            "publication_status": status,
+            "inventory_path": relative,
+            "inventory_sha256": hashlib.sha256(raw).hexdigest(),
+            **document,
+            "inventory_ready": True,
+            "findings": [],
+        }
+
+    if path.exists():
+        if path.read_bytes() != raw:
+            raise IdentityBindingError(
+                "package_inventory_path already exists with different bytes"
+            )
+        return result("already-present-identical")
+
     path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    try:
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+    except FileExistsError:
+        if path.is_symlink() or not path.is_file() or path.read_bytes() != raw:
+            raise IdentityBindingError(
+                "package_inventory_path was concurrently published with different bytes"
+            )
+        return result("already-present-identical")
     try:
         with os.fdopen(descriptor, "wb") as stream:
             stream.write(raw)
@@ -181,14 +226,7 @@ def write_candidate_inventory(
     except Exception:
         path.unlink(missing_ok=True)
         raise
-    return {
-        "validator": VALIDATOR,
-        "inventory_path": relative,
-        "inventory_sha256": hashlib.sha256(raw).hexdigest(),
-        **document,
-        "inventory_ready": True,
-        "findings": [],
-    }
+    return result("created")
 
 
 def validate_candidate_inventory(
@@ -400,6 +438,55 @@ def validate_final_manifest_contract(
         manifest_sha256=manifest_sha256,
         required_identity=inventory_id,
     )
+    if manifest.get("manifest_contract") == FINAL_MANIFEST_CONTRACT:
+        implementation_review = manifest.get("implementation_review")
+        if (
+            not isinstance(implementation_review, dict)
+            or set(implementation_review)
+            != {"path", "file_sha256", "review_result", "candidate_id"}
+            or implementation_review.get("review_result") != "IMPLEMENTATION_READY"
+            or implementation_review.get("candidate_id") != manifest.get("candidate_id")
+        ):
+            add_finding(
+                findings,
+                "IMPLEMENTATION_REVIEW_BINDING_INVALID",
+                "final manifest requires one IMPLEMENTATION_READY file binding for the exact candidate identity",
+            )
+        else:
+            validate_file_evidence(
+                repo_root,
+                [implementation_review],
+                "implementation_review",
+                findings,
+                manifest_relative=manifest_relative,
+                manifest_sha256=manifest_sha256,
+                required_identity=str(manifest.get("candidate_id")),
+            )
+            try:
+                review_path = repo_root.resolve() / normalize_repo_path(
+                    implementation_review["path"], "implementation_review.path"
+                )
+                review_raw = review_path.read_text()
+                if not review_raw.startswith("---\n") or "\n---\n" not in review_raw[4:]:
+                    raise IdentityBindingError(
+                        "implementation review must contain YAML frontmatter"
+                    )
+                frontmatter_raw = review_raw[4:].split("\n---\n", 1)[0]
+                frontmatter = yaml.safe_load(frontmatter_raw)
+                if (
+                    not isinstance(frontmatter, dict)
+                    or frontmatter.get("review_result") != "IMPLEMENTATION_READY"
+                    or frontmatter.get("candidate_id") != manifest.get("candidate_id")
+                ):
+                    raise IdentityBindingError(
+                        "implementation review frontmatter does not attest IMPLEMENTATION_READY for this candidate"
+                    )
+            except (IdentityBindingError, OSError, yaml.YAMLError) as exc:
+                add_finding(
+                    findings,
+                    "IMPLEMENTATION_REVIEW_BINDING_INVALID",
+                    str(exc),
+                )
     recovery = manifest.get("recovery_artifacts")
     validate_file_evidence(
         repo_root,

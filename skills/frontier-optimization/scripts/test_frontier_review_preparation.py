@@ -122,6 +122,81 @@ def write_entry(
     }
 
 
+def write_w_backed_entry(
+    root: Path,
+    *,
+    traceability_raw: bytes | None = None,
+    design_identity: str | None = None,
+    digest_prefix: str = "",
+) -> tuple[dict, Path]:
+    spec = write_entry(root)
+    design_identity = design_identity or "W005-r4-sha256:" + "d" * 64
+    traceability_raw = traceability_raw or (
+        b"work_id: W005\n"
+        + f"design_contract_identity: {design_identity}\n".encode()
+        + b"identity_rule: SHA-256 of these UTF-8 bytes with the design_contract_identity line omitted\n"
+        + b"slices:\n"
+        + b"  scheduler-core:\n"
+        + b"    delivery_identity: delivery-root\n"
+        + b"    prerequisites: []\n"
+        + b"    required_design_inputs: [architecture.md]\n"
+    )
+    (root / "design").mkdir()
+    traceability_path = root / "design/traceability-object"
+    traceability_path.write_bytes(traceability_raw)
+    digest = hashlib.sha256(traceability_raw).hexdigest()
+
+    plan_path = root / "entry/plan.yaml"
+    plan = yaml.safe_load(plan_path.read_text())
+    plan.pop("batch_plan_id")
+    plan.pop("identity_rule")
+    plan.update(
+        {
+            "design_profile": "module",
+            "work_plan": "work/W005/WORK.md",
+            "work_plan_revision": 4,
+            "design_contract_identity": design_identity,
+            "design_traceability": {
+                "path": "design/traceability-object",
+                "sha256": digest_prefix + digest,
+            },
+            "required_design_inputs": ["architecture.md"],
+            "delivery_scope": ["delivery-root"],
+        }
+    )
+    plan_path.write_bytes(
+        self_identified(
+            "batch_plan_id",
+            "B001-plan-sha256:",
+            yaml.safe_dump(plan, sort_keys=False).encode(),
+        )
+    )
+    spec["artifacts"].append(
+        {
+            "logical_name": "project/decision/design/W005/traceability.yaml",
+            "path": "design/traceability-object",
+            "kind": "blob",
+            "behavioral_metadata": {},
+        }
+    )
+    return spec, traceability_path
+
+
+def rewrite_entry_plan(root: Path, mutate) -> None:
+    plan_path = root / "entry/plan.yaml"
+    plan = yaml.safe_load(plan_path.read_text())
+    plan.pop("batch_plan_id")
+    plan.pop("identity_rule")
+    mutate(plan)
+    plan_path.write_bytes(
+        self_identified(
+            "batch_plan_id",
+            "B001-plan-sha256:",
+            yaml.safe_dump(plan, sort_keys=False).encode(),
+        )
+    )
+
+
 def add_routine_follow_up(root: Path, spec: dict) -> None:
     protocol_id = "protocol-sha256:" + "1" * 64
     calibration_id = "calibration-sha256:" + "2" * 64
@@ -442,6 +517,7 @@ def test_design_composite_outer_identity_rule_is_supported() -> None:
             + b"  scheduler-core:\n"
             + f"    verification_pointer: design/verification.md#scheduler-core@sha256:{verification_digest}\n".encode()
             + b"    delivery_identity: delivery-root\n"
+            + b"    prerequisites: []\n"
             + b"    required_design_inputs: [architecture.md]\n"
         )
         trace_digest = hashlib.sha256(trace_without_binding).hexdigest()
@@ -480,6 +556,7 @@ def test_design_composite_outer_identity_rule_is_supported() -> None:
             + b"  scheduler-core:\n"
             + f"    verification_pointer: design/verification.md#scheduler-core@sha256:{verification_digest}\n".encode()
             + b"    delivery_identity: delivery-root\n"
+            + b"    prerequisites: []\n"
             + b"    required_design_inputs: [architecture.md]\n"
         )
         spec = {
@@ -530,6 +607,96 @@ def test_design_composite_outer_identity_rule_is_supported() -> None:
         }
         result = prepare_review(spec, root, root / "sealed")
         assert result["status"] == "SEALED"
+
+        entry_root = root / "entry-case"
+        entry_root.mkdir()
+        entry_spec, _ = write_w_backed_entry(
+            entry_root,
+            traceability_raw=(root / "design/traceability.yaml").read_bytes(),
+            design_identity=design_id,
+        )
+        entry_result = prepare_review(entry_spec, entry_root, entry_root / "sealed")
+        assert entry_result["status"] == "SEALED", entry_result
+
+
+@pytest.mark.parametrize("digest_prefix", ["", "sha256:"])
+def test_w_backed_entry_binds_extensionless_traceability_source(
+    digest_prefix: str,
+) -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        spec, _ = write_w_backed_entry(root, digest_prefix=digest_prefix)
+
+        result = prepare_review(spec, root, root / "sealed")
+
+        assert result["status"] == "SEALED", result
+
+
+@pytest.mark.parametrize(
+    ("case", "message"),
+    [
+        ("changed-sha", "whole-file SHA-256 does not match"),
+        ("changed-bytes", "whole-file SHA-256 does not match"),
+        ("missing-path", "path must be nonempty text"),
+        ("outside-root", "path is outside project_root"),
+        ("uncaptured-path", "path is absent from the review subject"),
+        ("noncanonical-path", "does not carry the canonical traceability role"),
+        ("invalid-sha", "sha256 is invalid"),
+    ],
+)
+def test_w_backed_entry_rejects_invalid_traceability_binding(
+    case: str, message: str
+) -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        spec, traceability_path = write_w_backed_entry(root)
+
+        if case == "changed-bytes":
+            traceability_path.write_bytes(
+                traceability_path.read_bytes() + b"# changed after binding\n"
+            )
+        elif case == "noncanonical-path":
+            alternate = root / "design/traceability-review-object"
+            alternate.write_bytes(traceability_path.read_bytes())
+            spec["artifacts"].append(
+                {
+                    "logical_name": "project/decision/design/review/R005-traceability-object",
+                    "path": "design/traceability-review-object",
+                    "kind": "blob",
+                    "behavioral_metadata": {},
+                }
+            )
+            rewrite_entry_plan(
+                root,
+                lambda plan: plan["design_traceability"].update(
+                    {"path": "design/traceability-review-object"}
+                ),
+            )
+        else:
+
+            def mutate(plan: dict) -> None:
+                binding = plan["design_traceability"]
+                if case == "changed-sha":
+                    binding["sha256"] = "f" * 64
+                elif case == "missing-path":
+                    binding.pop("path")
+                elif case == "outside-root":
+                    binding["path"] = "../traceability-object"
+                elif case == "uncaptured-path":
+                    uncaptured = root / "design/uncaptured-traceability-object"
+                    uncaptured.write_bytes(traceability_path.read_bytes())
+                    binding["path"] = "design/uncaptured-traceability-object"
+                elif case == "invalid-sha":
+                    binding["sha256"] = "sha256:not-a-digest"
+
+            rewrite_entry_plan(root, mutate)
+
+        result = prepare_review(spec, root, root / "sealed")
+
+        assert result["status"] == "NOT_READY"
+        assert result["findings"][0]["code"] == "DRAFT_INVALID"
+        assert message in result["findings"][0]["message"]
+        assert not (root / "sealed").exists()
 
 
 def test_valid_entry_seals_one_complete_root_and_one_decision() -> None:

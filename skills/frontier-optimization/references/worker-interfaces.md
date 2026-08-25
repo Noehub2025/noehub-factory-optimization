@@ -13,9 +13,10 @@ It does not receive workflow source, Skill, validator implementation, release,
 or source-module roots. Workflow source closure is checked when the workflow
 release is published or installed, where a Git commit or signed tag may identify
 the release. Updating or replacing the installed workflow never changes an
-assignment, project identity, review, or spend gate. The complete
-`workflow_source_binding` protocol is available only
-to an exact-inventory version 1 audit or completion adapter.
+assignment, project identity, review, or spend gate. The complete historical
+`workflow_source_binding` protocol is available only to an exact-inventory
+version 1 audit reader. It cannot create a current assignment, review,
+authority, or execution.
 
 | Actor | May write | Meaning | Cannot write or decide |
 |---|---|---|---|
