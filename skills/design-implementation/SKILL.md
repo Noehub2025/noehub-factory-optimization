@@ -5,7 +5,7 @@ description: Design or revise implementation architecture in a fresh context whe
 
 # Design Implementation
 
-Act as the sole professional author and reviser of a Frontier implementation design. Turn one fixed behavior target into a design that an executor can implement without inventing key semantics. Leave campaign routing, lifecycle, identity, review, authority, Budget, and implementation to their existing owners.
+Act as the sole professional author and reviser of a Frontier implementation design. Turn one fixed behavior target into a design that an executor can implement without inventing key semantics. Leave campaign routing, Batch continuation, formalization, identity, review, authority, Budget, result closure, and implementation to their existing owners.
 
 ## Require one bounded assignment
 
@@ -45,19 +45,9 @@ This step is complete when every unresolved item has one owner and no hidden exe
 
 ## Challenge decisive feasibility claims
 
-Apply [Technical design](../frontier-optimization/references/technical-design.md#test-decisive-feasibility-claims) only when a planned `module` or `system` slice depends on an unestablished, falsifiable claim that determines whether complete delivery is possible. The claim may concern one capability or several constraints. Do not trigger this work from novelty, complexity, first implementation, a missing final deliverable, first-identity charging, or ordinary implementation risk alone.
+Apply [Technical design's decisive-feasibility rule](../frontier-optimization/references/technical-design.md#test-decisive-feasibility-claims) to the promised output. It owns the distinction between an executable research observation and complete final delivery, the required grounds, and evidence routing. Use its questions only for claims that determine whether that output can be delivered; ordinary implementation risk stays in the normal B.
 
-Identify every decisive claim, starting with the weakest, and answer:
-
-1. Which required capability or interaction depends on the claim?
-2. Which conditions and constraints must hold?
-3. What complete realization satisfies them?
-4. Which parts of that realization are supported by current grounds and which remain assumed?
-5. Is there a lower-consequence, affordable, reachable observation that can falsify or materially strengthen the claim?
-
-Use analysis, proof, inspection, same-condition examples, demonstrations, tests, prototypes, or other grounds appropriate to the deliverable. When current grounds support a credible end-to-end realization and no decisive claim remains unresolved, continue toward `DRAFT_READY` with ordinary implementation risk left to the normal B and R8. When the design itself conflicts or omits a required capability, repair it. Return `EVIDENCE_REQUIRED` only for the observation described in question 5. If only the formal proposal can supply the observation, preserve its parent-owned consequence and return the exact parent decision or blocker instead of creating a recursive evidence request.
-
-This step is complete when every decisive claim has positive grounds or one exact existing return boundary; do not enumerate non-blocking risks or create a separate feasibility artifact.
+This step is complete when each decisive claim for the promised output has positive grounds or one exact existing return boundary. Keep the reasoning in the owning concern.
 
 ## Author the existing design contract
 
@@ -67,7 +57,9 @@ In `verification.md`, make each delivery slice a stable, verifiable obligation w
 
 For any implementation-form restriction that materially affects a slice, apply [Technical design: Constrain effects, not convenient forms](../frontier-optimization/references/technical-design.md#constrain-effects-not-convenient-forms). State the current protection rationale and causal relation; do not optimize the design for an easy syntactic check.
 
-Use schemas, examples, state tables, or sequence descriptions when prose would allow incompatible implementations. Bound local reversible executor choices instead of deciding incidental implementation details.
+Use schemas, examples, state tables, or sequence descriptions when prose would allow incompatible implementations. State the necessary technical constraints and leave ordinary work methods to the executor.
+
+Apply [Technical design's assignment ownership rule](../frontier-optimization/references/technical-design.md#assign-the-professional-author). Treat incidental workflow wording as context, not professional content. When an unpublished assignment misplaces workflow requirements in Purpose or Scope, coordinate correction with the Coordinator on the same scaffold and continue the authoring task. Preserve explicit constraints with their existing owner. This is ordinary coordination on a discovered conflict, not a routine gate or a formal design failure; it creates no new W, revision, review, authority, identity, or repair artifact. Use the existing return paths only for genuinely unresolved technical, user, or authority decisions. Keep Batch continuation and publication mechanics with [Boundary-preserving continuation](../frontier-optimization/references/batch-interface.md#boundary-preserving-continuation).
 
 Do not write Design map rows, Delivery map rows, `traceability.yaml`, design identities, lifecycle fields, V, B, Selection, Budget, review artifacts, candidate code, or campaign records. The Coordinator generates stable concern and slice bindings without changing professional meaning; it does not assign a future B or internal execution path into Design.
 

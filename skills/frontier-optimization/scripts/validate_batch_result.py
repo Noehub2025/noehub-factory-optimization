@@ -24,7 +24,7 @@ from finding_effects import add_finding, finalize_findings
 from validate_candidate_package import validate_candidate_package
 from frontier_provenance.content import ProvenanceError
 from frontier_provenance.compatibility import require_v1_completion
-from frontier_provenance.facade import verify_for
+from frontier_provenance.facade import verify_for, validate_design_revision
 from frontier_provenance.handoff import verify_handoff
 from frontier_provenance.repository import NodeRepository
 from frontier_provenance.review_subject import require_current_review_subject
@@ -38,6 +38,8 @@ from evaluation_target_contract import (
     validate_experiment_source,
     normalized_nested_keys,
     validate_evaluation_target_contract,
+    working_diagnostic,
+    validate_working_observations,
 )
 
 try:
@@ -395,12 +397,24 @@ def verify_current_execution_frozen_inputs(
     state: dict[str, Any],
     baseline_raw: dict[str, bytes],
     repo_root: Path,
+    design_input_changes: dict[str, str] | None = None,
 ) -> None:
     """Recheck every current-plan frozen input against typed baseline and live bytes."""
 
     frozen_inputs = packet.get("execution_frozen_inputs")
     if not isinstance(frozen_inputs, list) or not frozen_inputs:
         raise ValueError("current project plan requires nonempty execution_frozen_inputs")
+    if design_input_changes:
+        frozen_inputs = [dict(item) for item in frozen_inputs]
+        remaining = set(design_input_changes)
+        for item in frozen_inputs:
+            if item.get("path") in remaining:
+                if item.get("scope") != "file":
+                    raise ValueError("delegated design inputs must be individual fixed files")
+                item["identity"] = design_input_changes[item["path"]]
+                remaining.remove(item["path"])
+        if remaining:
+            raise ValueError("delegated design input is absent from the original frozen-input list")
     if state.get("execution_frozen_inputs") != frozen_inputs:
         raise ValueError(
             "typed project execution state does not preserve the complete frozen-input list"
@@ -700,11 +714,12 @@ def verify_project_nested_dispatch(
         repo_root, authority_content.get("content_path"), "authority.content_path"
     )
     _, execution_bundle = resolve_project_directory(
-        repo_root, packet.get("execution_baseline_root"), "execution_baseline_root"
+        repo_root, start.get("starting_state_path", packet.get("execution_baseline_root")), "starting_state_path"
     )
     decision_result = ProjectPortableStore().verify(decision_bundle, expected_role="decision")
     authority_result = ProjectPortableStore().verify(authority_bundle, expected_role="authority")
-    execution_result = ProjectPortableStore().verify(execution_bundle, expected_role="state")
+    baseline_raw: dict[str, bytes] = {}
+    execution_result = ProjectPortableStore().verify(execution_bundle, expected_role="state", raw_out=baseline_raw)
     if (
         decision_result.get("content_root") != decision_content.get("root")
         or decision_result.get("content_root") != ack.get("decision_content", {}).get("root")
@@ -778,11 +793,15 @@ def verify_project_nested_dispatch(
         repository.load,
         lambda root: resolved[root],
         consequence="audit",
+        read_content=lambda root: baseline_raw
+        if root == execution_result["content_root"] else {},
     )
     if audit.get("ready") is not True or audit.get("static_chain_verified") is not True:
         raise ValueError("project execution provenance did not verify")
 
-    baseline_raw = PortableBundleStore().read_artifacts(execution_bundle)
+    if start.get("starting_state_path", packet.get("execution_baseline_root")) != packet.get("execution_baseline_root"):
+        if not any(name.startswith("project/state/design-revision/") for name in baseline_raw):
+            raise ValueError("a replacement starting-state path requires a verified delegated design revision")
     exact_baseline_members = {
         "project/state/plan.yaml": packet_raw,
         "project/state/acknowledgment.yaml": acknowledgment.raw,
@@ -810,11 +829,15 @@ def verify_project_nested_dispatch(
     ):
         raise ValueError("project execution-state evidence does not bind the dispatch chain")
     if current_plan:
+        design_input_changes = validate_design_revision(
+            decision_result["review_subject"]["semantic_projection"], baseline_raw
+        )
         verify_current_execution_frozen_inputs(
             packet=packet,
             state=state,
             baseline_raw=baseline_raw,
             repo_root=repo_root,
+            design_input_changes=design_input_changes,
         )
 
 
@@ -1066,7 +1089,9 @@ def validate_packet_result_contract(
     """Check before authorization that a packet can produce a valid result draft."""
     findings: list[dict[str, str]] = []
     probe_validation_id: str | None = None
-    if packet.get("work_kind") == "experiment":
+    if working_diagnostic(packet.get("evaluation_target")):
+        validate_evaluation_target_contract(packet["evaluation_target"], findings)
+    elif packet.get("work_kind") == "experiment":
         target = packet.get("evaluation_target")
         if (
             isinstance(target, dict)
@@ -1245,7 +1270,8 @@ def validate_materialization_boundary(
             "CODE_PROFILE_INVALID",
             "changes_executable_candidate: true requires work_kind code or mixed",
         )
-    if document.get("results") != []:
+    diagnostic = working_diagnostic(document.get("evaluation_target"))
+    if not diagnostic and document.get("results") != []:
         add_finding(
             findings,
             "MATERIALIZATION_RESULTS_NOT_EMPTY",
@@ -1258,6 +1284,8 @@ def validate_materialization_boundary(
             "code-bearing materialization requires experiment_identity: null",
         )
     for field in ("performance_evaluation_state", "integration_state"):
+        if diagnostic and field == "performance_evaluation_state":
+            continue
         if document.get(field) != "not-authorized":
             add_finding(
                 findings,
@@ -1999,35 +2027,43 @@ def validate_prepublication_engineering_evidence(
                         )
 
 
-def validate_publication_charge(
+def validate_spend_accounting(
     document: dict[str, Any],
     packet: dict[str, Any] | None,
     repo_root: Path | None,
     findings: list[dict[str, str]],
 ) -> None:
-    """Bind the recorded spend to the official identity without owning the ledger."""
-    if (
-        not isinstance(packet, dict)
-        or document.get("outcome") != "completed"
-        or document.get("work_kind") not in {"code", "design", "prototype"}
-    ):
+    """Check spend records; only an explicit historical policy fixes publication cost."""
+    if not isinstance(packet, dict):
         return
+
     policy = packet.get("publication_policy")
-    output_relative = (
-        policy.get("authoritative_output_path")
-        if isinstance(policy, dict)
-        else packet.get("candidate_package_inventory_path")
-    )
-    charge_amount = (
-        policy.get("charge_amount")
-        if isinstance(policy, dict)
-        else document.get("planned_spend")
-    )
+    if not isinstance(policy, dict):
+        # Current parents own charging. Outcome, work kind, output equality, and a
+        # planned ceiling cannot determine actual consumption. The Coordinator
+        # reconciles these existing fields with the B and accounting source.
+        for field in ("planned_spend", "actual_spend", "accounting_evidence"):
+            value = document.get(field)
+            if not isinstance(value, str) or not value.strip():
+                add_finding(
+                    findings,
+                    "PUBLICATION_CHARGE_ACCOUNTING_UNVERIFIED",
+                    f"{field} requires an explicit spend record or an explanation "
+                    "of unknown accounting; publication is not the charge source",
+                )
+        return
+
+    # Retained packets keep their explicit frozen policy. No such policy is
+    # inferred for a current plan, or from whether a failed result published.
+    if document.get("outcome") != "completed":
+        return
+    output_relative = policy.get("authoritative_output_path")
+    charge_amount = policy.get("charge_amount")
     if repo_root is None or not isinstance(output_relative, str):
         add_finding(
             findings,
             "PUBLICATION_CHARGE_ACCOUNTING_UNVERIFIED",
-            "a current authoritative publication requires repo_root and its official output path",
+            "the frozen publication policy requires repo_root and its official output path",
         )
         return
     try:
@@ -2036,8 +2072,7 @@ def validate_publication_charge(
             output_relative,
             "publication_policy.authoritative_output_path",
         )
-        output_raw = output_path.read_bytes()
-        output_digest = hashlib.sha256(output_raw).hexdigest()
+        output_digest = hashlib.sha256(output_path.read_bytes()).hexdigest()
     except (IdentityBindingError, OSError) as exc:
         add_finding(
             findings,
@@ -2045,29 +2080,9 @@ def validate_publication_charge(
             f"cannot bind publication charge to the official output: {exc}",
         )
         return
-    if isinstance(policy, dict):
-        expected_accounting = (
-            f"authoritative output {output_relative} sha256:{output_digest}"
-        )
-    else:
-        try:
-            inventory = yaml.safe_load(output_raw)
-        except yaml.YAMLError as exc:
-            add_finding(
-                findings,
-                "PUBLICATION_CHARGE_ACCOUNTING_UNVERIFIED",
-                f"cannot read the official inventory identity: {exc}",
-            )
-            return
-        inventory_id = inventory.get("inventory_id") if isinstance(inventory, dict) else None
-        if not isinstance(inventory_id, str) or not inventory_id:
-            add_finding(
-                findings,
-                "PUBLICATION_CHARGE_ACCOUNTING_UNVERIFIED",
-                "the current official inventory does not contain an inventory_id",
-            )
-            return
-        expected_accounting = f"official inventory {inventory_id}"
+    expected_accounting = (
+        f"authoritative output {output_relative} sha256:{output_digest}"
+    )
     if (
         not isinstance(charge_amount, str)
         or not charge_amount.strip()
@@ -2078,7 +2093,8 @@ def validate_publication_charge(
         add_finding(
             findings,
             "PUBLICATION_CHARGE_ACCOUNTING_INVALID",
-            "authoritative publication must record equal planned and actual spend and bind that accounting evidence to the official output identity",
+            "the explicit frozen publication policy requires its recorded charge "
+            "and official-output accounting evidence",
         )
 
 
@@ -2088,7 +2104,8 @@ def validate_evaluation_boundary(
     findings: list[dict[str, str]],
 ) -> None:
     performance_state = str(document.get("performance_evaluation_state", ""))
-    if document.get("work_kind") != "experiment":
+    diagnostic = working_diagnostic(document.get("evaluation_target"))
+    if document.get("work_kind") != "experiment" and not diagnostic:
         if performance_state.startswith(("performed", "diagnostic-only", "routine-local")):
             add_finding(
                 findings,
@@ -2096,13 +2113,13 @@ def validate_evaluation_boundary(
                 "only a work_kind: experiment result may report performed performance evaluation",
             )
         return
-    if document.get("changes_executable_candidate") is not False:
+    if not diagnostic and document.get("changes_executable_candidate") is not False:
         add_finding(
             findings,
             "EVALUATION_CHANGED_CANDIDATE",
             "Slot H evaluation requires changes_executable_candidate: false",
         )
-    if document.get("materialization_state") != "not-applicable":
+    if not diagnostic and document.get("materialization_state") != "not-applicable":
         add_finding(
             findings,
             "EVALUATION_MATERIALIZATION_STATE_INVALID",
@@ -2162,6 +2179,8 @@ def validate_evaluation_boundary(
                 f"{bounded_mode} evaluation requires integration_state: not-authorized",
             )
         results = document.get("results")
+        if diagnostic:
+            validate_working_observations(evaluation_target, results, findings)
         if performance_state.startswith(bounded_mode) and (
             not isinstance(results, list) or not results
         ):
@@ -2416,7 +2435,7 @@ def validate(
     else:
         for field in sorted(MATERIALIZATION_BINDING_FIELDS - document.keys()):
             add_finding(findings, "REQUIRED_FIELD_MISSING", field)
-        if document.get("evaluation_target") is not None:
+        if document.get("evaluation_target") is not None and not working_diagnostic(document.get("evaluation_target")):
             add_finding(
                 findings,
                 "EVALUATION_TARGET_OUTSIDE_EXPERIMENT",
@@ -2469,10 +2488,23 @@ def validate(
     validate_materialization_boundary(document, findings)
     validate_materialized_candidate_sources(document, packet, repo_root, findings)
     validate_prepublication_engineering_evidence(document, packet, repo_root, findings)
-    validate_publication_charge(document, packet, repo_root, findings)
+    validate_spend_accounting(document, packet, repo_root, findings)
     validate_evaluation_boundary(document, packet, findings)
-    if document.get("work_kind") == "experiment":
+    if document.get("work_kind") == "experiment" or working_diagnostic(document.get("evaluation_target")):
         validate_evaluation_target_sources(document, repo_root, findings)
+    if working_diagnostic(document.get("evaluation_target")) and isinstance(document.get("results"), list):
+        for result in document["results"]:
+            if not isinstance(result, dict) or not isinstance(result.get("evidence"), dict):
+                continue
+            evidence = result["evidence"]
+            if repo_root is None:
+                add_finding(findings, "EVALUATION_TARGET_SOURCE_UNVERIFIED", "working observation evidence requires repo_root")
+                continue
+            try:
+                _, path = resolve_repo_file(repo_root.resolve(), evidence.get("path"), "observation evidence")
+                require_file_sha256(path, evidence.get("file_sha256"), "observation evidence")
+            except (IdentityBindingError, OSError, ValueError) as exc:
+                add_finding(findings, "EVALUATION_TARGET_SOURCE_UNVERIFIED", str(exc))
 
     payload_sha256 = hashlib.sha256(canonical_payload(document)).hexdigest()
     expected_id = computed_result_id(document, payload_sha256)

@@ -523,7 +523,8 @@ class PortableBundleStore:
         )
 
     def verify(
-        self, destination: Path, manifest: dict[str, Any] | None = None
+        self, destination: Path, manifest: dict[str, Any] | None = None,
+        *, raw_out: dict[str, bytes] | None = None, check_semantics: bool = True,
     ) -> dict[str, Any]:
         if not destination.is_dir() or destination.is_symlink():
             raise ProvenanceError("portable bundle root is missing or unsafe")
@@ -532,8 +533,6 @@ class PortableBundleStore:
         if (
             not manifest_path.is_file()
             or manifest_path.is_symlink()
-            or not objects_root.is_dir()
-            or objects_root.is_symlink()
         ):
             raise ProvenanceError("portable manifest or object root is missing or unsafe")
         if manifest is None:
@@ -541,6 +540,13 @@ class PortableBundleStore:
                 manifest = json.loads(manifest_path.read_text())
             except (OSError, json.JSONDecodeError) as exc:
                 raise ProvenanceError(f"portable manifest is unreadable: {exc}") from exc
+        if manifest.get("storage", {}).get("adapter") == "git-reference/1":
+            from .git_content import GitReferenceStore
+            return GitReferenceStore(destination).verify(
+                destination, manifest=manifest, raw_out=raw_out, check_semantics=check_semantics,
+            )
+        if not objects_root.is_dir() or objects_root.is_symlink():
+            raise ProvenanceError("portable object root is missing or unsafe")
         content_root = verify_manifest(manifest)
         storage = manifest["storage"]
         if storage != {"adapter": "portable-bundle/1", "object_root": "objects"}:
@@ -569,6 +575,8 @@ class PortableBundleStore:
         }
         if observed != expected | {"manifest.json"}:
             raise ProvenanceError("portable bundle contains missing or unexpected files")
+        if raw_out is not None:
+            raw_out.update(raw_by_name)
         return {
             "content_root": content_root,
             "domain": manifest["domain"],
@@ -576,31 +584,20 @@ class PortableBundleStore:
             "artifact_count": len(manifest["artifacts"]),
             "closed_collections": manifest["closed_collections"],
             "receipt_facts": _receipt_facts(manifest, raw_by_name),
-            "review_subject": validate_review_subject(manifest, raw_by_name),
+            "review_subject": validate_review_subject(manifest, raw_by_name, check_semantics=check_semantics),
             "verified": True,
         }
 
     def read_artifacts(self, destination: Path) -> dict[str, bytes]:
         """Return verified logical bytes from one portable bundle."""
 
-        self.verify(destination)
-        try:
-            manifest = json.loads((destination / "manifest.json").read_text())
-        except (OSError, json.JSONDecodeError) as exc:  # pragma: no cover - verify owns this path
-            raise ProvenanceError(f"portable manifest is unreadable: {exc}") from exc
-        return {
-            item["logical_name"]: (
-                destination
-                / "objects"
-                / item["content_sha256"][:2]
-                / item["content_sha256"]
-            ).read_bytes()
-            for item in manifest["artifacts"]
-        }
+        raw: dict[str, bytes] = {}
+        self.verify(destination, raw_out=raw, check_semantics=False)
+        return raw
 
 
 class ProjectPortableStore:
-    """Capture project bytes through a role that fixes the content domain."""
+    """Stable caller interface: write Git references and read retained old bundles."""
 
     @staticmethod
     def _validate_frozen_input_names(
@@ -635,25 +632,18 @@ class ProjectPortableStore:
         project_root: Path,
         closed_collections: Iterable[ClosedCollection] = (),
     ) -> dict[str, Any]:
-        domain = PROJECT_ROLE_DOMAINS.get(role)
-        if domain is None:
-            raise ProvenanceError(f"unsupported project content role: {role!r}")
-        source_list = list(sources)
-        self._validate_frozen_input_names(role, source_list, project_root)
-        return PortableBundleStore()._capture_domain(
-            source_list,
-            destination,
-            domain=domain,
-            closed_collections=closed_collections,
-            project_root=project_root,
+        from .git_content import GitReferenceStore
+        return GitReferenceStore(project_root).capture(
+            role, sources, destination, closed_collections=closed_collections,
         )
 
     def verify(
-        self, destination: Path, *, expected_role: str | None = None
+        self, destination: Path, *, expected_role: str | None = None,
+        raw_out: dict[str, bytes] | None = None,
     ) -> dict[str, Any]:
         """Verify stored bytes, not their historical source-path eligibility."""
 
-        result = PortableBundleStore().verify(destination)
+        result = PortableBundleStore().verify(destination, raw_out=raw_out, check_semantics=False)
         if result["domain"] not in PROJECT_DOMAINS:
             raise ProvenanceError("project store cannot verify a workflow release")
         if expected_role is not None:

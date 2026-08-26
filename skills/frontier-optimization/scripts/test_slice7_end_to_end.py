@@ -1059,8 +1059,8 @@ class Slice7ContractTests(unittest.TestCase):
     def test_reflection_claim_and_parent_change_routes(self) -> None:
         self.assert_contract_contains(
             "learning-loop.md",
-            "Routine evidence with a unique R8 branch receives no extra research, diagnosis, or review",
-            "a direct reversible candidate attempt may dominate mechanism diagnosis",
+            "Apply routine R8 without extra research when no earlier resolver condition applies",
+            "a direct reversible attempt may be preferable to separate diagnosis",
             "For strategic evidence",
             "A valid whole-treatment comparison may support that the bounded package caused the observed local effect",
             "This section is the only direction resolver",
@@ -1083,18 +1083,18 @@ class Slice7ContractTests(unittest.TestCase):
             "Any workflow update, including a changed decision rule",
         )
 
-    def test_recovery_never_uses_conversation_or_git_history(self) -> None:
+    def test_recovery_uses_retained_git_and_artifacts_not_conversation(self) -> None:
         self.assert_contract_contains(
             "frontier-core.md",
-            "not conversation or Git history",
+            "retained Git versions and artifact references; conversation is not a substitute",
             "run the bound candidate-recovery validator",
         )
         self.assert_contract_contains(
             "packaging-and-recovery.md",
-            "Copy or mount only the finished handoff",
-            "The same handoff bytes must reproduce the same project root chain",
-            "workflow release roots",
-            "next action or blocker",
+            "writes only `handoff.json`, citing that commit and the records' repository",
+            "Use `verify-handoff` to read the exact records from Git",
+            "Workflow deployment files, environments,\ncaches, and unrelated work are not handoff members",
+            "Recovery needs the retained Git history and only the external artifacts needed",
         )
 
     def test_first_batch_transition_authorizes_a_rule_not_a_date_literal(self) -> None:
@@ -1145,7 +1145,10 @@ class Slice7ContractTests(unittest.TestCase):
             with self.subTest(reference=reference):
                 contract = (SCRIPT_ROOT.parent / "references" / reference).read_text()
                 self.assertNotIn("User-facing handoff", contract)
-                self.assertIn("Coordinator", contract)
+                if reference == "packaging-and-recovery.md":
+                    self.assertIn("The Entry router owns that decision", contract)
+                else:
+                    self.assertIn("Coordinator", contract)
 
         core = (SCRIPT_ROOT.parent / "references/frontier-core.md").read_text()
         self.assertNotIn("## User-facing handoff", core)

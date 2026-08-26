@@ -110,6 +110,11 @@ def _entry_projection(
         "entry batch plan",
     )
     delivery_scope = _validate_delivery_scope(parsed, plan)
+    if plan.get("evaluation_target") is not None:
+        target_findings: list[dict[str, str]] = []
+        validate_evaluation_target_contract(plan["evaluation_target"], target_findings)
+        if target_findings:
+            raise ProvenanceError("Entry evaluation target is invalid: " + "; ".join(item["detail"] for item in target_findings))
     work_objects = [
         document
         for name, document in parsed.items()
@@ -175,6 +180,29 @@ def _entry_projection(
     }
     if delivery_scope is not None:
         projection["delivery_scope"] = delivery_scope
+    revision = gate.get("design_revision_scope")
+    if revision is not None:
+        if not isinstance(revision, dict) or set(revision) != {
+            "base_design_content_root", "mutable_concerns", "design_input_paths"
+        }:
+            raise ProvenanceError("design_revision_scope requires a base design, named mutable concerns, and fixed input paths")
+        if not isinstance(revision["base_design_content_root"], str) or not revision["base_design_content_root"].startswith("frontier-content-root-sha256:"):
+            raise ProvenanceError("design_revision_scope requires an exact base design content root")
+        concerns = revision["mutable_concerns"]
+        paths = revision["design_input_paths"]
+        if not isinstance(concerns, list) or not concerns or not all(isinstance(name, str) and name.startswith("project/decision/design/") for name in concerns):
+            raise ProvenanceError("design_revision_scope must name mutable design concerns")
+        if not isinstance(paths, dict) or not paths or not all(isinstance(name, str) and name.startswith("project/decision/design/") and isinstance(path, str) and path for name, path in paths.items()):
+            raise ProvenanceError("design_revision_scope requires exact design input paths")
+        if len(set(paths.values())) != len(paths) or not set(concerns) <= set(paths):
+            raise ProvenanceError("mutable concerns require distinct frozen input paths")
+        inputs = plan.get("execution_frozen_inputs", [])
+        fixed = {item.get("path"): item.get("identity") for item in inputs if isinstance(item, dict) and item.get("scope") == "file"}
+        if not set(paths.values()) <= set(fixed):
+            raise ProvenanceError("delegated design paths must be original individually frozen inputs")
+        projection["design_revision_scope"] = {
+            **revision, "base_input_identities": {path: fixed[path] for path in paths.values()}
+        }
     routine = plan.get("routine_follow_up")
     if routine is not None:
         projection["routine_follow_up"] = _routine_follow_up_projection(parsed, plan)

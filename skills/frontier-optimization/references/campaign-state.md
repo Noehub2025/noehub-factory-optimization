@@ -1,5 +1,11 @@
 # Frontier Campaign State
 
+At Generation opening, record the starting Git commit and intended working scope
+in the existing campaign record; at closeout, cite the ending or retained version.
+These locators support comparison and scoped restore, not a second state ledger.
+Use [Provenance, Git, and retained artifacts](provenance-and-identity.md) for
+retention and restore behavior. Working restores preserve evidence and spend.
+
 ## Contents
 
 - [FRONTIER.md and F1-F8](#frontiermd-and-f1-f8)
@@ -140,7 +146,7 @@ Selection:
 - Implementation review gate: <required review before first measurement, integration, or incumbent use; reusable prior review and exact unchanged identity; or not applicable>
 - User values applied: <V identifiers and effective conditions or None>
 - Decision-relevant unknowns: <answered, deferred with event, or blocking>
-- Diagnostic decision: <controlling Outcome Reflection, ordered considered path identifiers, selected path and dominance reason; exact non-unique technical diagnostic blocker; or not applicable>
+- Diagnostic decision: <controlling Reflection or Entry, ordered alternatives, selected path, investment rationale and switching condition under the single Learning Loop resolver; or not applicable>
 - Research disposition: <none with reason | local diagnosis | focused Q | route landscape refresh | isolated prototype | parent review>
 - Strategic replan gate: <assigned review path requiring adopted REPLAN_READY, unchanged prior identity, or not applicable>
 - Adopted replan review: <unchanged REPLAN_READY identity whose reviewed proposal exactly matches this Selection and B state, or not applicable>
@@ -157,6 +163,6 @@ Selection:
 - Deferred: <identifiers, reasons, unresolved or unavailable prerequisite consequences, and observable reconsideration events>
 ```
 
-Selection applies the reviewed Entry evidence or latest controlling reflection; it does not reinterpret validity, technical learning, route eligibility, progress, constraint meaning, diagnostic alternatives, dominance, affected scope, or surviving authority to make a proposed B pass. `complete for this decision` supports the current allocation only and makes no exhaustive-search, originality, or optimality claim. A sole eligible route is sufficient when every material decision-relevant mechanism class is dispositioned. When a load-bearing prerequisite is unresolved, the only eligible route-related B is its smallest sufficient prerequisite-first check; dependent implementation remains ineligible until passing evidence is adopted through the applicable Entry or Replan gate.
+Selection applies the reviewed Entry evidence or latest controlling reflection; it does not reinterpret validity, technical learning, route eligibility, progress, constraint meaning, diagnostic alternatives, dominance, affected scope, or surviving authority to make a proposed B pass. `complete for this decision` supports the current allocation only and makes no exhaustive-search, originality, or optimality claim. A sole eligible route is sufficient when every material decision-relevant mechanism class is dispositioned. Apply [Research hypotheses and action prerequisites](planning-records.md#research-hypotheses-and-action-prerequisites) to the selected action, and record any [opportunity-led reopening](learning-loop.md#opportunity-led-reconsideration) in the existing route-set state.
 
-One evidence-state identity has exactly one persisted first applicable resolver row and deterministic resolution. Reject a competing Selection for that identity. Later workflow changes never recompute it. A new resolver run requires a new project decision event and a new evidence-state identity. If multiple technical diagnostic paths remain non-dominated and no existing R8 or prospective rule selects one, copy the exact non-unique technical diagnostic blocker from the controlling reflection; do not ask the user to choose. Use Q only for the resolver's named evidence gap and V only for a genuine user-owned tradeoff or exact authorization. No later spend authority exists until the persisted Selection cites every required reflection, V, join, adopted Q, applicable unchanged review, its one resolver result, affected scope, and surviving authority, and those cited project facts remain unchanged. Routine row 13 may not add research, diagnosis, or review, and no Selection may consume protected reserve for routine work.
+One evidence-state identity has exactly one persisted first applicable resolver row and deterministic resolution. Reject a competing Selection for that identity. Later workflow changes never recompute it. A new resolver run requires a new project decision event and a new evidence-state identity. Copy the diagnostic ordering recorded under the Learning Loop resolver; do not introduce a separate uniqueness test here. Use Q only for the resolver's named evidence gap and V only for a genuine user-owned tradeoff or exact authorization. No later spend authority exists until Selection cites its applicable evidence and gates and those facts remain current. Routine row 13 adds no research, diagnosis, or review; routine work cannot consume protected reserve.

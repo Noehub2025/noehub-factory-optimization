@@ -57,6 +57,8 @@ The main documents are designed to be usable on their own. Linked detail files h
 
 ## Quick start
 
+The consuming project must use Git. Save ordinary project checkpoints when work becomes a fixed review input, published result, or recovery point, and retain the referenced history. No remote push or new hosting service is required. Keep large payloads in an existing artifact store or retained local directory; Git references alone do not make those payloads available.
+
 First ask the agent to define and review the task:
 
 ```text
@@ -78,22 +80,24 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 - A fresh-context implementation designer owns architecture and interface meaning when work changes a consequential technical seam. The campaign coordinator binds that design to delivery records, and a separate reviewer must approve it before development can be authorized.
 - A consequential implementation design must positively ground every decisive feasibility claim under the relevant conditions. Missing final implementation, novelty, or ordinary implementation risk alone does not justify another evidence gate.
 - Implementation design owns stable technical slices and their verification meaning. Entry later binds one exact batch, execution source, worker surface, and internal output paths, so a new attempt or path does not silently rewrite approved architecture.
-- One bounded batch is an objective, authority, evidence, and spend envelope rather than one command or internal slice. Sequential execution invocations may continue from the same start only while frozen inputs, the preserved working inventory, attempt history, and every cumulative limit still match.
+- One bounded batch is an objective, authority, evidence, and spend envelope rather than one command or internal slice. Reversible working feedback stays inside it without a command history or a new lifecycle record. Sequential invocations verify required inputs, formal closing attempts, and cumulative effects; they do not reconstruct every debugging step.
 - Planning, user authorization, worker acknowledgment, execution start, implementation review, measurement, result adoption, and claims are separate gates. Each gate applies only to the exact files and identities it names.
 - Candidate creation and performance evaluation are separate steps. Passing engineering checks does not prove improvement.
-- The controlling parent fixes when a formal identity and proposal charge occur. When it does not require an earlier charge, reversible unpublished work may be repaired and reviewed inside the same batch; only the exact positively reviewed bytes are published, with cumulative effect accounting and one idempotent charge for the official inventory.
-- A fidelity finding may return to the same working loop. A contract-bearing finding pauses publication and requires revised Design and Entry review; the same batch may resume only when its objective, authority class, spend ceiling, risk boundary, external effects, and result consequence remain unchanged. A repeated finding after its claimed repair stops automatic continuation.
+- The controlling parent fixes when an identity, execution, sample, or other event becomes chargeable. Reversible unpublished work may continue only within that rule and its cumulative limits. Recovering the same recorded event avoids a duplicate charge; identical output bytes alone do not make a new proposal or execution free.
+- A fidelity finding may return to the same working loop. A disproven design assumption returns to the design owner and independent Design review. If the original authorization explicitly delegates that exact design revision, retain Entry and authority and freeze a new starting state; otherwise use the existing revision and authorization path. Do not repeat an unchanged deterministic failure, but new evidence or a material repair may justify another bounded attempt.
+- An explicitly authorized diagnostic may observe working material before a complete candidate is published. Record the actual subject, method, conditions, evidence, and cumulative resource and exposure use. These observations guide only the current batch; they do not authorize promotion or performance claims.
+- External, paid, human, and physical actions require an exact authorized target, action, affected scope, cumulative limits, stop conditions, and a tool capable of enforcing them. A mixed-work label never grants that authority.
 - A fresh-context, read-only analyst interprets each terminal technical result before seeing the current selection, budget, authority, stopping state, or proposed next action. This keeps the technical meaning of the evidence separate from what the campaign may do next.
 - After each completed batch, the agent compares the result with the hypothesis fixed before the work, records the strongest mechanism the evidence supports, and keeps unresolved component attribution separate from the proven whole-package effect.
 - Results identify the problem and representation versions under which they were produced, so incompatible results are not compared.
 - Project evidence and workflow releases use separate identities. Updating an installed Skill does not rewrite or invalidate an existing project decision, review, authorization, result, or handoff.
-- Review preparation deterministically freezes the exact project subject, its provenance chain, and the evidence a fresh reviewer may inspect. Workflow implementation files remain outside the project decision identity.
+- Review preparation binds selected project inputs to retained Git versions and exact content identities. It reuses those versions rather than copying the project at every step. Workflow files and unrelated changes remain outside the project decision identity; old portable bundles remain readable without forcing migration or reauthorization.
 - Budget, stopping rules, known limits, and permitted claims remain visible in the main campaign document.
 - One ordered direction resolver selects the first applicable next action or blocker, so research, diagnosis, direct attempts, budget limits, and parent escalation do not compete through separate decision paths.
 - If valid execution, measurement, and local-mechanism explanations are exhausted, the workflow can return an exact semantic challenge to the parent task contract instead of repeating in-scope work that can no longer reach the objective.
-- Independent reviews use fixed copies of the evidence and an agent that has not seen the drafting conversation. If that independent review is unavailable, the workflow reports a blocker instead of readiness.
-- Campaign state is recovered from repository files and their recorded versions, not from conversation history.
-- Portable project handoffs can be verified offline from exact project bytes and their typed provenance chain; they do not depend on copied workflow implementation files.
+- Independent reviews use exact retained versions of the evidence and an agent that has not seen the drafting conversation. If that independent review is unavailable, the workflow reports a blocker instead of readiness.
+- Campaign state is recovered from retained Git versions, records, and required artifact payloads, not from conversation history. Normal edits do not invalidate reviews of saved bytes, and restoring working files does not undo spending, evidence, or external effects.
+- A project handoff cites the existing closing record, Git history, and retained artifacts. An explicit export writes a small reference file, not another complete project archive. The receiving environment must have the referenced history and any payloads needed for its next action.
 - Project result recovery distinguishes legacy and current dispatch shapes as a fail-closed union, rejects mixed bindings, and rehashes every current frozen input before publication.
 
 ## Skills
@@ -132,8 +136,8 @@ Define the problem
   -> review and authorize one exact bounded batch when required
   -> deterministically prepare the exact project-only subject for each fresh review
   -> acknowledge the packet and freeze its execution baseline
-  -> start and run the batch
-  -> review implementations before measuring them
+  -> iterate within the batch's authorized limits, using bounded diagnostics only when explicitly allowed
+  -> review exact implementations before publication when required, then authorize later measurement separately
   -> measure under the approved comparison rules
   -> interpret the technical evidence in a fresh context, then compare it with the precommitted hypothesis and record supported mechanisms and limits
   -> apply one ordered direction resolver to select the next action or blocker
@@ -150,7 +154,8 @@ When adding the workflow to another repository:
 
 - if no agent instruction file exists, copy `AGENTS.md` and add a `CLAUDE.md` containing `@AGENTS.md` for Claude Code;
 - if `AGENTS.md` already exists, merge the `Frontier-seeking workflow behavior` and `User-facing workflow returns` sections once each and preserve all repository-specific rules;
-- if `CLAUDE.md` already exists, add `@AGENTS.md` once without replacing its Claude Code-specific content; and
+- if `CLAUDE.md` already exists, add `@AGENTS.md` once without replacing its Claude Code-specific content; for `.claude/CLAUDE.md`, use `@../AGENTS.md` instead;
+- inspect nested instruction files and `AGENTS.override.md` before choosing where the shared rules should apply; and
 - resolve conflicts explicitly. Shared optimization behavior never broadens existing authority or weakens task-specific safety, resource, evidence, or validation rules.
 
 Claude Code plugins provide Skills but do not load a plugin-root `CLAUDE.md` as project context, so deploy or merge the instruction files separately. See [Deploying shared agent instructions](./docs/agent-instructions.md) for the complete new-repository, existing-file, nested-instruction, and verification procedure.

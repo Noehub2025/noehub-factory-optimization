@@ -156,7 +156,7 @@ Before `CLOSEOUT_COMPLETE`, freeze the final direction state in the handoff and 
 - the final compatible E sequence and every controlling Outcome Reflection identity, including exclusions and adaptive-exposure limits;
 - the strongest bounded progress and constraint meaning supported under the tested conditions, with unresolved validity kept explicit;
 - the latest `Route-set state`, eligible routes, exclusions, deferrals, shared assumptions, prerequisite outcomes, and observable reopening events;
-- every considered diagnostic path and dominance result that controls the final decision, including an exact non-unique blocker when present;
+- the considered diagnostic alternatives and recorded ordering that control the final decision under the single Learning Loop resolver;
 - the latest first applicable direction-resolver row, its evidence-state identity, exact stop, halt, parent handoff, or blocker, and why no later row applies;
 - final Budget reachability, protected-reserve disposition, unknown spend, and any unfunded required check; and
 - each surviving project decision root, parent chain, and adopting Entry or Replan identity.
@@ -174,6 +174,7 @@ Claim disposition does not reopen spend or change stopped or halted status. Pres
 Write the final handoff to `log.md` and update the `FRONTIER.md` Brief and F2-F8 final view. Include:
 
 - exact stop or halt reason and status;
+- Generation starting and ending or retained Git versions and the affected working scope;
 - final budget and unresolved accounting;
 - measured and retained E with candidate and experiment identities;
 - completed, paused, superseded, invalid, or reusable T, W, B, and search state, including recovery steps;

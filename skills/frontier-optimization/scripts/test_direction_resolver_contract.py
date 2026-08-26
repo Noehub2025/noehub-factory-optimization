@@ -71,10 +71,10 @@ def resolve_persisted_facts(scenario: dict) -> tuple[int, str, str]:
         non_dominated = diagnostic.get("non_dominated")
         if not isinstance(non_dominated, list) or not non_dominated:
             raise ValueError("validity diagnostic requires non-dominated alternatives")
-        if len(non_dominated) != 1:
-            return 6, "blocked", "non-unique-technical-diagnostic"
-        if diagnostic.get("selected") != non_dominated[0]:
-            raise ValueError("selected validity diagnostic must be uniquely non-dominated")
+        if diagnostic.get("selected") not in non_dominated:
+            raise ValueError("selected validity diagnostic must be eligible and non-dominated")
+        if len(non_dominated) > 1 and not diagnostic.get("selection_reason"):
+            raise ValueError("a technical ordering requires its recorded investment rationale")
         return 6, "local diagnostic", "selected-validity-diagnostic"
 
     route_set = facts.get("route_set")
@@ -95,7 +95,7 @@ def resolve_persisted_facts(scenario: dict) -> tuple[int, str, str]:
     if local:
         outcomes = {
             "unique": ("local diagnostic", "selected-local-diagnostic"),
-            "non-unique": ("blocked", "non-unique-technical-diagnostic"),
+            "recorded-order": ("local diagnostic", "selected-local-diagnostic"),
             "dominated-repeat": ("blocked", "dominated-diagnostic-repeat-blocker"),
         }
         direction, action = outcomes[local]

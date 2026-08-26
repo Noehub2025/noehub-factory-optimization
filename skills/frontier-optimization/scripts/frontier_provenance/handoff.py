@@ -1,11 +1,8 @@
-"""Atomic portable export and offline verification of a complete provenance chain."""
+"""Git-reference handoff writing and read-only legacy handoff verification."""
 
 from __future__ import annotations
 
 import json
-import os
-import shutil
-import tempfile
 from pathlib import Path
 from typing import Any, Callable
 
@@ -22,76 +19,122 @@ from .routine_admission import ADMISSION_LOGICAL_NAME, validate_routine_admissio
 HANDOFF_CONTRACT = "frontier-provenance-handoff/1"
 
 
+GIT_HANDOFF_CONTRACT = "frontier-git-handoff/1"
+
+
 def export_handoff(
-    root_id: str,
-    node_repository: NodeRepository,
-    content_exports: dict[str, Callable[[Path], None]],
-    destination: Path,
+    root_id: str, node_repository: NodeRepository,
+    content_bindings: list[dict[str, Any]], destination: Path,
 ) -> dict[str, Any]:
+    """Write references to a normal checkpoint, never another copy of its files."""
+    from .git_content import ContentSession, GitReferenceStore, retained_commit
+
+    store = GitReferenceStore(node_repository.root)
+    commit = retained_commit(store.root, "HEAD")
+    session = ContentSession(content_bindings)
     nodes = export_chain(root_id, node_repository.load)
-    chain_roots = _content_roots(nodes)
-    if not chain_roots <= set(content_exports):
-        raise ProvenanceError("handoff is missing a reachable content exporter")
-    if destination.exists():
-        raise ProvenanceError(f"handoff destination already exists: {destination}")
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    staging = Path(tempfile.mkdtemp(prefix=f".{destination.name}.", dir=destination.parent))
-    try:
-        exported_nodes = NodeRepository(staging / "nodes")
-        exported_nodes.write_all(nodes)
-        exported_paths: dict[str, Path] = {}
-
-        def export_content(content_root: str) -> None:
-            digest = content_root.split(":", 1)[1]
-            relative = f"content/{digest}"
-            content_exports[content_root](staging / relative)
-            verified = PortableBundleStore().verify(staging / relative)
-            if verified["content_root"] != content_root:
-                raise ProvenanceError("handoff exporter produced a different content root")
-            exported_paths[content_root] = staging / relative
-
-        for content_root in sorted(chain_roots):
-            export_content(content_root)
-        prerequisite_roots = _routine_prerequisite_roots(
-            nodes,
-            lambda value: PortableBundleStore().read_artifacts(exported_paths[value]),
-        )
-        roots = chain_roots | prerequisite_roots
-        if set(content_exports) != roots:
-            raise ProvenanceError(
-                "handoff content exporters do not match reachable and routine prerequisite roots"
-            )
-        for content_root in sorted(prerequisite_roots - chain_roots):
-            export_content(content_root)
-        content_index = [
-            {
-                "content_root": content_root,
-                "path": f"content/{content_root.split(':', 1)[1]}",
-            }
-            for content_root in sorted(roots)
-        ]
-        body = {
-            "contract_version": HANDOFF_CONTRACT,
-            "root_id": root_id,
-            "node_ids": sorted(node["node_id"] for node in nodes),
-            "content": content_index,
-        }
-        manifest = {
-            "handoff_id": "frontier-provenance-handoff-sha256:"
-            + sha256_bytes(canonical_json(body)),
-            **body,
-        }
-        (staging / "handoff.json").write_bytes(canonical_json(manifest) + b"\n")
-        verify_handoff(staging)
-        os.replace(staging, destination)
-        return manifest
-    finally:
-        if staging.exists():
-            shutil.rmtree(staging)
+    roots = _content_roots(nodes) | _routine_prerequisite_roots(nodes, session.read)
+    if roots != set(session.results):
+        raise ProvenanceError("handoff bindings must match the reachable content")
+    # Only the small records must be in this checkpoint. Input blobs stay at
+    # their original commits and large payloads stay in their retained store.
+    for node in nodes:
+        path = node_repository._path(node["node_id"])
+        relative = path.relative_to(store.root).as_posix()
+        raw, _ = store._read(commit, relative)
+        if raw != path.read_bytes():
+            raise ProvenanceError(f"save the updated record in a normal Git checkpoint: {relative}")
+    bindings = []
+    for binding in content_bindings:
+        path = Path(binding["path"]).resolve()
+        relative = path.relative_to(store.root).as_posix()
+        raw, _ = store._read(commit, relative + "/manifest.json")
+        if raw != (path / "manifest.json").read_bytes():
+            raise ProvenanceError(f"save the updated content reference: {relative}")
+        bindings.append({"adapter": binding["adapter"], "path": relative})
+    verified = verify_for(root_id, node_repository.load, session.resolve,
+                          consequence="audit", read_content=session.read)
+    if not verified["ready"]:
+        raise ProvenanceError("handoff chain is not readable")
+    body = {
+        "contract_version": GIT_HANDOFF_CONTRACT, "root_id": root_id,
+        "commit": commit,
+        "node_repository": node_repository.root.relative_to(store.root).as_posix(),
+        "content_bindings": sorted(bindings, key=lambda item: item["path"]),
+    }
+    manifest = {"handoff_id": "frontier-provenance-handoff-sha256:" +
+                sha256_bytes(canonical_json(body)), **body}
+    destination.mkdir(parents=True, exist_ok=True)
+    with (destination / "handoff.json").open("xb") as stream:
+        stream.write(canonical_json(manifest) + b"\n")
+    return manifest
 
 
-def verify_handoff(root: Path) -> dict[str, Any]:
+def _verify_git_handoff(root: Path, manifest: dict[str, Any], repo_root: Path | None = None) -> dict[str, Any]:
+    from .git_content import ADAPTER, GitReferenceStore, retained_commit
+    from .content import normalize_logical_name
+
+    store = GitReferenceStore(repo_root if repo_root is not None else root)
+    body = {key: value for key, value in manifest.items() if key != "handoff_id"}
+    expected_id = "frontier-provenance-handoff-sha256:" + sha256_bytes(canonical_json(body))
+    if (set(body) != {"contract_version", "root_id", "commit", "node_repository", "content_bindings"}
+            or manifest.get("handoff_id") != expected_id):
+        raise ProvenanceError("Git handoff record is invalid")
+    commit = retained_commit(store.root, body["commit"])
+    if commit != body["commit"]:
+        raise ProvenanceError("handoff must name a full commit")
+    relative_repository = normalize_logical_name(body["node_repository"])
+
+    class RetainedNodes(NodeRepository):
+        def load(self, node_id: str) -> dict[str, Any]:
+            relative = self._path(node_id).relative_to(store.root).as_posix()
+            raw, _ = store._read(commit, relative)
+            node = json.loads(raw)
+            if verify_node(node) != node_id:
+                raise ProvenanceError("retained node does not match its identity")
+            return node
+
+    repository = RetainedNodes(store.root / relative_repository)
+    results, raw_by_root = {}, {}
+    for binding in body["content_bindings"]:
+        if not isinstance(binding, dict) or set(binding) != {"adapter", "path"}:
+            raise ProvenanceError("invalid handoff content binding")
+        relative = normalize_logical_name(binding["path"])
+        raw, _ = store._read(commit, relative + "/manifest.json")
+        content_manifest = json.loads(raw)
+        content_raw = {}
+        path = store.root / relative
+        if binding["adapter"] == ADAPTER:
+            result = store.verify(path, manifest=content_manifest, raw_out=content_raw)
+        elif binding["adapter"] == "portable-bundle/1":
+            result = PortableBundleStore().verify(
+                path, content_manifest, raw_out=content_raw, check_semantics=False)
+        else:
+            raise ProvenanceError("unknown handoff content adapter")
+        content_root = result["content_root"]
+        if result["adapter"] != binding["adapter"] or content_root in results:
+            raise ProvenanceError("handoff content adapter or membership mismatch")
+        results[content_root], raw_by_root[content_root] = result, content_raw
+    nodes = export_chain(body["root_id"], repository.load)
+    if set(results) != _content_roots(nodes) | _routine_prerequisite_roots(nodes, raw_by_root.__getitem__):
+        raise ProvenanceError("handoff is missing reachable content")
+    verified = verify_for(body["root_id"], repository.load, results.__getitem__,
+                          consequence="audit", read_content=raw_by_root.__getitem__)
+    slots = _recover_routine_slot_consumption(
+        nodes, repository, results, {}, read_content=raw_by_root.__getitem__)
+    return {**verified, "handoff_id": expected_id, "verified": True,
+            "routine_slot_consumption": slots}
+
+
+def verify_handoff(root: Path, *, repo_root: Path | None = None) -> dict[str, Any]:
     manifest_path = root / "handoff.json"
+    if manifest_path.is_file() and not manifest_path.is_symlink():
+        try:
+            reference = json.loads(manifest_path.read_text())
+        except (OSError, ValueError) as exc:
+            raise ProvenanceError("handoff reference is unreadable") from exc
+        if reference.get("contract_version") == GIT_HANDOFF_CONTRACT:
+            return _verify_git_handoff(root, reference, repo_root)
     nodes_root = root / "nodes"
     content_root = root / "content"
     if not root.is_dir() or root.is_symlink():
@@ -144,6 +187,7 @@ def verify_handoff(root: Path) -> dict[str, Any]:
         repository.load,
         content_results.__getitem__,
         consequence="audit",
+        read_content=lambda content_root: PortableBundleStore().read_artifacts(content_paths[content_root]),
     )
     nodes = export_chain(manifest["root_id"], repository.load)
     if sorted(node["node_id"] for node in nodes) != manifest["node_ids"]:
@@ -233,6 +277,7 @@ def _recover_routine_slot_consumption(
     repository: NodeRepository,
     content_results: dict[str, dict[str, Any]],
     content_paths: dict[str, Path],
+    *, read_content: Callable[[str], dict[str, bytes]] | None = None,
 ) -> dict[str, str]:
     """Rebuild the non-authoritative routine-slot index from frozen state bytes."""
 
@@ -245,6 +290,8 @@ def _recover_routine_slot_consumption(
         return content_results[content_root]
 
     def read(content_root: str) -> dict[str, bytes]:
+        if read_content is not None:
+            return read_content(content_root)
         if content_root not in content_paths:
             raise ProvenanceError(f"content bytes are not reachable in handoff: {content_root}")
         return portable.read_artifacts(content_paths[content_root])

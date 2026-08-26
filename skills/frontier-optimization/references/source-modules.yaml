@@ -26,6 +26,7 @@ modules:
       - frontier-optimization/scripts/frontier_provenance/review_contract.py
       - frontier-optimization/scripts/frontier_provenance/source_modules.py
       - frontier-optimization/scripts/frontier_provenance/stores.py
+      - frontier-optimization/scripts/frontier_provenance/git_content.py
       - frontier-optimization/scripts/frontier_provenance/handoff.py
   provenance-runtime:
     depends_on: [graph-core, storage-recovery]
@@ -104,6 +105,7 @@ modules:
       - frontier-optimization/scripts/test_finding_effects.py
       - frontier-optimization/scripts/test_freeze_execution_baseline.py
       - frontier-optimization/scripts/test_frontier_provenance.py
+      - frontier-optimization/scripts/test_git_project_content.py
       - frontier-optimization/scripts/test_frontier_review_preparation.py
       - frontier-optimization/scripts/test_package_frontier_handoff.py
       - frontier-optimization/scripts/test_project_snapshot.py

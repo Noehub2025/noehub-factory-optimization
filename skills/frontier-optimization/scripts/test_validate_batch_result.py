@@ -24,9 +24,9 @@ from frontier_provenance import (
     freeze_execution,
 )
 from frontier_provenance.stores import ArtifactSource, ProjectPortableStore
-from frontier_review import prepare_review
 from test_freeze_execution_baseline import write_bound_dispatch_draft
-from test_frontier_review_preparation import write_entry
+from test_frontier_review_preparation import write_entry, prepare_review
+from test_frontier_provenance import save_fixture
 
 
 SCRIPT = Path(__file__).with_name("validate_batch_result.py")
@@ -61,7 +61,7 @@ def write_line_identified_yaml(
     return yaml.safe_load(path.read_text())
 
 
-def write_project_dispatch_fixture(root: Path, family: str) -> tuple[dict, dict, Path]:
+def write_project_dispatch_fixture(root: Path, family: str, *, design_revision=None, diagnostic_target=None) -> tuple[dict, dict, Path]:
     """Create one complete typed project dispatch without mocking validation."""
 
     if family not in {"current", "legacy"}:
@@ -79,6 +79,20 @@ def write_project_dispatch_fixture(root: Path, family: str) -> tuple[dict, dict,
     ]
 
     spec = write_entry(root)
+    if design_revision is not None:
+        projection, proof = design_revision
+        scope = dict(projection["design_revision_scope"])
+        scope.pop("base_input_identities")
+        target_path = root / "entry/target.yaml"
+        target = yaml.safe_load(target_path.read_text())
+        target.pop("target_id", None)
+        target["design_revision_scope"] = scope
+        write_line_identified_yaml(target_path, target, "target_id", "V001-target-sha256:")
+        for name, relative in scope["design_input_paths"].items():
+            path = root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(proof["project/state/design-revision/base/" + name])
+            frozen_inputs.append({"path": relative, "scope": "file", "identity": "sha256:" + file_sha256(path)})
     plan_path = root / "entry/plan.yaml"
     common = {
         "contract_version": MODULE.PROJECT_BATCH_PLAN_CONTRACT,
@@ -104,6 +118,15 @@ def write_project_dispatch_fixture(root: Path, family: str) -> tuple[dict, dict,
     }
     preflight_path: Path | None = None
     preflight: dict | None = None
+    if diagnostic_target is not None:
+        target = copy.deepcopy(diagnostic_target)
+        experiment_path = root / "entry/experiment.yaml"
+        target["experiment"] = {
+            "path": "entry/experiment.yaml",
+            "experiment_id": yaml.safe_load(experiment_path.read_text())["experiment_id"],
+            "file_sha256": file_sha256(experiment_path),
+        }
+        common["evaluation_target"] = target
     if family == "current":
         common["execution_frozen_inputs"] = frozen_inputs
         packet = write_line_identified_yaml(
@@ -166,6 +189,7 @@ def write_project_dispatch_fixture(root: Path, family: str) -> tuple[dict, dict,
     review_bundle = entry_review_path.with_name(
         f"{entry_review_path.stem}-review-report"
     )
+    save_fixture(root)
     review_content = ProjectPortableStore().capture(
         "review",
         [ArtifactSource("project/review/entry-R900.md", entry_review_path)],
@@ -182,6 +206,7 @@ def write_project_dispatch_fixture(root: Path, family: str) -> tuple[dict, dict,
     authority_source = root / "artifacts/frontier/B001/authority.yaml"
     authority_source.write_text("decision: exact reviewed authorization\n")
     authority_bundle = root / "artifacts/frontier/B001/authority-content"
+    save_fixture(root)
     authority_content = ProjectPortableStore().capture(
         "authority",
         [ArtifactSource("project/authority/authorization.yaml", authority_source)],
@@ -265,12 +290,9 @@ def write_project_dispatch_fixture(root: Path, family: str) -> tuple[dict, dict,
             ArtifactSource("project/state/preflight.json", preflight_path)
         )
     else:
-        state_sources.append(
-            ArtifactSource(
-                "project/state/frozen-inputs/project/input.txt", frozen_input
-            )
-        )
+        state_sources.extend(ArtifactSource("project/state/frozen-inputs/" + item["path"], root / item["path"]) for item in frozen_inputs)
     execution_bundle = root / packet["execution_baseline_root"]
+    save_fixture(root)
     execution_content = ProjectPortableStore().capture(
         "state", state_sources, execution_bundle, project_root=root
     )
@@ -997,6 +1019,79 @@ def post_check_publication_workspace(root: Path) -> tuple[dict, dict, Path]:
 
 
 class BatchResultValidationTests(unittest.TestCase):
+    def test_current_spend_record_accepts_consumption_without_publication(self) -> None:
+        for work_kind, outcome, actual in (
+            ("mixed", "failed", "1 proposal attempt; 2 local runs"),
+            ("research", "interrupted", "3 minutes"),
+            ("experiment", "blocked", "0 runs"),
+            ("human-input", "waiting_for_input", "0 responses"),
+            ("mixed", "completed", "1 proposal attempt"),
+        ):
+            with self.subTest(work_kind=work_kind, outcome=outcome):
+                result = {
+                    "work_kind": work_kind,
+                    "outcome": outcome,
+                    "planned_spend": "up to 2 proposal attempts and bounded resources",
+                    "actual_spend": actual,
+                    "accounting_evidence": "state/ledger.md#B900: recorded events",
+                }
+                before = copy.deepcopy(result)
+                findings = []
+                MODULE.validate_spend_accounting(result, {}, None, findings)
+                self.assertEqual(findings, [])
+                self.assertEqual(result, before)
+
+    def test_current_spend_record_requires_accounting_for_every_outcome(self) -> None:
+        for outcome in ("completed", "failed", "interrupted", "blocked", "waiting_for_input"):
+            with self.subTest(outcome=outcome):
+                result = {
+                    "work_kind": "mixed",
+                    "outcome": outcome,
+                    "planned_spend": "1 proposal attempt",
+                    "actual_spend": "1 proposal attempt",
+                    "accounting_evidence": "",
+                }
+                findings = []
+                MODULE.validate_spend_accounting(result, {}, None, findings)
+                self.assertEqual(
+                    {item["code"] for item in findings},
+                    {"PUBLICATION_CHARGE_ACCOUNTING_UNVERIFIED"},
+                )
+
+    def test_current_spend_record_retains_unknown_for_coordinator_reconciliation(self) -> None:
+        result = {
+            "planned_spend": "1 proposal attempt",
+            "actual_spend": "unknown",
+            "accounting_evidence": "The interrupted operation has no confirmed outcome.",
+        }
+        findings = []
+        MODULE.validate_spend_accounting(result, {}, None, findings)
+        self.assertEqual(findings, [])
+        self.assertEqual(result["actual_spend"], "unknown")
+
+    def test_current_publication_recovery_does_not_infer_a_new_charge(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "inventory.yaml"
+            output.write_text("inventory_id: unchanged-output\n")
+            packet = {"candidate_package_inventory_path": "inventory.yaml"}
+            for actual, evidence in (
+                ("0 new proposal attempts", "state/ledger.md#B900: same event, publication recovery"),
+                ("1 proposal attempt", "state/ledger.md#B901: a new proposal with identical content"),
+            ):
+                with self.subTest(evidence=evidence):
+                    result = {
+                        "work_kind": "mixed",
+                        "outcome": "completed",
+                        "planned_spend": "up to 1 proposal attempt",
+                        "actual_spend": actual,
+                        "accounting_evidence": evidence,
+                    }
+                    findings = []
+                    MODULE.validate_spend_accounting(result, packet, root, findings)
+                    self.assertEqual(findings, [])
+                    self.assertEqual(result["actual_spend"], actual)
+
     def test_review_repair_history_accepts_one_nonpositive_review_per_earlier_pass(self) -> None:
         evidence = {
             "review_repair_history": [
@@ -1068,22 +1163,21 @@ class BatchResultValidationTests(unittest.TestCase):
             result["engineering_validation"][0]["file_sha256"] = hashlib.sha256(
                 evidence_path.read_bytes()
             ).hexdigest()
-            inventory = yaml.safe_load(
-                (root / packet["candidate_package_inventory_path"]).read_text()
-            )
-            result["accounting_evidence"] = (
-                f"official inventory {inventory['inventory_id']}"
-            )
+            result["planned_spend"] = "up to 2 proposal attempts"
+            result["actual_spend"] = "1 proposal attempt"
+            result["accounting_evidence"] = "state/ledger.md#B900: proposal charged before checks"
 
-            validation = MODULE.validate(
-                result,
-                "draft",
-                packet,
-                repo_root=root,
-                check_dispatch=False,
-            )
-
-            self.assertTrue(validation["result_structure_ready"], validation["findings"])
+            for work_kind in ("code", "mixed"):
+                with self.subTest(work_kind=work_kind):
+                    packet["work_kind"] = result["work_kind"] = work_kind
+                    validation = MODULE.validate(
+                        result,
+                        "draft",
+                        packet,
+                        repo_root=root,
+                        check_dispatch=False,
+                    )
+                    self.assertTrue(validation["result_structure_ready"], validation["findings"])
 
     def test_post_check_rejects_cumulative_effect_limit_exceeded(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -2022,13 +2116,8 @@ class BatchResultValidationTests(unittest.TestCase):
                 if item["logical_name"]
                 == "project/state/frozen-inputs/project/input.txt"
             )
-            object_path = (
-                bundle
-                / "objects"
-                / frozen_member["content_sha256"][:2]
-                / frozen_member["content_sha256"]
-            )
-            object_path.write_bytes(b"mutated baseline bytes\n")
+            manifest["storage"]["paths"][frozen_member["logical_name"]] = "project/absent-input.txt"
+            (bundle / "manifest.json").write_text(json.dumps(manifest))
 
             validation = MODULE.validate(
                 result, "draft", packet, repo_root=root, check_dispatch=True

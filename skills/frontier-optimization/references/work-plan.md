@@ -6,7 +6,7 @@
 
 Load only when work needs W. This is the sole `WORK.md` template. Use one W across B records that share one design contract or operational outcome. W stays a short map; indexed concern files hold exact design contracts.
 
-Increment `plan_revision` for a material change to purpose, scope, design profile, concern contract or identity, user design choice, delivery slice, input contract, traceability, validation, or definition of done. Every contract-bearing change invalidates the prior `DESIGN_READY` and every external development authorization bound to that design identity. Never store current development-authorization state in W; V, Selection, ledger, and Entry adoption own it.
+Increment `plan_revision` for a material change to purpose, scope, design profile, concern contract or identity, user design choice, delivery slice, input contract, traceability, validation, or definition of done. Apply [Technical design's assignment ownership rule](technical-design.md#assign-the-professional-author): ordinary working-method changes do not themselves revise W. Every contract-bearing change invalidates the prior `DESIGN_READY` and every external development authorization bound to that design identity. Never store current development-authorization state in W; V, Selection, ledger, and Entry adoption own it.
 
 ## Template
 
@@ -39,7 +39,7 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 
 ## Scope
 
-<Coordinator: name routes, semantic repository areas, source requirements and compatibility conditions, true interfaces, callers, dependencies, and excluded work. Keep future B assignments, attempt namespaces, worker paths, execution-frozen inputs, and internal review, evidence, recovery, or result destinations in Entry.>
+<Coordinator: name routes, semantic repository areas, source requirements and compatibility conditions, true interfaces, callers, dependencies, and excluded work. Leave Batch assignments and frozen execution bindings to Entry; ordinary working methods and temporary paths remain with the executor.>
 
 ## Current state
 
@@ -85,7 +85,7 @@ slices:
     required_design_inputs: [<exact concern pointers and identities>]
 ```
 
-Add the normalized traceability-file hash to the design index and design identity. `design_contract_identity` binds the owning design contract, not the traceability file itself. Before sealing, Entry captures the exact traceability source named by its plan and verifies that source's whole-file SHA-256. Entry binds `delivery_scope` to one exact B, execution source, worker write surface, and internal output paths, then proves that the complete scope satisfies the owning verification contracts. A reused prerequisite remains in `delivery_scope`; the B may satisfy it from a bound input instead of rebuilding it. A path belongs to Design only when a real caller or operator outside the current B or attempt depends on that exact path as a stable interface.
+Add the normalized traceability-file hash to the design index and design identity. `design_contract_identity` binds the owning design contract, not the traceability file itself. Before sealing, Entry captures the exact traceability source named by its plan and verifies that source's whole-file SHA-256. Entry binds `delivery_scope` to one exact B, execution source, worker write surface, and stable output paths, then proves that the complete scope satisfies the owning verification contracts. Temporary paths and command order inside the worker surface remain realization details. A reused prerequisite remains in `delivery_scope`; the B may satisfy it from a bound input instead of rebuilding it. A path belongs to Design only when a real caller or operator outside the current B or attempt depends on that exact path as a stable interface.
 
 The `slices` shape is required for every new design identity, including a new revision of an older W. An exact design identity with an already adopted valid `DESIGN_READY` may retain its historical `batches` shape for audit under its original authority; it cannot receive a new `DESIGN_READY`, new B assignment, or broader path authority from that form.
 
@@ -103,13 +103,13 @@ The `slices` shape is required for every new design identity, including a new re
 
 ## Validation
 
-<Coordinator: summarize lifecycle gates and point to the designer-owned verification sections. Name design review, engineering checks, interface and failure checks, compatibility and global checks, candidate-manifest validation, implementation review, baseline establishment, first performance check, comparison validity, and required evidence without adding technical requirements or copying their detailed contracts.>
+<Coordinator: state the properties this delivery must establish and point to their owning verification sections and acceptance criteria. Reference applicable workflow conditions at their owner instead of reproducing lifecycle steps or adding technical requirements.>
 
 State the design-review requirement generically here. Keep the current review identifier, packet path, snapshot path, and review result in frontmatter or other lifecycle records outside the design contract, so a replacement review does not change the contract it reviews.
 
 ## Definition of done
 
-<Coordinator: state the exact observable campaign state required for completion, including current design review and user authorization when code-bearing work is involved, terminal delivery slices, artifacts, designer-owned technical oracles, immutable candidate identity, implementation review, baseline establishment, and handoff to the first performance check without consuming the required follow-up reserve. Point to professional requirements rather than rewriting them.>
+<Coordinator: state the observable conditions that complete this delivery, citing its technical obligations and acceptance criteria. Include later measurement or other activities only when they belong to the assigned objective, not as automatic lifecycle requirements.>
 
 ## Decisions and discoveries
 
@@ -117,7 +117,7 @@ State the design-review requirement generically here. Keep the current review id
 
 ## Recovery
 
-<Coordinator: after checking the batch result, record exact commands, paths, prerequisites, and the safe next step from each adopted checkpoint.>
+<Coordinator: when useful, keep current recovery guidance near the preserved work, including commands or paths that help the next executor. This guidance is optional and updateable outside the design identity; it creates no technical obligation or authority and cannot override existing constraints.>
 
 ## Outcome
 

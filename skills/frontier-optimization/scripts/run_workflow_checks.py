@@ -26,6 +26,7 @@ DIRECTION_TESTS = (
     FRONTIER_SCRIPTS / "test_finding_effects.py",
 )
 PROVENANCE_TESTS = (
+    FRONTIER_SCRIPTS / "test_git_project_content.py",
     FRONTIER_SCRIPTS / "test_frontier_provenance.py",
     FRONTIER_SCRIPTS / "test_project_snapshot.py",
     FRONTIER_SCRIPTS / "test_package_frontier_handoff.py",

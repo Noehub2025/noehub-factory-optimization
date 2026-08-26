@@ -97,12 +97,6 @@ BOUNDARY_CONTINUATION_REQUIREMENTS = {
 }
 BOUNDARY_CONTINUATION_HEADING = "## Boundary-preserving continuation"
 ENTRY_IDENTITY_CONTRACT_REQUIREMENTS = {
-    "frontier-optimization/references/review-snapshots.md": (
-        "frontier-project-snapshot/1",
-        "refs/frontier/project-snapshots/current",
-        "Workflow, Skill, validator, bundle, Slice 7",
-        "Historical copied snapshot directories remain audit records only",
-    ),
     "frontier-optimization/references/entry-review.md": (
         "entry_bindings_ready: true",
         "target_file_sha256",

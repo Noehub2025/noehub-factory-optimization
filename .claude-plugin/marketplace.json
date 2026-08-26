@@ -4,16 +4,16 @@
     "name": "Ken Chen",
     "url": "https://github.com/Noehub2025"
   },
-  "description": "Noehub Skills for optimization framing, stable-slice design, and resumable evidence-gated Frontier campaigns, installable as a Claude Code plugin.",
+  "description": "Noehub Skills for optimization framing, bounded research iteration, and Git-backed Frontier campaigns, installable as a Claude Code plugin.",
   "metadata": {
-    "description": "Noehub Skills for optimization framing, stable-slice design, and resumable evidence-gated Frontier campaigns, installable as a Claude Code plugin."
+    "description": "Noehub Skills for optimization framing, bounded research iteration, and Git-backed Frontier campaigns, installable as a Claude Code plugin."
   },
   "plugins": [
     {
       "name": "noehub-factory-optimization",
       "source": "./",
-      "version": "0.16.0",
-      "description": "Frame optimization problems, continue bounded work across sequential invocations, and review exact implementation bytes before publication.",
+      "version": "0.17.0",
+      "description": "Frame optimization problems, iterate within explicit limits, and retain reviewed project evidence through Git and artifact references.",
       "category": "engineering",
       "keywords": [
         "optimization",

@@ -19,7 +19,7 @@ INDEX_LOGICAL_NAME = "project/decision/review-subject-index.json"
 
 
 def validate_review_subject(
-    manifest: dict[str, Any], raw_by_name: dict[str, bytes]
+    manifest: dict[str, Any], raw_by_name: dict[str, bytes], *, check_semantics: bool = True,
 ) -> dict[str, Any] | None:
     """Return the complete subject projection, or None for a historical decision."""
 
@@ -79,6 +79,8 @@ def validate_review_subject(
     review_stage = projection.get("review_stage") if index["review_kind"] == "entry" else None
     if index["review_kind"] == "entry" and review_stage not in ENTRY_STAGES:
         raise ProvenanceError("review subject entry stage is invalid")
+    if not check_semantics:
+        return index
     derived = validate_and_project(
         index["review_kind"],
         {name: raw_by_name[name] for name in expected_members},

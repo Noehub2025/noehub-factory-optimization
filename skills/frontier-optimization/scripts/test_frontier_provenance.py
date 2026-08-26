@@ -74,6 +74,25 @@ DOMAIN_PREFIXES = {
 }
 
 
+
+class LegacyProjectFixture(ProjectPortableStore):
+    """Construct historical bundle fixtures to exercise current read compatibility."""
+
+    def capture(self, role, sources, destination, *, project_root, closed_collections=()):
+        source_list = list(sources)
+        self._validate_frozen_input_names(role, source_list, project_root)
+        return PortableBundleStore()._capture_domain(
+            source_list, destination, domain={value: key for key, value in DOMAIN_ROLES.items()}[role],
+            project_root=project_root, closed_collections=closed_collections)
+
+
+def save_fixture(root: Path) -> None:
+    git(root, "init", "-q")
+    git(root, "add", "--all")
+    git(root, "-c", "user.name=Provenance Test", "-c", "user.email=test@example.invalid",
+        "commit", "--allow-empty", "-qm", "fixture checkpoint")
+
+
 def typed_root(domain: str, seed: str) -> str:
     root = "frontier-content-root-sha256:" + hashlib.sha256(
         f"{domain}:{seed}".encode()
@@ -211,6 +230,7 @@ def prepare_entry_bundle(root: Path, destination: Path, marker: str = "project-v
         ("project/decision/entry/work.yaml", "entry/work.yaml"),
         ("project/decision/entry/target.yaml", "entry/target.yaml"),
     )
+    save_fixture(root)
     result = prepare_review(
         {
             "contract_version": PREPARATION_CONTRACT,
@@ -299,10 +319,10 @@ def portable_project_chain(
         if domain == "project-decision":
             prepared = prepare_entry_bundle(root, root / "prepared-decision")
             bundle = root / "prepared-decision/snapshot"
-            manifest = ProjectPortableStore().verify(bundle, expected_role="decision")
+            manifest = LegacyProjectFixture().verify(bundle, expected_role="decision")
         else:
             sources = [ArtifactSource(DOMAIN_PREFIXES[domain] + "project-record.txt", source)]
-            manifest = ProjectPortableStore().capture(
+            manifest = LegacyProjectFixture().capture(
                 DOMAIN_ROLES[domain],
                 sources,
                 bundle,
@@ -313,16 +333,11 @@ def portable_project_chain(
         bundles[manifest["content_root"]] = bundle
     _, _, _, outcome, nodes = chain_with_roots(roots)
 
-    def exporter(source_bundle: Path):
-        def copy(destination: Path) -> None:
-            shutil.copytree(source_bundle, destination)
-
-        return copy
-
-    return outcome, nodes, {
-        content_root: exporter(bundle)
-        for content_root, bundle in bundles.items()
-    }
+    return outcome, nodes, [
+        {"adapter": json.loads((bundle / "manifest.json").read_text())["storage"]["adapter"],
+         "path": str(bundle)}
+        for bundle in bundles.values()
+    ]
 
 
 def routine_execution_fixture(root: Path) -> dict[str, object]:
@@ -1070,7 +1085,7 @@ def test_portable_bundle_rejects_unexpected_member() -> None:
         source = root / "source.txt"
         source.write_text("value\n")
         destination = root / "bundle"
-        store = ProjectPortableStore()
+        store = LegacyProjectFixture()
         store.capture(
             "decision",
             [ArtifactSource("project/decision/source.txt", source)],
@@ -1088,7 +1103,7 @@ def test_portable_bundle_rejects_external_manifest_symlink() -> None:
         source = root / "source.txt"
         source.write_text("value\n")
         bundle = root / "bundle"
-        store = ProjectPortableStore()
+        store = LegacyProjectFixture()
         store.capture(
             "decision",
             [ArtifactSource("project/decision/source.txt", source)],
@@ -1111,7 +1126,7 @@ def test_closed_collection_rejects_unlisted_directory_member() -> None:
         selected.write_text("selected\n")
         (collection / "extra.txt").write_text("extra\n")
         with pytest.raises(ProvenanceError, match="membership mismatch"):
-            ProjectPortableStore().capture(
+            LegacyProjectFixture().capture(
                 "decision",
                 [ArtifactSource("project/decision/inputs/selected.txt", selected)],
                 root / "bundle",
@@ -1143,7 +1158,7 @@ def test_project_capture_rejects_workflow_logical_names(logical_name: str) -> No
         source = root / "decision.txt"
         source.write_text("project decision\n")
         with pytest.raises(ProvenanceError):
-            ProjectPortableStore().capture(
+            LegacyProjectFixture().capture(
                 "decision",
                 [ArtifactSource(logical_name, source)],
                 root / "bundle",
@@ -1174,7 +1189,7 @@ def test_project_capture_allows_task_and_technology_names() -> None:
         validator = root / "validator_source.py"
         model.write_text("MODEL = object()\n")
         validator.write_text("def validate(value): return value\n")
-        result = ProjectPortableStore().capture(
+        result = LegacyProjectFixture().capture(
             "state",
             [
                 ArtifactSource("project/state/src/skills/model.py", model),
@@ -1194,7 +1209,7 @@ def test_project_capture_accepts_exact_frozen_input_source_path() -> None:
         source.write_text('{"decision":"exact"}\n')
         bundle = root / "bundle"
 
-        result = ProjectPortableStore().capture(
+        result = LegacyProjectFixture().capture(
             "state",
             [
                 ArtifactSource(
@@ -1207,7 +1222,7 @@ def test_project_capture_accepts_exact_frozen_input_source_path() -> None:
         )
 
         assert result["domain"] == "project-state"
-        assert ProjectPortableStore().verify(bundle, expected_role="state")[
+        assert LegacyProjectFixture().verify(bundle, expected_role="state")[
             "verified"
         ] is True
 
@@ -1234,7 +1249,7 @@ def test_project_capture_rejects_inexact_frozen_input_source_path(
             ProvenanceError,
             match="frozen input logical name must match its project-relative source path",
         ):
-            ProjectPortableStore().capture(
+            LegacyProjectFixture().capture(
                 "state",
                 [
                     ArtifactSource(
@@ -1269,7 +1284,7 @@ def test_project_capture_rejects_explicit_workflow_roots(
         source = workflow_root / "module.py"
         source.write_text("WORKFLOW = True\n")
         with pytest.raises(ProvenanceError, match="cannot capture workflow source"):
-            ProjectPortableStore().capture(
+            LegacyProjectFixture().capture(
                 "state",
                 [ArtifactSource("project/state/src/module.py", source)],
                 root / "bundle",
@@ -1283,7 +1298,7 @@ def test_project_under_codex_ancestor_is_not_misclassified() -> None:
         project_root.mkdir(parents=True)
         source = project_root / "model.py"
         source.write_text("MODEL = object()\n")
-        result = ProjectPortableStore().capture(
+        result = LegacyProjectFixture().capture(
             "state",
             [ArtifactSource("project/state/model.py", source)],
             project_root / "bundle",
@@ -1299,7 +1314,7 @@ def test_nonworkflow_claude_project_directory_is_allowed() -> None:
         source_root.mkdir(parents=True)
         source = source_root / "model.json"
         source.write_text('{"model":"project-data"}\n')
-        result = ProjectPortableStore().capture(
+        result = LegacyProjectFixture().capture(
             "state",
             [ArtifactSource("project/state/.claude/data/model.json", source)],
             project_root / "bundle",
@@ -1316,7 +1331,7 @@ def test_project_capture_rejects_sources_outside_project_root() -> None:
         source = root / "outside.txt"
         source.write_text("outside\n")
         with pytest.raises(ProvenanceError, match="outside project_root"):
-            ProjectPortableStore().capture(
+            LegacyProjectFixture().capture(
                 "state",
                 [ArtifactSource("project/state/outside.txt", source)],
                 project_root / "bundle",
@@ -1342,8 +1357,8 @@ def test_git_verify_rejects_a_project_domain_manifest() -> None:
             store.verify(forged)
 
 
-def test_project_consequence_resolver_rejects_git_bindings() -> None:
-    with pytest.raises(ProvenanceError, match="portable project bundle"):
+def test_project_consequence_resolver_rejects_workflow_release_bindings() -> None:
+    with pytest.raises(ProvenanceError, match="invalid content binding"):
         cli_content_resolver(
             [
                 {
@@ -1382,7 +1397,7 @@ def test_action_verification_rejects_a_manually_built_partial_decision() -> None
         source = root / "repair-only.txt"
         source.write_text("partial\n")
         bundle = root / "partial-decision"
-        manifest = ProjectPortableStore().capture(
+        manifest = LegacyProjectFixture().capture(
             "decision",
             [ArtifactSource("project/decision/repair-only.txt", source)],
             bundle,
@@ -1412,7 +1427,7 @@ def test_action_verification_rejects_a_manually_built_partial_decision() -> None
 
         def resolve(content_root: str) -> dict[str, object]:
             if content_root == decision_root:
-                return ProjectPortableStore().verify(bundle, expected_role="decision")
+                return LegacyProjectFixture().verify(bundle, expected_role="decision")
             return content_resolver(content_root)
 
         with pytest.raises(ProvenanceError, match="complete review subject"):
@@ -1906,7 +1921,7 @@ def test_workflow_release_mutation_does_not_change_project_identity() -> None:
         project.write_text("project-v1\n")
         workflow.write_text("workflow-v1\n")
         prepared = prepare_entry_bundle(root, root / "project-v1")
-        project_manifest = ProjectPortableStore().verify(
+        project_manifest = LegacyProjectFixture().verify(
             root / "project-v1/snapshot", expected_role="decision"
         )
         decision = freeze_decision(decision_root=prepared["content_root"])
@@ -1963,14 +1978,14 @@ def test_project_byte_mutation_changes_project_root_and_node() -> None:
         root = Path(directory)
         project = root / "project.txt"
         project.write_text("project-v1\n")
-        first = ProjectPortableStore().capture(
+        first = LegacyProjectFixture().capture(
             "decision",
             [ArtifactSource("project/decision/project.txt", project)],
             root / "project-v1",
             project_root=root,
         )
         project.write_text("project-v2\n")
-        second = ProjectPortableStore().capture(
+        second = LegacyProjectFixture().capture(
             "decision",
             [ArtifactSource("project/decision/project.txt", project)],
             root / "project-v2",
@@ -2079,7 +2094,7 @@ def test_cli_facade_freezes_and_verifies_a_decision() -> None:
         prepared = prepare_entry_bundle(Path(directory), Path(directory) / "prepared")
         bindings: list[dict[str, str]] = [
             {
-                "adapter": "portable-bundle/1",
+                "adapter": "git-reference/1",
                 "path": str(Path(directory) / "prepared/snapshot"),
             }
         ]
@@ -2112,7 +2127,7 @@ def test_cli_facade_freezes_and_verifies_a_decision() -> None:
                 repository,
             )
             roots[domain] = captured["content_root"]
-            bindings.append({"adapter": "portable-bundle/1", "path": str(bundle)})
+            bindings.append({"adapter": "git-reference/1", "path": str(bundle)})
         receipt_bundle = Path(directory) / "live-receipt"
         receipt = apply_operation(
             {
@@ -2147,7 +2162,7 @@ def test_cli_facade_freezes_and_verifies_a_decision() -> None:
             repository,
         )
         bindings.append(
-            {"adapter": "portable-bundle/1", "path": str(receipt_bundle)}
+            {"adapter": "git-reference/1", "path": str(receipt_bundle)}
         )
         frozen = apply_operation(
             {
@@ -2251,7 +2266,7 @@ def test_cli_facade_freezes_and_verifies_a_decision() -> None:
         assert "validator_source" not in serialized
 
 
-def test_complete_handoff_verifies_offline_from_outcome_root() -> None:
+def test_complete_handoff_references_git_and_retained_legacy_roots() -> None:
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         source = root / "artifact.txt"
@@ -2260,6 +2275,7 @@ def test_complete_handoff_verifies_offline_from_outcome_root() -> None:
         repository = NodeRepository(root / "nodes")
         repository.write_all(nodes.values())
 
+        save_fixture(root)
         handoff = root / "handoff"
         export_handoff(
             outcome["node_id"],
@@ -2272,9 +2288,9 @@ def test_complete_handoff_verifies_offline_from_outcome_root() -> None:
         manifest = json.loads((handoff / "handoff.json").read_text())
         domains = {
             json.loads(
-                (handoff / item["path"] / "manifest.json").read_text()
+                (root / item["path"] / "manifest.json").read_text()
             )["domain"]
-            for item in manifest["content"]
+            for item in manifest["content_bindings"]
         }
         assert "workflow-release" not in domains
 
@@ -2288,6 +2304,7 @@ def test_handoff_rejects_external_manifest_symlink() -> None:
         repository = NodeRepository(root / "nodes")
         repository.write_all(nodes.values())
 
+        save_fixture(root)
         handoff = root / "handoff"
         export_handoff(
             outcome["node_id"],

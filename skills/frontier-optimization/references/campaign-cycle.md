@@ -55,7 +55,7 @@ Resume at the first missing durable step for the current B: worker result, Coord
 
 Apply [Entry review](entry-review.md) as the sole authorization-readiness and post-answer adoption interface. Build the complete B through [Batch Interface](batch-interface.md), clear deterministic packet, result-contract, Entry, snapshot, and current-state checks before allocating a review snapshot, then freeze the exact proposed target and state transition for fresh semantic review. A deterministic draft failure stays inside the same unspent, unauthorized B when every semantic and consequence boundary remains unchanged. `AUTHORIZATION_READY` permits only the exact question; only exact authorization followed by finding-free frozen adoption validation may produce `ENTRY_READY`.
 
-Bind direct authorization to the packet, source base, scope, spend, stop boundary, and review. For `module` or `system`, also bind the exact design contract, `delivery_scope`, and affected scope. Keep the answer outside W. A changed plan, Entry assignment, execution source, target, post-state bytes, or answer condition is a new immutable realization and requires a new Entry review. Under Batch Interface, it may retain the same B when the objective, allowed consequences, public seam, ownership, acceptance meaning, Budget, risk, and one-way-effect boundary remain unchanged. A design-contract change also requires a new Design revision and review. Reuse the user's answer only when the newly reviewed realization remains inside its exact envelope; every new realization receives a fresh decision, authority, and execution lineage.
+Bind initial authorization to the packet, source base, scope, spend, stop boundary, and review; for `module` or `system`, include the design and `delivery_scope`. Keep the answer outside W. Apply [Boundary-preserving continuation](batch-interface.md#boundary-preserving-continuation) to subsequent repairs, observations, and explicitly delegated design revisions. That section owns whether a new execution snapshot, Design review, Entry, or user decision is required. Do not create a competing rule that reauthorizes every changed design identity.
 
 This gate is complete only when the unchanged target has durable `ENTRY_READY` adoption, or the decline, review requirement, or blocker is recorded with no Selection, reservation, acknowledgment, work, or spend.
 
@@ -96,7 +96,7 @@ After the terminal outcome and any eligible E are adopted, apply [Learning loop]
 4. infer the strongest useful whole-package, component, or mediated-pathway mechanism supported by the evidence;
 5. record what the design cannot attribute and the resulting R&D implication without creating follow-up authority;
 6. interpret progress, constraints, or measurement properties only when they can change the addressed or next concrete decision;
-7. when diagnosis is decision-relevant, record every considered complete path, what each distinguishes, funding, authority, reachability, action window, and the selected path's dominance or the exact non-unique blocker;
+7. when diagnosis is decision-relevant, record considered alternatives, what each distinguishes, stage funding and unavoidable commitments, authority, reachability, action window, and the justified ordering and switching condition required by the single Learning Loop resolver;
 8. apply the single total-order resolver in [Learning loop](learning-loop.md#integrated-direction-resolver); and
 9. write Selection only after every Q, V, join, and review selected by that resolver is complete.
 
@@ -108,7 +108,7 @@ This interpretation step creates no trajectory record, diagnosis, research task,
 
 Use only [Integrated direction resolver](learning-loop.md#integrated-direction-resolver). This file adds no direction table, fallback priority, research-first exception, or post-resolver R8 override.
 
-The resolver receives persisted facts from the completed Reflection and current authority records. It first protects parent and hard-stop boundaries, coverage and identity, the semantic-parent escape, Budget and protected reserve, then validity, route-set completeness, focused facts, local diagnosis, Replan, evidence-determined strategic consequences, specialized gates, and finally routine R8. Row 5 tests the complete least-cost sufficient path implied by later conditions before any spend-bearing Q or B is selected; constructing that candidate path is not a second resolver and grants no authority.
+The resolver receives persisted facts from the completed Reflection and current authority records. Apply its single total order and [Budget precheck](learning-loop.md#resolver-inputs-and-budget-precheck), including the next observation, unavoidable commitments, and safe stopping or recovery. [Opportunity-led reconsideration](learning-loop.md#opportunity-led-reconsideration) uses that same order; it creates no parallel selector or authority.
 
 At a formal direction choice, another evidence round is permitted only when resolver row 7 or row 8 selects it. Bind the Q to current experiment results and their controlling Reflections. Reconcile relevant industrial implementations, academic evidence, community reports or artifacts, repository evidence, retained results, and observed failures under one decision, action window, evidence-channel assignment, and search stop. Stop when the information is sufficient for the current allocation and further retrieval is unlikely to change it. Do not require exhaustive coverage, a source quota, or research after routine row 13.
 
@@ -142,12 +142,12 @@ Return the recorded routing outcome to the Coordinator.
 
 | Scenario | Required durable outcome |
 |---|---|
-| Expected valid result and a unique R8 next step | Routine reflection states the hypothesis result, strongest supported mechanism, R&D implication, and exact R8 branch without extra diagnosis. |
-| Surprising result that may be an implementation or measurement problem | Diagnostic reflection compares complete direct-attempt, local-check, protocol-adjustment, focused-research, or stop paths; Selection uses the unique non-dominated least-cost sufficient path or the exact non-unique blocker. |
+| Expected valid result and a unique R8 next step, with no earlier resolver condition | Routine reflection states the hypothesis result, strongest supported mechanism, R&D implication, and exact R8 branch without extra diagnosis. |
+| Surprising result that may be an implementation or measurement problem | Reflection compares decision-relevant next observations; Selection uses the recorded ordering from the single Learning Loop resolver. Unresolved validity cannot support route failure. |
 | Formal direction choice has an experiment-bound evidence gap | Resolver row 7 or 8 selects one bounded Q that reconciles current experiment results with applicable industrial, academic, community, repository, and retained evidence, then reruns the same resolver after adoption. |
 | Formal direction choice is already supported by complete evidence and unique R8 | Do not add another Q merely because a direction is being selected; apply the determined row and next gate. |
 | Result changes campaign baseline, route, or major allocation | Targeted evidence, applicable V, immutable replan snapshot, fresh `REPLAN_READY`, then authoritative Selection. |
-| Two funded diagnostic paths remain non-dominated | Return the exact non-unique technical diagnostic blocker; do not select by preference and do not ask the user to choose a technical path. |
+| Two funded diagnostic paths remain non-dominated | Apply the single Learning Loop resolver's technical ordering; ask the user only for a genuine unresolved user-owned choice. |
 | A sufficient check would consume protected reserve | Resolver row 5 selects no B or spend-bearing Q and returns the exact Budget, stop, or zero-spend Replan consequence. |
 | Code implementation followed by performance evaluation | Separate implementation B and Slot H evaluation B; evaluation is blocked before unchanged `IMPLEMENTATION_READY`. |
 | Newly materialized candidate needs one cheap local signal before implementation review | A separate diagnostic-only experiment may run only under the candidate-lifecycle exception; it creates no E and grants no integration, incumbent, promotion, submission, or strength consequence. |

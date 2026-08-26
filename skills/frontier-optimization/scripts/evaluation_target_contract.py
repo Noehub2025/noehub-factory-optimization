@@ -6,6 +6,7 @@ import hashlib
 import math
 import re
 from typing import Any
+import math
 
 from finding_effects import add_finding
 
@@ -210,6 +211,73 @@ def validate_evidence_scope(
             )
 
 
+def working_diagnostic(target: Any) -> bool:
+    """A bounded observation scope, not a candidate or a new evaluation mode."""
+    return (
+        isinstance(target, dict)
+        and target.get("mode") == "diagnostic-only"
+        and isinstance(target.get("working_scope"), dict)
+    )
+
+
+def _finite_nonnegative(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and value >= 0
+    )
+
+
+def validate_working_observations(
+    target: dict[str, Any], results: Any, findings: list[dict[str, str]]
+) -> None:
+    """Bind research observations and cumulative consumption, not debugging steps."""
+    scope = target["working_scope"]
+    subjects = scope.get("subjects")
+    methods = scope.get("methods")
+    subjects = subjects if isinstance(subjects, list) else []
+    methods = methods if isinstance(methods, list) else []
+    limits = {key: scope.get(key, {}) for key in ("resources", "exposure")}
+    totals = {key: {} for key in limits}
+    if not isinstance(results, list):
+        return
+    for index, result in enumerate(results):
+        if not isinstance(result, dict):
+            continue  # The common diagnostic result check reports this.
+        subject = result.get("subject", {})
+        if not isinstance(subject, dict) or subject.get("scope") not in subjects:
+            add_finding(findings, "DIAGNOSTIC_SUBJECT_OUTSIDE_SCOPE", f"observation {index} subject is outside the authorized scope")
+        else:
+            require_nonempty_string(subject.get("identity"), f"results[{index}].subject.identity", findings)
+        if result.get("method") not in methods:
+            add_finding(findings, "DIAGNOSTIC_METHOD_OUTSIDE_SCOPE", f"observation {index} method is outside the authorized scope")
+        for field in ("conditions", "observation"):
+            if result.get(field) in (None, "", {}, []):
+                add_finding(findings, "DIAGNOSTIC_OBSERVATION_INCOMPLETE", f"observation {index} requires {field}")
+        evidence = result.get("evidence", {})
+        if not isinstance(evidence, dict):
+            evidence = {}
+        require_nonempty_string(evidence.get("path"), f"results[{index}].evidence.path", findings)
+        require_sha256(evidence.get("file_sha256"), f"results[{index}].evidence.file_sha256", findings)
+        consumption = result.get("consumption", {})
+        if not isinstance(consumption, dict) or set(consumption) != set(limits):
+            add_finding(findings, "DIAGNOSTIC_CONSUMPTION_INVALID", f"observation {index} must account for resources and exposure")
+            continue
+        for category, ceiling in limits.items():
+            used = consumption[category]
+            if not isinstance(ceiling, dict) or not isinstance(used, dict) or set(used) != set(ceiling):
+                add_finding(findings, "DIAGNOSTIC_CONSUMPTION_INVALID", f"observation {index} must account for each {category} limit")
+                continue
+            for key, amount in used.items():
+                if not _finite_nonnegative(amount):
+                    add_finding(findings, "DIAGNOSTIC_CONSUMPTION_INVALID", f"observation {index} has invalid consumption for {key}")
+                    continue
+                totals[category][key] = totals[category].get(key, 0) + amount
+                if _finite_nonnegative(ceiling[key]) and totals[category][key] > ceiling[key]:
+                    add_finding(findings, "DIAGNOSTIC_LIMIT_EXCEEDED", f"cumulative {category}.{key} exceeds its authorized limit")
+
+
 def validate_evaluation_target_contract(
     evaluation_target: Any, findings: list[dict[str, str]]
 ) -> None:
@@ -238,7 +306,10 @@ def validate_evaluation_target_contract(
         )
 
     candidate = evaluation_target.get("candidate")
-    if not isinstance(candidate, dict):
+    if working_diagnostic(evaluation_target):
+        if candidate is not None:
+            add_finding(findings, "DIAGNOSTIC_SUBJECT_AMBIGUOUS", "working_scope replaces the published candidate binding")
+    elif not isinstance(candidate, dict):
         add_finding(
             findings,
             "EVALUATION_TARGET_SCHEMA_INVALID",
@@ -339,7 +410,20 @@ def _validate_diagnostic(target: dict[str, Any], findings: list[dict[str, str]])
             "DIAGNOSTIC_CONSEQUENCE_BOUNDARY_MISSING",
             "diagnostic-only packet requires consequence_limit: B evidence only",
         )
-    if not target.get("exception_evidence"):
+    if working_diagnostic(target):
+        scope = target["working_scope"]
+        if set(scope) != {"question", "subjects", "methods", "resources", "exposure"}:
+            add_finding(findings, "DIAGNOSTIC_SCOPE_INVALID", "working_scope requires question, subjects, methods, resources, and exposure")
+        require_nonempty_string(scope.get("question"), "working_scope.question", findings)
+        for field in ("subjects", "methods"):
+            values = scope.get(field)
+            if not isinstance(values, list) or not values or not all(isinstance(value, str) and value.strip() for value in values):
+                add_finding(findings, "DIAGNOSTIC_SCOPE_INVALID", f"working_scope.{field} must name the authorized range")
+        for field in ("resources", "exposure"):
+            limits = scope.get(field)
+            if not isinstance(limits, dict) or (field == "resources" and not limits) or not all(isinstance(key, str) and key and _finite_nonnegative(value) for key, value in limits.items()):
+                add_finding(findings, "DIAGNOSTIC_SCOPE_INVALID", f"working_scope.{field} must contain finite nonnegative limits")
+    elif not target.get("exception_evidence"):
         add_finding(
             findings,
             "DIAGNOSTIC_EXCEPTION_EVIDENCE_MISSING",

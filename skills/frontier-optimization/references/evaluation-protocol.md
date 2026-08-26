@@ -65,7 +65,7 @@ Because provenance node version 4 gives an execution only its authority parent, 
 
 The original Entry ancestry already carries protocol and calibration bytes; do not duplicate them. The state does not need another copy of the whole ledger, log, `FRONTIER.md`, parent documents, or Entry review prose.
 
-Handoff verification exports the otherwise non-parent-reachable materialization outcome, implementation decision, and live receipt roots named by the routine admission. It reconstructs the slot consumption mapping from execution nodes and frozen routine admission bytes. Missing portable roots, missing embedded nodes, naked references, incomplete closed collections, or two executions for one slot fail recovery.
+Handoff cites the otherwise non-parent-reachable materialization outcome, implementation decision, and live receipt roots named by routine admission. It reconstructs slot consumption from retained execution nodes and admission bytes. Missing required content, missing embedded nodes, unresolved references, incomplete closed collections, or two executions for one slot block the dependent recovery action. Storage and historical reads follow [Provenance, Git, and retained artifacts](provenance-and-identity.md); the handoff does not copy those inputs again.
 
 ## Structured evidence ceiling
 

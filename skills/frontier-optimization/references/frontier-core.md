@@ -82,7 +82,7 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 - Write task documents in English with concrete task nouns.
 - Give each main document a plain Brief that is understandable without its Contract table or detail files.
 - Write one complete decision sentence per Contract cell. Put only links in Detail.
-- Recover from task files and cited identities, not conversation or Git history.
+- Recover from the recorded decisions and their retained Git versions and artifact references; conversation is not a substitute for those records.
 - Keep record meaning immutable. Append a replacement or X disposition.
 - Never reuse an identifier.
 - Load by default only the parents, `FRONTIER.md`, latest controlling ledger blocks, and current W brief. Follow a W pointer only when its `Read when` condition matches the action.
@@ -99,24 +99,32 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 - **Selected B:** complete planned B named by F3 and the latest Selection as Primary or Parallel.
 - **Safe parallel set:** selected B records with separate reservations and mutable paths, no current-result dependency, compatible resources and measurement, failure isolation, and one join point.
 - **Stop:** a precommitted ordinary F7 rule triggered; safely finish or interrupt affected work and route to closeout.
-- **Halt:** stale parents, safety, legality, authority, access, accounting, a contradiction that changes parent authority or has no authorized diagnostic path, parent change, or withdrawn authorization blocks work; preserve state and route to closeout.
+- **Halt:** stale parents, safety, legality, authority, access, accounting, a contradiction that changes parent authority or has no authorized diagnostic path, parent change, or withdrawn authorization blocks work; preserve state and route to closeout. A valid test refuting its research hypothesis follows ordinary R8 and resolver disposition; refutation alone is not a halt.
 - **Pre-spend parent rebind:** a new positive parent identity replaces an older binding before any B spend, candidate materialization, external action, or accepted claim. It is allowed only when the problem epoch, representation revision, exact `Permitted` scope, measurement meaning, budget authority, stop meaning, and claim ceilings remain compatible; a current upstream disposition explicitly permits every retained evidence or decision record; and the Coordinator replaces every stale downstream authority.
 - **Semantic parent challenge:** parent identities remain unchanged, but a latest controlling Outcome Reflection with resolved implementation, measurement, and comparison validity concludes that a parent-owned objective, Representation, Slot H measurement meaning, R8 rule, permitted scope, or claim ceiling is no longer suitable or reachable after disposing every execution-level measurement, implementation, and local-mechanism explanation. It returns through the existing stage-sensitive parent boundary and never edits the parent in Frontier.
 - **Project provenance:** one typed decision root, exact project content roots, parent roots, review attestation, authority, execution state, and outcomes. Workflow source, release, Skill, validator, worker interface, test, deployment location, and source-module roots are not campaign identities.
 - **Campaign generation:** one append-only Frontier campaign under the canonical task. Generation 1 is implied for legacy records without this field. A later generation never rewrites, reopens, or resets an earlier generation.
 - **Post-closeout recovery:** a new campaign generation opened only by an explicit current user request after an adopted complete closeout. It carries prior spend against the same parent ceiling, uses new identifiers, and requires exact reuse dispositions and fresh gates.
 
+## Opportunity proposals
+
+A potentially better route outside the current parent scope is a proposal, not evidence that the parent is invalid. Preserve it in the existing Q recommendation, `R&D implication`, or user-facing handoff for the owning parent stage. State the suggested change, its mechanism basis, and the decision it could improve; use the ordinary return without new project status or artifacts. The suggestion alone neither revokes current authority nor triggers the semantic-parent forced closeout. Continue otherwise-selected in-scope work when its existing conditions allow it.
+
+Actual parent adoption and out-of-scope work retain their existing owner, binding, and authorization rules. Within parent scope, apply [Opportunity-led reconsideration](learning-loop.md#opportunity-led-reconsideration). A demonstrated semantic parent challenge still uses the recorded-state router below; a proposal does not supply that finding.
+
 ## Finding effects
 
 This section is the sole semantic owner of finding effects. Validators derive the effect from a stable code through `finding_effects.py`; callers and reviewers cannot supply or weaken it. An unknown code defaults to `block`.
 
-Apply one decision-impact test: could ignoring the issue change the candidate or source bytes, data, evaluator, sampling, comparison or acceptance semantics, parent scope, user authority, access, spend, stop boundary, external effect, sealed evidence exposure, result interpretation, claim, or the ability to reconstruct any of them? `Yes` or `unknown` is `block`.
+Apply one decision-impact test: identify the violated requirement or observed evidence gap, the affected next consequence, and why proceeding would make that consequence unauthorized, unreliable, or unrecoverable. A demonstrated violation or unresolved consequential authority, spend, exposure, or external effect blocks only that transition. Uncertain effectiveness, novelty, unfamiliar methods, and hypothetical risk alone do not: select an authorized bounded observation when it can resolve the uncertainty. Reviewers need not prove the absence of every possible failure. This semantic test does not weaken coded findings; unknown validator codes still block until their meaning is resolved.
 
 - `block`: the current action is unsafe or ambiguous. Preserve evidence and stop the affected transition. Use a new target, authorization, or B only when the semantic object or a prior answer or effect must change.
-- `repair`: the current serialization, derived field, or transient realization is unusable, but the authoritative objective, evidence, and maximum consequence are unchanged and mechanically provable. Readiness remains false until correction. Repair inside the same semantic B and V before review or through an already authorized boundary-preserving continuation; rerun only the affected deterministic checks. A changed reviewed semantic input still requires the applicable fresh review.
+- `repair`: the current serialization, derived field, or transient realization is unusable, but the authoritative objective, evidence, and maximum consequence are unchanged and mechanically provable. Readiness remains false until correction. Repair inside the same semantic B and V before review or through an already authorized boundary-preserving continuation; rerun only the affected deterministic checks. A changed reviewed semantic input still requires the applicable review of that version, using [Entry repair review](entry-review.md#entry-repair-review) for an Entry correction.
 - `advisory`: the canonical structured owner and every authority-bearing byte pass, while only a non-authoritative display timestamp, historical description, redundant prose hash, or generated narrative is stale. Readiness remains true. Preserve immutable records, report the advisory in validator or review output, and create no replacement identity, B, V, review, or authorization.
 
 A timestamp that controls a deadline, ordering, lifecycle transition, or authorization is never advisory. A digest that binds candidate, evaluator, evidence, target, authority, or reproducibility is never advisory. A narrative disagreement is advisory only when `current_state`, its cited ledger decision, and every typed authority projection agree; otherwise it is `block`. Keep advisories out of strength, validity, progress, and constraint conclusions.
+
+Correct a non-authoritative display in the current explanation or working view while retaining the reviewed version. A new version does not invalidate the old review for its own bytes, and the old attestation cannot approve a replacement decision. Existing authorization governs whether changed work may continue; an advisory alone creates no replacement object.
 
 Historical artifacts retain their original validator and review meaning. Apply this contract prospectively; do not rewrite or mass-migrate old B, V, R, E, OR, or X records merely because finding output gained effects.
 

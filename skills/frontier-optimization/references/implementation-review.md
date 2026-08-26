@@ -6,10 +6,10 @@ Use a new immutable review packet and path for each exact realization. Preserve 
 
 ## Review method
 
-1. Select `materialization` or `recovery-reuse`. For `materialization`, require the frozen B target, authorization lineage, execution-start, exact transient inventory, closed implementation collection, cumulative attempt reports, design or direct target, source and dependency identities, engineering checks, allowed feedback, and evidence that formal publication, candidate identity, proposal charge, Slot H measurement, integration, and incumbent use have not occurred. For `recovery-reuse`, require the published candidate's complete historical materialization, new-generation authority, and finding-free no-change recovery preflight.
+1. Select `materialization` or `recovery-reuse`. For `materialization`, require the frozen B target, authorization lineage, execution-start, exact transient inventory, closed implementation collection, cumulative attempt reports, design or direct target, source and dependency identities, engineering checks, allowed feedback, and evidence that formal publication, Slot H measurement, integration, and incumbent use have not occurred. Assess formal identity and charge against the existing parent-owned boundary under [Boundary-preserving continuation](batch-interface.md#boundary-preserving-continuation), not a separate no-charge rule in this review. For `recovery-reuse`, require the published candidate's complete historical materialization, new-generation authority, and finding-free no-change recovery preflight.
 2. Verify repository placement and the assigned interface against the reviewed disposition. An unapproved top-level root, toolchain or dependency-manager replacement, or public-entrypoint change is a finding.
 3. For `materialization`, reproduce the exact review collection and transient inventory from project bytes. Require every planned Delivery slice, complete output, integration check, frozen engineering check, cumulative effect, and observable definition of done to be accounted for. An earlier passing realization may appear only with the preserved nonpositive review that caused its replacement. For `recovery-reuse`, verify the published inventory and manifest without changing any candidate byte.
-4. Check implementation only against the assigned design inputs and candidate interface. Require the agreed architecture, entities, invariants, flows, failures, compatibility, rollback, observable definition of done, and distinguishing checks. Build success or a smoke run alone is insufficient.
+4. Check implementation only against the assigned design inputs and candidate interface. Require the agreed architecture, entities, invariants, flows, failures, compatibility, rollback, observable definition of done, and distinguishing checks. Apply [Technical design's assignment ownership rule](technical-design.md#assign-the-professional-author): a different ordinary work method is not design infidelity. Method freedom neither changes frozen inputs, evidence, or explicit authorization constraints nor extends an existing review to different bytes. Build success or a smoke run alone is insufficient.
 5. Distinguish fidelity from contract change. A fidelity finding identifies how the realization fails the unchanged target and returns `IMPLEMENTATION_REPAIR_REQUIRED`. A required change to behavior, public seam, ownership, lifecycle, acceptance meaning, input, effect, spend rule, stop rule, or load-bearing design assumption is not a fidelity repair; identify the affected contract and return the corresponding nonpositive result. Do not prescribe repair code or select the campaign route.
 6. Confirm the reviewed bytes have not been published, measured, integrated, or used as an incumbent. `IMPLEMENTATION_READY` permits only authoritative publication of the exact reviewed inventory. It grants no measurement, integration, incumbent, promotion, or claim authority. For `recovery-reuse`, the maximum consequence remains the separately governed unchanged-candidate reuse path.
 7. Return exactly `IMPLEMENTATION_READY`, `IMPLEMENTATION_REPAIR_REQUIRED`, `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED`, or `BLOCKED`. A positive result has no finding; every nonpositive result has at least one complete finding. State the exact affected realization, design input, or parent boundary.
@@ -38,7 +38,7 @@ review_id: <unique identifier>
 packet_path: <assigned immutable review packet>
 packet_id: <content-derived identity>
 decision_root: <exact implementation decision root>
-project_subject: <complete portable review subject and identity>
+project_subject: <complete fixed review subject and identity; Git references or retained historical content>
 task_path: <canonical task path>
 campaign_generation: <positive integer>
 batch_id: <code-bearing B identifier>
@@ -52,7 +52,7 @@ attempt_reports: [<ordered reports from execution-start through this inventory>]
 prior_review_repairs: [<earlier passing inventory and its nonpositive review handoff, or none>]
 source_base_identity: <recoverable source identity>
 dependency_identity: <resolved dependency identity or explicit none>
-materialization_stop: <evidence of no formal publication, charge, measurement, integration, or incumbent use>
+materialization_stop: <evidence of no formal publication, measurement, integration, or incumbent use>
 allowed_feedback: <exact frozen feedback boundary>
 assigned_review_path: <exclusive review artifact path>
 completion_check: <every implementation requirement receives an evidence-backed result>

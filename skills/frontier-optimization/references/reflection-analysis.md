@@ -28,7 +28,7 @@ Before reading the calibration contrasts below, draft the final candidate conten
 
 Recover both the immediate B hypothesis and the originating mechanism when an executable candidate is evaluated, confirmed, or reused. Explain what observation the mechanism predicted, what was observed, and which previously live uncertainty the result strengthens, weakens, resolves, or leaves unchanged. Separate a whole-package effect, evidence that a pathway exists, and evidence that a component contributes. Insufficient component separation limits attribution; it does not erase valid package-level or implementation learning.
 
-State the research allocation implication independently of current permission: what later work should preserve, which resolved question should stop consuming attention, and which technical uncertainty remains live. This creates no recommendation to spend and no authority.
+State the research allocation implication independently of current permission under [Hypothesis and mechanism interpretation](learning-loop.md#hypothesis-and-mechanism-interpretation), including its distinction between supported conclusions and optional untested conjectures. This creates no recommendation to spend and no authority.
 
 Then read [Reflection calibration contrasts](reflection-calibration.md) and revise the draft once where the current evidence calls for it. The final interpretation is complete when:
 

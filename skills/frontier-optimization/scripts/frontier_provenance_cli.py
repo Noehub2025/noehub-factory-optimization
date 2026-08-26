@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import sys
 from pathlib import Path
 from typing import Any
@@ -26,10 +25,10 @@ from frontier_provenance.stores import (
     ArtifactSource,
     ClosedCollection,
     ProjectPortableStore,
-    PortableBundleStore,
     WorkflowReleaseGitStore,
 )
 from frontier_provenance.handoff import export_handoff, verify_handoff
+from frontier_provenance.git_content import ContentSession, verify_retained_artifact
 
 
 REQUEST_CONTRACT = "frontier-provenance-operation/4"
@@ -57,18 +56,22 @@ def require_fields(request: dict[str, Any], operation: str, fields: set[str]) ->
 
 def apply_operation(request: dict[str, Any], repository: NodeRepository) -> dict[str, Any]:
     operation = request.get("operation")
-    if operation == "export-handoff":
+    if operation == "verify-artifact":
+        require_fields(request, operation, {"path", "sha256", "size"})
+        return verify_retained_artifact(Path(request["path"]), sha256=request["sha256"], size=request["size"])
+    elif operation == "export-handoff":
         require_fields(request, operation, {"root_id", "content_bindings", "destination"})
         manifest = export_handoff(
             request["root_id"],
             repository,
-            handoff_exports(request["content_bindings"]),
+            request["content_bindings"],
             Path(request["destination"]),
         )
         return {"handoff_id": manifest["handoff_id"], "root_id": manifest["root_id"]}
     elif operation == "verify-handoff":
-        require_fields(request, operation, {"path"})
-        return verify_handoff(Path(request["path"]))
+        require_fields(request, operation, {"path", "repo_root"} if "repo_root" in request else {"path"})
+        return verify_handoff(Path(request["path"]),
+            repo_root=Path(request["repo_root"]) if "repo_root" in request else None)
     elif operation == "capture-project":
         require_fields(
             request,
@@ -89,7 +92,7 @@ def apply_operation(request: dict[str, Any], repository: NodeRepository) -> dict
             project_root=Path(request["project_root"]),
             closed_collections=collections,
         )
-        return {"content_root": manifest["content_root"], "adapter": "portable-bundle/1"}
+        return {"content_root": manifest["content_root"], "adapter": manifest["storage"]["adapter"]}
     elif operation == "capture-release-git":
         require_fields(
             request,
@@ -157,14 +160,12 @@ def apply_operation(request: dict[str, Any], repository: NodeRepository) -> dict
             {"authority_root", "decision_id", "attestation_id", "content_bindings"},
         )
         decision = repository.load(request["decision_id"])
-        decision_bundle = content_bundle_path(
-            request["content_bindings"], decision["artifact_roots"][0]
-        )
+        content = ContentSession(request["content_bindings"])
         node = bind_authority(
             authority_root=request["authority_root"],
             decision=decision,
             validation=repository.load(request["attestation_id"]),
-            decision_bundle=decision_bundle,
+            decision_content=content.resolve(decision["artifact_roots"][0]),
         )
     elif operation == "freeze-execution":
         legacy_fields = {"authority_id", "starting_state_root"}
@@ -174,6 +175,7 @@ def apply_operation(request: dict[str, Any], repository: NodeRepository) -> dict
             "live_facts",
             "checked_at",
         }
+        current_fields = routine_fields - {"routine_admission"}
         observed = set(request) - {"contract_version", "operation"}
         if observed == legacy_fields:
             require_fields(request, operation, legacy_fields)
@@ -181,17 +183,16 @@ def apply_operation(request: dict[str, Any], repository: NodeRepository) -> dict
                 authority=repository.load(request["authority_id"]),
                 starting_state_root=request["starting_state_root"],
             )
-        elif observed == routine_fields:
-            require_fields(request, operation, routine_fields)
-            resolver = content_resolver(request["content_bindings"])
-            reader = content_reader(request["content_bindings"])
+        elif observed in (routine_fields, current_fields):
+            require_fields(request, operation, observed)
+            content = ContentSession(request["content_bindings"])
             node = freeze_execution(
                 authority=repository.load(request["authority_id"]),
                 starting_state_root=request["starting_state_root"],
-                routine_admission=request["routine_admission"],
+                routine_admission=request.get("routine_admission"),
                 repository=repository,
-                resolve_content=resolver,
-                read_content=reader,
+                resolve_content=content.resolve,
+                read_content=content.read,
                 live_facts=request["live_facts"],
                 checked_at=request["checked_at"],
             )
@@ -215,14 +216,15 @@ def apply_operation(request: dict[str, Any], repository: NodeRepository) -> dict
             operation,
             {"root_id", "consequence", "live_facts", "checked_at", "content_bindings"},
         )
-        resolver = content_resolver(request["content_bindings"])
+        content = ContentSession(request["content_bindings"])
         return verify_for(
             request["root_id"],
             repository.load,
-            resolver,
+            content.resolve,
             consequence=request["consequence"],
             live_facts=request["live_facts"],
             checked_at=request["checked_at"],
+            read_content=content.read,
         )
     elif operation == "export":
         require_fields(request, operation, {"root_id"})
@@ -269,106 +271,18 @@ def capture_inputs(request: dict[str, Any]) -> tuple[list[ArtifactSource], list[
 
 
 def content_resolver(bindings: Any):
-    if not isinstance(bindings, list):
-        raise ProvenanceError("content_bindings must be a list")
-    resolved: dict[str, dict[str, Any]] = {}
-    for index, binding in enumerate(bindings):
-        if not isinstance(binding, dict) or "adapter" not in binding:
-            raise ProvenanceError(f"content_bindings[{index}] is invalid")
-        adapter = binding["adapter"]
-        if adapter == "portable-bundle/1" and set(binding) == {"adapter", "path"}:
-            result = PortableBundleStore().verify(Path(binding["path"]))
-        else:
-            raise ProvenanceError(
-                f"content_bindings[{index}] must be a portable project bundle"
-            )
-        content_root = result["content_root"]
-        if content_root in resolved:
-            raise ProvenanceError(f"duplicate content binding: {content_root}")
-        resolved[content_root] = result
-
-    def resolve(content_root: str) -> dict[str, Any]:
-        if content_root not in resolved:
-            raise ProvenanceError(f"content root has no resolver binding: {content_root}")
-        return resolved[content_root]
-
-    return resolve
+    """Compatibility helper; multi-consumer operations share one ContentSession."""
+    return ContentSession(bindings).resolve
 
 
 def content_bundle_path(bindings: Any, content_root: str) -> Path:
-    """Resolve one verified portable bundle path without trusting a caller summary."""
-
-    if not isinstance(bindings, list):
-        raise ProvenanceError("content_bindings must be a list")
-    matches: list[Path] = []
-    for index, binding in enumerate(bindings):
-        if not isinstance(binding, dict) or set(binding) != {"adapter", "path"}:
-            raise ProvenanceError(f"content_bindings[{index}] is invalid")
-        if binding["adapter"] != "portable-bundle/1":
-            raise ProvenanceError(
-                f"content_bindings[{index}] must be a portable project bundle"
-            )
-        path = Path(binding["path"])
-        result = ProjectPortableStore().verify(path)
-        if result["content_root"] == content_root:
-            matches.append(path)
-    if len(matches) != 1:
-        raise ProvenanceError(
-            f"decision content root requires one exact portable binding: {content_root}"
-        )
-    return matches[0]
+    content = ContentSession(bindings)
+    content.resolve(content_root)
+    return content.paths[content_root]
 
 
 def content_reader(bindings: Any):
-    """Return verified raw project bytes by content root."""
-
-    if not isinstance(bindings, list):
-        raise ProvenanceError("content_bindings must be a list")
-    paths: dict[str, Path] = {}
-    for index, binding in enumerate(bindings):
-        if not isinstance(binding, dict) or set(binding) != {"adapter", "path"}:
-            raise ProvenanceError(f"content_bindings[{index}] is invalid")
-        if binding["adapter"] != "portable-bundle/1":
-            raise ProvenanceError(f"content_bindings[{index}] must be portable")
-        path = Path(binding["path"])
-        result = ProjectPortableStore().verify(path)
-        if result["content_root"] in paths:
-            raise ProvenanceError(f"duplicate content binding: {result['content_root']}")
-        paths[result["content_root"]] = path
-
-    def read(content_root: str) -> dict[str, bytes]:
-        path = paths.get(content_root)
-        if path is None:
-            raise ProvenanceError(f"content root has no readable binding: {content_root}")
-        return PortableBundleStore().read_artifacts(path)
-
-    return read
-
-
-def handoff_exports(bindings: Any):
-    if not isinstance(bindings, list):
-        raise ProvenanceError("content_bindings must be a list")
-    exports = {}
-    for index, binding in enumerate(bindings):
-        if not isinstance(binding, dict) or "adapter" not in binding:
-            raise ProvenanceError(f"content_bindings[{index}] is invalid")
-        if binding["adapter"] == "portable-bundle/1" and set(binding) == {"adapter", "path"}:
-            source = Path(binding["path"])
-            result = PortableBundleStore().verify(source)
-
-            def copy(destination: Path, source: Path = source) -> None:
-                shutil.copytree(source, destination)
-
-            exporter = copy
-        else:
-            raise ProvenanceError(
-                f"content_bindings[{index}] must be a portable project bundle"
-            )
-        root = result["content_root"]
-        if root in exports:
-            raise ProvenanceError(f"duplicate content binding: {root}")
-        exports[root] = exporter
-    return exports
+    return ContentSession(bindings).read
 
 
 def main() -> int:

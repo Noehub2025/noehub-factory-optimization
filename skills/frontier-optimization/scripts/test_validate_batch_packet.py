@@ -831,6 +831,8 @@ class PacketPreflightTests(unittest.TestCase):
 
     def test_formal_evaluation_packet_passes_result_contract_before_authorization(self) -> None:
         packet = base_packet()
+        # Measurement does not publish or charge for another candidate identity.
+        packet.pop("publication_policy")
         packet.update(
             {
                 "work_kind": "experiment",
@@ -1041,6 +1043,8 @@ class PacketPreflightTests(unittest.TestCase):
             raw_path.parent.mkdir(parents=True)
             raw_path.write_bytes(b"exact raw evidence")
             packet = base_packet()
+            # Evidence reuse has its own explicit zero-new-measurement accounting.
+            packet.pop("publication_policy")
             target = formal_evaluation_target()
             seed_evaluation_sources(root, target)
             target["evidence_reuse"] = {

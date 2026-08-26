@@ -1,7 +1,7 @@
 {
   "name": "noehub-factory-optimization",
-  "version": "0.16.0",
-  "description": "Evidence-gated optimization with resumable bounded execution, prepublication implementation review, stable design slices, typed provenance, closeout, and recovery.",
+  "version": "0.17.0",
+  "description": "Task-agnostic optimization research with bounded iteration, prepublication review, Git-backed project evidence, and retained artifact handoffs.",
   "author": {
     "name": "Ken Chen"
   },

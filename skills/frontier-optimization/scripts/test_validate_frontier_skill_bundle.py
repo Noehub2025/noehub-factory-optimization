@@ -33,7 +33,7 @@ REFLECTION_FIELDS = (
     "Maximum supported conclusion",
     "Claim boundary",
     "Diagnostic alternatives considered",
-    "Diagnostic dominance",
+    "Diagnostic decision",
 )
 REFLECTION_REQUIRED_MARKERS = {
     "planning-records.md": (
@@ -49,7 +49,7 @@ REFLECTION_REQUIRED_MARKERS = {
     ),
     "learning-loop.md": (
         "Establish validity in this order: implementation, measurement, then comparison validity",
-        "do not invent a post-result hypothesis",
+        "Judge that unchanged pre-work hypothesis",
         "For a terminal B, recover the controlling decision hypothesis from that B",
         "A valid whole-treatment comparison may support that the bounded package caused the observed local effect",
         "Component contribution",
@@ -58,15 +58,15 @@ REFLECTION_REQUIRED_MARKERS = {
         "Diagnose it only when the pending decision depends on choosing among those internal explanations",
         "A limitation that does not prevent the addressed decision remains a future-use note",
         "Distinguish a saturated comparator-derived score from exhaustion of the evaluator itself",
-        "a direct reversible candidate attempt may dominate mechanism diagnosis",
+        "a direct reversible attempt may be preferable to separate diagnosis",
         "it has no mandatory finding enum",
         "This section is the only direction resolver",
         "Apply the rows from 1 through 13 exactly once",
         "Perform no additional research, diagnosis, or review",
         "Research before a formal direction choice",
         "industrial implementations, academic evidence, community reports or artifacts",
-        "BLOCKED: non-unique technical diagnostic decision",
-        "Selection must apply its hypothesis result, mechanism inference, attribution limit, R&D implication, measurement implication, maximum conclusion, diagnostic alternatives, and dominance result without strengthening or reinterpretation",
+        "Unique dominance is sufficient, not necessary, for a technical choice",
+        "Selection must apply its hypothesis result, mechanism inference, attribution limit, R&D implication, measurement implication, maximum conclusion, diagnostic alternatives, and recorded diagnostic ordering without strengthening or reinterpretation",
         "Keep every earlier Outcome Reflection immutable under its recorded project evidence",
         "These forms create no additional Q, research, review, repeated B, synthetic E, metric, or trajectory artifact",
         "complete [Fresh-context Reflection analysis](reflection-analysis.md) before showing that analyst",
@@ -103,8 +103,8 @@ REFLECTION_REQUIRED_MARKERS = {
     "campaign-state.md": (
         "Selection applies the reviewed Entry evidence or latest controlling reflection; it does not reinterpret validity, technical learning, route eligibility",
         "exactly one persisted first applicable resolver row and deterministic resolution",
-        "Routine row 13 may not add research, diagnosis, or review",
-        "no Selection may consume protected reserve for routine work",
+        "Routine row 13 adds no research, diagnosis, or review",
+        "routine work cannot consume protected reserve",
     ),
 }
 
@@ -121,7 +121,12 @@ def reflection_contract_findings(skills_root: Path) -> list[str]:
         findings.append("frontier-optimization SKILL omits fresh-context Reflection routing")
     all_markdown = [path.read_text() for path in skills_root.rglob("*.md")]
     for field in REFLECTION_FIELDS:
-        count = sum(text.count(f"- {field}: <") for text in all_markdown)
+        # Selection cites the controlling decision; that pointer is not an owner.
+        count = sum(
+            text.count(f"- {field}: <")
+            - text.count(f"- {field}: <controlling Reflection or Entry,")
+            for text in all_markdown
+        )
         if count != 1:
             findings.append(f"{field} has {count} canonical template owners")
 
@@ -156,7 +161,7 @@ RESOLVER_ROW_MARKERS = {
     2: "safety, legality, authority, accounting, explicit campaign-scope unconditional F7 stop, or halt",
     3: "terminal B or E lacks coverage",
     4: "parent-owned objective, Representation, Slot H measurement meaning, R8 rule, permitted scope, or claim ceiling",
-    5: "without consuming a protected reserve",
+    5: "without consuming protected reserve",
     6: "Implementation, measurement, or comparison validity",
     7: "plausible route set is incomplete",
     8: "one named external or repository fact",
@@ -196,7 +201,7 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "Apply the rows from 1 through 13 exactly once",
             "The first applicable row governs; no later row may override it",
             "Every stop consequence has one exact scope",
-            "Unknown cost is not affordable",
+            "Unknown cost of this stage or its unavoidable commitments is not affordable",
             "Do not ask the user to choose a technical diagnostic",
             "The same diagnostic class cannot repeat from the same evidence-state identity",
             "Make no trajectory, route, or parent inference",
@@ -207,8 +212,8 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
         ),
         "campaign-state.md": (
             "first applicable row from learning-loop.md",
-            "exact non-unique technical diagnostic blocker",
-            "Routine row 13 may not add research, diagnosis, or review",
+            "do not introduce a separate uniqueness test here",
+            "Routine row 13 adds no research, diagnosis, or review",
             "does not reinterpret validity, technical learning, route eligibility, progress, constraint meaning, diagnostic alternatives, dominance, affected scope, or surviving authority",
             "Affected scope",
             "Surviving authority",
@@ -228,7 +233,7 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
         ),
         "entry-review.md": (
             "reject automatic research at every selection",
-            "Reject routine research, any routine use of protected reserve",
+            "Reject research that the resolver does not select, routine use of protected reserve",
             "`project-decision` content root and an empty payload",
             "Every section, rule, field, and example after this heading describes the historical version 1 packet for audit only",
         ),
@@ -239,9 +244,9 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "each surviving project decision root, parent chain",
         ),
         "packaging-and-recovery.md": (
-            "The same handoff bytes must reproduce the same project root chain",
-            "workflow release roots",
-            "Missing project bytes are a recovery blocker",
+            "Use `verify-handoff` to read the exact records from Git",
+            "Workflow deployment files, environments,\ncaches, and unrelated work are not handoff members",
+            "Restore a missing dependency at its owning location",
         ),
     }
     for name, markers in required.items():
@@ -249,8 +254,8 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             if marker not in markdown[name]:
                 findings.append(f"{name} omits {marker}")
 
-    if learning.count("BLOCKED: non-unique technical diagnostic decision") != 1:
-        findings.append("non-unique diagnostic blocker is not canonical")
+    if learning.count("Unique dominance is sufficient, not necessary, for a technical choice") != 1:
+        findings.append("technical diagnostic ordering rule is not canonical")
     return findings
 
 
@@ -294,6 +299,8 @@ class FrontierSkillBundleTests(unittest.TestCase):
                     )
                     path = root / relative
                     text = path.read_text()
+                    if old:
+                        self.assertIn(old, text)
                     path.write_text(text.replace(old, new, 1) if old else text + new)
                     self.assertNotEqual([], reflection_contract_findings(root))
 
@@ -306,17 +313,17 @@ class FrontierSkillBundleTests(unittest.TestCase):
         mutations = (
             (
                 "frontier-optimization/references/learning-loop.md",
-                "| 5 | The least-cost sufficient action",
-                "| 15 | The least-cost sufficient action",
+                "| 5 | No sufficient next observation",
+                "| 15 | No sufficient next observation",
             ),
             (
                 "frontier-optimization/references/campaign-state.md",
-                "Routine row 13 may not add research, diagnosis, or review",
-                "Routine row 13 may add research for confidence",
+                "Routine row 13 adds no research, diagnosis, or review",
+                "Routine row 13 adds research for confidence",
             ),
             (
                 "frontier-optimization/references/entry-review.md",
-                "Reject routine research, any routine use of protected reserve",
+                "Reject research that the resolver does not select, routine use of protected reserve",
                 "Permit routine research and routine use of protected reserve",
             ),
         )
@@ -330,7 +337,9 @@ class FrontierSkillBundleTests(unittest.TestCase):
                         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
                     )
                     path = root / relative
-                    path.write_text(path.read_text().replace(old, new, 1))
+                    text = path.read_text()
+                    self.assertIn(old, text)
+                    path.write_text(text.replace(old, new, 1))
                     self.assertNotEqual([], direction_resolver_contract_findings(root))
 
     def test_live_expected_skill_bundle_is_valid_and_content_addressed(self) -> None:
@@ -641,13 +650,13 @@ class FrontierSkillBundleTests(unittest.TestCase):
         )[0]
         semantic_markers = (
             "A B is one bounded objective, authority, evidence, and spend envelope",
-            "Do not copy that rule into another packet policy",
+            "Apply [Charging and publication](#charging-and-publication)",
             "The worker owns a mutable work breakdown",
             "One execution-start may support several sequential worker invocations",
-            "Record every real effect and resource use cumulatively",
+            "preserve and count any limited effect already incurred",
             "A realization is review-ready only when the complete B output",
             "When implementation review returns a fidelity finding",
-            "uses the official inventory identity as the idempotency key",
+            "Byte-identical output alone does not establish that two operations are the same event",
             "After authoritative publication or the immutable result",
         )
         for marker in semantic_markers:
@@ -678,12 +687,12 @@ class FrontierSkillBundleTests(unittest.TestCase):
         }
         required = {
             "lifecycle": (
-                "A fidelity finding may return to step 6 inside the same B",
-                "uses its `inventory_id` as the idempotency key",
+                "Apply Batch Interface's continuation rule to fidelity or design findings",
+                "inventory identity establishes content equality, not whether a new budget event occurred",
             ),
             "worker": (
-                "A fidelity finding returns to the same working loop",
-                "If an independent review repeats the same finding",
+                "Apply Batch Interface's continuation rule to fidelity findings, design revisions, and failed retries",
+                "it proves content equality, not a free new proposal",
             ),
             "entry": (
                 "parent- or R8-owned charge rule",

@@ -64,7 +64,9 @@ scenarios:
         affordable: true
         reachable: true
         non_dominated: [D-validity-a, D-validity-b]
-    expected: {row: 6, direction: blocked, action: non-unique-technical-diagnostic}
+        selected: D-validity-a
+        selection_reason: Earlier validity observation leaves the larger alternative reachable.
+    expected: {row: 6, direction: local diagnostic, action: selected-validity-diagnostic}
   - id: reopened-route-landscape
     evidence_state: sha256:reopened-route
     facts: {route_set: reopened-route-landscape, local_diagnostic: unique}
@@ -95,8 +97,8 @@ scenarios:
     expected: {row: 9, direction: blocked, action: dominated-diagnostic-repeat-blocker}
   - id: non-unique-local-diagnosis
     evidence_state: sha256:nonunique-local
-    facts: {local_diagnostic: non-unique}
-    expected: {row: 9, direction: blocked, action: non-unique-technical-diagnostic}
+    facts: {local_diagnostic: recorded-order, selection_reason: Same information and cost; retain the recorded operational order.}
+    expected: {row: 9, direction: local diagnostic, action: selected-local-diagnostic}
   - id: outside-allocation-probe
     evidence_state: sha256:outside-allocation
     facts: {outside_allocation: true, specialized_gate: implementation-review}
@@ -238,7 +240,7 @@ acceptance_scenarios:
   - {number: 26, name: Qualitative iterative route, target: {kind: contract-assertion, path: references/planning-records.md, marker: mechanism checkpoint}}
   - {number: 27, name: Post-hoc rule, target: {kind: contract-assertion, path: references/learning-loop.md, marker: prospective}}
   - {number: 28, name: Semantic conflict, target: {kind: contract-assertion, path: references/campaign-state.md, marker: Selection applies the reviewed Entry evidence or latest controlling reflection}}
-  - {number: 29, name: Compaction recovery, target: {kind: regression-test, path: scripts/test_frontier_provenance.py, test: test_complete_handoff_verifies_offline_from_outcome_root}}
+  - {number: 29, name: Compaction recovery, target: {kind: regression-test, path: scripts/test_frontier_provenance.py, test: test_complete_handoff_references_git_and_retained_legacy_roots}}
   - {number: 30, name: Claims boundary, target: {kind: contract-assertion, path: references/closeout-and-claims.md, marker: local optimum}}
   - {number: 31, name: Mid-campaign workflow update, target: {kind: contract-assertion, path: references/frontier-core.md, marker: Any workflow update, including a changed decision rule}}
   - {number: 32, name: Project-only decision node, target: {kind: contract-assertion, path: references/entry-review.md, marker: '`project-decision` content root and an empty payload'}}

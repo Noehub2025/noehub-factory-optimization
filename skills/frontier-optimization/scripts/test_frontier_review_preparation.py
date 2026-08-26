@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -12,8 +13,22 @@ import pytest
 import yaml
 
 from frontier_provenance import NodeRepository, ProvenanceError, attest, bind_authority
-from frontier_provenance.stores import ArtifactSource, ProjectPortableStore
-from frontier_review import PREPARATION_CONTRACT, prepare_review
+from frontier_provenance.stores import ArtifactSource, ProjectPortableStore, PortableBundleStore
+from frontier_review import PREPARATION_CONTRACT, prepare_review as prepare_saved_review
+from frontier_provenance.git_content import GitReferenceStore
+
+
+def prepare_review(spec: dict, root: Path, output: Path) -> dict:
+    """Save fixture drafts normally before exercising review preparation."""
+    def git(*args):
+        subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True)
+    git("init", "-q")
+    paths = [item["path"] for item in spec["artifacts"] if (root / item["path"]).is_file()]
+    if paths:
+        git("add", "--", *paths)
+    git("-c", "user.name=Review Test", "-c", "user.email=test@example.invalid",
+        "commit", "--allow-empty", "-qm", "review fixture checkpoint")
+    return prepare_saved_review(spec, root, output)
 
 
 def self_identified(field: str, prefix: str, body: bytes) -> bytes:
@@ -814,10 +829,10 @@ def test_supplement_only_decision_cannot_bind_new_authority() -> None:
         root = Path(directory)
         source = root / "repair.yaml"
         source.write_text("replacement: X001 to X002\n")
-        manifest = ProjectPortableStore().capture(
-            "decision",
+        manifest = PortableBundleStore()._capture_domain(
             [ArtifactSource("project/decision/repair/change.yaml", source)],
             root / "supplement",
+            domain="project-decision",
             project_root=root,
         )
         decision = {
@@ -852,18 +867,20 @@ def test_workflow_bytes_do_not_change_project_review_identity() -> None:
         assert first["decision_root"] == second["decision_root"] == third["decision_root"]
 
 
-def test_live_byte_drift_aborts_the_atomic_publish(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_later_working_changes_do_not_change_the_sealed_git_version(monkeypatch: pytest.MonkeyPatch) -> None:
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         spec = write_entry(root)
-        original = ProjectPortableStore.capture
+        original = GitReferenceStore.capture
 
         def capture_then_drift(store, *args, **kwargs):
             manifest = original(store, *args, **kwargs)
             (root / "selection.yaml").write_text("event_id: X002\n")
             return manifest
 
-        monkeypatch.setattr(ProjectPortableStore, "capture", capture_then_drift)
+        monkeypatch.setattr(GitReferenceStore, "capture", capture_then_drift)
         result = prepare_review(spec, root, root / "sealed")
-        assert result["status"] == "NOT_READY"
-        assert not (root / "sealed").exists()
+        assert result["status"] == "SEALED", result
+        raw = PortableBundleStore().read_artifacts(root / "sealed/snapshot")
+        assert b"X001" in raw["project/decision/selection/evidence-state.yaml"]
+        assert (root / "selection.yaml").read_text() == "event_id: X002\n"

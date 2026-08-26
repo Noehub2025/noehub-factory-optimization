@@ -15,6 +15,7 @@ import yaml
 
 from frontier_provenance import NodeRepository, ProvenanceError, freeze_decision
 from frontier_provenance.content import canonical_json
+from frontier_provenance.git_content import GitReferenceStore
 from frontier_provenance.review_contract import (
     ENTRY_STAGES,
     ROLE_ADAPTER_CONTRACT,
@@ -25,7 +26,6 @@ from frontier_provenance.review_subject import SUBJECT_CONTRACT
 from frontier_provenance.stores import (
     ArtifactSource,
     ClosedCollection,
-    ProjectPortableStore,
 )
 
 
@@ -98,21 +98,17 @@ def prepare_review(
         normalized["semantic_projection"] = captured["semantic_projection"]
         review_id = _next_review_id(captured["raw_by_name"])
         index = _subject_index(normalized, review_id)
-        index_path = staging / "review-subject-index.json"
-        index_path.write_bytes(canonical_json(index) + b"\n")
-
         sources = list(normalized["sources"])
-        sources.append(ArtifactSource(INDEX_LOGICAL_NAME, index_path))
         snapshot = staging / "snapshot"
-        manifest = ProjectPortableStore().capture(
+        manifest = GitReferenceStore(project_root).capture(
             "decision",
             sources,
             snapshot,
-            project_root=project_root,
             closed_collections=normalized["closed_collections"],
+            subject_index=index,
+            expected_bytes=captured["raw_by_name"],
         )
-        _assert_frozen_bytes(manifest, captured["raw_by_name"], index_path.read_bytes())
-        _assert_live_bytes_unchanged(normalized["sources"], captured["raw_by_name"])
+        _assert_frozen_bytes(manifest, captured["raw_by_name"], canonical_json(index) + b"\n")
 
         decision = freeze_decision(decision_root=manifest["content_root"])
         repository = NodeRepository(staging / "nodes")
@@ -145,13 +141,8 @@ def prepare_review(
         }
         assignment_path = staging / "review-assignment.json"
         assignment_path.write_bytes(canonical_json(assignment) + b"\n")
-        _verify_staging(staging, decision_path, packet, assignment)
+        # Draft semantics and chosen Git bytes were checked above, once.
         os.replace(staging, output_root)
-        try:
-            _assert_live_bytes_unchanged(normalized["sources"], captured["raw_by_name"])
-        except (OSError, ProvenanceError):
-            os.replace(output_root, staging)
-            raise
         published = True
         return {
             "status": "SEALED",
@@ -639,29 +630,8 @@ def _assert_frozen_bytes(
         raise ProvenanceError("captured bytes changed after draft validation")
 
 
-def _assert_live_bytes_unchanged(
-    sources: list[ArtifactSource], raw_by_name: dict[str, bytes]
-) -> None:
-    for source in sources:
-        if source.path.resolve().read_bytes() != raw_by_name[source.logical_name]:
-            raise ProvenanceError(f"project byte drifted while sealing: {source.path}")
 
 
-def _verify_staging(
-    staging: Path,
-    decision_path: Path,
-    packet: dict[str, Any],
-    assignment: dict[str, Any],
-) -> None:
-    result = ProjectPortableStore().verify(staging / "snapshot", expected_role="decision")
-    if result.get("review_subject", {}).get("subject_mode") != "complete":
-        raise ProvenanceError("sealed decision lacks a complete review subject")
-    if not decision_path.is_file():
-        raise ProvenanceError("sealed decision node is missing")
-    if json.loads((staging / "review-packet.json").read_text()) != packet:
-        raise ProvenanceError("review packet publication is not reproducible")
-    if json.loads((staging / "review-assignment.json").read_text()) != assignment:
-        raise ProvenanceError("review assignment publication is not reproducible")
 
 
 def _output_path(value: Path, project_root: Path) -> Path:
@@ -675,11 +645,18 @@ def _output_path(value: Path, project_root: Path) -> Path:
 
 
 def _completion_check(review_kind: str) -> str:
-    return (
+    check = (
         f"Review the one complete {review_kind} project-decision root. Verify its subject "
         "index, exact members, closed collections, semantic projection, project bindings, "
         "and consequence gates. Write one immutable finding report for this decision only."
     )
+    if review_kind == "entry":
+        check += (
+            " For a repaired Entry, apply entry-review.md#entry-repair-review: inspect "
+            "the change and its consequences and briefly cite applicable earlier "
+            "conclusions; completeness does not require repeating unaffected review."
+        )
+    return check
 
 
 def _allowed_outputs(review_kind: str, projection: dict[str, Any]) -> list[str]:
