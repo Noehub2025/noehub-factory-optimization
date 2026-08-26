@@ -117,7 +117,7 @@ def reflection_contract_findings(skills_root: Path) -> list[str]:
     }
     findings: list[str] = []
     entrypoint = (skills_root / "frontier-optimization/SKILL.md").read_text()
-    if "[Fresh-context Reflection analysis](references/reflection-analysis.md)" not in entrypoint:
+    if "references/reflection-analysis.md" not in MODULE.LINK_PATTERN.findall(entrypoint):
         findings.append("frontier-optimization SKILL omits fresh-context Reflection routing")
     all_markdown = [path.read_text() for path in skills_root.rglob("*.md")]
     for field in REFLECTION_FIELDS:
@@ -157,7 +157,7 @@ def reflection_contract_findings(skills_root: Path) -> list[str]:
 
 
 RESOLVER_ROW_MARKERS = {
-    1: "Parent or handoff mismatch",
+    1: "An unresolved parent requirement or adopted revision affects the next decision",
     2: "safety, legality, authority, accounting, explicit campaign-scope unconditional F7 stop, or halt",
     3: "terminal B or E lacks coverage",
     4: "parent-owned objective, Representation, Slot H measurement meaning, R8 rule, permitted scope, or claim ceiling",
@@ -219,6 +219,12 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "Surviving authority",
             "Project provenance",
         ),
+        "entry-review.md": (
+            "Budget, prior and unknown consumption, reservations and protected reserve agree",
+            "The current selection follows its controlling Reflection and the sole resolver",
+            "`project-decision` content root and an empty payload",
+            "entry-review-legacy.md",
+        ),
         "campaign-cycle.md": (
             "This file adds no direction table, fallback priority, research-first exception, or post-resolver R8 override",
             "another evidence round is permitted only when resolver row 7 or row 8 selects it",
@@ -229,13 +235,7 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "Semantic parent challenge",
             "Project provenance",
             "An unresolved or unaffordable validity, implementation, or local-mechanism diagnostic is not a semantic parent challenge",
-            "Any workflow update, including a changed decision rule",
-        ),
-        "entry-review.md": (
-            "reject automatic research at every selection",
-            "Reject research that the resolver does not select, routine use of protected reserve",
-            "`project-decision` content root and an empty payload",
-            "Every section, rule, field, and example after this heading describes the historical version 1 packet for audit only",
+            "A running B preserves its exact execution inputs and actual permission",
         ),
         "closeout-and-claims.md": (
             "Preserve final direction state",
@@ -323,8 +323,8 @@ class FrontierSkillBundleTests(unittest.TestCase):
             ),
             (
                 "frontier-optimization/references/entry-review.md",
-                "Reject research that the resolver does not select, routine use of protected reserve",
-                "Permit routine research and routine use of protected reserve",
+                "Budget, prior and unknown consumption, reservations and protected reserve agree",
+                "Ignore earlier spending and permit routine use of protected reserve",
             ),
         )
         for relative, old, new in mutations:
@@ -386,7 +386,7 @@ class FrontierSkillBundleTests(unittest.TestCase):
                 "return ADVISORY",
             ),
             (
-                "frontier-optimization/references/frontier-core.md",
+                "frontier-optimization/references/finding-effects.md",
                 "create no replacement identity, B, V, review, or authorization",
                 "create a replacement B and review for every advisory",
             ),
@@ -401,7 +401,9 @@ class FrontierSkillBundleTests(unittest.TestCase):
                         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
                     )
                     path = root / relative
-                    path.write_text(path.read_text().replace(old, new, 1))
+                    text = path.read_text()
+                    self.assertIn(old, text)
+                    path.write_text(text.replace(old, new, 1))
                     result = MODULE.validate(root)
                     self.assertIn(
                         "FINDING_EFFECT_CONTRACT_INVALID",
@@ -542,16 +544,40 @@ class FrontierSkillBundleTests(unittest.TestCase):
 
     def test_both_coordinators_must_use_the_shared_handoff(self) -> None:
         live_root = SCRIPT.parents[2]
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory) / "skills"
-            shutil.copytree(live_root, root, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
-            coordinator = root / "frontier-optimization/SKILL.md"
-            coordinator.write_text(coordinator.read_text().replace("../frame-optimization/references/frontier-handoff.md", "references/frontier-core.md"))
-            result = MODULE.validate(root)
-            self.assertIn(
-                "STAGE_HANDOFF_POINTER_MISSING",
-                {item["code"] for item in result["findings"]},
-            )
+        for relative, pointer in MODULE.STAGE_HANDOFF_REQUIREMENTS.items():
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / "skills"
+                shutil.copytree(live_root, root, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+                source = root / relative
+                text = source.read_text()
+                self.assertIn(pointer, MODULE.LINK_PATTERN.findall(text))
+                source.write_text(text.replace(pointer, "missing-handoff.md"))
+                result = MODULE.validate(root)
+                self.assertIn(
+                    "STAGE_HANDOFF_POINTER_MISSING",
+                    {item["code"] for item in result["findings"]},
+                )
+
+    def test_split_contract_routes_remain_required(self) -> None:
+        live_root = SCRIPT.parents[2]
+        routes = (
+            ("frontier-optimization/references/frontier-core.md", "finding-effects.md", "FINDING_EFFECT_CONTRACT_INVALID"),
+            ("frontier-optimization/references/entry-review.md", "entry-review-legacy.md", "FINDING_EFFECT_CONTRACT_INVALID"),
+            ("frontier-optimization/references/batch-interface.md", "batch-packet-format.md", "RESULT_CONTRACT_INVALID"),
+            ("frontier-optimization/references/batch-interface.md", "batch-result.md", "RESULT_CONTRACT_INVALID"),
+            ("run-frontier-batch/SKILL.md", "../frontier-optimization/references/batch-evaluation.md", "RESULT_CONTRACT_INVALID"),
+            ("frontier-optimization/references/review-branches.md", "replan-review.md", "REVIEW_BRANCH_REGISTRY_INVALID"),
+        )
+        for relative, pointer, expected in routes:
+            with self.subTest(relative=relative, pointer=pointer), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / "skills"
+                shutil.copytree(live_root, root, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+                source = root / relative
+                text = source.read_text()
+                self.assertIn(pointer, MODULE.LINK_PATTERN.findall(text))
+                source.write_text(text.replace(pointer, "missing-contract.md"))
+                result = MODULE.validate(root)
+                self.assertIn(expected, {item["code"] for item in result["findings"]})
 
     def test_boundary_preserving_continuation_callers_use_one_contract(self) -> None:
         live_root = SCRIPT.parents[2]
@@ -673,7 +699,7 @@ class FrontierSkillBundleTests(unittest.TestCase):
                 skills_root
                 / "frontier-optimization/references/candidate-lifecycle.md"
             ).read_text(),
-            "worker": (skills_root / "run-frontier-batch/SKILL.md").read_text(),
+            "worker": (skills_root / "frontier-optimization/references/batch-code-execution.md").read_text(),
             "entry": (
                 skills_root / "frontier-optimization/references/entry-review.md"
             ).read_text(),
@@ -695,8 +721,9 @@ class FrontierSkillBundleTests(unittest.TestCase):
                 "it proves content equality, not a free new proposal",
             ),
             "entry": (
-                "parent- or R8-owned charge rule",
-                "Do not accept a copied publication policy",
+                "use the bound parent as the source of budget, permission, and acceptance rules",
+                "rather than inventing parallel policies",
+                "batch-interface.md#charging-and-publication",
             ),
             "implementation_review": (
                 "complete all-pass realization ready for prepublication review",
@@ -741,9 +768,12 @@ class FrontierSkillBundleTests(unittest.TestCase):
         canonical_rule = (
             "every legal result maps to the same allowed next action"
         )
-        for document in (canonical, problem_review, planning, entry_review):
+        for document in (canonical, problem_review, planning):
             with self.subTest(document=document[:80]):
                 self.assertIn(canonical_rule, document)
+
+        self.assertIn("Test the proxy's fitness for the intended consequence", entry_review)
+        self.assertIn("Preserve validity and claim limits", entry_review)
 
         self.assertIn("canonical R8 vacuity definition", representation_review)
         self.assertIn("headroom, noise, resolution", canonical)

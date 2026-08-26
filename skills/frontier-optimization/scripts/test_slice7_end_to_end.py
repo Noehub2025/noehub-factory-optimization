@@ -1077,17 +1077,18 @@ class Slice7ContractTests(unittest.TestCase):
         )
         self.assert_contract_contains(
             "frontier-core.md",
-            "pre-spend parent-rebind",
-            "forced closeout",
+            "## Change impact and retained results",
+            "Prior spend, materialization and a changed epoch or revision number alone do not force a new generation or candidate",
             "Project provenance",
-            "Any workflow update, including a changed decision rule",
+            "Workflow, template, validator, storage or generation changes alone create no new review",
         )
 
     def test_recovery_uses_retained_git_and_artifacts_not_conversation(self) -> None:
         self.assert_contract_contains(
             "frontier-core.md",
             "retained Git versions and artifact references; conversation is not a substitute",
-            "run the bound candidate-recovery validator",
+            "Check the content needed for that use at its existing gate",
+            "Missing bytes pause their dependent use",
         )
         self.assert_contract_contains(
             "packaging-and-recovery.md",
@@ -1099,7 +1100,7 @@ class Slice7ContractTests(unittest.TestCase):
 
     def test_first_batch_transition_authorizes_a_rule_not_a_date_literal(self) -> None:
         self.assert_contract_contains(
-            "batch-interface.md",
+            "batch-packet-format.md",
             "frontier-lifecycle-transition/1",
             "capture: once_after_accepted_acknowledgment",
             "updated: {derive: calendar_date, source: transition_time, timezone: UTC}",
@@ -1131,11 +1132,9 @@ class Slice7ContractTests(unittest.TestCase):
             "Suggest no command",
         )
         coordinator = (SCRIPT_ROOT.parent / "SKILL.md").read_text()
-        self.assertIn("Immediately before the final reply", coordinator)
         self.assertIn("references/user-facing-handoff.md", coordinator)
-        self.assertIn("read", coordinator)
-        self.assertIn("last", coordinator)
-        self.assertIn("may not rerun routing, direction resolution, review, or state adoption", coordinator)
+        self.assertIn("After adopting the result, read", coordinator)
+        self.assertIn("This return step does not rerun the resolver", coordinator)
         for reference in (
             "entry-and-planning.md",
             "campaign-cycle.md",
@@ -1146,7 +1145,7 @@ class Slice7ContractTests(unittest.TestCase):
                 contract = (SCRIPT_ROOT.parent / "references" / reference).read_text()
                 self.assertNotIn("User-facing handoff", contract)
                 if reference == "packaging-and-recovery.md":
-                    self.assertIn("The Entry router owns that decision", contract)
+                    self.assertIn("follows the Entry router", contract)
                 else:
                     self.assertIn("Coordinator", contract)
 

@@ -1,6 +1,6 @@
 # Framing-to-Frontier Handoff
 
-This interface connects the repository's two Coordinator stages. `frame-optimization` owns and emits the handoff. `frontier-optimization` validates and consumes it. Neither Coordinator invokes the other or writes the other stage's records.
+This interface connects the repository's two Coordinator stages. `frame-optimization` owns and emits the handoff. `frontier-optimization` validates and consumes it. Each Coordinator writes only its own stage's records. Frontier may delegate an affected parent repair to Framing within the existing user grant, then consume the adopted handoff.
 
 ## Stage selection
 
@@ -8,14 +8,13 @@ This interface connects the repository's two Coordinator stages. `frame-optimiza
 |---|---|---|
 | Problem or representation is absent, stale, nonpositive, or still open | `frame-optimization` | Repaired framing state, exact blocker, or reviewed handoff |
 | Current representation review is `PROCEED_EXPLORATORY` or `PROCEED_MODULAR` and no parent conflict exists | `frontier-optimization` | Frontier Entry, campaign action, closeout, recovery, or package result |
-| Frontier detects a parent conflict before any campaign record | `frame-optimization` on a later user invocation | Repaired parent and a new reviewed handoff, or blocker |
-| Frontier detects a parent conflict after campaign records exist | `frontier-optimization` | Exact permitted rebind or closeout; never an upstream edit |
+| Frontier detects a parent requirement affecting the next action | `frontier-optimization` delegates to `frame-optimization` within the grant | Adopted scoped repair and updated binding, or an exact dependent-action blocker |
 
-The user selects the Coordinator by asking to frame or run the campaign. A worker never selects, invokes, or substitutes for either Coordinator.
+The user's task selects the initial Coordinator. Technical stage transitions within its grant need no new user question; workers still return to their assigned owner.
 
 ## Handoff contract
 
-Emit one immutable handoff only from the latest positive representation review. Bind:
+Emit the current handoff from applicable positive conclusions and adopted changes. Cite each saved review for its actual scope; a new handoff does not claim an old review signed changed bytes. Bind:
 
 - canonical task path;
 - parent problem epoch and `generated.at`;
@@ -33,7 +32,7 @@ Emit one immutable handoff only from the latest positive representation review. 
 
 ## Frontier admission
 
-Before creating or resuming campaign state, `frontier-optimization` recomputes every handoff and parent identity from the exact project contract and artifact bytes named by the reviewed-path manifest and measurement bindings. Skill files, workflow source or release data, and transient user replies are not identity inputs. It accepts only an unchanged positive project result whose exact scope remains current. A mismatch returns `PARENT_REVIEW_REQUIRED` before any campaign record, Selection, reservation, worker action, or spend. A workflow-only change does not stale the handoff.
+Bind the current adopted parent and handoff for the next action, retaining saved reviews for the scope they actually established. Use [Change impact and retained results](../../frontier-optimization/references/frontier-core.md#change-impact-and-retained-results) for revisions: inspect the changed meaning and its dependencies, not every historical object. A missing applicable requirement pauses only dependent work. A workflow-only update does not invalidate the project handoff, and workflow bytes remain outside project identities.
 
 Admission copies the handoff bindings into Frontier state without changing their meaning. A positive handoff defines permitted search work; it does not authorize candidate development, spend, measurement, integration, incumbent use, promotion, production changes, or claims. Frontier applies its own Entry and lifecycle gates for those consequences.
 

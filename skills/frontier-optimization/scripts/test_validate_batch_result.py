@@ -2060,6 +2060,32 @@ class BatchResultValidationTests(unittest.TestCase):
                     repo_root=root,
                 )
 
+    def test_parent_revision_does_not_retarget_frozen_execution_inputs(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "runtime-input.txt"
+            source.write_bytes(b"original runtime input\n")
+            parent = root / "PROBLEM.md"
+            parent.write_bytes(b"original parent rule\n")
+            entry = {
+                "path": "runtime-input.txt", "scope": "file",
+                "identity": "sha256:" + hashlib.sha256(source.read_bytes()).hexdigest(),
+            }
+            packet = {"execution_frozen_inputs": [entry]}
+            state = copy.deepcopy(packet)
+            baseline = {
+                "project/state/frozen-inputs/runtime-input.txt": source.read_bytes(),
+            }
+            parent.write_bytes(b"revised unrelated parent rule\n")
+            MODULE.verify_current_execution_frozen_inputs(
+                packet=packet, state=state, baseline_raw=baseline, repo_root=root,
+            )
+            source.write_bytes(b"changed runtime input\n")
+            with self.assertRaisesRegex(ValueError, "live frozen input drift"):
+                MODULE.verify_current_execution_frozen_inputs(
+                    packet=packet, state=state, baseline_raw=baseline, repo_root=root,
+                )
+
     def test_current_project_dispatch_validates_end_to_end_in_draft_and_frozen_phases(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

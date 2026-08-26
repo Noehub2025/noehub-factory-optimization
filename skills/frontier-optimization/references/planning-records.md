@@ -71,14 +71,14 @@ Preserve a useful non-winner's distinct capability, mechanism evidence, or plaus
 - Alternatives: <technically eligible options for tradeoff; authorize, decline, and conditional authorization for execution; current explicit request for campaign-opening>
 - Recommendation presented: <recommended option and evidence-bounded reason or None>
 - Applies to: <routes, batches, resources, or campaign choice>
-- Bound object: <prior closeout, unchanged parents, next generation, inherited Budget, and planning-only zero-spend boundary for campaign-opening; exact AUTHORIZATION_READY target, reviewed design contract and scope, immutable direct packet, preflight and source, layout, or resource for execution; or None for tradeoff>
+- Bound object: <prior closeout, current applicable parents, next generation, inherited Budget, and planning-only zero-spend boundary for campaign-opening; exact AUTHORIZATION_READY target, reviewed design contract and scope, immutable direct packet, preflight and source, layout, or resource for execution; or None for tradeoff>
 - Effective conditions: <facts and limits>
 - Reconsider when: <new evidence or event>
 - Consequence: <allocation, exclusion, priority, risk, or authorization effect>
 - Supersedes: <V identifier or None>
 ```
 
-A `campaign-opening` V records an explicit current post-closeout reopen request. Bind it to the prior closeout, unchanged parent identities, proposed next generation, inherited Budget, and `planning only; zero B spend`. It records the answer already present in the request, needs no `AUTHORIZATION_READY`, and cannot present the Coordinator-derived technical objective as a user choice. A later user-owned route tradeoff uses a separate V. An `execution` V retains the exact immutable target and readiness rules. Its canonical ledger row is the reviewed authorize-branch record at `decision_record_path`; before the answer, that row may bind the stable target specification and assigned result path but not a future target or answer identity. The byte-derived user-result file binds the final target and exact answer. A finding-free adoption joins the ledger path, decision identifier, result identity, and target identity; together they are the one execution V.
+A `campaign-opening` V records an explicit current post-closeout reopen request. Bind it to the prior closeout, current applicable parent identities, proposed next generation, inherited Budget, and `planning only; zero B spend`. It records the answer already present in the request, needs no `AUTHORIZATION_READY`, and cannot present the Coordinator-derived technical objective as a user choice. A later user-owned route tradeoff uses a separate V. An `execution` V retains the exact immutable target and readiness rules. Its canonical ledger row is the reviewed authorize-branch record at `decision_record_path`; before the answer, that row may bind the stable target specification and assigned result path but not a future target or answer identity. The byte-derived user-result file binds the final target and exact answer. A finding-free adoption joins the ledger path, decision identifier, result identity, and target identity; together they are the one execution V.
 
 ## B: batch plan
 
@@ -100,7 +100,7 @@ A `campaign-opening` V records an explicit current post-closeout reopen request.
 - Design profile: <direct | module | system | not applicable>
 - Required design inputs: <exact W and indexed concern sections with identities, or None>
 - Design review: <adopted DESIGN_READY review bound to those inputs, pending for design work, or not applicable under direct profile>
-- Development authorization: <external AUTHORIZATION_READY, V, Coordinator Entry adoption, and frozen adoption validation bound to the exact target; pending before readiness review; not applicable for non-code-bearing work>
+- Development authorization: <applicable user grant, current Entry readiness and execution authority; cite a new V only when User decisions requires one; not applicable when no execution is proposed>
 - Parallel set: <label or None>
 - Depends on: <identifiers or None>
 - User values applied: <V identifiers or None>
@@ -110,16 +110,16 @@ A `campaign-opening` V records an explicit current post-closeout reopen request.
 - Starting records: <identifiers>
 - Project provenance: <exact decision and authority roots governing this B>
 - Work: <operations, modules, and worker assignments>
-- Repository structure: <existing-integrated with evidence; user-approved-new with V; absent-awaiting-user; or not applicable>
+- Repository structure: <existing-integrated; new-in-scope; user-choice-needed with the missing decision; or not applicable>
 - Source base identity: <commit plus dirty-state identity, immutable source snapshot, or not applicable>
 - Workspace isolation: <branch and worktree for code-bearing work, shared sequential workspace with reason, or not applicable>
 - Candidate interface: <existing or user-approved seam and callers, or not applicable>
 - Allowed code paths: <exclusive paths assigned to this B or not applicable>
 - Worker-forbidden paths: <paths this B's worker must not write, including evaluator, runner, interface, schema, Coordinator outputs, or other shared paths; or not applicable>
 - Execution-frozen inputs: <path, identity, and exact scope that no actor may change after execution start; or not applicable>
-- Packet preflight: <Coordinator-owned path, finding-free preflight identity, computed packet identity, validator identity, and created-before-authorization evidence>
+- Preparation: <sealed current decision and preparation result; a packet preflight only for an actual historical compatibility object>
 - Result contract version: <versioned result schema and validation branch frozen in the B packet>
-- Authorization readiness: <Entry schema identities, AUTHORIZATION_READY review identity, exact target, Coordinator adoption state, and adoption-validation identity>
+- Entry readiness: <current Entry identity, applicable AUTHORIZATION_READY or spend-readiness ENTRY_READY, original user target, current execution authority and adoption state>
 - Candidate package inventory: <assigned official immutable path, byte-derived identity rule, and parent or R8 rule that owns the charge event; or not applicable>
 - Candidate manifest: <assigned stable path and identity rule, or not applicable>
 - Engineering check plan: <exact selected units, argument vectors, content-addressed effect evidence, positive cumulative effect limits across all attempts, and engineering-only consequence; or not applicable>
@@ -135,7 +135,7 @@ A `campaign-opening` V records an explicit current post-closeout reopen request.
 - Implementation definition of done: <conditions or exact WORK.md section>
 - Planned spend: <maximum amount and unit under the cited parent or R8 rule>
 - Actual spend: pending
-- Authorization gate: <AUTHORIZATION_READY followed by exact user V and Coordinator ENTRY_READY adoption; direct ENTRY_READY when no user authorization applies; adopted REPLAN_READY for a strategic later change; adopted implementation review before first Slot H measurement, integration, or incumbent use; exact diagnostic-only path under candidate-lifecycle.md; or exact later Selection authority>
+- Authorization gate: <AUTHORIZATION_READY followed by exact user V and Coordinator ENTRY_READY adoption; spend-readiness ENTRY_READY when an adopted grant applies or no new user decision is needed; adopted REPLAN_READY for a strategic later change; adopted implementation review before first Slot H measurement, integration, or incumbent use; exact diagnostic-only path under candidate-lifecycle.md; or exact later Selection authority>
 - Baseline-establishment checkpoint: <usable artifact and completion check or not applicable>
 - First performance check: <comparison or decision result, and whether this B or a later B runs it>
 - Preparation budget limit: <maximum allocation before that check>

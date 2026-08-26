@@ -25,7 +25,7 @@ design_status: <not-required | drafting | review-pending | ready | repair-requir
 design_contract_identity: <immutable identity of the design-contract sections and indexed concerns, pending, or not applicable>
 design_review: <adopted DESIGN_READY path and identity, pending review path, or not applicable; lifecycle-only and never copied into a contract-bearing section>
 input_state: <not-required | request-pending | waiting-for-input | received-unvalidated | accepted-as-evidence | rejected>
-repository_structure_disposition: <existing-integrated | absent-awaiting-user | user-approved-new | not-applicable>
+repository_structure_disposition: <existing-integrated | new-in-scope | user-choice-needed | not-applicable>
 source_base_identity: <exact repository evidence snapshot used for design review, an exact source identity required by design meaning, or not applicable; not the later Entry execution source by default>
 candidate_interface: <existing or user-approved seam, or not applicable>
 generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }

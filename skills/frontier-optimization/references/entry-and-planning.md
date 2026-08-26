@@ -12,10 +12,10 @@
 - [Plan the first observable work](#6-plan-the-first-observable-work)
 - [Select reproducibly](#7-select-reproducibly)
 - [Pin the Entry snapshot](#8-pin-the-entry-snapshot)
-- [Obtain independent Entry review](#9-obtain-independent-entry-review)
+- [Obtain independent Entry review](#9-review-before-authorization)
 - [Record one outcome, then finalize the return](#record-one-outcome-then-finalize-the-return)
 
-Use this stage when no campaign exists, Entry is incomplete, or `frontier-core.md` selected post-closeout recovery mode. Its only successful outcome is one reviewed, reproducible first-batch plan with zero new-generation B spend and fully accounted inherited and Entry cost.
+Use this stage for initial Entry, post-closeout recovery, or an affected decision after a parent revision. Initial Entry produces a reproducible first-batch plan with zero new-generation B spend and reconciled inherited and Entry cost. Parent revision follows its scoped branch below without reopening initial Entry.
 
 ## Load only what Entry reaches
 
@@ -25,35 +25,27 @@ Load [Campaign state](campaign-state.md) and [Planning records](planning-records
 
 Bind the exact Problem epoch, Representation revision, generation times, positive reviews, reference baseline, measurement identity, exact `Permitted` text, R1-R8, budget authority, and claim limits. Copy no broader meaning into Frontier records.
 
-Record `PARENT_REVIEW_REQUIRED` without creating campaign state when a required parent, review, measurement, budget rule, or R8 instruction is missing, stale, conflicting, or ambiguous, then use the finalization section below. Do not repair parent documents here.
+Refer a missing or conflicting requirement to its parent owner under [Change impact and retained results](frontier-core.md#change-impact-and-retained-results). Use `PARENT_REVIEW_REQUIRED` for the dependent action only if that repair cannot proceed within current permission.
 
-### Rebind a compatible pre-spend campaign
+### Adopt a parent revision
 
-Use this path only when `frontier-core.md` selected pre-spend parent-rebind mode.
+Use this path when the core router selects parent-revision mode. Apply [Change impact and retained results](frontier-core.md#change-impact-and-retained-results); prior spend does not select another path.
 
-1. Verify every rebind condition against current parents, accounting, repository paths, and the upstream disposition. Treat missing candidate or result paths as evidence only after checking the assigned locations.
-2. Append X dispositions for the old Selection, selected B, W, Entry packet, review, worker packets, development authorization, and `FIRST_BATCH_PLANNED` authority. Preserve Q, T, V, E, or other adopted evidence only when the upstream disposition names the record reusable and every cited identity still resolves. Unclassified evidence is not retained.
-3. Never edit an old B, W, packet, project snapshot, review, or worker result. Create new identifiers for replacement B and W records. `FRONTIER.md` remains the current view and may be rewritten only after the ledger records the disposition and replacement lineage.
-4. Append `PARENT_REBIND_STARTED` to `log.md` with old and new parent identities, zero-spend evidence, the upstream disposition, retained and replaced identifiers, and the exact consequence that no B is executable.
-5. Continue the normal Entry procedure under the new parents. Reconcile Entry cost, create replacement records from current templates, freeze one filtered immutable project snapshot, and obtain a new Entry review.
+Use the parent owner's adopted revision to update the next affected decision in the existing X, Selection and campaign view. Preserve the generation, B and W when their work remains applicable. Keep historical packets, reviews, execution inputs and charges unchanged. Reuse unaffected conclusions and permission; obtain only the missing or affected Entry, Replan or specialist review required by the changed decision.
 
-The rebind completes only when the Coordinator adopts an unchanged finding-free `ENTRY_READY` and appends `FIRST_BATCH_PLANNED` plus `PARENT_REBOUND` with the new snapshot, review, replacement lineage, and zero-B-spend evidence. Otherwise the old campaign remains preserved and unauthorized.
+A completed parent revision returns to the existing Campaign Cycle. It neither resets Entry accounting nor requires zero historical B spend or a replacement first batch.
 
 ### Open a post-closeout recovery campaign
 
-Use this path only when `frontier-core.md` selected post-closeout recovery mode.
+Use this path only when the core router selects post-closeout recovery mode.
 
-1. Verify unchanged positive parents, a complete prior `CLOSEOUT_COMPLETE`, final accounting, no unresolved C branch, no active worker, the highest campaign generation, and the exact current user request. Treat legacy records without a generation as generation 1.
-2. When the request reuses a materialized candidate, build a temporary recovery preflight and run `scripts/validate_candidate_recovery.py` in draft mode before creating any new-generation artifact. Recompute the manifest, every candidate member, and package identity from canonical bytes. An eligible version 2 manifest uses only the exact-inventory legacy reader and remains byte-identical; a current version 3 manifest contains no workflow identity. A mismatch returns `BLOCKED` with no V, X, review, generation update, or spend. On PASS, insert only the computed project identity, freeze the preflight at a new path, and reproduce finding-free frozen validation.
-3. Increment `campaign_generation`. Append a `campaign-opening` V that quotes the explicit current request and binds the prior closeout, unchanged parents, proposed generation, inherited Budget, and `planning only; zero B spend`. The Coordinator derives the proposed technical objective from the current parent handoff, active D, F5-F6, retained E, final Outcome Reflection, X route dispositions, and closeout handoff. Do not claim the user chose that objective. Require a user-named objective only when the request names a particular recovery object or outcome. Append X dispositions that map every reused evidence object into the new generation. Closed authority remains closed; unclassified objects are not reusable.
-4. Carry the parent budget ceiling and all prior, Entry, B, external-action, and unknown spend forward. Releasing an old reserve does not restore authority by itself. New reservations come only from the new Budget and Selection.
-5. Use new V, X, W, B, review, packet, acknowledgment, execution-start, result, and log identifiers. Never edit or reuse a closed identifier. Preserve old snapshots and results byte for byte.
-6. Reuse current Q, T, V, design, engineering, or reference evidence only when its cited identity still resolves and X states its new-generation role and limits. Test the Coordinator-derived objective through the normal route-generation and Q reconciliation below. Revise it when evidence requires while staying inside parent authority. Use a separate V only for a remaining user-owned route tradeoff, and keep exact first-B authorization separate again.
-7. For a byte-identical materialized candidate, bind the frozen finding-free recovery preflight before planning measurement. Reuse creates no new proposal attempt. Freeze a new `review_mode: recovery-reuse` implementation snapshot and adopt only unchanged `IMPLEMENTATION_READY`; the old implementation verdict remains historical and cannot become positive retroactively.
-8. If recovery review is positive, plan the first B as a separate experiment with `changes_executable_candidate: false`, a complete evaluation target, and the normal two-phase dispatch. If it is nonpositive, preserve it and plan only the exact repair, evidence, or stop consequence it permits. Any candidate byte or behavior change needs a new code-bearing B, current development authorization, and one new proposal attempt.
-9. Append `RECOVERY_CAMPAIGN_STARTED` to `log.md`, update `FRONTIER.md` to the new generation and `campaign_status: planned`, and continue normal Entry planning. The first new-generation B still requires a fresh immutable Entry snapshot and finding-free `ENTRY_READY`.
+1. Read the latest complete closeout and handoff, authoritative final accounting, highest generation and applicable continuing grant or current request. A closed generation stays closed. Resolve any genuinely unfinished worker or claim branch before treating its closeout as complete.
+2. Open the next generation under the current applicable parents, which may differ from the producing parents. Record the prior closeout, current bindings, inherited actual and unknown spend, applicable grant and planning consequence in the existing X/log. Create V only for a new user-owned decision; the Coordinator selects the technical objective.
+3. Reference original results and reviews directly. Retain their producing bindings and original limits. Do not enumerate every historical artifact or every intervening generation to prove reuse. Apply [Change impact and retained results](frontier-core.md#change-impact-and-retained-results) only where the next use actually differs or contrary evidence exists.
+4. For retained candidate material, use [Candidate recovery](candidate-lifecycle.md#post-closeout-recovery-reuse). Published unchanged material with an applicable positive review needs no new implementation review. An unpublished all-pass realization may complete its missing prepublication review against its original execution evidence; publication is not a prerequisite to that review. Incomplete material remains working material until the missing checks pass.
+5. Plan the next actual action through normal Entry with inherited accounting. Use new identities only for new objects, retaining exact historical inputs for evidence. Entry or a missing review may be planned before all prerequisites for execution are ready; no execution, measurement or spend occurs before its applicable readiness and permission.
 
-Recovery does not make the preserved candidate an incumbent, campaign result, or performance claim. It becomes a campaign-baseline candidate only through the new Selection and enters F4 only after valid measurement and retention.
+Recovery alone does not establish a performance claim, promote a candidate or revive ended permission.
 
 ## 2. Initialize the campaign
 
@@ -87,11 +79,11 @@ When only one approach is technically eligible, the reconciled Q and proposed Se
 
 ## 5. Resolve user-owned choices
 
-Technical evidence determines eligibility. Use `grill-frontier` when eligible alternatives differ in user value, cost, lock-in, reversibility, maintenance, operations, deadline, privacy, safety tolerance, or risk.
+Technical evidence determines eligibility. Use [User decisions](user-decisions.md): invoke `grill-frontier` only for a material value choice that existing preferences and evidence cannot settle, or a genuinely missing permission.
 
 For a campaign-baseline choice, present at least two eligible starting points unless the evidence proves only one is eligible. Explain why each can support later optimization, what it costs to establish, when it should be replaced, and which evidence interfaces remain stable. Recommend one when evidence supports it; do not imply that the baseline must itself be the strongest eventual solution.
 
-Adopt each answer as V. A user choice cannot widen scope, waive measurement, prove a technical claim, or authorize candidate development unless it is a separate authorization V for one exact object.
+Adopt each new answer as V. Its stated scope can authorize continuing work; a mere preference does not. Never use an answer to waive measurement or prove a technical claim, and never ask again solely because the execution object changes.
 
 <a id="select-the-first-work"></a>
 
@@ -111,7 +103,9 @@ List the legal result branches for the first check and their distinct allowed ne
 
 Also record `Trajectory contribution` before execution. For prerequisite-first work, bind the output and stop boundary to the prerequisite observation and make dependent implementation explicitly ineligible until the Coordinator adopts passing evidence through the applicable Entry or Replan gate.
 
-Its packet must also separate worker write surfaces, worker-forbidden paths, and execution-frozen inputs; assign exclusive Coordinator-owned packet-preflight, execution-baseline, and execution-start paths plus a worker-owned result-validation path; and use the structured post-acknowledgment lifecycle rule from Batch Interface when the campaign is planned. For W-backed work, bind the reviewed design identity and exact `delivery_scope` to the B, execution source, worker paths, and outputs in Entry; never freeze the whole W or the worker's mutable work breakdown. Apply [Boundary-preserving continuation](batch-interface.md#boundary-preserving-continuation) when separating working and frozen inputs: assign a bounded worker surface and freeze the parent-owned boundary, not the worker's internal procedure. Run draft structural preflight from transient files before publishing packet or review artifacts. A failed draft may be repaired within the same B only under the unchanged-boundary rule in Entry Review; it creates no review assignment, snapshot, user question, or successor B. Publish and freeze the packet and preflight only after the draft is finding-free, then reproduce frozen validation before Entry snapshot creation. The Entry plan is invalid if any delivery obligation is uncovered by the assigned outputs, if `delivery_scope` omits a prerequisite, if following Campaign Cycle would trigger drift, if a runtime timestamp or date is frozen as a packet literal, if the worker could begin before every post-transition byte has a recoverable snapshot, or if a final result could be written before profile-aware validation.
+The plan separates worker write surfaces, forbidden paths and execution-frozen inputs, assigns Coordinator-owned execution-baseline and execution-start paths, and names the worker result path. For W-backed work, bind the reviewed design and `delivery_scope`; do not freeze the whole W or mutable work breakdown. Apply [Batch continuation](batch-interface.md#boundary-preserving-continuation) to distinguish working methods from fixed boundaries.
+
+Use [Entry preparation](entry-review.md) for current structural checks and sealing; do not create a parallel legacy packet/preflight family. A failed draft stays mutable within the same B and creates no review or successor B. The complete realization must cover its delivery obligations, lifecycle transition, recoverable execution inputs and applicable result-validation branch. Do not freeze runtime timestamps or place worker outputs inside frozen input collections.
 
 Preparation must end at the earliest check that can discriminate the chosen mechanism. A baseline-establishment slice may be simple, but it cannot become open-ended infrastructure work.
 
@@ -123,7 +117,7 @@ For `human_input`, record the exact request, response path, schema, provenance, 
 
 Apply exact R8 route, eligibility, priority, uncertainty, measurement-use, vacuity, promotion, confirmation, parallelism, and fallback clauses. If R8 is silent or ambiguous about a required rule and does not delegate it, record `PARENT_REVIEW_REQUIRED` and use the finalization section below.
 
-Technically filter first, then apply adopted V records. Propose one Primary B and only demonstrably independent Parallel B records. Record the exact proposed Selection and Budget transition, separate budgets, mutable paths, stable shared resources, failure isolation, and one join point. Do not adopt a reservation or executable Selection before the applicable readiness review and user authorization.
+Technically filter first, then apply adopted V records. Propose one Primary B and only demonstrably independent Parallel B records. Record the exact proposed Selection and Budget transition, separate budgets, mutable paths, stable shared resources, failure isolation, and one join point. Do not adopt a reservation or executable Selection before the applicable readiness review and applicable user permission.
 
 Include the proposed Selection and F2-F4 patch in the reviewed target. Record the route set as `complete for this decision` or `incomplete`, cite the peer-source generation basis, shared assumptions, eligible routes, exclusions, deferrals, prerequisite consequences, and reopening evidence, and explain how the selected work reaches the first discriminating check. An incomplete route set may select only its bounded route-landscape, assumption, or prerequisite work; it cannot select dependent candidate work. Explain why the chosen campaign baseline is useful for later optimization and how every material alternative is dispositioned. Before the first B, record `Outcome reflections applied: None before the first B` in that proposal.
 
@@ -137,7 +131,7 @@ Pin F1-F4, F7, and F8. F5 and F6 may remain provisional or not relevant when the
 
 Load [Entry review](entry-review.md) and use its current preparation path. Keep planning edits mutable until the complete version is ready; preparation owns deterministic validation and the saved project-only subject. Invoke `review-frontier` in a fresh context. For a corrected Entry, supply the prior finding and saved version plus a short change explanation, and assign [Entry repair review](entry-review.md#entry-repair-review), not a restart of unaffected work. Supply no expected verdict or mandatory repair method.
 
-Preserve every review at its saved version. Repair an `ENTRY_REPAIR_REQUIRED` draft, including deterministic defects, before submitting its corrected complete version for the scoped review above. A deterministic defect alone does not require a workflow-development task or another repair artifact. Obtain named evidence after `EVIDENCE_REQUIRED`, return parent conflicts upstream, and expose true blockers. For a target needing user authorization, adopt only finding-free `AUTHORIZATION_READY`, then ask the exact reviewed question. On an exact affirmative answer, write V, build the Coordinator Entry-adoption artifact, and require finding-free draft and frozen adoption validation before applying only the reviewed Selection and Budget transition and recording `entry_result: ENTRY_READY`. A decline grants no spend authority; a condition or changed target requires fresh review before another question. When no user authorization applies, the reviewer may return `ENTRY_READY` directly under `spend-readiness`.
+Preserve every review at its saved version. Repair an `ENTRY_REPAIR_REQUIRED` draft, including deterministic defects, before submitting its corrected complete version for the scoped review above. A deterministic defect alone does not require a workflow-development task or another repair artifact. Obtain named evidence after `EVIDENCE_REQUIRED`, return parent conflicts upstream, and expose true blockers. For a target needing user authorization, adopt only finding-free `AUTHORIZATION_READY`, then ask the exact reviewed question. On an exact affirmative answer, write V, build the Coordinator Entry-adoption artifact, and require finding-free draft and frozen adoption validation before applying only the reviewed Selection and Budget transition and recording `entry_result: ENTRY_READY`. A decline grants no spend authority; a condition or changed target requires fresh review before another question. When no new user decision is needed, including reuse of an applicable grant, the reviewer may return `ENTRY_READY` directly under `spend-readiness`.
 
 Append `FIRST_BATCH_PLANNED` only after direct `ENTRY_READY` or exact post-answer adoption. Include campaign generation, readiness snapshot and review, V and adoption when applicable, parents, selected B records, inherited and Entry-cost accounting, and zero-B-spend consequence. Do not execute the B.
 
@@ -152,4 +146,4 @@ Record exactly one stage outcome:
 
 Return the recorded stage outcome to the Coordinator.
 
-Entry is complete only when artifacts reconstruct campaign generation, planning-only opening authority and Coordinator-derived objective when applicable, structured recovery lineage, peer-source route generation, decision completeness, prerequisite dispositions, baseline choice, replacement boundary, inherited budget, proposed target, readiness review, separate user tradeoff and exact execution authorization when applicable, selected work, earliest discriminating check, code gates, and zero-B-spend boundary.
+Entry is complete only when artifacts reconstruct campaign generation, planning-only opening authority and Coordinator-derived objective when applicable, original retained-result references, peer-source route generation, decision completeness, prerequisite dispositions, baseline choice, replacement boundary, inherited budget, proposed target, readiness review, separate user tradeoff and exact execution authorization when applicable, selected work, earliest discriminating check, code gates, and zero-B-spend boundary.

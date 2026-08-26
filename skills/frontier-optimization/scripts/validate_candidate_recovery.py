@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Validate byte-identical Frontier candidate reuse before opening a generation."""
+"""Check retained candidate content and latest accounting for a proposed use."""
 
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
-import posixpath
 import sys
 from pathlib import Path
 from typing import Any
@@ -15,13 +14,13 @@ from identity_bindings import (
     PACKAGE_PATH_SIZE_SHA256_V1,
     IdentityBindingError,
     load_file_binding,
-    reject_symlink_components,
     tree_inventory,
 )
 from finding_effects import add_finding, finalize_findings
 from validate_candidate_package import (
     FINAL_MANIFEST_CONTRACT,
     LEGACY_FINAL_MANIFEST_CONTRACT,
+    resolve_manifest,
     validate_candidate_inventory,
     validate_candidate_package,
 )
@@ -32,19 +31,7 @@ except ImportError as exc:  # pragma: no cover
     raise SystemExit("PyYAML is required to validate candidate recovery") from exc
 
 
-VALIDATOR = "frontier-candidate-recovery-preflight/5"
-LEGACY_SOURCE_CONTRACT = "frontier-legacy-candidate-source-binding/1"
-LEGACY_SOURCE_ID_PREFIX = "legacy-candidate-source-binding-sha256:"
-LEGACY_AUTHORITY_EFFECT = (
-    "historical-provenance-only; fresh recovery-reuse implementation review required"
-)
-IMPLEMENTATION_REVIEW_RESULTS = {
-    "IMPLEMENTATION_READY",
-    "IMPLEMENTATION_REPAIR_REQUIRED",
-    "EVIDENCE_REQUIRED",
-    "PARENT_REVIEW_REQUIRED",
-    "BLOCKED",
-}
+VALIDATOR = "frontier-candidate-recovery-preflight/6"
 REQUIRED_FIELDS = {
     "recovery_preflight_path",
     "prior_campaign_generation",
@@ -53,70 +40,11 @@ REQUIRED_FIELDS = {
     "lineage_sources",
     "inherited_budget",
     "candidate_root",
-    "candidate_manifest_path",
     "requested_candidate_id",
-    "requested_manifest_sha256",
     "review_mode",
     "candidate_mutation",
     "new_proposal_attempts",
 }
-
-LEGACY_SOURCE_FIELDS = {
-    "legacy_source_binding_id",
-    "contract_version",
-    "candidate_id",
-    "producing_campaign_generation",
-    "missing_manifest_field",
-    "authority_effect",
-    "candidate_manifest",
-    "candidate_package_inventory",
-    "producing_batch_result",
-    "result_validation",
-    "implementation_review_packet",
-    "implementation_review",
-}
-
-LEGACY_ARTIFACT_IDENTITY_FIELDS = {
-    "candidate_manifest": None,
-    "candidate_package_inventory": "inventory_id",
-    "producing_batch_result": "result_packet_id",
-    "result_validation": "validation_id",
-    "implementation_review_packet": "packet_id",
-    "implementation_review": None,
-}
-
-TRANSITIVE_RECOVERY_LINK_FIELDS = {
-    "campaign_generation",
-    "recovery_preflight",
-    "reuse_disposition",
-    "closeout",
-    "handoff",
-    "budget",
-}
-RECOVERY_DISPOSITION_CONTRACT = "frontier-candidate-recovery-disposition/1"
-RECOVERY_DISPOSITION_ID_PREFIX = "candidate-recovery-disposition-sha256:"
-RECOVERY_DISPOSITION_FIELDS = {
-    "recovery_disposition_id",
-    "contract_version",
-    "event",
-    "campaign_generation",
-    "candidate_id",
-    "candidate_manifest_sha256",
-    "recovery_preflight_id",
-    "candidate_mutation",
-    "new_proposal_attempts",
-    "disposition",
-    "authority_effect",
-}
-
-
-def canonical_json(value: Any) -> bytes:
-    return json.dumps(
-        value,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-    ).encode()
 
 
 def canonical_payload(document: dict[str, Any]) -> bytes:
@@ -125,803 +53,27 @@ def canonical_payload(document: dict[str, Any]) -> bytes:
     return yaml.safe_dump(payload, sort_keys=False, allow_unicode=True).encode()
 
 
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def safe_relative(raw: Any, field: str) -> str:
-    if not isinstance(raw, str) or not raw.strip() or raw.startswith("/"):
-        raise ValueError(f"{field} must be a nonempty repository-relative path")
-    normalized = posixpath.normpath(raw.strip().rstrip("/"))
-    if normalized in {".", ".."} or normalized.startswith("../"):
-        raise ValueError(f"{field} escapes the repository")
-    return normalized
-
-
-def is_sha256_identity(value: Any) -> bool:
-    return (
-        isinstance(value, str)
-        and value.startswith("sha256:")
-        and len(value) == 71
-        and all(character in "0123456789abcdef" for character in value[7:])
-    )
-
-
-def computed_legacy_source_binding_id(document: dict[str, Any]) -> str:
-    payload = dict(document)
-    payload.pop("legacy_source_binding_id", None)
-    raw = yaml.safe_dump(payload, sort_keys=False, allow_unicode=True).encode()
-    return LEGACY_SOURCE_ID_PREFIX + hashlib.sha256(raw).hexdigest()
-
-
-def markdown_frontmatter(raw: bytes) -> dict[str, Any] | None:
-    if not raw.startswith(b"---\n"):
-        return None
-    _, separator, remainder = raw.partition(b"---\n")
-    if not separator:
-        return None
-    frontmatter, closing, _ = remainder.partition(b"\n---\n")
-    if not closing:
-        return None
-    try:
-        value = yaml.safe_load(frontmatter)
-    except yaml.YAMLError:
-        return None
-    return value if isinstance(value, dict) else None
-
-
-def review_snapshot_packet_matches(
-    value: Any, expected_path: str, expected_identity: str
-) -> bool:
-    """Match the historical semicolon-delimited review binding exactly."""
-
-    if not isinstance(value, str):
-        return False
-    parts = [part.strip() for part in value.split(";")]
-    return (
-        len(parts) >= 2
-        and all(parts)
-        and parts[0] == expected_path
-        and parts[1] == expected_identity
-    )
-
-
-def embedded_yaml_identity_matches(
-    document: dict[str, Any], field: str, expected_prefix: str
-) -> bool:
-    identity = document.get(field)
-    if not isinstance(identity, str) or not identity.startswith(expected_prefix):
-        return False
-    payload = dict(document)
-    payload.pop(field, None)
-    raw = yaml.safe_dump(payload, sort_keys=False, allow_unicode=True).encode()
-    return identity.rsplit(":", 1)[-1] == hashlib.sha256(raw).hexdigest()
-
-
-def embedded_json_identity_matches(
-    document: dict[str, Any], field: str, expected_prefix: str
-) -> bool:
-    identity = document.get(field)
-    if not isinstance(identity, str) or not identity.startswith(expected_prefix):
-        return False
-    payload = dict(document)
-    payload.pop(field, None)
-    return identity.rsplit(":", 1)[-1] == hashlib.sha256(
-        canonical_json(payload)
-    ).hexdigest()
-
-
-def validate_legacy_candidate_source_binding(
-    repo_root: Path,
-    binding: Any,
-    *,
-    candidate_manifest_path: Any,
-    candidate_manifest_sha256: str | None,
-    candidate_id: str | None,
-    candidate_members: list[dict[str, Any]],
-    candidate_manifest: dict[str, Any] | None,
-    prior_campaign_generation: Any,
-) -> list[dict[str, str]]:
-    """Validate provenance for a manifest created before workflow-source identities."""
-
-    findings: list[dict[str, str]] = []
-    try:
-        bound_source = load_file_binding(
-            repo_root,
-            binding,
-            "legacy_candidate_source_binding",
-            expected_identity_field="legacy_source_binding_id",
-        )
-    except IdentityBindingError as exc:
-        add_finding(findings, "LEGACY_SOURCE_BINDING_INVALID", str(exc))
-        return findings
-
-    source = bound_source.document
-    if source is None:  # pragma: no cover - load_file_binding enforces a mapping
-        add_finding(
-            findings,
-            "LEGACY_SOURCE_BINDING_INVALID",
-            "legacy source binding must contain a YAML mapping",
-        )
-        return findings
-    if set(source) != LEGACY_SOURCE_FIELDS:
-        missing = sorted(LEGACY_SOURCE_FIELDS - source.keys())
-        extra = sorted(source.keys() - LEGACY_SOURCE_FIELDS)
-        add_finding(
-            findings,
-            "LEGACY_SOURCE_BINDING_SCHEMA_INVALID",
-            f"legacy source binding fields differ; missing={missing}; extra={extra}",
-        )
-    if source.get("contract_version") != LEGACY_SOURCE_CONTRACT:
-        add_finding(
-            findings,
-            "LEGACY_SOURCE_BINDING_CONTRACT_INVALID",
-            f"contract_version must be {LEGACY_SOURCE_CONTRACT}",
-        )
-    expected_binding_id = computed_legacy_source_binding_id(source)
-    if source.get("legacy_source_binding_id") != expected_binding_id:
-        add_finding(
-            findings,
-            "LEGACY_SOURCE_BINDING_IDENTITY_MISMATCH",
-            "legacy_source_binding_id does not derive from the complete sidecar payload",
-        )
-    if source.get("missing_manifest_field") != "workflow_source_identity":
-        add_finding(
-            findings,
-            "LEGACY_SOURCE_BINDING_SCOPE_INVALID",
-            "legacy binding applies only to an absent workflow_source_identity field",
-        )
-    if source.get("authority_effect") != LEGACY_AUTHORITY_EFFECT:
-        add_finding(
-            findings,
-            "LEGACY_SOURCE_BINDING_AUTHORITY_INVALID",
-            "legacy binding must remain provenance-only and require a fresh recovery review",
-        )
-    if source.get("candidate_id") != candidate_id:
-        add_finding(
-            findings,
-            "LEGACY_SOURCE_CANDIDATE_MISMATCH",
-            "legacy source binding candidate_id does not match the recomputed candidate",
-        )
-    if candidate_manifest is not None and "workflow_source_identity" in candidate_manifest:
-        add_finding(
-            findings,
-            "LEGACY_SOURCE_BINDING_NOT_APPLICABLE",
-            "legacy binding is forbidden when the manifest contains workflow_source_identity",
-        )
-
-    bound_artifacts: dict[str, Any] = {}
-    for role, identity_field in LEGACY_ARTIFACT_IDENTITY_FIELDS.items():
-        try:
-            bound_artifacts[role] = load_file_binding(
-                repo_root,
-                source.get(role),
-                f"legacy_source.{role}",
-                expected_identity_field=identity_field,
-            )
-        except IdentityBindingError as exc:
-            add_finding(findings, "LEGACY_SOURCE_ARTIFACT_INVALID", str(exc))
-
-    manifest_binding = bound_artifacts.get("candidate_manifest")
-    if manifest_binding is not None:
-        try:
-            expected_manifest_path = safe_relative(
-                candidate_manifest_path, "candidate_manifest_path"
-            )
-        except ValueError as exc:
-            add_finding(findings, "LEGACY_SOURCE_CANDIDATE_MISMATCH", str(exc))
-        else:
-            if manifest_binding.relative_path != expected_manifest_path:
-                add_finding(
-                    findings,
-                    "LEGACY_SOURCE_CANDIDATE_MISMATCH",
-                    "legacy source binding names a different candidate manifest path",
-                )
-        if manifest_binding.file_sha256 != candidate_manifest_sha256:
-            add_finding(
-                findings,
-                "LEGACY_SOURCE_CANDIDATE_MISMATCH",
-                "legacy source binding names different candidate manifest bytes",
-            )
-
-    inventory_binding = bound_artifacts.get("candidate_package_inventory")
-    inventory = inventory_binding.document if inventory_binding is not None else None
-    if inventory_binding is not None:
-        # Historical final manifests may name the canonical root only through the inventory.
-        # Re-run with that bound root so the sidecar cannot substitute a self-consistent file.
-        inventory_root = inventory.get("candidate_root") if inventory is not None else None
-        inventory_validation = validate_candidate_inventory(
-            repo_root,
-            inventory_root,
-            inventory_binding.relative_path,
-            expected_candidate_id=candidate_id,
-            expected_inventory_id=inventory_binding.identity,
-            expected_inventory_sha256=inventory_binding.file_sha256,
-        )
-        if not inventory_validation.get("inventory_ready") or (
-            inventory is not None and inventory.get("members") != candidate_members
-        ):
-            add_finding(
-                findings,
-                "LEGACY_SOURCE_INVENTORY_MISMATCH",
-                "bound package inventory does not reproduce the exact candidate root and members",
-            )
-    manifest_inventory = (
-        candidate_manifest.get("package_inventory")
-        if isinstance(candidate_manifest, dict)
-        else None
-    )
-    if inventory_binding is not None and (
-        not isinstance(manifest_inventory, dict)
-        or manifest_inventory.get("path") != inventory_binding.relative_path
-        or manifest_inventory.get("inventory_id") != inventory_binding.identity
-        or manifest_inventory.get("file_sha256") != inventory_binding.file_sha256
-    ):
-        add_finding(
-            findings,
-            "LEGACY_SOURCE_MANIFEST_INVENTORY_MISMATCH",
-            "historical manifest does not bind the exact sidecar package inventory",
-        )
-
-    result_binding = bound_artifacts.get("producing_batch_result")
-    result = result_binding.document if result_binding is not None else None
-    producing_generation = source.get("producing_campaign_generation")
-    if not isinstance(producing_generation, int) or isinstance(producing_generation, bool):
-        add_finding(
-            findings,
-            "LEGACY_SOURCE_GENERATION_INVALID",
-            "producing_campaign_generation must be an integer",
-        )
-    elif producing_generation != prior_campaign_generation:
-        add_finding(
-            findings,
-            "LEGACY_SOURCE_GENERATION_MISMATCH",
-            "sidecar producing generation does not match the preflight prior generation",
-        )
-    if candidate_manifest is not None and (
-        candidate_manifest.get("campaign_generation") != producing_generation
-    ):
-        add_finding(
-            findings,
-            "LEGACY_SOURCE_GENERATION_MISMATCH",
-            "sidecar producing generation does not match the historical manifest",
-        )
-    manifest_batch_id = (
-        candidate_manifest.get("batch_id")
-        if isinstance(candidate_manifest, dict)
-        else None
-    )
-    if result is not None:
-        if (
-            not embedded_yaml_identity_matches(
-                result,
-                "result_packet_id",
-                f"{manifest_batch_id}-result-sha256:",
-            )
-            or result.get("candidate_identity") != candidate_id
-            or result.get("candidate_manifest")
-            != (manifest_binding.relative_path if manifest_binding is not None else None)
-            or result.get("campaign_generation") != producing_generation
-            or not isinstance(manifest_batch_id, str)
-            or result.get("batch_id") != manifest_batch_id
-        ):
-            add_finding(
-                findings,
-                "LEGACY_SOURCE_RESULT_MISMATCH",
-                "bound producing result does not match the candidate, manifest, and generation",
-            )
-
-    validation_binding = bound_artifacts.get("result_validation")
-    validation = validation_binding.document if validation_binding is not None else None
-    if validation is not None and result_binding is not None:
-        if (
-            not embedded_json_identity_matches(
-                validation,
-                "validation_id",
-                "batch-result-validation-sha256:",
-            )
-            or validation.get("result_packet_path") != result_binding.relative_path
-            or validation.get("computed_result_packet_id") != result_binding.identity
-            or validation.get("batch_id") != manifest_batch_id
-            or validation.get("result_structure_ready") is not True
-            or validation.get("findings") != []
-        ):
-            add_finding(
-                findings,
-                "LEGACY_SOURCE_RESULT_VALIDATION_MISMATCH",
-                "bound result validation is not finding-free for the producing result",
-            )
-
-    review_packet_binding = bound_artifacts.get("implementation_review_packet")
-    review_packet = (
-        review_packet_binding.document if review_packet_binding is not None else None
-    )
-    if review_packet is not None and result_binding is not None and validation_binding is not None:
-        packet_manifest = review_packet.get("candidate_manifest")
-        packet_inventory = review_packet.get("candidate_package_inventory")
-        packet_result = review_packet.get("batch_result")
-        packet_validation = review_packet.get("batch_result_validation")
-        review_binding = bound_artifacts.get("implementation_review")
-        if (
-            not embedded_yaml_identity_matches(
-                review_packet,
-                "packet_id",
-                f"implementation-{review_packet.get('review_id')}-packet-sha256:",
-            )
-            or review_packet.get("review_kind") != "implementation"
-            or review_packet.get("review_mode") != "materialization"
-            or review_packet.get("candidate_id") != candidate_id
-            or review_packet.get("campaign_generation") != producing_generation
-            or review_packet.get("batch_id") != manifest_batch_id
-            or not isinstance(packet_manifest, dict)
-            or packet_manifest.get("path")
-            != (manifest_binding.relative_path if manifest_binding is not None else None)
-            or packet_manifest.get("file_sha256") != candidate_manifest_sha256
-            or not isinstance(packet_inventory, dict)
-            or packet_inventory.get("path")
-            != (inventory_binding.relative_path if inventory_binding is not None else None)
-            or packet_inventory.get("inventory_id")
-            != (inventory_binding.identity if inventory_binding is not None else None)
-            or packet_inventory.get("file_sha256")
-            != (inventory_binding.file_sha256 if inventory_binding is not None else None)
-            or not isinstance(packet_result, dict)
-            or packet_result.get("path") != result_binding.relative_path
-            or packet_result.get("identity") != result_binding.identity
-            or packet_result.get("file_sha256") != result_binding.file_sha256
-            or not isinstance(packet_validation, dict)
-            or packet_validation.get("path") != validation_binding.relative_path
-            or packet_validation.get("identity") != validation_binding.identity
-            or packet_validation.get("file_sha256") != validation_binding.file_sha256
-            or review_packet.get("assigned_review_path")
-            != (review_binding.relative_path if review_binding is not None else None)
-        ):
-            add_finding(
-                findings,
-                "LEGACY_SOURCE_REVIEW_PACKET_MISMATCH",
-                "bound historical implementation-review packet does not close the producing lineage",
-            )
-
-    review_binding = bound_artifacts.get("implementation_review")
-    review = markdown_frontmatter(review_binding.raw) if review_binding is not None else None
-    if review_binding is not None and (
-        review is None
-        or review.get("review_result") not in IMPLEMENTATION_REVIEW_RESULTS
-        or review.get("candidate_id") != candidate_id
-        or (
-            review_packet is not None
-            and review.get("review_id") != review_packet.get("review_id")
-        )
-        or (
-            review_packet_binding is not None
-            and not review_snapshot_packet_matches(
-                review.get("snapshot_packet"),
-                review_packet_binding.relative_path,
-                review_packet_binding.identity,
-            )
-        )
-    ):
-        add_finding(
-            findings,
-            "LEGACY_SOURCE_REVIEW_MISMATCH",
-            "bound historical implementation review does not match the exact review lineage",
-        )
-    return findings
-
-
 def package_inventory(root: Path) -> tuple[list[dict[str, Any]], str]:
     members, identity = tree_inventory(root, PACKAGE_PATH_SIZE_SHA256_V1)
     return members, identity.removeprefix("sha256:")
-
-
-def validate_transitive_recovery_chain(
-    document: dict[str, Any],
-    repo_root: Path,
-    *,
-    manifest_generation: Any,
-    prior_generation: Any,
-    candidate_id: str | None,
-    manifest_sha256: str | None,
-    bound_lineage: dict[str, str],
-    seen_preflights: set[str],
-) -> tuple[list[dict[str, str]], list[dict[str, Any]]]:
-    """Validate every content-addressed hop from candidate production to closeout."""
-
-    findings: list[dict[str, str]] = []
-    summaries: list[dict[str, Any]] = []
-    chain = document.get("intervening_recovery_chain")
-    if chain is None:
-        chain = []
-    if not isinstance(chain, list):
-        add_finding(
-            findings,
-            "TRANSITIVE_RECOVERY_CHAIN_INVALID",
-            "intervening_recovery_chain must be a list when present",
-        )
-        return findings, summaries
-
-    generations_valid = (
-        isinstance(manifest_generation, int)
-        and not isinstance(manifest_generation, bool)
-        and manifest_generation >= 1
-        and isinstance(prior_generation, int)
-        and not isinstance(prior_generation, bool)
-        and prior_generation >= 1
-    )
-    if not generations_valid:
-        add_finding(
-            findings,
-            "TRANSITIVE_RECOVERY_CHAIN_INVALID",
-            "candidate source and prior campaign generations must be positive integers",
-        )
-        return findings, summaries
-
-    if manifest_generation == prior_generation:
-        if chain:
-            add_finding(
-                findings,
-                "TRANSITIVE_RECOVERY_CHAIN_UNEXPECTED",
-                "no intervening recovery link is allowed when the candidate was produced in the immediately closed generation",
-            )
-        return findings, summaries
-
-    if manifest_generation > prior_generation:
-        add_finding(
-            findings,
-            "CANDIDATE_GENERATION_MISMATCH",
-            "candidate manifest generation is newer than the closed source generation",
-        )
-        return findings, summaries
-
-    if not chain:
-        add_finding(
-            findings,
-            "TRANSITIVE_RECOVERY_CHAIN_REQUIRED",
-            "an older candidate requires one content-addressed recovery link for every intervening closed generation",
-        )
-        return findings, summaries
-
-    expected_generations = list(range(manifest_generation + 1, prior_generation + 1))
-    observed_generations = [
-        link.get("campaign_generation") if isinstance(link, dict) else None
-        for link in chain
-    ]
-    if observed_generations != expected_generations:
-        add_finding(
-            findings,
-            "TRANSITIVE_RECOVERY_CHAIN_NOT_CONSECUTIVE",
-            f"expected campaign generations {expected_generations}, observed {observed_generations}",
-        )
-
-    previous_closeout_identity: str | None = None
-    previous_handoff_identity: str | None = None
-    previous_budget_identity: str | None = None
-    previous_budget: dict[str, Any] | None = None
-
-    for index, link in enumerate(chain):
-        label = f"intervening_recovery_chain[{index}]"
-        if not isinstance(link, dict):
-            add_finding(
-                findings,
-                "TRANSITIVE_RECOVERY_LINK_INVALID",
-                f"{label} must be a mapping",
-            )
-            continue
-        if set(link) != TRANSITIVE_RECOVERY_LINK_FIELDS:
-            missing = sorted(TRANSITIVE_RECOVERY_LINK_FIELDS - link.keys())
-            extra = sorted(link.keys() - TRANSITIVE_RECOVERY_LINK_FIELDS)
-            add_finding(
-                findings,
-                "TRANSITIVE_RECOVERY_LINK_SCHEMA_INVALID",
-                f"{label} fields differ; missing={missing}; extra={extra}",
-            )
-
-        link_generation = link.get("campaign_generation")
-        expected_generation = manifest_generation + index + 1
-        if link_generation != expected_generation:
-            add_finding(
-                findings,
-                "TRANSITIVE_RECOVERY_CHAIN_NOT_CONSECUTIVE",
-                f"{label} must bind campaign generation {expected_generation}",
-            )
-
-        bound_documents: dict[str, dict[str, Any]] = {}
-        bound_identities: dict[str, str] = {}
-        binding_fields = {
-            "recovery_preflight": "recovery_preflight_id",
-            "reuse_disposition": "recovery_disposition_id",
-            "closeout": None,
-            "handoff": None,
-            "budget": None,
-        }
-        for role, identity_field in binding_fields.items():
-            try:
-                bound = load_file_binding(
-                    repo_root,
-                    link.get(role),
-                    f"{label}.{role}",
-                    expected_identity_field=identity_field,
-                )
-                parsed = bound.document
-                if parsed is None:
-                    try:
-                        parsed = yaml.safe_load(bound.raw)
-                    except yaml.YAMLError as exc:
-                        raise IdentityBindingError(
-                            f"{label}.{role} is not valid YAML: {exc}"
-                        ) from exc
-                if not isinstance(parsed, dict):
-                    raise IdentityBindingError(
-                        f"{label}.{role} must contain a YAML mapping"
-                    )
-                bound_documents[role] = parsed
-                bound_identities[role] = bound.identity
-            except IdentityBindingError as exc:
-                add_finding(
-                    findings,
-                    "TRANSITIVE_RECOVERY_BINDING_INVALID",
-                    str(exc),
-                )
-
-        linked_preflight = bound_documents.get("recovery_preflight")
-        linked_preflight_binding = link.get("recovery_preflight")
-        if linked_preflight is not None and isinstance(linked_preflight_binding, dict):
-            linked_path = linked_preflight_binding.get("path")
-            if not isinstance(linked_path, str) or not linked_path.strip():
-                add_finding(
-                    findings,
-                    "TRANSITIVE_RECOVERY_PREFLIGHT_INVALID",
-                    f"{label}.recovery_preflight requires a path",
-                )
-            elif linked_path in seen_preflights:
-                add_finding(
-                    findings,
-                    "TRANSITIVE_RECOVERY_CHAIN_CYCLE",
-                    f"{label} repeats recovery preflight {linked_path}",
-                )
-            else:
-                linked_result = validate(
-                    linked_preflight,
-                    "frozen",
-                    repo_root,
-                    _seen_preflights=seen_preflights | {linked_path},
-                )
-                for finding in linked_result["findings"]:
-                    add_finding(
-                        findings,
-                        "TRANSITIVE_RECOVERY_PREFLIGHT_INVALID",
-                        f"{label}: {finding['code']}: {finding['detail']}",
-                    )
-            if linked_preflight.get("campaign_generation") != link_generation:
-                add_finding(
-                    findings,
-                    "TRANSITIVE_RECOVERY_PREFLIGHT_GENERATION_MISMATCH",
-                    f"{label} preflight does not open campaign generation {link_generation}",
-                )
-            if linked_preflight.get("prior_campaign_generation") != link_generation - 1:
-                add_finding(
-                    findings,
-                    "TRANSITIVE_RECOVERY_PREFLIGHT_GENERATION_MISMATCH",
-                    f"{label} preflight does not continue from campaign generation {link_generation - 1}",
-                )
-            if linked_preflight.get("recovery_preflight_path") != linked_path:
-                add_finding(
-                    findings,
-                    "TRANSITIVE_RECOVERY_PREFLIGHT_PATH_MISMATCH",
-                    f"{label} preflight path does not match its bound path",
-                )
-            for field, expected in (
-                ("candidate_root", document.get("candidate_root")),
-                ("candidate_manifest_path", document.get("candidate_manifest_path")),
-                ("requested_candidate_id", candidate_id),
-                ("requested_manifest_sha256", manifest_sha256),
-                ("review_mode", "recovery-reuse"),
-                ("candidate_mutation", "prohibited"),
-                ("new_proposal_attempts", 0),
-            ):
-                if linked_preflight.get(field) != expected:
-                    add_finding(
-                        findings,
-                        "TRANSITIVE_RECOVERY_CANDIDATE_MISMATCH",
-                        f"{label} preflight field {field} does not preserve the current candidate recovery input",
-                    )
-            if index > 0:
-                linked_lineage = linked_preflight.get("lineage_sources")
-                if not isinstance(linked_lineage, dict):
-                    add_finding(
-                        findings,
-                        "TRANSITIVE_RECOVERY_LINEAGE_GAP",
-                        f"{label} preflight has no bound prior lineage",
-                    )
-                else:
-                    expected_prior = {
-                        "closeout": previous_closeout_identity,
-                        "handoff": previous_handoff_identity,
-                        "budget": previous_budget_identity,
-                    }
-                    for role, expected_identity in expected_prior.items():
-                        source_binding = linked_lineage.get(role)
-                        if (
-                            not isinstance(source_binding, dict)
-                            or source_binding.get("identity") != expected_identity
-                        ):
-                            add_finding(
-                                findings,
-                                "TRANSITIVE_RECOVERY_LINEAGE_GAP",
-                                f"{label} preflight does not consume the preceding {role} identity",
-                            )
-
-        disposition = bound_documents.get("reuse_disposition")
-        if disposition is not None:
-            if set(disposition) != RECOVERY_DISPOSITION_FIELDS:
-                missing = sorted(RECOVERY_DISPOSITION_FIELDS - disposition.keys())
-                extra = sorted(disposition.keys() - RECOVERY_DISPOSITION_FIELDS)
-                add_finding(
-                    findings,
-                    "TRANSITIVE_RECOVERY_DISPOSITION_SCHEMA_INVALID",
-                    f"{label} disposition fields differ; missing={missing}; extra={extra}",
-                )
-            if disposition.get("contract_version") != RECOVERY_DISPOSITION_CONTRACT:
-                add_finding(
-                    findings,
-                    "TRANSITIVE_RECOVERY_DISPOSITION_INVALID",
-                    f"{label} disposition contract is invalid",
-                )
-            if not embedded_yaml_identity_matches(
-                disposition,
-                "recovery_disposition_id",
-                RECOVERY_DISPOSITION_ID_PREFIX,
-            ):
-                add_finding(
-                    findings,
-                    "TRANSITIVE_RECOVERY_DISPOSITION_IDENTITY_MISMATCH",
-                    f"{label} disposition identity does not derive from its exact bytes",
-                )
-            disposition_expectations = {
-                "event": "CANDIDATE_RECOVERY_REUSED",
-                "campaign_generation": link_generation,
-                "candidate_id": candidate_id,
-                "candidate_manifest_sha256": manifest_sha256,
-                "recovery_preflight_id": bound_identities.get("recovery_preflight"),
-                "candidate_mutation": "prohibited",
-                "new_proposal_attempts": 0,
-                "disposition": "re-evaluated",
-                "authority_effect": "historical-lineage-only",
-            }
-            for field, expected in disposition_expectations.items():
-                if disposition.get(field) != expected:
-                    add_finding(
-                        findings,
-                        "TRANSITIVE_RECOVERY_DISPOSITION_INVALID",
-                        f"{label} disposition field {field} does not match the recovery link",
-                    )
-
-        closeout = bound_documents.get("closeout")
-        if closeout is not None:
-            closeout_expectations = {
-                "event": "CLOSEOUT_COMPLETE",
-                "campaign_generation": link_generation,
-                "unresolved_claims": [],
-                "active_workers": [],
-            }
-            for field, expected in closeout_expectations.items():
-                if closeout.get(field) != expected:
-                    add_finding(
-                        findings,
-                        "TRANSITIVE_RECOVERY_CLOSEOUT_INVALID",
-                        f"{label} closeout field {field} does not match the closed recovery generation",
-                    )
-            if closeout.get("campaign_status") not in {"stopped", "halted"}:
-                add_finding(
-                    findings,
-                    "TRANSITIVE_RECOVERY_CLOSEOUT_INVALID",
-                    f"{label} closeout campaign_status must be stopped or halted",
-                )
-
-        handoff = bound_documents.get("handoff")
-        if handoff is not None and (
-            handoff.get("handoff_complete") is not True
-            or handoff.get("campaign_generation") != link_generation
-        ):
-            add_finding(
-                findings,
-                "TRANSITIVE_RECOVERY_HANDOFF_INVALID",
-                f"{label} handoff must be complete for campaign generation {link_generation}",
-            )
-
-        budget = bound_documents.get("budget")
-        if budget is not None:
-            budget_valid = (
-                budget.get("campaign_generation") == link_generation
-                and isinstance(budget.get("proposal_attempt_ceiling"), int)
-                and not isinstance(budget.get("proposal_attempt_ceiling"), bool)
-                and isinstance(budget.get("actual_spend"), int)
-                and not isinstance(budget.get("actual_spend"), bool)
-                and isinstance(budget.get("unknown_spend"), int)
-                and not isinstance(budget.get("unknown_spend"), bool)
-                and budget.get("active_reservations") == []
-                and budget.get("actual_spend", -1) >= 0
-                and budget.get("unknown_spend", -1) >= 0
-                and budget.get("actual_spend", 0) + budget.get("unknown_spend", 0)
-                <= budget.get("proposal_attempt_ceiling", -1)
-            )
-            if not budget_valid:
-                add_finding(
-                    findings,
-                    "TRANSITIVE_RECOVERY_BUDGET_INVALID",
-                    f"{label} budget is not a complete closed nonnegative accounting record",
-                )
-            linked_budget = (
-                linked_preflight.get("inherited_budget")
-                if isinstance(linked_preflight, dict)
-                else None
-            )
-            if isinstance(linked_budget, dict) and (
-                budget.get("proposal_attempt_ceiling")
-                != linked_budget.get("proposal_attempt_ceiling")
-                or budget.get("actual_spend", -1) < linked_budget.get("actual_spend", -1)
-            ):
-                add_finding(
-                    findings,
-                    "TRANSITIVE_RECOVERY_BUDGET_REGRESSION",
-                    f"{label} closeout budget changes the ceiling or reduces actual spend",
-                )
-            if previous_budget is not None and (
-                budget.get("proposal_attempt_ceiling")
-                != previous_budget.get("proposal_attempt_ceiling")
-                or budget.get("actual_spend", -1) < previous_budget.get("actual_spend", -1)
-            ):
-                add_finding(
-                    findings,
-                    "TRANSITIVE_RECOVERY_BUDGET_REGRESSION",
-                    f"{label} budget changes the ceiling or reduces cumulative actual spend",
-                )
-
-        previous_closeout_identity = bound_identities.get("closeout")
-        previous_handoff_identity = bound_identities.get("handoff")
-        previous_budget_identity = bound_identities.get("budget")
-        previous_budget = budget
-        summaries.append(
-            {
-                "campaign_generation": link_generation,
-                "recovery_preflight_identity": bound_identities.get("recovery_preflight"),
-                "reuse_disposition_identity": bound_identities.get("reuse_disposition"),
-                "closeout_identity": previous_closeout_identity,
-                "handoff_identity": previous_handoff_identity,
-                "budget_identity": previous_budget_identity,
-            }
-        )
-
-    if summaries:
-        last = summaries[-1]
-        for role, summary_field in (
-            ("closeout", "closeout_identity"),
-            ("handoff", "handoff_identity"),
-            ("budget", "budget_identity"),
-        ):
-            if bound_lineage.get(role) != last.get(summary_field):
-                add_finding(
-                    findings,
-                    "TRANSITIVE_RECOVERY_CURRENT_LINEAGE_MISMATCH",
-                    f"current {role} identity does not match the final intervening recovery link",
-                )
-
-    return findings, summaries
 
 
 def validate(
     document: dict[str, Any],
     phase: str,
     repo_root: Path,
-    *,
-    _seen_preflights: set[str] | None = None,
 ) -> dict[str, Any]:
     findings: list[dict[str, str]] = []
-    seen_preflights = set(_seen_preflights or ())
-    for field in sorted(REQUIRED_FIELDS - document.keys()):
+    publication_state = document.get("publication_state", "published-recovery")
+    if publication_state not in {"prepublication", "published-recovery"}:
+        add_finding(findings, "PUBLICATION_STATE_INVALID",
+                    "publication_state must be prepublication or published-recovery")
+    prepublication = publication_state == "prepublication"
+    required = REQUIRED_FIELDS | (
+        {"working_inventory"} if prepublication
+        else {"candidate_manifest_path", "requested_manifest_sha256"}
+    )
+    for field in sorted(required - document.keys()):
         add_finding(findings, "REQUIRED_FIELD_MISSING", field)
 
     lineage = document.get("lineage_sources")
@@ -1102,11 +254,12 @@ def validate(
                 "budget ceiling, spend, unknown spend, and reservations must derive from the bound budget record",
             )
 
-    if document.get("review_mode") != "recovery-reuse":
+    expected_mode = "materialization" if prepublication else "recovery-reuse"
+    if document.get("review_mode") != expected_mode:
         add_finding(
             findings,
             "REVIEW_MODE_INVALID",
-            "byte-identical reuse requires review_mode: recovery-reuse",
+            f"retained material requires review_mode: {expected_mode}",
         )
     if document.get("candidate_mutation") != "prohibited":
         add_finding(
@@ -1121,77 +274,65 @@ def validate(
             "byte-identical recovery validation requires zero new proposal attempts",
         )
 
-    manifest_contract: Any = None
-    try:
-        manifest_relative = safe_relative(
-            document.get("candidate_manifest_path"), "candidate_manifest_path"
+    # Material identity is checked here; readiness and permission belong to
+    # their existing gates. Original parents and review verdicts stay historical.
+    manifest: dict[str, Any] | None = None
+    if prepublication:
+        binding = document.get("working_inventory")
+        if not isinstance(binding, dict) or any(
+            not isinstance(binding.get(field), str) or not binding[field]
+            for field in ("path", "inventory_id", "file_sha256")
+        ):
+            add_finding(
+                findings, "WORKING_INVENTORY_REQUIRED",
+                "prepublication reuse requires the existing exact working inventory",
+            )
+            binding = {}
+        package_validation = validate_candidate_inventory(
+            repo_root, document.get("candidate_root"), binding.get("path"),
+            expected_candidate_id=document.get("requested_candidate_id"),
+            expected_inventory_id=binding.get("inventory_id"),
+            expected_inventory_sha256=binding.get("file_sha256"),
         )
-        manifest_document = yaml.safe_load(
-            (repo_root / manifest_relative).read_bytes()
+        manifest_sha256 = None
+    else:
+        package_validation = validate_candidate_package(
+            repo_root,
+            document.get("candidate_root"),
+            document.get("candidate_manifest_path"),
+            expected_candidate_id=document.get("requested_candidate_id"),
+            expected_manifest_sha256=document.get("requested_manifest_sha256"),
+            allow_missing_workflow_source_identity=True,
+            allow_legacy_manifest=True,
+            require_final_manifest=False,
         )
-        if isinstance(manifest_document, dict):
-            manifest_contract = manifest_document.get("manifest_contract")
-    except (OSError, ValueError, yaml.YAMLError):
-        pass
+        manifest_sha256 = package_validation["manifest_sha256"]
+        try:
+            _, manifest_path = resolve_manifest(
+                repo_root, document.get("candidate_manifest_path")
+            )
+            parsed = yaml.safe_load(manifest_path.read_bytes())
+            if isinstance(parsed, dict):
+                manifest = parsed
+        except (IdentityBindingError, OSError, ValueError, yaml.YAMLError):
+            pass
+        if manifest is not None:
+            if manifest.get("manifest_contract") not in {
+                None, LEGACY_FINAL_MANIFEST_CONTRACT, FINAL_MANIFEST_CONTRACT,
+            }:
+                add_finding(findings, "MANIFEST_CONTRACT_INVALID",
+                            "unsupported historical manifest contract")
+            producing_generation = manifest.get("campaign_generation")
+            if producing_generation is not None and (
+                not isinstance(producing_generation, int)
+                or isinstance(producing_generation, bool)
+                or producing_generation < 1
+                or (isinstance(prior_generation, int)
+                    and producing_generation > prior_generation)
+            ):
+                add_finding(findings, "PRODUCING_GENERATION_INVALID",
+                            "recorded production must precede the recovery generation")
 
-    source_workflow_identity = document.get("source_workflow_identity")
-    legacy_source_binding = document.get("legacy_candidate_source_binding")
-    current_manifest = manifest_contract == FINAL_MANIFEST_CONTRACT
-    legacy_manifest = manifest_contract in {
-        LEGACY_FINAL_MANIFEST_CONTRACT,
-        None,
-    }
-    legacy_source_mode = legacy_manifest and source_workflow_identity is None
-    if current_manifest:
-        if source_workflow_identity is not None:
-            add_finding(
-                findings,
-                "SOURCE_WORKFLOW_IDENTITY_RETIRED",
-                "version 3 recovery must not contain source_workflow_identity",
-            )
-        if legacy_source_binding is not None:
-            add_finding(
-                findings,
-                "LEGACY_SOURCE_BINDING_RETIRED",
-                "version 3 recovery must not contain a legacy source binding",
-            )
-    elif legacy_source_mode:
-        if not isinstance(legacy_source_binding, dict):
-            add_finding(
-                findings,
-                "LEGACY_SOURCE_BINDING_REQUIRED",
-                "an eligible historical manifest without workflow_source_identity requires one bound legacy provenance sidecar",
-            )
-    elif legacy_manifest:
-        if not is_sha256_identity(source_workflow_identity):
-            add_finding(
-                findings,
-                "SOURCE_WORKFLOW_IDENTITY_INVALID",
-                "historical source_workflow_identity must be a lowercase sha256 identity",
-            )
-        if legacy_source_binding is not None:
-            add_finding(
-                findings,
-                "SOURCE_WORKFLOW_BINDING_AMBIGUOUS",
-                "historical workflow identity and legacy provenance binding are mutually exclusive",
-            )
-
-    package_validation = validate_candidate_package(
-        repo_root,
-        document.get("candidate_root"),
-        document.get("candidate_manifest_path"),
-        expected_candidate_id=document.get("requested_candidate_id"),
-        expected_manifest_sha256=document.get("requested_manifest_sha256"),
-        expected_workflow_source_identity=(
-            None if current_manifest else source_workflow_identity
-        ),
-        allow_missing_workflow_source_identity=(
-            legacy_source_mode and isinstance(legacy_source_binding, dict)
-        ),
-        allow_legacy_manifest=True,
-        require_final_manifest=True,
-    )
-    manifest_sha256 = package_validation["manifest_sha256"]
     members = package_validation["members"]
     canonical_candidate_id = package_validation["candidate_id"]
     code_map = {
@@ -1213,66 +354,6 @@ def validate(
         )
     for advisory in package_validation.get("advisories", []):
         add_finding(findings, advisory["code"], advisory["detail"])
-
-    manifest: dict[str, Any] | None = None
-    try:
-        manifest_value = safe_relative(
-            document.get("candidate_manifest_path"), "candidate_manifest_path"
-        )
-        manifest_path = (repo_root / manifest_value).resolve()
-        parsed = yaml.safe_load(manifest_path.read_bytes())
-        if isinstance(parsed, dict):
-            manifest = parsed
-    except (OSError, ValueError, yaml.YAMLError):
-        pass
-
-    chain_summary: list[dict[str, Any]] = []
-    if manifest is not None:
-        manifest_generation = manifest.get("campaign_generation")
-        chain_findings, chain_summary = validate_transitive_recovery_chain(
-            document,
-            repo_root,
-            manifest_generation=manifest_generation,
-            prior_generation=prior_generation,
-            candidate_id=canonical_candidate_id,
-            manifest_sha256=manifest_sha256,
-            bound_lineage=bound_lineage,
-            seen_preflights=seen_preflights,
-        )
-        findings.extend(chain_findings)
-        for field in (
-            "candidate_interface",
-            "source_base_identity",
-            "source_result_identity",
-            "dependency_identity",
-            "runtime_factors",
-            "generated_assets",
-        ):
-            if field not in manifest:
-                add_finding(
-                    findings,
-                    "IDENTITY_INPUT_MISSING",
-                    f"candidate manifest is missing {field}",
-                )
-        if legacy_manifest and legacy_source_mode:
-            findings.extend(
-                validate_legacy_candidate_source_binding(
-                    repo_root,
-                    legacy_source_binding,
-                    candidate_manifest_path=document.get("candidate_manifest_path"),
-                    candidate_manifest_sha256=manifest_sha256,
-                    candidate_id=canonical_candidate_id,
-                    candidate_members=members,
-                    candidate_manifest=manifest,
-                    prior_campaign_generation=manifest_generation,
-                )
-            )
-        elif legacy_manifest and "workflow_source_identity" not in manifest:
-            add_finding(
-                findings,
-                "IDENTITY_INPUT_MISSING",
-                "historical candidate manifest is missing workflow_source_identity",
-            )
 
     payload_sha256 = hashlib.sha256(canonical_payload(document)).hexdigest()
     expected_id = f"candidate-recovery-preflight-sha256:{payload_sha256}"
@@ -1313,10 +394,11 @@ def validate(
         "advisories": finding_summary["advisories"],
         "finding_effect_counts": finding_summary["finding_effect_counts"],
     }
-    if legacy_manifest:
-        result["source_workflow_identity"] = source_workflow_identity
-        result["legacy_candidate_source_binding"] = legacy_source_binding
-    result["intervening_recovery_chain"] = chain_summary
+    if prepublication:
+        result["recomputed_inventory_id"] = package_validation["inventory_id"]
+        result["recomputed_inventory_sha256"] = package_validation["inventory_sha256"]
+    result["publication_state"] = "prepublication" if prepublication else "published-recovery"
+    result["authority_effect"] = "content-and-accounting-only; no readiness or permission granted"
     return result
 
 

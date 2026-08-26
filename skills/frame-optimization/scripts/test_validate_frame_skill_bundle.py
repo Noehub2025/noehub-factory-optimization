@@ -30,7 +30,7 @@ class FrameSkillBundleTests(unittest.TestCase):
         self.assertIn("does not select survivors, routes, budgets", designer)
 
     def test_measurement_design_reuses_readiness_and_routes_its_findings(self) -> None:
-        coordinator = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        coordinator = (SKILL_ROOT / "references/problem-stage.md").read_text(encoding="utf-8")
         documents = (
             SKILL_ROOT / "references/task-documents.md"
         ).read_text(encoding="utf-8")
@@ -48,7 +48,7 @@ class FrameSkillBundleTests(unittest.TestCase):
         self.assertNotIn("measurement-design branch", reviewer)
 
     def test_revision_context_and_projection_adoption_are_independently_closed(self) -> None:
-        coordinator = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        coordinator = (SKILL_ROOT / "references/measurement-work.md").read_text(encoding="utf-8")
         designer = (
             SKILL_ROOT.parent / "design-measurement/SKILL.md"
         ).read_text(encoding="utf-8")
@@ -124,14 +124,16 @@ class FrameSkillBundleTests(unittest.TestCase):
         contract = (
             SKILL_ROOT / "references/user-facing-return.md"
         ).read_text(encoding="utf-8")
-        coordinator = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        coordinator = (SKILL_ROOT / "references/measurement-work.md").read_text(encoding="utf-8")
 
         self.assertNotIn("sequencing gate", contract)
         self.assertNotIn("conditional authority", contract)
         self.assertNotIn("Git commit", contract)
         self.assertIn("make implementation review the sequencing gate", coordinator)
-        self.assertIn("grants the exact run conditional on the reviewed target", coordinator)
-        self.assertIn("names its exact file set and maximum consequence", coordinator)
+        self.assertIn("retain their separate readiness checks", coordinator)
+        self.assertIn("request another authorization only when the run falls outside the grant", coordinator)
+        self.assertIn("allowed file set, required behavior", coordinator)
+        self.assertIn("excluded consequential actions", coordinator)
 
     def test_measurement_support_review_has_a_frame_owned_route(self) -> None:
         coordinator = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
@@ -139,15 +141,18 @@ class FrameSkillBundleTests(unittest.TestCase):
             SKILL_ROOT.parent / "review-optimization/SKILL.md"
         ).read_text(encoding="utf-8")
 
-        shared_gate = coordinator.index("## Shared measurement-support gate")
-        problem_stage = coordinator.index("## 3. Complete the problem-definition stage")
-        representation_stage = coordinator.index("## 4. Enter the representation stage")
-        self.assertLess(shared_gate, problem_stage)
-        self.assertLess(shared_gate, representation_stage)
-        self.assertIn("For a Slot H implementation finding", coordinator)
-        self.assertIn("do not route professional design to measurement support", coordinator)
-        self.assertIn("`measurement-support` branch of `review-optimization`", coordinator)
-        self.assertIn("Accept only a fresh `IMPLEMENTATION_READY` result from `review-optimization/1`", coordinator)
+        support = (SKILL_ROOT / "references/measurement-work.md").read_text(encoding="utf-8")
+        problem = (SKILL_ROOT / "references/problem-stage.md").read_text(encoding="utf-8")
+        representation = (SKILL_ROOT / "references/representation-stage.md").read_text(encoding="utf-8")
+        for reference in ("measurement-work.md", "problem-stage.md", "representation-stage.md"):
+            self.assertIn(f"references/{reference}", coordinator)
+        self.assertIn("## Shared measurement-support gate", support)
+        self.assertIn("reachable before problem readiness and after representation begins", support)
+        self.assertIn("For a Slot H implementation finding", problem)
+        self.assertIn("do not route professional design to measurement support", problem)
+        self.assertIn("shared measurement-support gate", representation)
+        self.assertIn("`measurement-support` branch of `review-optimization`", support)
+        self.assertIn("Accept only a fresh `IMPLEMENTATION_READY` result from `review-optimization/1`", support)
         self.assertIn("## Measurement-support branch", reviewer)
         self.assertIn("reviewed path and SHA-256", reviewer)
         self.assertIn("grants no durable containment, baseline, evaluation", reviewer)
@@ -188,14 +193,20 @@ class FrameSkillBundleTests(unittest.TestCase):
         self.assertNotIn("Claude", normative)
         self.assertNotIn("agents/openai.yaml", normative)
         self.assertIn("adapter metadata carries discovery and presentation only", coordinator)
-        self.assertIn("cannot validate an output that failed its issuing Skill's preconditions", coordinator)
-        self.assertIn("transient user replies are not identity inputs", handoff)
+        self.assertIn("Preserve past failures and producing inputs", coordinator)
+        self.assertIn("current rules govern a new decision", coordinator)
+        self.assertIn("without rewriting the old verdict", coordinator)
+        self.assertIn("workflow bytes remain outside project identities", handoff)
         self.assertIn("Exclude Skill files, workflow source or release data", reviewer)
 
     def test_relative_markdown_links_resolve(self) -> None:
         checked_files = (
             SKILL_ROOT / "SKILL.md",
             SKILL_ROOT / "references/measurement-design.md",
+            SKILL_ROOT / "references/measurement-work.md",
+            SKILL_ROOT / "references/problem-stage.md",
+            SKILL_ROOT / "references/representation-stage.md",
+            SKILL_ROOT / "references/repair-loop.md",
             SKILL_ROOT / "references/user-facing-return.md",
             SKILL_ROOT / "references/task-documents.md",
             SKILL_ROOT / "references/representation-documents.md",

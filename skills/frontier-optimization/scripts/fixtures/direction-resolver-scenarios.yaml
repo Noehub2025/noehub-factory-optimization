@@ -2,20 +2,20 @@ contract_version: frontier-direction-resolver-fixtures/2
 scenarios:
   - id: parent-no-frontier-record
     evidence_state: sha256:parent-no-record
-    facts: {parent_mismatch: no-frontier-record, route_set: incomplete}
+    facts: {parent_change: unresolved-required-meaning, route_set: incomplete}
     expected: {row: 1, direction: blocked, action: PARENT_REVIEW_REQUIRED}
-  - id: parent-compatible-zero-spend-rebind
-    evidence_state: sha256:parent-rebind
-    facts: {parent_mismatch: eligible-zero-spend-rebind, route_set: incomplete}
-    expected: {row: 1, direction: blocked, action: entry-rebind}
-  - id: parent-recorded-forced-halt-handoff
-    evidence_state: sha256:parent-recorded-handoff
-    facts: {parent_mismatch: adopted-forced-halt-closeout, hard_block: halt}
-    expected: {row: 1, direction: halt, action: recorded-parent-handoff}
+  - id: parent-revision-before-spend
+    evidence_state: sha256:parent-before-spend
+    facts: {parent_change: adopted-affecting-next-decision, actual_spend: 0}
+    expected: {row: 1, direction: parent revision, action: update-affected-decision}
+  - id: unrelated-parent-revision
+    evidence_state: sha256:parent-unrelated
+    facts: {parent_change: unrelated, actual_spend: 6, routine_r8: continue-local}
+    expected: {row: 13, direction: local R8, action: continue-local}
   - id: parent-mismatch-after-frontier-work
-    evidence_state: sha256:parent-forced-closeout
-    facts: {parent_mismatch: after-frontier-record, route_set: incomplete}
-    expected: {row: 1, direction: halt, action: forced-halt-closeout}
+    evidence_state: sha256:parent-after-spend
+    facts: {parent_change: adopted-affecting-next-decision, actual_spend: 6}
+    expected: {row: 1, direction: parent revision, action: update-affected-decision}
   - id: hard-authority-stop-dominates-validity
     evidence_state: sha256:hard-stop-validity
     facts: {hard_block: authority, validity: unresolved-funded}
@@ -31,7 +31,7 @@ scenarios:
   - id: semantic-parent-challenge
     evidence_state: sha256:semantic-parent
     facts: {semantic_parent_challenge: slot-h-no-longer-tracks-objective, route_set: incomplete}
-    expected: {row: 4, direction: halt, action: semantic-parent-forced-closeout}
+    expected: {row: 4, direction: parent revision, action: refer-affected-rule-to-parent-owner}
   - id: protected-reserve-exact-blocker
     evidence_state: sha256:reserve-blocker
     facts: {budget_block: exact-blocker, validity: unresolved-funded}
@@ -221,7 +221,7 @@ acceptance_scenarios:
   - {number: 7, name: Parent mismatch, target: {kind: resolver-fixture, id: parent-mismatch-after-frontier-work}}
   - {number: 8, name: Protected reserve, target: {kind: resolver-fixture, id: protected-reserve-exact-blocker}}
   - {number: 9, name: General recovery request, target: {kind: contract-assertion, path: references/user-facing-handoff.md, marker: Grants campaign-opening planning only}}
-  - {number: 10, name: No fake alternative, target: {kind: contract-assertion, path: references/entry-review.md, marker: Accept one eligible route without a fake T or tradeoff V}}
+  - {number: 10, name: No fake alternative, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'Create no fake alternative T'}}
   - {number: 11, name: Unfunded validity diagnosis, target: {kind: resolver-fixture, id: unfunded-validity-diagnosis}}
   - {number: 12, name: Unfunded route refresh, target: {kind: resolver-fixture, id: unfunded-route-refresh}}
   - {number: 13, name: Expected maturation, target: {kind: resolver-fixture, id: expected-maturation}}
@@ -242,7 +242,7 @@ acceptance_scenarios:
   - {number: 28, name: Semantic conflict, target: {kind: contract-assertion, path: references/campaign-state.md, marker: Selection applies the reviewed Entry evidence or latest controlling reflection}}
   - {number: 29, name: Compaction recovery, target: {kind: regression-test, path: scripts/test_frontier_provenance.py, test: test_complete_handoff_references_git_and_retained_legacy_roots}}
   - {number: 30, name: Claims boundary, target: {kind: contract-assertion, path: references/closeout-and-claims.md, marker: local optimum}}
-  - {number: 31, name: Mid-campaign workflow update, target: {kind: contract-assertion, path: references/frontier-core.md, marker: Any workflow update, including a changed decision rule}}
+  - {number: 31, name: Mid-campaign workflow update, target: {kind: contract-assertion, path: references/frontier-core.md, marker: 'Apply current workflow rules to its next decision'}}
   - {number: 32, name: Project-only decision node, target: {kind: contract-assertion, path: references/entry-review.md, marker: '`project-decision` content root and an empty payload'}}
   - {number: 33, name: General reopen request, target: {kind: contract-assertion, path: references/user-facing-handoff.md, marker: Grants campaign-opening planning only}}
   - {number: 34, name: Specific recovery request, target: {kind: regression-test, path: scripts/test_validate_candidate_recovery.py, test: test_requested_identity_mismatch_blocks_before_generation_artifacts}}
@@ -253,20 +253,20 @@ acceptance_scenarios:
   - {number: 39, name: Common-mode route assumption, target: {kind: resolver-fixture, id: shared-assumption-first}}
   - {number: 40, name: Route replacement and maturity, target: {kind: contract-assertion, path: references/learning-loop.md, marker: replacement boundary}}
   - {number: 41, name: Parent-owned result vector, target: {kind: contract-assertion, path: references/learning-loop.md, marker: complete parent-owned vector}}
-  - {number: 42, name: Mutable context and expiring action, target: {kind: contract-assertion, path: references/entry-review.md, marker: action window}}
+  - {number: 42, name: Mutable context and expiring action, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'action window'}}
   - {number: 43, name: Dominated diagnostic repeat, target: {kind: resolver-fixture, id: dominated-diagnostic-repeat}}
-  - {number: 44, name: Proportionate governance, target: {kind: contract-assertion, path: references/entry-review.md, marker: proportionality}}
+  - {number: 44, name: Proportionate governance, target: {kind: contract-assertion, path: references/entry-review.md, marker: 'Expand review only where a changed dependency'}}
   - {number: 45, name: Workflow identity exclusion, target: {kind: contract-assertion, path: references/learning-loop.md, marker: workflow source, semantic, validator, worker, deployment, or release change}}
-  - {number: 46, name: Fabricated progress rule, target: {kind: contract-assertion, path: references/entry-review.md, marker: numeric rule invented only to complete the template}}
+  - {number: 46, name: Fabricated progress rule, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'Do not invent a number merely to complete the template'}}
   - {number: 47, name: Evidence-derived route before Q completion, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: provisional}}
-  - {number: 48, name: Established route wins, target: {kind: contract-assertion, path: references/entry-review.md, marker: novelty}}
+  - {number: 48, name: Established route wins, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'not novelty or maturity alone'}}
   - {number: 49, name: New route rejected cheaply, target: {kind: contract-assertion, path: references/planning-records.md, marker: earliest affordable discriminating check}}
-  - {number: 50, name: New route survives the first probe, target: {kind: contract-assertion, path: references/entry-review.md, marker: implementation review}}
-  - {number: 51, name: Decision-complete without exhaustive search, target: {kind: contract-assertion, path: references/entry-review.md, marker: decision completeness}}
-  - {number: 52, name: Literature dump is not route diversity, target: {kind: contract-assertion, path: references/entry-review.md, marker: mechanism class}}
-  - {number: 53, name: Superficial analogy, target: {kind: contract-assertion, path: references/entry-review.md, marker: surface analogy}}
+  - {number: 50, name: New route survives the first probe, target: {kind: contract-assertion, path: references/candidate-lifecycle.md, marker: 'Formal Slot H measurement'}}
+  - {number: 51, name: Decision-complete without exhaustive search, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'decision completeness'}}
+  - {number: 52, name: Literature dump is not route diversity, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'mechanism classes'}}
+  - {number: 53, name: Superficial analogy, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'Surface resemblance is insufficient'}}
   - {number: 54, name: No continuous ideation tax, target: {kind: resolver-fixture, id: routine-unique-r8}}
-  - {number: 55, name: No learning or evaluation signal, target: {kind: contract-assertion, path: references/entry-review.md, marker: feedback}}
+  - {number: 55, name: No learning or evaluation signal, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'feedback'}}
   - {number: 56, name: Unresolved data adequacy, target: {kind: resolver-fixture, id: unresolved-prerequisite-first}}
-  - {number: 57, name: Supported small-data route, target: {kind: contract-assertion, path: references/entry-review.md, marker: prerequisite evidence}}
+  - {number: 57, name: Supported small-data route, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'Every prerequisite of the proposed action'}}
   - {number: 58, name: Failed prerequisite, target: {kind: contract-assertion, path: references/planning-records.md, marker: A failed prerequisite}}

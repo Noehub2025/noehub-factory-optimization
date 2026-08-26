@@ -42,7 +42,9 @@ def validate_and_project(
     _reject_overlay_semantics(parsed)
     collections = closed_collections or []
     return {
-        "entry": _entry_projection,
+        "entry": lambda parsed, stage, collections: _entry_projection(
+            parsed, stage, collections, raw_by_name
+        ),
         "replan": _replan_projection,
         "design": lambda parsed, stage, collections: _design_projection(
             parsed, stage, collections, raw_by_name
@@ -50,6 +52,63 @@ def validate_and_project(
         "implementation": _implementation_projection,
         "claims": _claims_projection,
     }[review_kind](parsed, review_stage, collections)
+
+
+def _authorization_basis(
+    gate: dict[str, Any], parsed: dict[str, Any], raw_by_name: dict[str, bytes]
+) -> dict[str, Any]:
+    """Bind a reused user decision; the Entry reviewer judges semantic scope fit.
+
+    This is the existing spend-readiness path, not a new authority writer.
+    Current budget and effect checks still run at the actual consequence.
+    """
+    basis = gate["authorization_basis"]
+    if not isinstance(basis, dict) or set(basis) != {"target", "answer", "adoption"}:
+        raise ProvenanceError("authorization_basis must reference the original target, answer, and adoption")
+    documents = {}
+    for role, name in basis.items():
+        if not isinstance(name, str) or not name.startswith("project/decision/authority/") or name not in parsed:
+            raise ProvenanceError(f"authorization_basis {role} must be a retained authority member")
+        documents[role] = _mapping(parsed[name], f"authorization_basis {role}")
+    target, answer, adoption = (documents[role] for role in ("target", "answer", "adoption"))
+    _require_contract(target, "frontier-project-authorization-target/1")
+    _require_fields(target, {"target_id", "decision_id", "scope", "maximum_spend", "stop_boundary"}, "original authorization target")
+    if target.get("continuation") != "within-scope":
+        raise ProvenanceError("an exact-only authorization cannot authorize a replacement decision")
+    if target["target_id"] != gate["authority_target"]:
+        raise ProvenanceError("spend gate must cite the original user target")
+    if any(doc.get("decision_id") != target["decision_id"] for doc in (answer, adoption)):
+        raise ProvenanceError("authorization basis names different user decisions")
+    if answer.get("target_id") != target["target_id"]:
+        raise ProvenanceError("user answer names a different target")
+    if answer.get("answer_classification") != "authorize" or answer.get("conditions") != []:
+        raise ProvenanceError("reuse requires an adopted affirmative answer without unresolved conditions")
+    if not isinstance(answer.get("exact_answer"), str) or not answer["exact_answer"].strip():
+        raise ProvenanceError("reuse requires the preserved user answer")
+    if adoption.get("result") != "ENTRY_READY":
+        raise ProvenanceError("authorization basis is not adopted")
+    target_binding = adoption.get("target", {})
+    answer_binding = adoption.get("user_result", {})
+    if not isinstance(target_binding, dict) or not isinstance(answer_binding, dict):
+        raise ProvenanceError("authorization adoption lacks its original content bindings")
+    if target_binding.get("identity") != target["target_id"]:
+        raise ProvenanceError("adoption names a different target")
+    for role, binding in (("target", target_binding), ("answer", answer_binding)):
+        if binding.get("file_sha256") != hashlib.sha256(raw_by_name[basis[role]]).hexdigest():
+            raise ProvenanceError(f"authorization adoption does not bind the original {role} bytes")
+    authority = adoption.get("authority_id")
+    if not isinstance(authority, str) or not authority.startswith("frontier-authority-root-sha256:"):
+        raise ProvenanceError("authorization adoption lacks its original authority identity")
+    return {
+        **basis,
+        "target_id": target["target_id"],
+        "decision_id": target["decision_id"],
+        "authority_id": authority,
+        "scope": target["scope"],
+        "maximum_spend": target["maximum_spend"],
+        "stop_boundary": target["stop_boundary"],
+        "continuation": "within-scope",
+    }
 
 
 def _parse(name: str, raw: bytes) -> Any:
@@ -76,7 +135,8 @@ def _reject_overlay_semantics(parsed: dict[str, Any]) -> None:
 
 
 def _entry_projection(
-    parsed: dict[str, Any], review_stage: str | None, collections: list[dict[str, Any]]
+    parsed: dict[str, Any], review_stage: str | None, collections: list[dict[str, Any]],
+    raw_by_name: dict[str, bytes],
 ) -> dict[str, Any]:
     if review_stage not in ENTRY_STAGES:
         raise ProvenanceError("entry review_stage is invalid")
@@ -153,6 +213,8 @@ def _entry_projection(
         )
         if gate["batch_id"] != plan["batch_id"]:
             raise ProvenanceError("entry plan and authorization target name different batches")
+        if gate.get("continuation", "exact-only") not in ("exact-only", "within-scope"):
+            raise ProvenanceError("authorization continuation must be exact-only or within-scope")
         authority_target = gate["target_id"]
         affected_scope = gate["scope"]
         later_spend_gate = gate["authorize_consequence"]
@@ -178,6 +240,8 @@ def _entry_projection(
         "authority_target": authority_target,
         "later_spend_gate": later_spend_gate,
     }
+    if review_stage == "spend-readiness" and gate.get("authorization_basis") is not None:
+        projection["authorization_basis"] = _authorization_basis(gate, parsed, raw_by_name)
     if delivery_scope is not None:
         projection["delivery_scope"] = delivery_scope
     revision = gate.get("design_revision_scope")

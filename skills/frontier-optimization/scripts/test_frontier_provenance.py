@@ -2599,6 +2599,33 @@ def test_current_implementation_review_rejects_missing_publication_state() -> No
         )
 
 
+def test_retained_unpublished_review_keeps_original_execution_without_final_manifest() -> None:
+    decision = {
+        "contract_version": "frontier-project-implementation-review-input/1",
+        "affected_scope": "publication of a retained complete realization",
+        "candidate": {"id": "retained-sha256:" + "a" * 64},
+        "reviewed_design": "design-sha256:" + "b" * 64,
+        "publication_state": "prepublication",
+        "execution_start": "original-generation-execution-sha256:" + "c" * 64,
+        "engineering_state": {"final_attempt": 2, "status": "pass"},
+        "allowed_feedback": "unchanged target",
+    }
+    subject = {
+        "project/decision/implementation/input.yaml": yaml.safe_dump(decision).encode(),
+        "project/decision/parents/problem.md": b"Current parent for proposed publication\n",
+    }
+    projection = validate_and_project(
+        "implementation", subject,
+        closed_collections=[{
+            "logical_name": "project/decision/candidate-working",
+            "members": ["project/decision/implementation/input.yaml"],
+        }],
+    )
+    assert projection["execution_start"] == decision["execution_start"]
+    assert projection["publication_state"] == "prepublication"
+    assert "candidate_manifest" not in projection
+
+
 def test_current_implementation_review_rejects_nonpassing_engineering_state() -> None:
     decision = {
         "contract_version": "frontier-project-implementation-review-input/1",

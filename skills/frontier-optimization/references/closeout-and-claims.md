@@ -35,7 +35,7 @@ Choose claim-only only when all are true:
 - no ordinary stop, forced halt, unresolved `CLOSEOUT_REQUIRED`, or parent conflict is active; and
 - the campaign was planned or running before the claim trigger.
 
-Choose full closeout for a durable campaign-scope ordinary stop, forced halt, stopped or halted campaign, unresolved `CLOSEOUT_REQUIRED`, or parent mismatch after campaign records exist. A candidate- or route-scope disposition returns to Campaign Cycle under the persisted resolver result and never enters full closeout by itself. Full closeout wins when a claim and a campaign-scope stop or halt are both active.
+Choose full closeout for a durable campaign-scope ordinary stop, forced halt, stopped or halted campaign, unresolved `CLOSEOUT_REQUIRED`, or an actual campaign-wide ending condition. Parent revisions follow [Change impact and retained results](frontier-core.md#change-impact-and-retained-results) and do not by themselves select closeout. A candidate- or route-scope disposition returns to Campaign Cycle under the persisted resolver result and never enters full closeout by itself. Full closeout wins when a claim and a campaign-scope stop or halt are both active.
 
 If neither mode fits, record `BLOCKED` with the conflicting records and continue to the canonical return finalization. Do not convert a claim-only request into closeout or use claim review to repair campaign state.
 
@@ -111,7 +111,7 @@ Claim-only completion must not:
 
 ## Full closeout
 
-Require one exact durable stop or halt reason. An ordinary stop must cite a rule fixed before the spend it judges. A halt must cite stale parents, safety, legality, authority, access, accounting, an unresolved controlling contradiction, required parent change, or withdrawn further-spend authorization.
+Require one exact durable stop or halt reason. An ordinary stop must cite a rule fixed before the spend it judges. A campaign halt must establish that the safety, legality, authority, access, accounting or withdrawn-permission boundary applies to the whole campaign. A local unresolved parent rule pauses only dependent work.
 
 For an ordinary stop, set `campaign_status: stopped`. For a forced halt, set `campaign_status: halted`. Start no new B, research spend, external action, integration, or claim use. Let active workers reach a safe interruption point, preserve their result and spend, and invalidate every outstanding spend authority.
 

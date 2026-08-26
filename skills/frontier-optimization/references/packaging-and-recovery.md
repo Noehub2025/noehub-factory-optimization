@@ -38,8 +38,8 @@ accounting. Restoring a requested Generation's working files uses ordinary
 scoped Git operations and preserves evidence, spend, and unrelated work.
 Neither operation creates a new Generation merely to accommodate storage.
 
-Opening a new campaign after an adopted closeout remains a separate user
-request. The Entry router owns that decision and any changed technical scope.
+Opening a new campaign after adopted closeout follows the Entry router and
+applicable continuing grant or current request. Packaging alone is not that request.
 For unchanged candidate reuse, retain the candidate's exact version, its
 existing implementation evidence, and cumulative spend. Apply the existing
 recovery Entry and applicability checks only to that new consequence; a Git

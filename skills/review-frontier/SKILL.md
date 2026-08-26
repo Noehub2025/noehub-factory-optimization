@@ -20,7 +20,7 @@ Branch selection is complete only when one action contract owns the review and n
 
 ## Preserve review independence
 
-Check source artifacts, not only summaries. Apply the Frontier Core finding-effect owner; never choose or weaken an effect locally. Cite immutable evidence for every block, repair, advisory, and checked positive result. Do not accept a stronger result while any block or repair remains open. Keep advisories separate from findings and out of readiness, strength, validity, progress, and constraint conclusions. Do not turn a user preference into technical proof or let one review substitute for another gate.
+Check source artifacts, not only summaries. Apply [Finding effects](../frontier-optimization/references/finding-effects.md); never choose or weaken an effect locally. Cite immutable evidence for every block, repair, advisory, and checked positive result. Do not accept a stronger result while any block or repair remains open. Keep advisories separate from findings and out of readiness, strength, validity, progress, and constraint conclusions. Do not turn a user preference into technical proof or let one review substitute for another gate.
 
 Each finding identifies an existing requirement, observed evidence of its violation, and the condition a later complete subject must satisfy. Accept different repair methods that satisfy that same requirement. An optional repair suggestion is not a new requirement; a required method must have an existing contractual basis. Do not turn a preferred procedure or artifact into an acceptance condition merely by describing it as an observable result. Method differences alone are not defects.
 

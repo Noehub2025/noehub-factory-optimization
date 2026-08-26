@@ -7,6 +7,8 @@ description: Ask one Frontier tradeoff or authorization question that only the u
 
 Collect one Coordinator-assigned user choice. Ask only the question needed for the named decision record.
 
+Apply [User decisions](../frontier-optimization/references/user-decisions.md) before asking. Return an already recorded applicable answer without repeating the question. A technical choice or new B identity alone is not a user decision.
+
 ## Execute the assignment
 
 1. Require `decision_kind: tradeoff | authorization`, exact `decision_root`, a reserved V identifier, exact decision, evidence, affected records, conditions, reconsideration trigger, and result-packet path. New packets must not include workflow release or implementation identities. For a post-result strategic tradeoff, also require the triggering Outcome Reflection and technically filtered options that the proposed replan cannot resolve from evidence. For `tradeoff`, require at least two technically eligible alternatives and return `BLOCKED` if the assignment asks the user to judge technical eligibility. For `authorization`, require one exact object, immutable identity, scope, reviewed basis, and the consequences of authorize, decline, and conditional authorization; do not require two technical alternatives. When that object names a concrete B packet, require unchanged finding-free `AUTHORIZATION_READY` for the exact target, reproduce the structural packet preflight, Entry schema, snapshot, and live-input identities, and require all bytes to match before presenting the question. Return `BLOCKED` before asking when any check is missing, failed, stale, or mismatched.

@@ -49,6 +49,6 @@ The result uses Q or D fields, reports `outcome: completed | blocked | evidence_
 
 ## User-decision packet
 
-Name `target_id`, exact `decision_root`, `decision_kind: tradeoff | authorization`, exact decision, evidence, affected records, conditions, reconsideration trigger, and result-packet path. Record an explicit campaign-opening answer directly from the current request; do not delegate a question whose answer is already present.
+Name `target_id`, exact `decision_root`, `decision_kind: tradeoff | authorization`, exact decision, evidence, affected records, conditions, reconsideration trigger, and result-packet path. Apply [User decisions](user-decisions.md); reuse an applicable original V and do not delegate a question whose answer is already present.
 
 A tradeoff packet gives at least two technically eligible alternatives. An authorization packet gives one exact immutable object, scope, reviewed basis, next action, limits, and consequences of authorize, decline, and conditional authorization. When the object names a concrete B packet, it also gives unchanged finding-free `AUTHORIZATION_READY`, structural preflight, Entry schema, and target identities. Any missing, failed, stale, or mismatched gate makes the object ineligible to present. The result uses every V field and preserves the user's exact answer without adopting it.

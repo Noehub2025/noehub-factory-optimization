@@ -7,6 +7,8 @@ description: Ask one user-owned optimization decision or authorization question,
 
 Ask one exact user-owned question for the Primary Framing Agent. Record the user's answer in one selected detail, then return one matching decision packet.
 
+Apply [User decisions](../frontier-optimization/references/user-decisions.md) before asking. Do not turn a technical choice or a changed internal realization into a user decision.
+
 ## Inputs
 
 Require these inputs from `frame-optimization`:

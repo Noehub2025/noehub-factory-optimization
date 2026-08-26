@@ -5,6 +5,8 @@ description: Review an optimization representation in a fresh context and issue 
 
 # review-representation
 
+For a parent revision or repair, apply [Change impact](../frontier-optimization/references/frontier-core.md#change-impact-and-retained-results). Review changed representation requirements and affected dependencies against the complete current subject, reusing unaffected saved conclusions. An unchanged representation does not require review just to refresh a parent version.
+
 Run a clean-room gate on one optimization representation. Judge durable task artifacts and evidence, not the author's intent or conversation history.
 
 ## Preconditions
@@ -152,7 +154,7 @@ This step is complete when every condition for the requested scope has an explic
 
 Locate retained checkpoints, populations, proposal models, caches, surrogate models, module-local scores, and representation-dependent proofs.
 
-Confirm that each artifact or artifact class records the task path, parent epoch, representation revision, applicable module epochs, and producing contract. Confirm its newest `log.md` disposition is `reusable`, `migrated`, or `voided` when a meaningful representation change affected it.
+For artifacts affected by the actual representation change, use their original identity and producing context to assess the proposed use. Record `reusable`, `migrated` or `voided` only for that affected use; unchanged state requires no new disposition or historical field backfill.
 
 Do not invalidate parent evaluation results only because representation-dependent search state changed. Do not reuse search state without a valid disposition.
 

@@ -244,7 +244,7 @@ Request exploratory review only when:
 - R4 defines operation preconditions, legality handling, and reachability limit;
 - R8 identifies the executable harness, baseline, starting set, budget, feedback policy, first decision-changing check, survivor-selection rule, every stop trigger's candidate, route, or campaign scope and surviving authority, measurement-use limits, vacuity decision, and old-work policy;
 - every unresolved item has a next action or permitted-claim limit;
-- every retained search artifact has a compatibility disposition.
+- every retained search artifact affected by a real semantic change has a disposition for its proposed use; unchanged state requires none.
 
 Request modular review only when all exploratory conditions hold and:
 

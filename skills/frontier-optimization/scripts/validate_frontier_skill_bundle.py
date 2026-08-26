@@ -60,9 +60,9 @@ REQUIRED_COORDINATOR_SCRIPTS = {
 LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 RUNTIME_ARTIFACT_LINKS = {"FRONTIER.md", "log.md"}
 DISPATCH_INTERFACE_REQUIREMENTS = {
-    "frontier-optimization/SKILL.md": "references/batch-interface.md#dispatch-state-machine",
+    "frontier-optimization/SKILL.md": "references/batch-interface.md",
     "frontier-optimization/references/campaign-cycle.md": "batch-interface.md#dispatch-state-machine",
-    "run-frontier-batch/SKILL.md": "../frontier-optimization/references/batch-interface.md#dispatch-state-machine",
+    "run-frontier-batch/SKILL.md": "../frontier-optimization/references/batch-interface.md",
 }
 ACTION_ROUTER_REQUIREMENTS = {
     "frontier-optimization/SKILL.md": "references/result-adoption.md",
@@ -71,13 +71,14 @@ ACTION_ROUTER_REQUIREMENTS = {
 REVIEW_BRANCH_POINTER = "../frontier-optimization/references/review-branches.md"
 REVIEW_BRANCH_ACTIONS = {
     "`entry`": "entry-review.md",
-    "`replan`": "learning-loop.md#strategic-replan-review-method",
+    "`replan`": "replan-review.md",
     "`design`": "design-review.md",
     "`implementation`": "implementation-review.md",
     "`claims`": "claim-review.md",
 }
 STAGE_HANDOFF_REQUIREMENTS = {
-    "frame-optimization/SKILL.md": "references/frontier-handoff.md",
+    "frame-optimization/SKILL.md": "references/representation-stage.md",
+    "frame-optimization/references/representation-stage.md": "frontier-handoff.md",
     "frontier-optimization/SKILL.md": "../frame-optimization/references/frontier-handoff.md",
 }
 BOUNDARY_CONTINUATION_REQUIREMENTS = {
@@ -97,7 +98,7 @@ BOUNDARY_CONTINUATION_REQUIREMENTS = {
 }
 BOUNDARY_CONTINUATION_HEADING = "## Boundary-preserving continuation"
 ENTRY_IDENTITY_CONTRACT_REQUIREMENTS = {
-    "frontier-optimization/references/entry-review.md": (
+    "frontier-optimization/references/entry-review-legacy.md": (
         "entry_bindings_ready: true",
         "target_file_sha256",
         "derived_binding_checks",
@@ -164,7 +165,14 @@ ENTRY_IDENTITY_CONTRACT_REQUIREMENTS = {
 }
 RESULT_CONTRACT_REQUIREMENTS = {
     "frontier-optimization/references/batch-interface.md": (
+        "batch-packet-format.md",
+        "batch-result.md",
+    ),
+    "frontier-optimization/references/batch-packet-format.md": (
         "result_contract_compatibility",
+        "canonical nested `evaluation_target`",
+    ),
+    "frontier-optimization/references/batch-result.md": (
         "canonical nested `evaluation_target`",
         "without rerunning the measurement",
     ),
@@ -213,11 +221,13 @@ RESULT_CONTRACT_REQUIREMENTS = {
         "archived-source dispatch",
     ),
     "frontier-optimization/scripts/validate_candidate_recovery.py": (
-        'VALIDATOR = "frontier-candidate-recovery-preflight/5"',
+        'VALIDATOR = "frontier-candidate-recovery-preflight/6"',
         "CLOSEOUT_FACTS_NOT_DERIVED",
         "HANDOFF_FACTS_NOT_DERIVED",
         "BUDGET_FACTS_NOT_DERIVED",
-        "reject_symlink_components",
+        "validate_candidate_inventory",
+        "validate_candidate_package",
+        "resolve_manifest",
     ),
     "frontier-optimization/scripts/validate_candidate_package.py": (
         'VALIDATOR = "frontier-candidate-package-validation/3"',
@@ -239,6 +249,10 @@ RESULT_CONTRACT_REQUIREMENTS = {
         "reject_symlink_components",
     ),
     "run-frontier-batch/SKILL.md": (
+        "../frontier-optimization/references/batch-evaluation.md",
+        "../frontier-optimization/references/batch-result.md",
+    ),
+    "frontier-optimization/references/batch-evaluation.md": (
         "canonical nested `evaluation_target`",
         "result-publication recovery B",
     ),
@@ -246,6 +260,9 @@ RESULT_CONTRACT_REQUIREMENTS = {
 FINDING_EFFECT_REQUIREMENTS = {
     "frontier-optimization/references/frontier-core.md": (
         "## Finding effects",
+        "finding-effects.md",
+    ),
+    "frontier-optimization/references/finding-effects.md": (
         "An unknown code defaults to `block`",
         "Apply one decision-impact test",
         "create no replacement identity, B, V, review, or authorization",
@@ -253,12 +270,16 @@ FINDING_EFFECT_REQUIREMENTS = {
         "`finding-free` means zero `block` or `repair` findings",
     ),
     "frontier-optimization/references/entry-review.md": (
+        "finding-effects.md",
+        "entry-review-legacy.md",
+    ),
+    "frontier-optimization/references/entry-review-legacy.md": (
         "frontier-entry-packet-schema/7",
         "zero `block` or `repair` findings",
         "## Advisories",
         "frontier-authorization-adoption/6",
     ),
-    "frontier-optimization/references/batch-interface.md": (
+    "frontier-optimization/references/batch-packet-format.md": (
         "frontier-batch-packet-preflight/9",
         "frontier-batch-result-preflight/7",
         '"blocking_findings": []',

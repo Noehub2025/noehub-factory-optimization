@@ -25,16 +25,11 @@ def resolve_persisted_facts(scenario: dict) -> tuple[int, str, str]:
     """Return the first row and exact action for one immutable fixture state."""
 
     facts = scenario["facts"]
-    parent = facts.get("parent_mismatch")
-    if parent:
-        actions = {
-            "no-frontier-record": ("blocked", "PARENT_REVIEW_REQUIRED"),
-            "eligible-zero-spend-rebind": ("blocked", "entry-rebind"),
-            "adopted-forced-halt-closeout": ("halt", "recorded-parent-handoff"),
-            "after-frontier-record": ("halt", "forced-halt-closeout"),
-        }
-        direction, action = actions[parent]
-        return 1, direction, action
+    parent = facts.get("parent_change")
+    if parent == "unresolved-required-meaning":
+        return 1, "blocked", "PARENT_REVIEW_REQUIRED"
+    if parent == "adopted-affecting-next-decision":
+        return 1, "parent revision", "update-affected-decision"
 
     hard = facts.get("hard_block")
     if hard:
@@ -46,7 +41,7 @@ def resolve_persisted_facts(scenario: dict) -> tuple[int, str, str]:
         return 3, "blocked", blocker
 
     if facts.get("semantic_parent_challenge"):
-        return 4, "halt", "semantic-parent-forced-closeout"
+        return 4, "parent revision", "refer-affected-rule-to-parent-owner"
 
     budget = facts.get("budget_block")
     if budget:

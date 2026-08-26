@@ -179,7 +179,7 @@ Use these core fields:
 - `verified`: add only after the current independent representation review passes.
 - `sources`: add only for load-bearing sources in the core document.
 
-A verification-only parent edit does not change `problem_generated_at`. A parent semantic edit changes `generated.at` and makes the representation binding stale.
+A verification-only parent edit does not change `problem_generated_at`. A parent semantic edit changes `generated.at`; refresh the current binding after adoption and apply [Change impact and retained results](../../frontier-optimization/references/frontier-core.md#change-impact-and-retained-results) to any affected representation conclusion.
 
 Use row statuses as follows:
 
@@ -320,7 +320,7 @@ For a positive result, the reviewer sets `REPRESENTATION.md` and every reviewed 
 
 For a nonpositive result, the reviewer sets each affected contract document to `draft` and removes stale `review_scope` and `verified` metadata. If a required metadata write fails, the result is `BLOCKED`, not positive.
 
-A review is stale when a reviewed Markdown document has no `generated.at` or has a `generated.at` later than `reviewed_at`.
+A saved review describes its recorded inputs. A timestamp difference locates a change; only a relevant changed meaning or concrete contrary evidence makes its conclusion inapplicable to the next action. Apply [Change impact and retained results](../../frontier-optimization/references/frontier-core.md#change-impact-and-retained-results).
 
 Derive a nonpositive result from the complete finding set:
 
@@ -364,9 +364,9 @@ Apply invalidation in the same change as every meaningful semantic edit.
 - For a core representation change, set `REPRESENTATION.md` to `draft` and remove `review_scope` and `verified`.
 - For a linked representation-detail change, apply the same invalidation to that detail and `REPRESENTATION.md`.
 - For an active module-contract change, apply the same invalidation to that module contract and `REPRESENTATION.md`.
-- For a parent semantic change, invalidate representation assurance even when the parent epoch stays unchanged.
+- For a parent semantic change, invalidate only representation conclusions that depend on the changed meaning.
 
-After a changed parent passes fresh problem review, copy its current epoch and `generated.at` into the representation binding. Then request fresh representation review.
+After the affected parent change is adopted, update its current epoch and `generated.at` binding. Request a scoped representation review only if representation meaning or a relied-on conclusion changed; reuse unaffected conclusions without claiming the old review signed new bytes.
 
 Meaningful changes include coverage, translation, redundancy, neighborhood, reachability, legality handling, module ownership, interfaces, composition, coupling, local-to-global claims, and search-state compatibility.
 

@@ -1295,11 +1295,19 @@ class EntryPacketSchemaTests(unittest.TestCase):
             )
             for relative in ("SKILL.md", "agents/openai.yaml")
         }
-        version_2_only = {
+        post_v1_only = {
+            "references/batch-code-execution.md",
+            "references/batch-evaluation.md",
+            "references/batch-packet-format.md",
+            "references/batch-result.md",
+            "references/entry-review-legacy.md",
             "references/evaluation-protocol.md",
+            "references/finding-effects.md",
             "references/provenance-and-identity.md",
             "references/reflection-analysis.md",
             "references/reflection-calibration.md",
+            "references/replan-review.md",
+            "references/user-decisions.md",
             "references/user-facing-handoff.md",
             "scripts/evaluation_target_contract.py",
             "scripts/frontier_provenance_cli.py",
@@ -1316,7 +1324,7 @@ class EntryPacketSchemaTests(unittest.TestCase):
                 | production_scripts
                 | worker_sources
             )
-            - version_2_only,
+            - post_v1_only,
         )
         self.assertEqual(
             CLOSURE_PATHS_BY_CONTRACT[CLOSURE_CONTRACT_V1],

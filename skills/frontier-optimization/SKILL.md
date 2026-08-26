@@ -5,97 +5,61 @@ description: Coordinate Optimization Frontier campaigns from a positive Represen
 
 # Frontier Optimization
 
-Act as the only Frontier Coordinator. Choose the next stage from recorded state, assign bounded work, validate results, and adopt accepted meaning into campaign records. No other Skill may perform Coordinator writes.
+Coordinate one canonical optimization task. The Coordinator owns direction, allocation and adoption; specialist workers own their assigned research, design, execution or review.
 
-## Start with the minimum context
+Read [User decisions](references/user-decisions.md) when determining permission or deciding whether to ask the user.
 
-1. Read [Frontier core](references/frontier-core.md) and the shared [Provenance and identity](references/provenance-and-identity.md) contract.
-2. Select one canonical task path and validate the exact positive Representation handoff through the shared [Framing-to-Frontier handoff](../frame-optimization/references/frontier-handoff.md).
-3. Apply the recorded-state router. Do not infer state from conversation history.
-4. Load exactly one stage file:
-   - no campaign or incomplete Entry: [Entry and planning](references/entry-and-planning.md);
-   - explicit new campaign after an adopted closeout: [Entry and planning](references/entry-and-planning.md) in post-closeout recovery mode;
-   - planned or active campaign: [Campaign cycle](references/campaign-cycle.md);
-   - stop, halt, or external claim: [Closeout and claims](references/closeout-and-claims.md).
-   - explicit packaging after complete closeout: [Packaging and durable recovery](references/packaging-and-recovery.md).
-5. Load zero or more action references only when the chosen stage reaches their stated trigger.
-6. Immediately before the final reply, read [User-facing handoff](references/user-facing-handoff.md) last and apply its completion check to the already persisted outcome. This formatting pass may not rerun routing, direction resolution, review, or state adoption.
+## Recover and choose the current action
 
-If the router returns `PARENT_REVIEW_REQUIRED`, load no stage file and continue to step 6. If no router row fits, record `BLOCKED` with the conflicting fields and continue to step 6.
+1. Read [Frontier core](references/frontier-core.md), then the current parent handoff, FRONTIER brief and latest controlling records. Use retained project evidence rather than conversation to reconstruct state.
+2. Select one stage using the core router:
+   - initial planning or recovery planning: [Entry and planning](references/entry-and-planning.md);
+   - active campaign: [Campaign cycle](references/campaign-cycle.md);
+   - stop, halt or claim review: [Closeout and claims](references/closeout-and-claims.md);
+   - packaging a closed campaign: [Packaging](references/packaging-and-recovery.md).
+3. Load action references only at their trigger below. Keep unrelated stage procedures and historical formats unloaded.
+4. After adopting the result, read [User-facing handoff](references/user-facing-handoff.md). Explain objective progress, evidence limits, remaining gap and material next choices before audit details. This return step does not rerun the resolver.
 
-## Load references by action
+For a changed parent or retained result, apply [Change impact](references/frontier-core.md#change-impact-and-retained-results). Report only the exact unresolved dependency; a version difference alone does not end the campaign.
 
-| Action | Load |
+## Action references
+
+| Current action | Read |
 |---|---|
-| Read or update F1-F8, Budget, or Selection | [Campaign state](references/campaign-state.md) |
-| Read or update T, V, B, E, or Q | [Planning records](references/planning-records.md) |
-| Read or update D or X | [Evidence records](references/evidence-records.md) |
-| Read or update C or A | [Claim records](references/claim-records.md) |
-| Create a W scaffold or update W lifecycle and mechanical bindings | [Work plan](references/work-plan.md) |
-| Delegate any worker | [Worker interfaces](references/worker-interfaces.md), then the action-specific packet or review reference |
-| Freeze, review, validate, or adopt any review snapshot | [Review snapshots](references/review-snapshots.md) |
-| Freeze or verify an authority-bearing identity | [Provenance and identity](references/provenance-and-identity.md) |
-| Plan executable candidate work during Entry | [Entry code planning](references/entry-code-planning.md) |
-| Prove a direct profile or prepare a module or system design assignment | [Technical design](references/technical-design.md) |
-| Author or repair a module or system design | [Technical design](references/technical-design.md), then `design-implementation` in a fresh context |
-| Manage executable candidate identities | [Candidate lifecycle](references/candidate-lifecycle.md) |
-| Reuse an evaluation protocol or admit, adopt, or recover a pre-authorized routine screen | [Evaluation protocol reuse](references/evaluation-protocol.md) |
-| Freeze or review an Entry plan | [Entry review](references/entry-review.md) |
-| Freeze or review a technical design | [Design review](references/design-review.md) |
-| Dispatch or reconcile a B | [Batch interface](references/batch-interface.md) |
-| Adopt a terminal B or E | [Result adoption](references/result-adoption.md) |
-| Interpret an experiment, research, representation, mechanism, or candidate-performance result | [Fresh-context Reflection analysis](references/reflection-analysis.md), then [Learning loop](references/learning-loop.md) |
-| Reflect, investigate, or replan after a B | [Learning loop](references/learning-loop.md) |
-| Review an all-pass prepublication realization or recovery reuse | [Implementation review](references/implementation-review.md) |
-| Review external claim wording | [Claim review](references/claim-review.md) |
-| Package a complete closeout or validate exact recovery reuse | [Packaging and durable recovery](references/packaging-and-recovery.md) |
+| Verify, retain or restore project inputs | [Provenance and Git](references/provenance-and-identity.md) |
+| Validate the upstream handoff | [Framing handoff](../frame-optimization/references/frontier-handoff.md) |
+| Update F1-F8, Budget or Selection | [Campaign state](references/campaign-state.md) |
+| Create or interpret a T, V, B, E or Q record | [Planning records](references/planning-records.md) |
+| Update D or X | [Evidence records](references/evidence-records.md) |
+| Update C or A | [Claim records](references/claim-records.md) |
+| Create or maintain W lifecycle and mechanical bindings | [Work plan](references/work-plan.md) |
+| Delegate a worker | [Worker interfaces](references/worker-interfaces.md) |
+| Prepare a review subject | [Review preparation](references/review-snapshots.md) |
+| Prepare code-bearing Entry work | [Entry code planning](references/entry-code-planning.md) |
+| Assign or revise a professional implementation design | [Technical design](references/technical-design.md) |
+| Manage a formal candidate | [Candidate lifecycle](references/candidate-lifecycle.md) |
+| Reuse calibration or a conditional routine screen | [Evaluation protocol](references/evaluation-protocol.md) |
+| Review Entry, design, implementation or claims | [Review branch](references/review-branches.md) |
+| Dispatch or continue B | [Batch interface](references/batch-interface.md) |
+| Validate or adopt a terminal result | [Batch result](references/batch-result.md), [Result adoption](references/result-adoption.md) |
+| Interpret evidence or select the next investment | [Reflection analysis](references/reflection-analysis.md) when it has technical meaning, then [Learning loop](references/learning-loop.md) |
+| Prepare a selected strategic replan | [Replan review](references/replan-review.md) |
+| Interpret a finding | [Finding effects](references/finding-effects.md) |
 
-Do not load a reference merely because it may become relevant later. Every template and normative interface has one owner in this table.
+## Delegate and adopt
 
-For a recorded W, load Technical design when `design_status` is `drafting`, `review-pending`, or `repair-required`, or when new evidence requires a contract-bearing design change. The Coordinator fixes the assignment and invokes `design-implementation`; it does not draft or repair professional design content. Do not load Technical design or invoke the designer merely because an executing B cites a `ready` design; use W's `Read when` pointers to load only the concern contracts needed for that action.
+Create the assignment with fixed purpose, project parents, allowed writes, limits and completion condition. Use the existing specialist:
 
-## Coordinate workers
+- `research-frontier`: one bounded evidence question.
+- `grill-frontier`: one unresolved user-owned decision.
+- `design-implementation`: professional design in a fresh context.
+- `run-frontier-batch`: the selected B.
+- `review-frontier`: the selected independent review.
 
-Before delegation, create the target and fix its parent versions, allowed paths, completion check, and result path when that worker owns one. `design-implementation` writes its assigned W sections and returns an invocation outcome; allocate no separate design-result artifact. Invoke only:
+The designer writes professional concerns, not lifecycle records or executable output. The Coordinator creates W's scaffold and derives maps and identities from the designer's exact content. A ready W does not trigger another design assignment: load only the concern pointers needed by the current action. Executable evidence requested during design uses the existing bounded research, prototype or B route.
 
-- `research-frontier` for one evidence question;
-- `grill-frontier` for one unresolved user-owned tradeoff or exact execution authorization;
-- `design-implementation` in a fresh context for one new, revised, or repair-required module or system design;
-- `run-frontier-batch` for one exact B packet;
-- `review-frontier` in a fresh context for one immutable Entry, strategic replan, technical design, candidate implementation, or claim snapshot.
+Adopt a worker result only after its assignment and evidence match. Preserve the specialist's professional meaning; send an actual defect to its owner rather than silently rewriting it. A draft preparation failure remains editable work, not a new review or recovery chain.
 
-Implementation-design authoring is planning, not a B. Before invoking `design-implementation`, create one W scaffold with fixed Purpose, Scope, parents, source base, exclusions, and exclusive design write sections. After the designer returns, generate Design map, Delivery map, traceability, and design identity mechanically from its exact design pointers without rewriting professional meaning. When design requires executable evidence, route the returned `EVIDENCE_REQUIRED` through the existing research, prototype, or B rules instead of letting design work execute it.
+Use the [Batch continuation rule](references/batch-interface.md#boundary-preserving-continuation) for working changes and repairs. Use the [single resolver](references/learning-loop.md#integrated-direction-resolver) for direction; its controlling Reflection precedes later investment. Neither worker output nor a technical review chooses another route or grants a new user permission.
 
-For a user authorization tied to a concrete B packet, apply [Entry review](references/entry-review.md) from structural validation through post-answer adoption. Apply the Frontier Core finding effects at every validator and review seam. Pass the mutable draft through the single `prepare_review` interface before allocating an R identifier or dispatching a reviewer. A `NOT_READY` draft remains ordinary work in the same B; repair it without creating a snapshot, decision, packet, supplement, or recovery chain. Ask only after `AUTHORIZATION_READY` with no block or repair finding; accept authority only after the frozen adoption validator returns `ENTRY_READY` for the unchanged target.
-
-Validate every result against its packet. A worker result changes no campaign state until this Skill records its accepted meaning. Preserve invalid, partial, negative, and costly output with an explicit disposition.
-
-For a terminal result with technical or research meaning, complete one fresh-context Reflection analysis before exposing that analyst to the current Selection, Budget, authority, R8 resolution, campaign stop, closeout, or proposed next action. Fix the accepted evidence-grounded research fields first; only then add operational consequences and run the integrated direction resolver. This analysis is a read-only reasoning pass, not a worker, review, campaign artifact, identity, or authority event.
-
-For code-bearing authorization, freeze the source-derived target specification before packet identity, then derive packet and preflight, exact post-adoption bytes, and the final target in that order. The specification contains stable decision semantics but no current packet or downstream identity. Entry must prove that the final target is its exact realization before asking the user.
-
-Dispatch every B through the [Batch Interface state machine](references/batch-interface.md#dispatch-state-machine), performing only Coordinator-owned rows. Validate the actual result contract and source-derived bindings before Entry review. Use [Boundary-preserving continuation](references/batch-interface.md#boundary-preserving-continuation) as the sole rule for working feedback, bounded observations, design revisions, and retries; do not add internal lifecycle objects or repeat authorization for explicitly delegated changes. The worker may revise its internal work breakdown while preserving the assigned delivery obligations. A genuine design discovery returns to `design-implementation`; technical review does not grant user authority. Preserve exact publication evidence, parent-owned charging, and later-use gates. Require the worker to return after acknowledgment and start only from a valid execution-start and snapshot. Later invocations verify current inputs, remaining resources, and cumulative effects, not debugging history. Apply the existing first-campaign lifecycle transition only at its owning seam. Revalidate the result and execution bindings before adoption. Workflow, Skill, validator, bundle, and workflow-test bytes never enter project identity or ordinary Entry completion checks.
-
-Delegation is complete only when the assigned worker has written its exclusive result, or the designer has written its assigned professional sections and returned its invocation outcome; the applicable completion check passes; and this Skill has either adopted the checked meaning or recorded the exact blocker and recovery point.
-
-New lifecycle objects use the current typed Provenance writer and current review-subject contract. Historical semantic contracts already restricted to audit remain audit-only. This restriction does not apply to valid current chains merely because their storage adapter is `portable-bundle/1`.
-
-## Preserve the authority boundary
-
-Apply each restriction only to its named consequence. Treat decision-relevant read-only evidence gathering as planning unless an exact parent or user rule prohibits that access; restrictions on execution, spend, remote side effects, publication, or claims do not prohibit it.
-
-Treat the inherited evaluated baseline as the comparison reference, not as the automatic campaign baseline. Entry must compare a bounded set of technically eligible starting points using current evidence and must ask the user when the choice depends on value, cost, risk, reversibility, maintenance, or another user-owned preference. A campaign baseline may be simple, but its selection must explain why it can carry later optimization and what evidence would replace it.
-
-At Entry, apply [Entry and planning](references/entry-and-planning.md) to reconcile peer route sources into a decision-complete route set. Apply the [T eligibility contract](references/planning-records.md#t-route) before Selection: one eligible route needs no ceremonial T or user-choice V, and an unresolved load-bearing prerequisite permits only its smallest sufficient prerequisite-first work.
-
-Do not begin candidate development without `AUTHORIZATION_READY`, the user's exact answer, and Coordinator `ENTRY_READY` adoption for the unchanged reviewed target. For W-backed work, bind the design identity and exact `delivery_scope`, never the whole mutable W file or the worker's mutable work breakdown; keep current authorization only in external lifecycle records. Keep design readiness, development authorization, implementation readiness, diagnostic evidence, Slot H measurement, integration, incumbent use, promotion, and claim approval separate. The diagnostic-only exception in [Candidate lifecycle](references/candidate-lifecycle.md#diagnostic-only-exception) applies only when a controlling parent required formal publication before implementation review. After a finding-free implementation review, use a pre-authorized single-use screen only through [Evaluation protocol reuse](references/evaluation-protocol.md). Both remain B evidence and grant no later consequence.
-
-After every terminal B, reconcile evidence and complete one controlling Outcome Reflection before later spend. Resolve direction inside that mandatory learning loop; do not add a separate direction stage or let a worker choose the route. Cover every later E, keep implementation and Slot H evaluation in separate B records, join parallel results before dependent work, and require applicable V and fresh review gates. Derive the next Selection only from persisted state and exact R8 rules so the same state produces the same next action or blocker. Apply maximum optimization pressure at the earliest justified experiment; do not hide unbounded preparation behind a baseline label or defer every discriminating test to later work.
-
-Use the same `review-frontier` worker for claims with `review_kind: claims`. Adopt every finished claim review through A, including nonpositive results; use withdrawing X only when C is withdrawn before review completion. A or X ends that C branch. A claim-only branch preserves campaign status and returns to Cycle when no other stop or halt applies. Only full closeout settles final budget, active work, retained results, gap, and handoff.
-
-A parent conflict before any campaign record returns `PARENT_REVIEW_REQUIRED` and directs the caller to `$frame-optimization`. After campaign records exist, use the exact pre-spend rebind route only when every recorded condition holds; every other parent conflict forces closeout. Never invoke `$frame-optimization` from this Skill, create another Coordinator, or create document-state scripts.
-
-A completed closeout remains immutable. Record its retained Git version and artifact references under [Provenance, Git, and retained artifacts](references/provenance-and-identity.md). An explicit packaging request produces a reference handoff with no authority effect; it does not copy the project again. Open a later recovery campaign only from a separate explicit current user request and the post-closeout router row. A general reopen request grants planning-only campaign-opening authority: record that request, then derive the proposed technical objective from the unchanged parents and retained closeout evidence. Keep that opening authority separate from any later user-owned route tradeoff and from exact B authorization. Require a user-named objective only when the request names a particular recovery object or outcome. Before any new-generation artifact, mechanically recompute every requested candidate and manifest identity from canonical bytes. Increment `campaign_generation`, carry forward all prior spend against the parent ceiling, use new record identifiers, and append exact V and X mappings for every reused object. Reusing byte-identical candidate bytes creates no second proposal identity, but it grants no measurement, integration, incumbent, or claim permission until the recovery Entry and fresh implementation review are adopted.
-
-The run is complete only when the task files reproduce the reported outcome, every accepted decision appears in its owning record, and the final reply passes step 6.
+Completion means the persisted outcome supports the report and the user-facing return explains progress and legal next actions. The task's objective, budget, access and actual consequences determine continuation, not the number of artifacts produced.

@@ -21,7 +21,7 @@ Use worker skills for bounded work:
 
 Research, grill, and measurement-design workers never adopt Contract semantics. Review agents retain only their specified authority to write review results, findings, and verification metadata. No worker coordinates the workflow.
 
-The user supplies private facts, authority, preferences, and value choices. The user does not judge technical completeness or approve a review result.
+Apply [User decisions](../frontier-optimization/references/user-decisions.md) when determining permission or deciding whether to ask the user. The user supplies private facts and unresolved value choices, not technical completeness judgments or review approval.
 
 Treat each later user message as a new current request. Process its input or authorization through the existing worker and authority route before adopting it into durable project state.
 
@@ -33,7 +33,7 @@ Read [references/measurement-design.md](references/measurement-design.md) comple
 
 Whenever Steps 1–9 determine that control must return to the user, read and apply [references/user-facing-return.md](references/user-facing-return.md) completely. Steps 1–9 remain the only work route; the return interface explains their selected outcome.
 
-Keep project state independent from workflow deployment. Project documents, reviews, handoffs, and identities contain only their defined project inputs. Transient replies and workflow source, version, installation, deployment, and runtime data remain outside project identity and review surfaces. A workflow-only change does not invalidate project state that was valid when adopted. It also cannot validate an output that failed its issuing Skill's preconditions; preserve that output as history and obtain a valid replacement through the current owner. Keep normative behavior in this file and repository-relative references; adapter metadata carries discovery and presentation only.
+Keep project state independent from workflow deployment. Project documents, reviews, handoffs, and identities contain only their defined project inputs. Transient replies and workflow source, version, installation, deployment, and runtime data remain outside project identity and review surfaces. A workflow-only change does not invalidate project state that was valid when adopted. Preserve past failures and producing inputs; current rules govern a new decision, which may use new evidence without rewriting the old verdict. For a parent revision or retained result, apply [Change impact](../frontier-optimization/references/frontier-core.md#change-impact-and-retained-results). Keep normative behavior in this file and repository-relative references; adapter metadata carries discovery and presentation only.
 
 ## Worker interface
 
@@ -91,9 +91,9 @@ This step is complete when one safe canonical task exists and its durable state 
 
 Validate an applicable `review.md` or `representation-review.md` before using its result or starting repair. Require one allowed result, the complete reviewed-path manifest, a parseable recorded review time, the required Cold-read reconstruction, the required finding schema, no unexplained term or open finding for a positive result, and at least one finding for a nonpositive result. Also require the parent binding, result, scope, and assurance metadata that apply to that review type.
 
-A review is stale when any Markdown document named in `Reviewed` lacks `generated.at` or has `generated.at` later than the recorded review time. A reviewed normative document omitted from the required review surface also makes the review unusable for readiness.
+A saved review applies to its recorded inputs and scope. A later timestamp or parent version locates a change; inspect that change before deciding which conclusion needs review. Missing decision-relevant evidence or an actually changed requirement makes only its dependent conclusion unavailable.
 
-- A stale positive review grants no permission. Set affected contract documents to draft, remove stale `verified` and `review_scope`, preserve the review as history, and require a fresh review after the current gates pass.
+- For an affected positive conclusion, mark only its changed current scope draft and review the change plus affected dependencies. Preserve unrelated conclusions and historical assurance. A review never grants user permission.
 - A schema-valid nonpositive review remains the current repair manifest after repair edits make it stale. Continue its owned findings, but never promote its old result to a positive result.
 - Staleness is not a malformed-review retry. Use the one-replacement rule only when the result or finding record is invalid.
 - Any semantic edit must already have applied invalidation in the same change. If recovery discovers missed invalidation, repair the metadata before other work.
@@ -113,130 +113,27 @@ For a malformed review, request one fresh replacement without inventing findings
 
 This step is complete when the coordinator has selected exactly one stage from durable files and no stale positive assurance is being used.
 
-## Shared measurement-design route
+## Conditional measurement work
 
-Use this route only for a new protocol, a material change to the target or evaluation meaning, a current fitness challenge, or a `measurement-design` readiness finding. Do not invoke it for harness implementation, execution under an unchanged protocol, routine result recording, editorial change, or a new candidate under a still-valid protocol.
+For a measurement-design or measurement-support trigger, read [Measurement work](references/measurement-work.md). Otherwise keep that route unloaded.
 
-Create or select the exact Slot H detail and its permitted nonnormative sections. Use `new` only when no current protocol exists, `revision` for any material change to an existing protocol, and `repair` for current findings. Give `design-measurement` the fixed real objective, intended consequence, resources, operating conditions, allowed evidence paths, selected mode, and the complete finding set for repair.
+## Run the selected stage
 
-Dispatch a fresh agent for every design. For revision, first create an empty `Independent reconstruction — not adopted` anchor. During Phase A give the Designer only that exact write anchor and protocol-independent Design Basis; do not supply the current protocol, its rationale, or protocol-dependent results. Open those materials only after the reconstruction is durable. A repair goes directly to the current design and findings.
+- Problem definition: read [Problem stage](references/problem-stage.md).
+- Representation: read [Representation stage](references/representation-stage.md).
+- Current nonpositive review: read [Repair loop](references/repair-loop.md) for its findings, then resume the affected stage.
 
-For a valid `DESIGN_READY`, inspect the complete projection. Adopt each block unchanged into the owning D, E, H, R8, Known limits, and invalidation locations, or return one exact non-adoptable defect to the Designer. The R8 block is a measurement constraint ceiling; the coordinator still owns survivor, route, budget, and stopping decisions within it. Apply existing invalidation and comparability rules to every adopted semantic change.
-
-This route creates no separate review. Request the existing readiness review once after the complete repair set and adopted contract change are ready. It is complete when one design is adopted, one exact design blocker remains, or one user-owned value, risk, resource, or authority input is required.
-
-## Shared measurement-support gate
-
-Apply this gate whenever unresolved Slot H or R8 work needs newly created or repaired measurement support. It is reachable before problem readiness and after representation begins.
-
-Create one exact review target under the task's `eval/` directory. Record the support purpose, allowed file set, required behavior, fail-closed cases, authorized focused checks, excluded consequential actions, and completion condition. Give the canonical task path, target path, and one new review-record path to the `measurement-support` branch of `review-optimization`.
-
-Accept only a fresh `IMPLEMENTATION_READY` result from `review-optimization/1` whose reviewed file hashes and checks still match. Preserve a result from any other reviewer as history and continue to require the current-owner review. `IMPLEMENTATION_READY` permits later framing work only; durable containment, baseline execution, candidate work, and other consequences retain their existing authority requirements.
-
-When support implementation can be reviewed before a consequential run, make implementation review the sequencing gate. Keep implementation and run authority separate unless the current request already grants the exact run conditional on the reviewed target. Preserve that conditional authority when the review passes and the target identity remains unchanged; request another authorization only when the run was not granted, the identity changed, or an existing policy requires post-review consent. Include a required durable containment action within implementation authority only when that authorization names its exact file set and maximum consequence. Otherwise, return the exact containment target for separate authority. After an adopted support result or run result, resume the existing readiness, representation, and handoff route.
-
-This gate is complete when the support is unchanged and has a current accepted review, one exact input or authorization is required, one current-owner review finding remains, or a capability blocker prevents review.
-
-## 3. Complete the problem-definition stage
-
-For a new frame or material reframe, read [references/slot-contracts.md](references/slot-contracts.md) completely. Draft a readable Brief, Slots A through H, Open decisions, and Known limits. Use the statuses and writing rules from `task-documents.md`.
-
-Write the Brief in the order a new reader needs. Explain the system or process and one complete run in familiar words. State what this work can change, what that thing receives or faces, what it produces or controls, and how that output changes the observed result. Then explain how repeated results support the current success decision and how that differs from the real goal. Orient the reader to major resource, feedback, open-decision, and evidence limits only when they change this story. Let the Contract and lists carry exact values and complete coverage.
-
-At first use, explain each task-specific term as a familiar kind of thing and state its role before using its short name. Do not define one unexplained term with another. Use verbs to explain relationships that affect why a change can improve the result. If one sentence contains two terms that a new reader cannot explain, split or rewrite it. Do not use Slot letters, unexplained labels, or formal names for internal formats. Remove history, rejected alternatives, derivations, file hashes, and procedures unless a reader needs an item to make a normal decision. Remove repeated meaning, but never merge separate concepts only to shorten the document. Use A-H only after drafting to find omitted decisions or conflicts. The Contract table decides ordinary problem-level actions and conclusions; details supply extra precision and evidence without hiding a decision-changing rule.
-
-Inspect applicable repository evidence before asking questions. Select the first safe open review finding; otherwise select the first `O` or claim-limiting `~` row. Open only the linked detail needed for that item.
-
-Classify and route one item:
-
-| Work type | Route |
-|---|---|
-| `research` | Select a Slot detail. Give its path, target, and one bounded research question to `research-optimization`. |
-| `grill` | Select a Slot detail. Give its path and one user-owned decision or authorization to `grill-optimization`. |
-| `measurement-design` | Apply the shared measurement-design route. The Designer repairs the professional content; the coordinator adopts only a complete projection. |
-| `reframe` | Repair missing or conflicting problem semantics directly after resolving dependencies. |
-| `blocker` | Record the exact missing authority, private fact, data, tool, access, or fresh context. |
-
-For a Slot H implementation finding, apply the shared measurement-support gate before readiness review. For a fitness, inferential, proxy, resolution, calibration, evidence-reuse, or consequence defect, use `measurement-design`; do not route professional design to measurement support.
-
-After research, validate the research record and packet, then make the semantic edit yourself. After grill, validate the decision record and packet before deciding its Contract effect. After measurement design, adopt only its complete unchanged projection. Apply review invalidation with every meaningful edit.
-
-Before changing a pinned contract with retained results, preserve both meanings and request the `comparability` branch of `review-optimization`. Continue only after `log.md`, the epoch, and affected results agree with the disposition.
-
-Request a fresh `readiness` review when every applicable A-H row is `P` or `-`, Open decisions says `None`, Known limits states every remaining evidence restriction, and the current repair set meets Step 6. Repair a valid non-`PROCEED` result from its complete finding set. Apply Step 2 to every returned review.
-
-This stage is complete only after durable `PROCEED`, an exact blocker, or one user-owned input or exact authorization remains and no safe in-scope action can bypass it.
-
-## 4. Enter the representation stage
-
-On parent `PROCEED`, re-read `PROBLEM.md` and confirm `status: stable`, current `verified`, and no open problem-review finding. Record its `epoch` and `generated.at` in the existing or new `REPRESENTATION.md` binding.
-
-Inspect the executable Slot H path and current-epoch baseline before committing to decomposition. The coordinator can inspect or run an existing authorized harness. Use `grill-optimization` when creating or repairing the harness needs new authorization, then record its authorization packet before acting. When the harness or baseline is missing, keep R8 open and start or route that action before substantive R5-R7 or module-contract work continues. Core representation drafting can proceed concurrently.
-
-Apply the shared measurement-support gate to new or repaired Slot H or R8 support.
-
-When representation work exposes a defect in measurement fitness rather than implementation, preserve the conflict and return to the problem stage's shared measurement-design route. R8 may choose actions within adopted measurement constraints; it cannot repair or enlarge them.
-
-Draft the representation Brief even while R items remain open. Start by naming, in plain language, the thing from `PROBLEM.md` that search will change. Then explain the loop a worker will follow: start, propose a change, make it measurable, reject or evaluate it, use permitted feedback, select work, and stop. Include the reachable options, allowed changes, invalid-option handling, whole-versus-part search, budget, old-work reuse, remaining decisions, and known limits where they affect that loop. Do not repeat the complete problem Contract. `PROBLEM.md` retains the score, success, resource, information, and measurement meaning.
-
-This step is complete when the representation document is bound to the current parent and measurement readiness is known.
-
-## 5. Draft and continue R1-R8
-
-Follow the recovered state from Steps 1 and 2. Do not create a parallel checkpoint, summary, or replacement representation file.
-
-If the review file has open findings, select the first safe open finding. Otherwise, select the first `O` row and each `~` row whose unresolved restriction blocks the requested work. Open only the linked detail needed for the selected work.
-
-Draft or repair the Brief, every R1 through R8 row, Open decisions, and Known limits against `representation-contracts.md`. Keep problem rules in `PROBLEM.md`. Write one concise decision in each Contract cell and use a second short sentence only when its direct consequence would otherwise be unclear. Never write a request to fill in information. Put derivations, evidence, exhaustive parameters, validation logs, and multi-step procedures in `representation/<item>.md`, but summarize every decision-changing rule in one of the two main documents. Keep the Detail cell to one link.
-
-Keep R5-R7 at `-` while search treats the candidate as one whole. Do not prewrite modules, interfaces, or coupling for possible future decomposition. Create a module `PROBLEM.md` only for actual separate optimization, proof, review, or delegation.
-
-Before review, read both Briefs without their tables or details. Ask a new reader to restate the task without merely repeating its special labels: what exists, what can change, what the changed thing receives or faces, what it produces or controls, and how that affects the result. Then require the reader to restate the search loop from starting point through proposal, conversion, rejection or measurement, feedback, selection, and stopping. Only after both explanations pass, read the complete main documents without opening details and apply the decision check.
-
-This step is complete when every R row has a valid status, contract, and necessary detail, with no hidden assumption that changes permitted search claims.
-
-## 6. Run the repair loop
-
-Use this loop for either valid nonpositive review. The current repair set is every finding in the applicable latest schema-valid nonpositive review, even when subsequent repair writes make that review stale. Route each finding by its own work type, never only by the overall result.
-
-For `review.md`, use Step 3 routes: `research`, `grill`, `measurement-design`, `reframe`, or `blocker`. For `representation-review.md`, use these routes:
-
-Classify each representation finding before acting:
-
-| Work type | Route |
-|---|---|
-| `research` | Select a representation detail. Give its path, target, and one bounded research question to `research-optimization`. |
-| `grill` | Select a representation detail. Give its path and one eligible user-owned decision to `grill-optimization`. |
-| `redesign` | Repair encodings, moves, modules, interfaces, coupling, validation, or search-state rules directly. |
-| `reframe-problem` | Stop representation work and return to the problem-definition stage. |
-| `blocker` | Record the exact missing authority, private fact, data, tool, access, or fresh context. |
-
-After research, validate the research record and packet, then edit the normative Contract yourself. After grill, validate the decision record and packet before deciding whether an evidence-backed reversible default is allowed. After measurement design, adopt only its complete unchanged projection. Mark an affected row `O` when a finding prevents the requested scope, and record its closing action.
-
-For each current finding:
-
-1. Set each affected semantic row to `O` when its meaning is absent, conflicting, or undecided and the finding prevents the requested scope. For an explanation-only finding, keep existing row meaning and status, repair the Brief, and require fresh review. Keep a cross-cutting finding in the review file.
-2. Complete every independent safe action, including actions that do not depend on a remaining blocker.
-3. Update only `Repair status` and coordinator writer metadata in the review file. Do not change reviewer-owned result, scope, time, evidence, required action, or completion text.
-4. Mark a finding `complete` only after its `Complete when` condition holds. Mark it `blocked` only after recording the exact unavailable authority, fact, data, tool, access, or fresh context.
-
-Request one new review in a fresh context only after the complete repair set is resolved, every requested-scope gate passes, the parent is current, and at least one finding-related durable artifact changed. Do not request review after each finding. An invalid review does not start this loop and does not require a repair change before its one replacement.
-
-The repair loop has no retry count. Each repeated review is allowed only after another durable contract or evidence change. If no safe in-scope action can change the state, record the exact blocker and stop. Do not repeat the same review against unchanged artifacts.
-
-For `reframe-problem`, preserve the representation conflict, invalidate representation assurance, and switch to problem definition. Resume representation only after a fresh parent `PROCEED`, a refreshed parent binding, and completion of the applicable representation repair set.
-
-This step is complete when the repair set is complete, only an exact blocker remains, or one user-owned input or exact authorization is required and no safe in-scope action can bypass it.
+Read only the selected stage. Step numbers in the references retain their existing meaning; shared Steps 1, 2 and 7 remain here.
 
 ## 7. Manage authority, revision, and search-state disposition
 
 Follow the authority, invalidation, revision, and search-state rules in `representation-documents.md` in the same change as every meaningful edit.
 
-When representation work needs a problem-semantic change, preserve the conflict, set the affected R item open, invalidate representation assurance, and return to the applicable A-H work. After a fresh parent review passes, update `problem_epoch` and `problem_generated_at`, then request a fresh representation review.
+When representation work needs a problem-semantic change, refer the affected rule to A-H work and pause only dependent representation work. After adoption, update the current parent binding and review only affected representation conclusions under Change impact.
 
-Treat `representation_revision` as a search-state compatibility boundary, not a document version. Before a meaningful representation edit, inventory retained checkpoints, populations, proposal models, neighborhood caches, surrogate models, module-local scores, and representation-dependent proofs.
+Treat `representation_revision` as a search-state compatibility boundary, not a document version. For a meaningful representation edit, identify the retained search state that actually depends on the changed meaning; leave unrelated state alone.
 
-Every retained search artifact must identify its canonical task path, parent epoch, representation revision, applicable module epochs, and producing representation or module. State with missing identity or disposition is not reusable.
+For affected search-state reuse, consult its original identity and producing context. Resolve a missing fact only when the proposed use depends on it; do not backfill historical records merely to meet the current template.
 
 Apply one disposition to every affected artifact or artifact class in the same change:
 
@@ -251,21 +148,3 @@ Write the newest `log.md` entry first. Record the date, changed R item, old and 
 Do not reuse state with unknown compatibility. Resolve it to checked migration or `voided` before handoff. Do not void evaluation results because search state is voided, and do not retain search state merely because evaluated candidates remain comparable. Only the parent comparison contract controls result comparability and the parent epoch.
 
 Never change the parent problem epoch or void evaluation results solely because representation-dependent search state changed.
-
-## 8. Request and accept representation review
-
-Request `review-representation` in a fresh context when the requested review scope meets `representation-contracts.md` and the current repair set is complete. Pass only the canonical task path and requested scope.
-
-Validate the durable result, full reviewed surface, review time, exact permitted scope, current parent binding, assurance writes, and finding schema with Steps 2 and 6. A positive result has no open finding. A nonpositive result has at least one fully populated finding and has removed stale positive assurance from affected documents.
-
-For a valid nonpositive result, route the complete repair set through Step 6. For an invalid result, use Step 2's one-replacement rule. A fresh semantic change after a positive review makes that review stale and returns to the applicable row gate; it never inherits the old permitted scope.
-
-This step is complete only with durable `PROCEED_EXPLORATORY`, `PROCEED_MODULAR`, an exact recorded blocker, or one user-owned input or exact authorization that the current repair route cannot proceed without.
-
-## 9. Produce only the reviewed handoff scope
-
-For either positive representation result, recover state in Step 1 again and apply the [Framing-to-Frontier handoff](references/frontier-handoff.md). Confirm that the review follows the latest semantic change, every reviewed document is fresh, the parent binding is current, the harness and baseline match the parent epoch, every reviewed contract has matching stable and verified metadata, and every retained search artifact has a disposition.
-
-For a nonpositive result, continue every safe, reachable, in-scope, and authorized route in Step 6. A nonpositive result alone is not a reason to return control. Do not emit a handoff.
-
-Keep candidate implementation, open-ended search, experiments, and production changes outside this skill. A positive result defines permitted search work; it does not predict optimization success.

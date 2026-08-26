@@ -38,7 +38,7 @@ During problem framing, readers normally use `PROBLEM.md` to make decisions. Dur
 
 An ordinary decision chooses an allowed action, value, limit, file, acceptance outcome, reuse outcome, or supported claim. The main document names the executable code and fixed inputs that settle the decision and summarizes what they do. A detail may contain complete seed lists, derivations, serialization rules, command syntax, validation order, and other internals when the named executable or fixed file already removes the choice. If the person or agent doing the work must choose between alternatives, the choice and its limits belong in the main document.
 
-Keep existing project documents in place. Link them as sources; publish or rewrite them only under separate authorization.
+Keep existing project documents in place. Link them as sources; publish or rewrite them only when the applicable user grant covers that action; use [User decisions](../../frontier-optimization/references/user-decisions.md) when permission is missing.
 
 ## Open Knowledge Format rules
 
@@ -253,28 +253,25 @@ sources: []
 
 ## Review invalidation
 
-Any meaningful change to `PROBLEM.md` or a linked contract document invalidates the prior review. Apply this in the same change as the edit:
+Use [Change impact and retained results](../../frontier-optimization/references/frontier-core.md#change-impact-and-retained-results) as the shared rule. Preserve each saved review as a judgment on its recorded inputs. A changed requirement needs review of its changed meaning and affected dependencies, not recertification of unrelated conclusions or historical results.
 
-- for a `PROBLEM.md` change: set `status: draft` and remove `verified` from that file;
-- for a linked-document change: set `status: draft` and remove `verified` from both that document and `PROBLEM.md`.
+Set only the affected current contract scope to draft and remove assurance that would misrepresent the new meaning as already reviewed. Preserve the prior review and cite it for unchanged conclusions. Editorial changes, current-state summaries and workflow updates do not invalidate semantic assurance. A demonstrated readability defect requires review of that repair, not a new technical review of unchanged decisions.
 
-A meaningful change can alter legality, ranking, success, measurement, resource feasibility, or result interpretation. Spelling, link repair, and small wording improvements that already passed the current task-understanding check carry no invalidation. A rewrite needed because the Brief failed that check keeps A-H status and the epoch when meaning is unchanged, but it invalidates review assurance: set the core document to draft, remove `verified`, and require a fresh review. Changes only to review metadata do not invalidate themselves.
+Adopted normative sections in linked Slot documents remain part of the contract. Research, user-decision and measurement-design proposals remain nonnormative until adopted. Request comparability review only when an actual change affects the interpretation or comparison being proposed for retained evidence. Merely having retained results is not a trigger.
 
-The linked Slot document's adopted normative sections are part of the row contract: formulas, quantifiers, distributions, sampling rules, and measurement rules in them are normative. Research, user-decision, and measurement-design proposal sections remain nonnormative until the Primary Framing Agent adopts their content. A semantic change to a pinned (`P`) contract while retained results exist additionally requires a comparability review and a `log.md` disposition — flag this to the caller; the disposition decision belongs to `review-optimization`.
-
-When `REPRESENTATION.md` exists, a parent semantic change also invalidates its parent binding and review assurance. Follow [representation-documents.md](representation-documents.md) without changing the parent epoch solely for representation state.
+Update the Representation's current parent binding after an adopted parent revision. Review Representation only if its own requirements or a relied-on conclusion changed. A changed parent timestamp alone does not require that review.
 
 ## Epoch and `log.md`
 
-An epoch is one set of comparable results. Every downstream result records the canonical task path and current positive integer epoch.
+An epoch identifies a set of comparable results, not the age of a document or workflow. Historical results retain their producing epoch. A change that leaves comparison meaning unchanged keeps the epoch.
 
-For a semantic change to a pinned contract with retained results, record one disposition:
+When a proposed use crosses changed comparison meaning, the existing comparability branch resolves only the affected result or class:
 
-- `unaffected`: preserve result meaning and keep the epoch.
-- `re-evaluated`: rerun all retained results, mark old measurements superseded, and keep the epoch.
-- `voided`: exclude old results from comparison and increase the epoch.
+- `unaffected`: the proposed use remains supported by its original evidence.
+- `re-evaluated`: new measurement supports the proposed use; retain the old measurement as history.
+- `voided`: the proposed comparison is unsupported; the original result remains valid within its established scope.
 
-Write the newest `log.md` entry first. Include date, Slot, old epoch, new epoch, disposition, reason, and affected results.
+Increase the epoch when the comparison meaning changes, not when unrelated policy, workflow or bookkeeping changes. Record the changed meaning and affected use in the existing newest-first `log.md` entry. No migration report or exhaustive historical inventory is required.
 
 ## Contract cells
 

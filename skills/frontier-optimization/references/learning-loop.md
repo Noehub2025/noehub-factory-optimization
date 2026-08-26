@@ -10,9 +10,6 @@
 - [Hypothesis and mechanism interpretation](#hypothesis-and-mechanism-interpretation)
 - [Integrated direction resolver](#integrated-direction-resolver)
 - [Historical compatibility](#historical-compatibility)
-- [Strategic replan review method](#strategic-replan-review-method)
-- [Strategic replan packet](#strategic-replan-packet)
-- [Strategic replan artifact](#strategic-replan-artifact)
 
 Load after a terminal B, after an uncovered E, or when a strategic replan is pending. This file is the sole source for Outcome Reflection and strategic replan review forms.
 
@@ -167,10 +164,10 @@ Apply the rows from 1 through 13 exactly once. The first applicable row governs;
 
 | Priority | Persisted condition | Deterministic resolution |
 |---|---|---|
-| 1 | Parent or handoff mismatch | Apply the exact recorded-state router in `frontier-core.md`: no Frontier record returns `PARENT_REVIEW_REQUIRED`; an eligible zero-spend compatible rebind enters Entry rebind; an adopted forced-halt closeout returns its handoff; every other mismatch after a Frontier record enters forced-halt closeout. |
+| 1 | An unresolved parent requirement or adopted revision affects the next decision | Apply [Change impact and retained results](frontier-core.md#change-impact-and-retained-results): refer the affected rule to its owner or update that decision under the current adopted parents. Pause only dependent work; a version difference or prior spend alone neither triggers this row nor forces closeout. |
 | 2 | An independently established safety, legality, authority, accounting, explicit campaign-scope unconditional F7 stop, or halt blocks work | Use the existing stop, halt, accounting-resolution, or full-closeout route. Candidate- and route-scope dispositions continue to their later resolver row. Evidence whose validity is disputed cannot establish an evidence-dependent stop in this row. |
 | 3 | A terminal B or E lacks coverage; identities conflict; a required join is missing; an owning contract cannot be reconstructed; or an applicable cross-B interpretation is missing, cites incompatible evidence, or lacks its controlling reflections | Return the exact existing coverage, identity, join, contract, or trajectory-semantic blocker. No later spend exists. |
-| 4 | The latest controlling reflection has resolved validity; its `Maximum supported conclusion` explicitly states that an unchanged parent-owned objective, Representation, Slot H measurement meaning, R8 rule, permitted scope, or claim ceiling is no longer suitable or reachable; and no unresolved execution-level measurement-validity, implementation, or local-mechanism explanation can account for that conclusion | Invoke the stage-sensitive semantic-parent boundary in `frontier-core.md`. Do not edit the parent, reinterpret the evidence as a route failure, or start another in-frame Q or B. An unresolved, unaffordable, or unavailable diagnostic is not evidence of a parent defect. |
+| 4 | The latest controlling reflection has resolved validity; its `Maximum supported conclusion` explicitly states that an unchanged parent-owned objective, Representation, Slot H measurement meaning, R8 rule, permitted scope, or claim ceiling is no longer suitable or reachable; and no unresolved execution-level measurement-validity, implementation, or local-mechanism explanation can account for that conclusion | Refer the affected rule to its owner under [Change impact and retained results](frontier-core.md#change-impact-and-retained-results). Pause dependent allocation, preserving unrelated permitted work and historical evidence. An unresolved, unaffordable, or unavailable diagnostic is not evidence of a parent defect. |
 | 5 | No sufficient next observation or required check can be funded, including its unavoidable commitments and safe stopping or recovery, by current authorized Budget without consuming protected reserve | Select no B or spend-bearing Q. If T and R8 uniquely require an in-authority campaign stop, use the existing stop and full-closeout route. If they require a strategic allocation change for which authority could be sought, prepare it without spend and obtain `REPLAN_READY` plus any required V. Otherwise return the exact Budget or reserve blocker. Unknown cost of this stage or its unavoidable commitments is not affordable; optional later research need not be fully priced. |
 | 6 | Implementation, measurement, or comparison validity, including required adaptive-exposure interpretation or confirmation, is unresolved and at least one sufficient diagnostic passes row 5 | Select the recorded diagnostic using the ordering above. Non-dominated alternatives do not themselves block. Make no trajectory, route, or parent inference while validity remains unresolved. |
 | 7 | The plausible route set is incomplete, including an opportunity-led reopening; a shared high-consequence assumption or action prerequisite remains unbounded; or a technical exclusion has reached its reopening event; and the bounded work passes row 5 | Select one route-landscape Q or a sufficient bounded check with a fixed decision, evidence channels, action window, and search stop. Apply the T action-prerequisite rule: testing an unknown is eligible when the test itself is ready; work relying on its success is not. A current-route stop or warning does not preserve a stale exclusion. |
@@ -181,7 +178,7 @@ Apply the rows from 1 through 13 exactly once. The first applicable row governs;
 | 12 | The proposed action crosses another recorded B, T replacement boundary, checkpoint, integration, promotion, evaluator-exposure, confirmation, exposure, or claim boundary | Require that boundary's named evidence and owning existing gate. Missing evidence selects its exact Q, diagnostic, review, V, or blocker; satisfied evidence does not waive the gate. Budget and reserve were already resolved at row 5. |
 | 13 | No route, progress, Budget, parent, context, or decision-window condition above applies | Apply the unique local R8 action inside the unchanged route after confirming its B passes row 5. Perform no additional research, diagnosis, or review. |
 
-If an applicable row still lacks its named unique result, return the exact missing evidence, Q, V, R8 rule, stop scope, authority, Budget fact, action-window fact, or specialized gate as the blocker. `Direction resolution` records this row, its condition, affected scope, surviving authority, and exact next action. Resolve an evidence-state identity once, persist that result in Selection, and reject a second competing result for the same identity. A later workflow update must not recompute or replace the persisted row, action, blocker, or later-spend gates. A new resolver run requires a new project decision event with a new evidence-state identity.
+If an applicable row still lacks its named unique result, return the exact missing evidence, Q, V, R8 rule, stop scope, authority, Budget fact, action-window fact, or specialized gate as the blocker. `Direction resolution` records this row, its condition, affected scope, surviving authority, and exact next action. Resolve an evidence-state identity once, persist that result in Selection, and reject a second competing result for the same identity. Keep this resolution as history. If its next action is still applicable, reuse it. If current rules remove an obsolete procedural blocker or an adopted parent change affects the next decision, record that actual decision change through the existing X/Selection and resolve the new evidence-state once under current rules. Do not create events for updates with no decision effect.
 
 ### Research before a formal direction choice
 
@@ -199,111 +196,4 @@ Entry adoption fixes one project decision root. An otherwise-required strategic 
 
 For identity recovery, record repair, administrative work, or other work that produces no technical evidence, use `Technical hypothesis: not-applicable`, `Hypothesis result: not-applicable`, and `R&D implication: none; no technical evidence was produced`. For one-shot work without repeated performance meaning, use `Progress interpretation: not-applicable`. Implementation-only work judges the implementation hypothesis and keeps measurement and comparison `not-applicable`. These forms create no additional Q, research, review, repeated B, synthetic E, metric, or trajectory artifact.
 
-## Strategic replan review method
-
-Before writing a verdict, the reviewer must:
-
-1. verify every project snapshot identity, current parent authority, proposed decision root; reject workflow source, release, Skill, validator implementation, test, or source-module roots as replan inputs;
-2. reconstruct the reflection from the planned B, result, W outcome, E, X, and cited artifacts;
-3. check implementation, measurement, and comparison validity in that order;
-4. verify the precommitted hypothesis, hypothesis result, evidence-bounded mechanism inference, attribution limit, R&D implication, and complete parent-owned vector;
-5. reconstruct considered diagnostic alternatives, result-to-action branches, stage cost plus unavoidable commitments, reachability, and recorded investment rationale under the single resolver; reject a dominated repeat or a changed persisted choice, not technical discretion among eligible alternatives;
-6. apply the single integrated direction resolver and verify that the proposed Selection uses its first applicable row, affected scope, surviving authority, exact next action, and later-spend gates;
-7. require another research round only when row 7 or 8 selects it, its result can arrive while the decision remains actionable, and its adopted industrial, academic, community, repository, and retained evidence is sufficient for the current allocation under a fixed search stop;
-8. check technical eligibility before every V and preserve the user's actual choice;
-9. reconcile Budget, protected reserves, Selection, B, and F2-F4 as one decision; reject any routine use of reserve or dependent strategic spend before unchanged adopted `REPLAN_READY`;
-10. preserve separate design, implementation, claim, and parent gates without letting a specialized gate select another direction.
-
-Return exactly `REPLAN_READY`, `REPLAN_REPAIR_REQUIRED`, `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED`, or `BLOCKED`. A positive result has no finding; every nonpositive result has at least one complete finding.
-
-Only unchanged adopted `REPLAN_READY` copies the proposed project decision root into `FRONTIER.md` and Selection together with the reviewed strategic state. A nonpositive or stale review leaves the prior project chain and allocation unchanged and authorizes no dependent spend.
-
-## Strategic replan packet
-
-Create a new packet and review path for every attempt. Include no expected verdict or proposed repair.
-
-```yaml
-review_kind: replan
-review_id: <unique identifier>
-packet_path: <frontier/reviews/replan-<review-id>-packet.yaml>
-packet_id: <review kind and id plus SHA-256 of canonical packet bytes with this field omitted>
-snapshot_manifest: <frontier/reviews/replan-<review-id>-project-snapshot.yaml and identity>
-snapshot_id: <immutable snapshot identity>
-task_path: <canonical task path>
-problem_epoch: <integer>
-problem_generated_at: <ISO-8601 datetime>
-representation_revision: <integer>
-representation_generated_at: <ISO-8601 datetime>
-representation_permitted: <exact reviewed text>
-project_provenance:
-  decision_root: <proposed frontier-decision-root-sha256 identity>
-  prior_decision_root: <current decision root>
-  governs: [<proposed strategic state and later decision objects created by this Replan>]
-triggering_reflection: <ledger block location, targets, and immutable identity>
-route_set: <current or refreshed Q, every eligible T, exclusions and deferrals, shared assumptions, prerequisites, reopening evidence, and route-set-state identity>
-direction_evidence: <compatible E sequence and controlling OR identities, governing prospective rules, current experiment conclusions, parent result vector, and context or action-window facts>
-diagnostic_paths: <ordered alternatives, distinguishing outcomes, stage cost and unavoidable commitments, reachability, investment rationale and switching condition, or not applicable>
-resolver_result: <evidence-state identity, first applicable row, exact direction resolution, next action, and blocker when applicable>
-research_reconciliation: <row 7 or 8 Q with industrial, academic, community, repository, retained, and failure evidence plus search stop; or not applicable with reason>
-supporting_evidence: [<Q, D, E, X, result, trace, join, or artifact identity>]
-user_decisions: [<V identifiers and identities, or none>]
-proposed_frontier_updates: <snapshot path and identity for proposed F2-F4 changes>
-proposed_budget_update: <snapshot path and identity>
-proposed_selection: <snapshot path and identity>
-proposed_batches: [<snapshot paths, identifiers, and identities for Primary and Parallel B>]
-design_and_implementation_state: [<applicable W, design review, development authorization, candidate, and implementation review identities>]
-specialized_gates: [<design, implementation, measurement, integration, promotion, exposure, confirmation, claim, or parent gate and current state>]
-assigned_review_path: <frontier/reviews/replan-<review-id>.md>
-completion_check: <every replan requirement receives a verdict and every finding cites immutable snapshot evidence>
-```
-
-## Strategic replan artifact
-
-Only `review-frontier` writes the assigned file.
-
-```markdown
----
-type: Optimization Frontier Strategic Replan Review
-status: complete
-review_id: <identifier>
-review_result: <REPLAN_READY | REPLAN_REPAIR_REQUIRED | EVIDENCE_REQUIRED | PARENT_REVIEW_REQUIRED | BLOCKED>
-reviewed_by: review-frontier/1
-reviewed_at: "<ISO-8601 datetime>"
-snapshot_packet: <path and identity>
-generated: { by: review-frontier/1, at: "<ISO-8601 datetime>" }
----
-
-# FRONTIER STRATEGIC REPLAN REVIEW: <effort name>
-
-Result: <allowed result>
-Triggering reflection: <ledger location, targets, and identity>
-Reviewed snapshot: <packet path and identity>
-Reviewed at: <ISO-8601 datetime>
-
-## Readiness checks
-
-- Parent bindings, permitted scope, and authority: <pass or findings>
-- Workflow-source snapshot, manifest, prior binding, adoption scope, and recoverability: <pass or findings>
-- Result, implementation, measurement, and comparison validity: <pass or findings>
-- Technical hypothesis, hypothesis result, and evidence-bound mechanism inference: <pass or findings>
-- Attribution limit, R&D implication, measurement implication, and full parent result vector: <pass or findings>
-- Decision-relevant unknowns and selected information source: <pass or findings>
-- Considered diagnostic alternatives, reachability, recorded ordering, and repeat prevention: <pass or findings>
-- Research coverage and stop rule: <pass or findings>
-- Route-set state, evidence-state identity, and first applicable resolver row: <pass or findings>
-- Technical eligibility, V records, and recommendation fidelity: <pass or findings>
-- Budget, reserve, Selection, B, and stop rules: <pass or findings>
-- Deterministic next action, `REPLAN_READY` dependent-spend boundary, and complete reflection coverage: <pass or findings>
-- Specialized review boundaries: <pass or findings>
-
-## Findings
-
-### Finding 1: <omit when REPLAN_READY>
-
-- Result effect: <REPLAN_REPAIR_REQUIRED | EVIDENCE_REQUIRED | PARENT_REVIEW_REQUIRED | BLOCKED>
-- Affects: <paths, records, or fields>
-- Requirement: <exact requirement>
-- Observed: <snapshot fact>
-- Evidence: <snapshot identities>
-- Required correction: <observable condition; no repair text>
-```
+For a selected strategic replan, read [Replan review](replan-review.md). Other outcomes do not load its packet or report templates.

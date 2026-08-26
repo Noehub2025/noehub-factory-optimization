@@ -9,11 +9,11 @@ Inspect the existing project structure, build and dependency conventions, candid
 Record one disposition:
 
 - `existing-integrated`: use the established structure and seam;
-- `user-approved-new`: create only the layout in the cited V authorization;
-- `absent-awaiting-user`: recommend a layout and stop before creating code paths;
+- `new-in-scope`: select a suitable layout within the current grant;
+- `user-choice-needed`: a specific unresolved value or access decision prevents selecting the layout;
 - `incompatible`: explain the conflict and return to route or design planning.
 
-If no usable project structure exists, or the proposal materially changes the top-level layout, toolchain, dependency manager, or public entrypoint, present technically eligible options and a recommendation through `grill-frontier`. The user's answer chooses among eligible consequences; it cannot make an invalid structure valid.
+The technical owner selects layout and tools within the objective and constraints. Use [User decisions](user-decisions.md) only when that choice changes a user-owned value or permission boundary; an absent structure alone is not a reason to ask.
 
 ## Choose the design profile
 
@@ -27,19 +27,13 @@ Load [Work plan](work-plan.md) only for `module` or `system`. The Coordinator ow
 
 ## Separate the gates
 
-For `module` or `system`:
+For `module` or `system`, adopt an applicable `DESIGN_READY` before preparing its Entry realization. For `direct`, record reproducible profile evidence without a design review. In both cases, prepare the complete B and use the current Entry checks once.
 
-1. Require `design-implementation` to return `DRAFT_READY`, then complete the W map and stable-delivery traceability mechanically from its exact concern and verification pointers.
-2. Load [Design review](design-review.md) and adopt only `DESIGN_READY` for an unchanged design identity.
-3. After adopted `DESIGN_READY`, bind a nonempty dependency-complete `delivery_scope` to the code B, exact execution source, worker paths, and outputs in Entry; run finding-free draft and frozen structural preflight from `batch-interface.md`, and preserve its exact identity.
-4. Freeze a complete authorization-readiness Entry snapshot and adopt only a finding-free `AUTHORIZATION_READY` for the exact target.
-5. Ask the user separately to authorize that reviewed candidate-development target. Adopt it only through the post-answer identity and staleness check; store current authorization outside W.
+Apply [User decisions](user-decisions.md). If the realization fits an adopted grant, use spend-readiness and bind current execution authority without asking again. Otherwise obtain `AUTHORIZATION_READY`, ask only for the missing user-owned permission and adopt that answer. Design preference, `DESIGN_READY` and packet structure do not themselves grant execution permission.
 
-For `direct`, record reproducible profile evidence, complete every packet field except `packet_id`, run finding-free draft preflight, insert only the computed identity, freeze the packet, reproduce the same PASS artifact in frozen preflight, obtain `AUTHORIZATION_READY`, and only then ask the user to authorize that reviewed packet, preflight, source base, scope, spend, and stop boundary.
+A changed technical contract needs the affected design review and current execution binding. It does not automatically revoke a broader user grant. Use Batch continuation for delegated same-packet design changes or Entry spend-readiness for a new realization.
 
-Design preference, Coordinator design adoption, `DESIGN_READY`, and packet structural preflight do not authorize development. Any contract-bearing design or traceability change creates a new `plan_revision` and invalidates its review, authorization-readiness verdict, and every development authorization bound to the old identity.
-
-Design authoring itself is planning and creates no B, proposal identity, reservation, or spend. When the designer returns `EVIDENCE_REQUIRED`, obtain only the named executable evidence through the existing research, prototype, or B path, then start a scoped design revision.
+Design authoring itself is planning and creates no B or proposal identity. Account for actual resources under the parent rule. When the designer returns `EVIDENCE_REQUIRED`, obtain only decision-relevant evidence through the existing research, prototype or B path, then revise the affected design.
 
 ## Plan candidate identity and review
 
