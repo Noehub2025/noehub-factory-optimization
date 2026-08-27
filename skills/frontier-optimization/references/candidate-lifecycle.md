@@ -32,14 +32,14 @@ For unpublished working material, use [Bounded observations before publication](
 
 A separate `work_kind: experiment`, `changes_executable_candidate: false` B may measure a formally published candidate before implementation review only when its controlling parent required publication before review and Entry verifies all of these conditions. The normal prepublication-review path is not eligible because it creates no candidate before review:
 
-- the code-bearing B is terminal, its result validation is finding-free, and its immutable candidate identity, manifest, engineering evidence, recovery point, and controlling Outcome Reflection exist;
+- the code-bearing B is terminal, its result validation is finding-free, and its immutable candidate identity, manifest, engineering evidence, and recovery point exist;
 - the experiment is local, isolated, reversible, bounded, and free of production, user, external-system, sensitive-data, paid-resource, safety-critical, or other material external effect;
 - applicable hard constraints and the minimum checks needed to execute safely have passed;
 - the experiment uses no sealed confirmation, hidden holdout, submission, deployment, or other evidence reserved for a later decision;
 - the experiment identity binds the candidate, evaluator, diagnostic inputs, controls, environment, maximum spend, and exclusive result paths before dispatch; and
 - the packet states the result branches for continue, revise, stop, or plan a later formal check, and prohibits E, integration, incumbent use, promotion, submission, and strength claims.
 
-The accepted result remains B evidence and enters one Outcome Reflection. It cannot create E, satisfy Slot H comparison validity, stand in for implementation review, or support any stronger consequence. Complete and adopt fresh unchanged `IMPLEMENTATION_READY` before formal Slot H measurement, integration, or incumbent use. Recovery reuse is not eligible for this exception.
+The accepted result remains B evidence and enters the next resolver state. It cannot create E, satisfy Slot H comparison validity, stand in for implementation review, or support any stronger consequence. Complete and adopt fresh unchanged `IMPLEMENTATION_READY` before formal Slot H measurement, integration, or incumbent use. Recovery reuse is not eligible for this exception.
 
 ## Post-closeout recovery reuse
 
@@ -71,7 +71,7 @@ inventory_id: <SHA-256 of this mapping with inventory_id omitted>
 
 Run formal closing checks against the selected realization. Use an isolated runtime when needed; temporary materialization is not another archival snapshot. Apply the scoped consumption checks in [Provenance, Git, and retained artifacts](provenance-and-identity.md), rechecking declared inputs when they may have changed instead of scanning the canonical root after every command. Engineering evidence binds the ordered formal-attempt summary, any nonfinal passing inventory's nonpositive review handoff, official inventory, packet authority, exact selected check units, observed cumulative effects, and accounting, but never working feedback or the later final manifest. The final manifest separately binds the positive implementation review. The official inventory must reproduce the candidate and package identities of the final positively reviewed transient inventory.
 
-After all engineering evidence identities resolve, write the final manifest below exactly once. `code_paths` must exactly equal the inventory by path and digest; `source_result_identity.package_sha256` and, when present, `.members` must describe the same inventory. The final manifest binds the package inventory, completed engineering evidence, and the positive implementation review of those bytes. Result validation, result, Outcome Reflection, and closeout are downstream and never appear inside the manifest.
+After all engineering evidence identities resolve, write the final manifest below exactly once. `code_paths` must exactly equal the inventory by path and digest; `source_result_identity.package_sha256` and, when present, `.members` must describe the same inventory. The final manifest binds the package inventory, completed engineering evidence, and the positive implementation review of those bytes. Result validation, result adoption, resolver decisions, and closeout are downstream and never appear inside the manifest.
 
 ```yaml
 manifest_contract: frontier-candidate-manifest/3

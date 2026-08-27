@@ -1,6 +1,6 @@
 # Deploying shared agent instructions
 
-This repository keeps task-neutral optimization behavior in `AGENTS.md`. The twelve Skills remain the authority for workflow procedures, review gates, evidence rules, and durable records. Do not duplicate those detailed contracts in a root instruction file.
+This repository keeps task-neutral optimization behavior in `AGENTS.md`. The thirteen Skills remain the authority for workflow procedures, review gates, evidence rules, and durable records. Do not duplicate those detailed contracts in a root instruction file.
 
 ## How the files are loaded
 

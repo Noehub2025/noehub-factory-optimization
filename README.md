@@ -8,7 +8,7 @@ Before an agent starts changing code, the workflow makes it explain the task in 
 
 The workflow is not tied to a particular benchmark, model, codebase, or optimization method. Use it for tasks such as reducing latency or cost, improving a model or game-playing agent, tuning a configuration, or searching over alternative implementations. It is especially useful when a passing test is not enough to prove that a change is genuinely better.
 
-This repository provides the RSI workflow as twelve reusable Agent Skills. It does not provide a domain-specific optimizer, promise a winning solution, or remove human authority over consequential actions.
+This repository provides the RSI workflow as thirteen reusable Agent Skills. It does not provide a domain-specific optimizer, promise a winning solution, or remove human authority over consequential actions.
 
 ## What problem does it solve?
 
@@ -81,6 +81,7 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 - A consequential implementation design must positively ground every decisive feasibility claim under the relevant conditions. Missing final implementation, novelty, or ordinary implementation risk alone does not justify another evidence gate.
 - Implementation design owns stable technical slices and their verification meaning. Entry later binds one exact batch, execution source, worker surface, and internal output paths, so a new attempt or path does not silently rewrite approved architecture.
 - One bounded batch is an objective, authority, evidence, and spend envelope rather than one command or internal slice. Reversible working feedback stays inside it without a command history or a new lifecycle record. Sequential invocations verify required inputs, formal closing attempts, and cumulative effects; they do not reconstruct every debugging step.
+- Code-bearing batches use one frozen engineering-check plan shared by execution, review, result validation, and recovery. Formal evidence begins only when the first frozen check runs against the exact staged realization; reversible local preparation remains working feedback.
 - Planning, user authorization, worker acknowledgment, execution start, implementation review, measurement, result adoption, and claims are separate gates. Each gate applies only to the exact files and identities it names.
 - The agent checks the current request and recorded decisions before asking a question. An explicitly continuing user grant can cover later batches within the same objective, cumulative limits, access, effects, and stop conditions. A changed execution plan still needs its applicable review and a new authority binding, but not a repeated user answer. Historical exact-only grants remain exact-only, and a new batch or generation never resets spending or widens permission.
 - Before a retained result can support a consequential follow-up action, the workflow checks the exact adopted continuing grant against that action's current plan, cumulative resource use, access, effects, withdrawal terms, and stop conditions. A structurally valid result or an earlier readiness decision does not create new permission.
@@ -89,8 +90,8 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 - A fidelity finding may return to the same working loop. A disproven design assumption returns to the design owner and independent Design review. If the original authorization explicitly delegates that exact design revision, retain Entry and authority and freeze a new starting state; otherwise use the existing revision and authorization path. Do not repeat an unchanged deterministic failure, but new evidence or a material repair may justify another bounded attempt.
 - An explicitly authorized diagnostic may observe working material before a complete candidate is published. Record the actual subject, method, conditions, evidence, and cumulative resource and exposure use. Sequential observations remain cumulative inside that batch until its ordinary terminal result; they do not each create a terminal outcome. These observations guide only the current batch and do not authorize promotion or performance claims.
 - External, paid, human, and physical actions require an exact authorized target, action, affected scope, cumulative limits, stop conditions, and a tool capable of enforcing them. A mixed-work label never grants that authority.
-- A fresh-context, read-only analyst interprets each terminal technical result before seeing the current selection, budget, authority, stopping state, or proposed next action. This keeps the technical meaning of the evidence separate from what the campaign may do next.
-- After each completed batch, the agent compares the result with the hypothesis fixed before the work, records the strongest mechanism the evidence supports, and keeps unresolved component attribution separate from the proven whole-package effect.
+- After each terminal result is adopted, the coordinator establishes implementation, measurement, and comparison validity, connects the result to its pre-work hypothesis and exact technical lineage, and applies one ordered direction resolver directly to the adopted evidence. This creates no intermediate per-batch reflection gate or narrative artifact.
+- At a campaign-wide closeout, a fresh-context `reflect-frontier` pass turns the generation's adopted successes, failures, costs, retained assets, and remaining gap into search advantage and a small set of worthwhile opportunities for the next generation. It does not select work, allocate budget, or grant authority.
 - Results identify the problem and representation versions under which they were produced, so incompatible results are not compared.
 - Parent revisions affect only decisions that depend on the changed meaning. Unaffected work and historical conclusions remain usable; prior spending or a new revision number alone does not force campaign closeout, a new generation, or a replacement candidate. The campaign coordinator can delegate an in-scope parent repair to the framing coordinator without asking the user to switch stages.
 - Project evidence and workflow releases use separate identities. Updating an installed Skill does not rewrite or invalidate an existing project decision, review, authorization, result, or handoff.
@@ -107,7 +108,7 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 
 ## Skills
 
-Install all twelve Skills as one workflow. Normally, users invoke only the two coordinators; the coordinators assign the narrower worker Skills.
+Install all thirteen Skills as one workflow. Normally, users invoke only the two coordinators; the coordinators assign the narrower worker Skills.
 
 Each Skill entry point routes the agent to the references needed for its current stage or action. Detailed packet formats and historical compatibility rules stay in separate files and are read only when relevant. Install the complete folders so this selective reading does not omit required workflow rules.
 
@@ -128,6 +129,7 @@ Each Skill entry point routes the agent to the references needed for its current
 - **[grill-frontier](./skills/grill-frontier/SKILL.md)** — Collects one user tradeoff or authorization for an exact reviewed choice.
 - **[run-frontier-batch](./skills/run-frontier-batch/SKILL.md)** — Executes one bounded research, design, implementation, or evaluation batch.
 - **[review-frontier](./skills/review-frontier/SKILL.md)** — Independently reviews one frozen plan, design, implementation, recovery decision, or proposed claim.
+- **[reflect-frontier](./skills/reflect-frontier/SKILL.md)** — Converts one closing generation's adopted evidence into search assets and worthwhile opportunities for the next generation without choosing or authorizing work.
 
 Internally, the first stage uses A–H and R1–R8 as completeness checklists. Users do not need to learn those labels before starting; the main documents must explain their meaning in ordinary task language.
 
@@ -146,9 +148,10 @@ Define the problem
   -> iterate within the batch's authorized limits, using bounded diagnostics only when explicitly allowed
   -> review exact implementations before publication when required, then authorize later measurement separately
   -> measure under the approved comparison rules
-  -> interpret the technical evidence in a fresh context, then compare it with the precommitted hypothesis and record supported mechanisms and limits
-  -> apply one ordered direction resolver to select the next action or blocker
-  -> close the campaign with final evidence, limits, and files needed to resume later
+  -> adopt the result, establish its validity, and apply one ordered direction resolver directly to the evidence
+  -> on a campaign-wide stop or halt, reconcile the generation's evidence, spending, retained assets, and remaining gap
+  -> reflect once in a fresh context to improve the next generation's search
+  -> complete closeout with final limits and the files needed to resume later
 ```
 
 The loop pauses only work affected by an exhausted limit, missing permission, an unresolved dependency, or a relevant task-definition change. Unaffected permitted work can continue. Full closeout requires a campaign-wide ending condition or an explicit user stop.
@@ -177,7 +180,7 @@ Use this route for Codex, Claude Code, Cursor, and other Agent Skills-compatible
 npx skills@latest add Noehub2025/noehub-factory-optimization
 ```
 
-Choose all twelve Skills and the coding agents where you want to install them.
+Choose all thirteen Skills and the coding agents where you want to install them.
 
 ### Claude Code plugin
 
@@ -186,7 +189,7 @@ Choose all twelve Skills and the coding agents where you want to install them.
 /plugin install noehub-factory-optimization@noehub
 ```
 
-The plugin installs all twelve Skills as one managed bundle.
+The plugin installs all thirteen Skills as one managed bundle.
 
 ### Manual installation
 

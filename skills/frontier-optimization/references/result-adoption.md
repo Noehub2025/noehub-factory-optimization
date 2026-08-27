@@ -27,13 +27,13 @@ Require the official inventory identity to equal the final positively reviewed t
 
 Adopt the unchanged `IMPLEMENTATION_READY` already bound by the final manifest and result; do not create another implementation review after publication. Its maximum consequence is eligibility for a separately selected measurement or integration B. A nonpositive prepublication review either returned to fidelity repair inside the same B or ended the B without a candidate. A later finding against an already published candidate follows the normal post-publication resolver and new-B path; it cannot reopen the prepublication loop.
 
-If no realization reached implementation review, record it as not applicable and reflect on the failure or interruption. If a nonpositive prepublication review ended the B without publication, preserve that actual review result and include it in the B's Outcome Reflection.
+If no realization reached implementation review, record it as not applicable. If a nonpositive prepublication review ended the B without publication, preserve that actual review result as terminal evidence for the resolver and eventual Generation Reflection.
 
 ## Adopt diagnostic-only evidence
 
-Do not enter result adoption merely because one bounded working observation completed. Keep sequential observations cumulative inside the existing nonterminal B under [Batch Interface](batch-interface.md#bounded-observations-before-publication); they do not individually create a terminal outcome, Outcome Reflection, resolver run, or successor B. When that B later terminates, validate its cumulative observations and effects with its ordinary terminal result and complete one controlling Outcome Reflection.
+Do not enter result adoption merely because one bounded working observation completed. Keep sequential observations cumulative inside the existing nonterminal B under [Batch Interface](batch-interface.md#bounded-observations-before-publication); they do not individually create a terminal outcome, resolver run, or successor B. When that B later terminates, validate its cumulative observations and effects with its ordinary terminal result.
 
-For an experiment selected through the [diagnostic-only exception](candidate-lifecycle.md#diagnostic-only-exception), validate its Entry authority, candidate and experiment identities, local isolation, hard-constraint checks, sealed-evidence exclusion, maximum spend, result validation, and prohibited consequences. Append the B terminal outcome and one controlling Outcome Reflection. Preserve the result only as diagnostic B evidence; create no E and grant no implementation readiness, integration, incumbent use, promotion, submission, or strength consequence.
+For an experiment selected through the [diagnostic-only exception](candidate-lifecycle.md#diagnostic-only-exception), validate its Entry authority, candidate and experiment identities, local isolation, hard-constraint checks, sealed-evidence exclusion, maximum spend, result validation, and prohibited consequences. Append the B terminal outcome. Preserve the result only as diagnostic B evidence; create no E and grant no implementation readiness, integration, incumbent use, promotion, submission, or strength consequence.
 
 A useful diagnostic may select a later implementation review, repair, abandonment, or formal Slot H experiment plan. It cannot make its own measurement comparison-valid or bypass any later gate.
 
@@ -41,7 +41,7 @@ A useful diagnostic may select a later implementation review, repair, abandonmen
 
 For `evaluation_target.mode: routine-local`, rerun the shared target and result validator, reproduce admission through the original Entry authority, and require the exact consumed slot, derived candidate, finding-free implementation review, unchanged protocol and calibration, current live facts, unprotected Budget, and frozen experiment template. Enforce the structured evidence scope in [Evaluation protocol reuse](evaluation-protocol.md#structured-evidence-ceiling).
 
-Append only the routine B terminal outcome and its controlling Outcome Reflection. Create no E. The result cannot satisfy formal Slot H, confirm or promote the candidate, authorize integration or incumbent use, support submission, publication, external or paid action, approve a claim, or directly authorize the next B. Run the integrated resolver once on the new evidence state.
+Append only the routine B terminal outcome. Create no E. The result cannot satisfy formal Slot H, confirm or promote the candidate, authorize integration or incumbent use, support submission, publication, external or paid action, approve a claim, or directly authorize the next B. Run the integrated resolver once on the new evidence state.
 
 ## Adopt valid measurement as E
 
@@ -53,4 +53,4 @@ E records evaluated evidence, not automatic retention or promotion. Before promo
 
 ## Completion
 
-Result adoption is complete only when the immutable result and validation remain recoverable, B outcome and spend are dispositioned, any materialized candidate has an adopted review or an explicit prohibition on later use, every valid measurement has an E disposition, and the exact next required Outcome Reflection is named. Worker output never creates E or campaign meaning by itself.
+Result adoption is complete only when the immutable result and validation remain recoverable, B outcome and spend are dispositioned, any materialized candidate has an adopted review or an explicit prohibition on later use, and every valid measurement has an E disposition. Worker output never creates E or campaign meaning by itself. The next investment, stop, or blocker comes from one resolver run on this adopted evidence state.

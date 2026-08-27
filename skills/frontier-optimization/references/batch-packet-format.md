@@ -101,18 +101,7 @@ execution_start_path: <stable Coordinator-owned path assigned only to this batch
 candidate_root_path: <complete candidate-package root for code-bearing work; otherwise null>
 candidate_package_inventory_path: <assigned official immutable inventory path written at publication for code-bearing work; earlier charge evidence stays in the existing accounting source; otherwise null>
 candidate_manifest_path: <assigned stable path or null>
-engineering_check_plan:
-  contract_version: frontier-engineering-check-plan/1
-  checks:
-  - id: <unique check identifier>
-    command: [<exact argument vector>]
-    selection: <full-repository | exact | other>
-    selected_units: [<every collected or otherwise selected test/check unit>]
-    declared_effects: [<task-neutral effect classes the command can exercise>]
-    effect_costs: {<declared effect>: <positive conservative occurrence count per invocation>}
-    effect_evidence: [{path: <source used to classify effects>, file_sha256: <lowercase digest>}]
-  effect_limits: {<effect class>: <positive cumulative maximum occurrence count across all attempts>}
-  evidence_use: engineering-only
+engineering_check_plan: <repository-relative path to one frontier-project-engineering-check-plan/1 frozen as a file input, or null>
 # Historical version 1 compatibility only. Current project writers omit this
 # copy and derive publication and charge behavior from the parent or R8 rule.
 publication_policy:

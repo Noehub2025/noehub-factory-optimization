@@ -1060,8 +1060,8 @@ class Slice7ContractTests(unittest.TestCase):
         self.assert_contract_contains(
             "learning-loop.md",
             "Apply routine R8 without extra research when no earlier resolver condition applies",
-            "a direct reversible attempt may be preferable to separate diagnosis",
-            "For strategic evidence",
+            "A direct reversible attempt may be preferable to separate diagnosis",
+            "Dependent strategic spend needs sufficient evidence",
             "A valid whole-treatment comparison may support that the bounded package caused the observed local effect",
             "This section is the only direction resolver",
             "Apply the rows from 1 through 13 exactly once",
@@ -1072,7 +1072,7 @@ class Slice7ContractTests(unittest.TestCase):
             "do not starve the campaign",
             "A withdrawing X likewise blocks only that wording",
             "Preserve final direction state",
-            "Do not rewrite an older Outcome Reflection",
+            "Preserve legacy Outcome Reflections exactly as produced",
             "each surviving project decision root, parent chain",
         )
         self.assert_contract_contains(

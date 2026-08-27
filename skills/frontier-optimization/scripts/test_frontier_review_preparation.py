@@ -197,6 +197,63 @@ def write_w_backed_entry(
     return spec, traceability_path
 
 
+def add_current_engineering_plan(root: Path, spec: dict) -> Path:
+    """Attach the current external engineering plan to an Entry fixture."""
+
+    check_path = root / "entry/engineering-checks.yaml"
+    check_document = {
+        "contract_version": "frontier-project-engineering-check-plan/1",
+        "batch_id": "B001",
+        "consequence": "engineering evidence only",
+        "limits": {
+            "cumulative_local_wall_seconds": 60,
+            "per_command_timeout_seconds": 30,
+            "processes": 1,
+            "new_output_bytes": 4096,
+            "proposal_attempts": 1,
+            "development_schedules": 0,
+            "evaluator_runs": 0,
+            "games": 0,
+            "sealed_inputs": 0,
+            "paid_actions": 0,
+        },
+        "formal_units": [
+            {"id": "focused-check", "argv": ["tool", "check"]},
+        ],
+    }
+    check_path.write_text(yaml.safe_dump(check_document, sort_keys=False))
+    check_digest = hashlib.sha256(check_path.read_bytes()).hexdigest()
+
+    plan_path = root / "entry/plan.yaml"
+    plan = yaml.safe_load(plan_path.read_text())
+    plan.pop("batch_plan_id")
+    plan.pop("identity_rule")
+    plan["engineering_check_plan"] = "entry/engineering-checks.yaml"
+    plan["execution_frozen_inputs"] = [
+        {
+            "path": "entry/engineering-checks.yaml",
+            "scope": "file",
+            "identity": "sha256:" + check_digest,
+        }
+    ]
+    plan_path.write_bytes(
+        self_identified(
+            "batch_plan_id",
+            "B001-plan-sha256:",
+            yaml.safe_dump(plan, sort_keys=False).encode(),
+        )
+    )
+    spec["artifacts"].append(
+        {
+            "logical_name": "project/decision/entry/engineering-checks.yaml",
+            "path": "entry/engineering-checks.yaml",
+            "kind": "blob",
+            "behavioral_metadata": {},
+        }
+    )
+    return check_path
+
+
 def rewrite_entry_plan(root: Path, mutate) -> None:
     plan_path = root / "entry/plan.yaml"
     plan = yaml.safe_load(plan_path.read_text())
@@ -426,6 +483,26 @@ def test_bad_self_identity_returns_not_ready_without_formal_artifacts() -> None:
         assert result["status"] == "NOT_READY"
         assert result["findings"][0]["code"] == "DRAFT_INVALID"
         assert not output.exists()
+
+
+def test_entry_seals_one_frozen_current_engineering_plan() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        spec = write_entry(root)
+        add_current_engineering_plan(root, spec)
+        result = prepare_review(spec, root, root / "sealed")
+        assert result["status"] == "SEALED", result.get("findings")
+
+
+def test_entry_rejects_current_engineering_plan_digest_drift() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        spec = write_entry(root)
+        check_path = add_current_engineering_plan(root, spec)
+        check_path.write_text(check_path.read_text() + "notes: changed after binding\n")
+        result = prepare_review(spec, root, root / "sealed")
+        assert result["status"] == "NOT_READY"
+        assert "frozen input binding" in result["findings"][0]["message"]
 
 
 def test_duplicate_record_identifier_returns_not_ready_without_review_id() -> None:

@@ -1,6 +1,6 @@
 # Strategic replan review
 
-Load only to prepare or review a strategic replan. Use the controlling Reflection and [single direction resolver](learning-loop.md#integrated-direction-resolver); this file adds no resolver or user authorization.
+Load only to prepare or review a strategic replan selected by the [single direction resolver](learning-loop.md#integrated-direction-resolver). This file adds no resolver, interpretation stage, or user authorization.
 
 Apply [Change impact and retained results](frontier-core.md#change-impact-and-retained-results) when parent rules or retained conclusions are involved. A parent version difference alone does not require Replan; an actual strategic allocation change still requires `REPLAN_READY` before dependent spend. Review the change and affected dependencies, reusing unaffected conclusions.
 
@@ -9,9 +9,9 @@ Apply [Change impact and retained results](frontier-core.md#change-impact-and-re
 Before writing a verdict, the reviewer must:
 
 1. verify every project snapshot identity, current parent authority, proposed decision root; reject workflow source, release, Skill, validator implementation, test, or source-module roots as replan inputs;
-2. reconstruct the reflection from the planned B, result, W outcome, E, X, and cited artifacts;
+2. reconstruct the current adopted evidence from the planned B, result, W outcome, E, X, and cited artifacts;
 3. check implementation, measurement, and comparison validity in that order;
-4. verify the precommitted hypothesis, hypothesis result, evidence-bounded mechanism inference, attribution limit, R&D implication, and complete parent-owned vector;
+4. verify the precommitted hypothesis, observed result, evidence-bounded mechanism grain, attribution limit, and complete parent-owned vector;
 5. reconstruct considered diagnostic alternatives, result-to-action branches, stage cost plus unavoidable commitments, reachability, and recorded investment rationale under the single resolver; reject a dominated repeat or a changed persisted choice, not technical discretion among eligible alternatives;
 6. apply the single integrated direction resolver and verify that the proposed Selection uses its first applicable row, affected scope, surviving authority, exact next action, and later-spend gates;
 7. require another research round only when row 7 or 8 selects it, its result can arrive while the decision remains actionable, and its adopted industrial, academic, community, repository, and retained evidence is sufficient for the current allocation under a fixed search stop;
@@ -44,9 +44,9 @@ project_provenance:
   decision_root: <proposed frontier-decision-root-sha256 identity>
   prior_decision_root: <current decision root>
   governs: [<proposed strategic state and later decision objects created by this Replan>]
-triggering_reflection: <ledger block location, targets, and immutable identity>
+triggering_evidence: <adopted B, E, Q, X, D, and result locations and identities that caused the strategic decision>
 route_set: <current or refreshed Q, every eligible T, exclusions and deferrals, shared assumptions, prerequisites, reopening evidence, and route-set-state identity>
-direction_evidence: <compatible E sequence and controlling OR identities, governing prospective rules, current experiment conclusions, parent result vector, and context or action-window facts>
+direction_evidence: <compatible E sequence, governing prospective rules, current experiment conclusions, parent result vector, and context or action-window facts>
 diagnostic_paths: <ordered alternatives, distinguishing outcomes, stage cost and unavoidable commitments, reachability, investment rationale and switching condition, or not applicable>
 resolver_result: <evidence-state identity, first applicable row, exact direction resolution, next action, and blocker when applicable>
 research_reconciliation: <row 7 or 8 Q with industrial, academic, community, repository, retained, and failure evidence plus search stop; or not applicable with reason>
@@ -81,7 +81,7 @@ generated: { by: review-frontier/1, at: "<ISO-8601 datetime>" }
 # FRONTIER STRATEGIC REPLAN REVIEW: <effort name>
 
 Result: <allowed result>
-Triggering reflection: <ledger location, targets, and identity>
+Triggering evidence: <adopted records, targets, and identities>
 Reviewed snapshot: <packet path and identity>
 Reviewed at: <ISO-8601 datetime>
 
@@ -89,15 +89,15 @@ Reviewed at: <ISO-8601 datetime>
 
 - Parent bindings, permitted scope, and authority: <pass or findings>
 - Result, implementation, measurement, and comparison validity: <pass or findings>
-- Technical hypothesis, hypothesis result, and evidence-bound mechanism inference: <pass or findings>
-- Attribution limit, R&D implication, measurement implication, and full parent result vector: <pass or findings>
+- Technical hypothesis, observed result, and evidence-bound mechanism grain: <pass or findings>
+- Attribution limit, measurement meaning, and full parent result vector: <pass or findings>
 - Decision-relevant unknowns and selected information source: <pass or findings>
 - Considered diagnostic alternatives, reachability, recorded ordering, and repeat prevention: <pass or findings>
 - Research coverage and stop rule: <pass or findings>
 - Route-set state, evidence-state identity, and first applicable resolver row: <pass or findings>
 - Technical eligibility, V records, and recommendation fidelity: <pass or findings>
 - Budget, reserve, Selection, B, and stop rules: <pass or findings>
-- Deterministic next action, `REPLAN_READY` dependent-spend boundary, and complete reflection coverage: <pass or findings>
+- Deterministic next action and `REPLAN_READY` dependent-spend boundary: <pass or findings>
 - Specialized review boundaries: <pass or findings>
 
 ## Findings

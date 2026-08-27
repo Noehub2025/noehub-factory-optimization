@@ -21,6 +21,7 @@ from identity_bindings import (
     resolve_repo_file,
 )
 from finding_effects import add_finding, finalize_findings
+from engineering_check_plan import validate_current_evidence
 from validate_candidate_package import validate_candidate_package
 from frontier_provenance.content import ProvenanceError
 from frontier_provenance.compatibility import require_v1_completion
@@ -416,7 +417,61 @@ def verify_current_execution_frozen_inputs(
                 remaining.remove(item["path"])
         if remaining:
             raise ValueError("delegated design input is absent from the original frozen-input list")
-    if state.get("execution_frozen_inputs") != frozen_inputs:
+
+    sealed_runtime_input = packet.get("sealed_runtime_input")
+    if sealed_runtime_input is not None:
+        required_sealed_fields = {
+            "path",
+            "disclosed_sha256",
+            "access_before_exact_authorization",
+            "entry_subject_membership",
+            "execution_binding",
+        }
+        if (
+            not isinstance(sealed_runtime_input, dict)
+            or set(sealed_runtime_input) != required_sealed_fields
+            or sealed_runtime_input.get("access_before_exact_authorization") != "forbidden"
+            or sealed_runtime_input.get("entry_subject_membership") != "forbidden"
+            or not isinstance(sealed_runtime_input.get("execution_binding"), str)
+            or not sealed_runtime_input["execution_binding"].strip()
+        ):
+            raise ValueError("sealed_runtime_input has an incomplete or invalid binding")
+        try:
+            sealed_path = normalize_repo_path(
+                sealed_runtime_input.get("path"), "sealed_runtime_input.path"
+            )
+            reject_symlink_components(
+                repo_root.resolve(), sealed_path, "sealed_runtime_input.path"
+            )
+        except IdentityBindingError as exc:
+            raise ValueError(str(exc)) from exc
+        sealed_digest = sealed_runtime_input.get("disclosed_sha256")
+        if not isinstance(sealed_digest, str) or not SHA256_HEX.fullmatch(sealed_digest):
+            raise ValueError(
+                "sealed_runtime_input.disclosed_sha256 must be one lowercase SHA-256"
+            )
+        if any(item.get("path") == sealed_path for item in frozen_inputs):
+            raise ValueError(
+                "sealed_runtime_input must be separate from pre-authorization frozen inputs"
+            )
+        sealed_entry = {
+            "path": sealed_path,
+            "scope": "file",
+            "identity": f"sha256:{sealed_digest}",
+        }
+        state_frozen_inputs = state.get("execution_frozen_inputs")
+        if (
+            not isinstance(state_frozen_inputs, list)
+            or len(state_frozen_inputs) != len(frozen_inputs) + 1
+            or state_frozen_inputs.count(sealed_entry) != 1
+            or [item for item in state_frozen_inputs if item != sealed_entry]
+            != frozen_inputs
+        ):
+            raise ValueError(
+                "typed project execution state does not preserve the complete frozen-input list"
+            )
+        frozen_inputs = state_frozen_inputs
+    elif state.get("execution_frozen_inputs") != frozen_inputs:
         raise ValueError(
             "typed project execution state does not preserve the complete frozen-input list"
         )
@@ -1530,6 +1585,21 @@ def validate_prepublication_engineering_evidence(
     ):
         output_relative = packet.get("candidate_package_inventory_path")
     else:
+        return
+    if isinstance(packet.get("engineering_check_plan"), str):
+        if repo_root is None:
+            add_finding(
+                findings,
+                "PREPUBLICATION_EVIDENCE_UNVERIFIED",
+                "current engineering evidence requires repo_root",
+            )
+            return
+        for detail in validate_current_evidence(document, packet, repo_root):
+            add_finding(
+                findings,
+                "PREPUBLICATION_CURRENT_EVIDENCE_INVALID",
+                detail,
+            )
         return
     validation_items = document.get("engineering_validation")
     bindings = [

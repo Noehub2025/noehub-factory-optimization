@@ -54,8 +54,8 @@ existing X/Selection path; it does not rewrite this Entry or its attestation.
 
 Current Entry uses `frontier-project-batch-plan/3`. When that plan contains a `frontier-routine-follow-up/1`, the same complete subject must also contain the exact protocol, current calibration, single-use slot, scientific question, experiment template, ceilings, Budget boundary, and prohibitions defined by [Evaluation protocol reuse](evaluation-protocol.md). The review authorizes only the materialization and that conditional screen. The screen is admitted later from derived candidate and implementation-review evidence; it does not require another Entry, review, V, or authority.
 
-Selection must be copied from persisted Reflection without reinterpretation.
-The attested `project-decision` content includes the resolver row, route-set state, direction, affected scope, surviving authority,
+Selection must preserve the persisted resolver result without reinterpretation.
+The attested `project-decision` content includes the adopted evidence inputs, resolver row, route-set state, direction, affected scope, surviving authority,
 research disposition, diagnostic ordering or exact decision-preventing blocker, Budget and
 protected reserve, and every later-spend gate. A strategic change cannot bind
 authority for dependent spend until the same decision has `REPLAN_READY`.
@@ -79,6 +79,13 @@ An unsupported project contract returns `NOT_READY`; add a deliberate adapter
 instead of accepting unknown identity text. The outer identity of a composite
 design index may use an exact top-level omit-line SHA-256 rule while its nested
 concern and traceability checks remain owned by Design review.
+
+When a current Entry names `engineering_check_plan`, it must be one external
+`frontier-project-engineering-check-plan/1` file included in the review subject
+and bound exactly once as a file in `execution_frozen_inputs`. The shared plan
+adapter validates its bytes, batch, ordered formal units, and cumulative limits
+before sealing. The reviewer judges technical sufficiency from that normalized
+meaning; it does not translate the plan into the historical inline schema.
 
 For a current Entry, review the authorization target's `stop_boundary`, the batch plan's `stop_conditions`, the applicable contractual Work or Design recovery conditions, the authorization question, and its maximum consequence as one contract. Optional W recovery guidance adds no constraint or authority. Each failure boundary must name its dispatch phase. Return `ENTRY_REPAIR_REQUIRED` when these sources conflict, leave the phase ambiguous, or make an unpublished, zero-effect Coordinator transition terminate the technical B. A single proposal does not make the dispatch opportunity single-use unless the exact authorization states that consequence. Apply [Pre-release transition failure](batch-interface.md#pre-release-transition-failure) before judging recovery or successor-B need.
 
@@ -114,7 +121,7 @@ Inspect the prepared complete subject, not an unrelated Coordinator operating ma
 4. The deliverable and checks can answer the stated question. Apply design or implementation requirements only where this work needs them; research, analysis and human input do not inherit code publication gates.
 5. Measurement and comparison support only their stated inference. Test the proxy's fitness for the intended consequence, not merely whether its definition is precise. Preserve validity and claim limits.
 6. Inputs, output ownership and recovery cover the action's actual dependencies and reachable failure phases. A repair suggestion is not a new acceptance requirement.
-7. The current selection follows its controlling Reflection and the sole resolver. Read [Learning loop](learning-loop.md) only when judging a new direction or strategic allocation; an unchanged adopted selection needs applicability checks, not a new resolution.
+7. The current selection follows current adopted evidence and the sole resolver. Read [Learning loop](learning-loop.md) only when judging a new direction or strategic allocation; an unchanged adopted selection needs applicability checks, not a new resolution.
 
 Use [Finding effects](finding-effects.md). Return `AUTHORIZATION_READY` for a complete target requiring a new user decision, or `ENTRY_READY` for applicable spend-readiness under existing permission. Otherwise use `ENTRY_REPAIR_REQUIRED`, `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED`, or `BLOCKED`, stating the affected consequence and recovery condition. The report cites the exact subject, checked conclusions, findings, maximum consequence and conditions. For a correction, use Entry repair review above rather than repeating the first review.
 

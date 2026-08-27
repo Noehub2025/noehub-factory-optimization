@@ -13,6 +13,10 @@ from typing import Any
 
 import yaml
 
+from engineering_check_plan import (
+    EngineeringCheckPlanError,
+    normalize_current_plan_bytes,
+)
 from frontier_provenance import NodeRepository, ProvenanceError, freeze_decision
 from frontier_provenance.content import canonical_json
 from frontier_provenance.git_content import GitReferenceStore
@@ -271,6 +275,13 @@ def _read_and_validate(spec: dict[str, Any], project_root: Path) -> dict[str, An
         if declared:
             self_ids_by_path[resolved] = declared
 
+    _validate_entry_engineering_check_plan(
+        spec,
+        parsed_by_name,
+        raw_by_name,
+        source_by_path,
+        root,
+    )
     _validate_entry_design_traceability_binding(
         spec,
         parsed_by_name,
@@ -295,6 +306,55 @@ def _read_and_validate(spec: dict[str, Any], project_root: Path) -> dict[str, An
         "raw_by_name": raw_by_name,
         "semantic_projection": semantic_projection,
     }
+
+
+def _validate_entry_engineering_check_plan(
+    spec: dict[str, Any],
+    parsed_by_name: dict[str, Any],
+    raw_by_name: dict[str, bytes],
+    source_by_path: dict[Path, ArtifactSource],
+    project_root: Path,
+) -> None:
+    """Validate the exact external plan before an Entry subject is sealed."""
+
+    if spec["review_kind"] != "entry":
+        return
+    plans = [
+        document
+        for logical_name, document in parsed_by_name.items()
+        if logical_name.startswith("project/decision/entry/")
+        and isinstance(document, dict)
+        and document.get("contract_version") == "frontier-project-batch-plan/3"
+    ]
+    if len(plans) != 1:
+        return
+    plan = plans[0]
+    reference = plan.get("engineering_check_plan")
+    if reference is None:
+        return
+    if not isinstance(reference, str) or not reference.strip():
+        raise ProvenanceError(
+            "current Entry engineering_check_plan must name one external plan"
+        )
+    bound_path = Path(reference)
+    if not bound_path.is_absolute():
+        bound_path = project_root / bound_path
+    bound_path = bound_path.resolve()
+    try:
+        bound_path.relative_to(project_root)
+    except ValueError as exc:
+        raise ProvenanceError(
+            "Entry engineering_check_plan is outside project_root"
+        ) from exc
+    source = source_by_path.get(bound_path)
+    if source is None:
+        raise ProvenanceError(
+            "Entry engineering_check_plan is absent from the review subject"
+        )
+    try:
+        normalize_current_plan_bytes(plan, reference, raw_by_name[source.logical_name])
+    except EngineeringCheckPlanError as exc:
+        raise ProvenanceError(str(exc)) from exc
 
 
 def _parse_document(path: Path, raw: bytes, *, logical_name: str) -> Any:

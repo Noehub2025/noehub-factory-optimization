@@ -109,7 +109,98 @@ REFLECTION_REQUIRED_MARKERS = {
 }
 
 
+def generation_reflection_contract_findings(skills_root: Path) -> list[str]:
+    """Validate the closeout-only Generation Reflection contract."""
+    findings: list[str] = []
+    documents = {
+        relative: (skills_root / relative).read_text()
+        for relative in (
+            "reflect-frontier/SKILL.md",
+            "frontier-optimization/SKILL.md",
+            "frontier-optimization/references/learning-loop.md",
+            "frontier-optimization/references/campaign-cycle.md",
+            "frontier-optimization/references/campaign-state.md",
+            "frontier-optimization/references/closeout-and-claims.md",
+            "frontier-optimization/references/entry-and-planning.md",
+        )
+    }
+    required = {
+        "reflect-frontier/SKILL.md": (
+            "Act as the fresh-context owner of one Generation Reflection",
+            "A trustworthy whole-package improvement is a search asset even when individual contribution is unknown",
+            "Buy component diagnosis only when different answers would change the next parent, mutation, representation, evaluation, or allocation",
+            "Proposal distribution",
+            "Representation",
+            "Evaluation effort",
+            "Escape behavior",
+            "what to change",
+            "why material improvement is plausible",
+            "which advantage gained in this generation it uses",
+            "the cheapest direct observation that could test its promise",
+            "the result that would make it unattractive",
+            "exploration or exploitation tendency",
+            "The Reflection creates no Selection, route verdict, Budget allocation, authority, review result, or claim",
+        ),
+        "frontier-optimization/SKILL.md": (
+            "then `reflect-frontier` at its closeout trigger",
+            "directly from adopted current evidence",
+        ),
+        "frontier-optimization/references/learning-loop.md": (
+            "This chain creates no intermediate interpretation stage, Outcome Reflection, coverage record, review, or authority",
+            "Apply the integrated resolver exactly once",
+            "Perform no additional research, diagnosis, or review",
+            "current active generations require no new per-B OR and no OR coverage migration",
+        ),
+        "frontier-optimization/references/campaign-cycle.md": (
+            "Every selected terminal B is adopted, every eligible E is dispositioned, and the same state yields the same next action or blocker",
+        ),
+        "frontier-optimization/references/campaign-state.md": (
+            "Selection applies reviewed Entry evidence or current adopted project evidence through the sole resolver",
+            "exactly one persisted first applicable resolver row and deterministic resolution",
+        ),
+        "frontier-optimization/references/closeout-and-claims.md": (
+            "Create the Generation Reflection",
+            "invoke `reflect-frontier` once in a fresh context",
+            "The Coordinator does not copy, rewrite, shorten, or reorder its technical content",
+            "Send at most one consolidated correction request",
+            "This is quality control, not a review",
+            "never invalidate B/E, rerun evidence, or delay closeout for stylistic disagreement",
+            "produced no technical or research evidence",
+        ),
+        "frontier-optimization/references/entry-and-planning.md": (
+            "Use the prior Generation Reflection as candidate-generation input",
+            "The Reflection is advisory; the integrated resolver still makes the formal direction decision",
+        ),
+    }
+    for relative, markers in required.items():
+        for marker in markers:
+            if marker not in documents[relative]:
+                findings.append(f"{relative} omits {marker}")
+
+    reflection = documents["reflect-frontier/SKILL.md"]
+    for heading in (
+        "## Search outcome",
+        "## Search advantage",
+        "## Worthwhile opportunities",
+        "## Search stance",
+        "## Retire or revisit",
+        "## Evidence",
+    ):
+        if reflection.count(heading) != 1:
+            findings.append(
+                f"reflect-frontier canonical output has {reflection.count(heading)} {heading} headings"
+            )
+
+    references = skills_root / "frontier-optimization/references"
+    for obsolete in ("reflection-analysis.md", "reflection-calibration.md"):
+        if (references / obsolete).exists():
+            findings.append(f"obsolete active Reflection reference remains: {obsolete}")
+    return findings
+
+
 def reflection_contract_findings(skills_root: Path) -> list[str]:
+    if (skills_root / "reflect-frontier/SKILL.md").exists():
+        return generation_reflection_contract_findings(skills_root)
     references = skills_root / "frontier-optimization/references"
     documents = {
         name: (references / name).read_text()
@@ -159,7 +250,7 @@ def reflection_contract_findings(skills_root: Path) -> list[str]:
 RESOLVER_ROW_MARKERS = {
     1: "An unresolved parent requirement or adopted revision affects the next decision",
     2: "safety, legality, authority, accounting, explicit campaign-scope unconditional F7 stop, or halt",
-    3: "terminal B or E lacks coverage",
+    3: "selected terminal B has not been adopted",
     4: "parent-owned objective, Representation, Slot H measurement meaning, R8 rule, permitted scope, or claim ceiling",
     5: "without consuming protected reserve",
     6: "Implementation, measurement, or comparison validity",
@@ -214,14 +305,14 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "first applicable row from learning-loop.md",
             "do not introduce a separate uniqueness test here",
             "Routine row 13 adds no research, diagnosis, or review",
-            "does not reinterpret validity, technical learning, route eligibility, progress, constraint meaning, diagnostic alternatives, dominance, affected scope, or surviving authority",
+            "does not strengthen validity, technical learning, route eligibility, progress, constraint meaning, diagnostic alternatives, dominance, affected scope, or surviving authority",
             "Affected scope",
             "Surviving authority",
             "Project provenance",
         ),
         "entry-review.md": (
             "Budget, prior and unknown consumption, reservations and protected reserve agree",
-            "The current selection follows its controlling Reflection and the sole resolver",
+            "The current selection follows current adopted evidence and the sole resolver",
             "`project-decision` content root and an empty payload",
             "entry-review-legacy.md",
         ),
@@ -239,7 +330,7 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
         ),
         "closeout-and-claims.md": (
             "Preserve final direction state",
-            "Do not rewrite an older Outcome Reflection",
+            "Preserve legacy Outcome Reflections exactly as produced",
             "latest first applicable direction-resolver row",
             "each surviving project decision root, parent chain",
         ),
@@ -268,24 +359,24 @@ class FrontierSkillBundleTests(unittest.TestCase):
         skills_root = SCRIPT.parents[2]
         mutations = (
             (
-                "frontier-optimization/references/learning-loop.md",
-                "A valid whole-treatment comparison may support that the bounded package caused the observed local effect",
-                "A valid whole-treatment comparison cannot support a package effect without ablation",
+                "reflect-frontier/SKILL.md",
+                "A trustworthy whole-package improvement is a search asset even when individual contribution is unknown",
+                "A whole-package improvement is unusable until every component is attributed",
             ),
             (
-                "frontier-optimization/references/learning-loop.md",
-                "does not invalidate a valid package-level result or block another bounded reversible attempt",
-                "invalidates the package result and blocks another attempt",
+                "reflect-frontier/SKILL.md",
+                "Buy component diagnosis only when different answers would change the next parent, mutation, representation, evaluation, or allocation",
+                "Always diagnose every component before proposing another attempt",
             ),
             (
-                "frontier-optimization/references/campaign-cycle.md",
-                "An attribution limit is non-blocking unless the pending decision depends on distinguishing the internal explanations",
-                "An attribution limit always requires diagnosis before later work",
+                "reflect-frontier/SKILL.md",
+                "the cheapest direct observation that could test its promise",
+                "a comprehensive analysis that proves its mechanism",
             ),
             (
-                "frontier-optimization/references/campaign-state.md",
-                "",
-                "\n".join(f"- {field}: <duplicate>" for field in REFLECTION_FIELDS),
+                "frontier-optimization/references/closeout-and-claims.md",
+                "This is quality control, not a review",
+                "This is a mandatory approval review",
             ),
         )
         for relative, old, new in mutations:
@@ -299,9 +390,8 @@ class FrontierSkillBundleTests(unittest.TestCase):
                     )
                     path = root / relative
                     text = path.read_text()
-                    if old:
-                        self.assertIn(old, text)
-                    path.write_text(text.replace(old, new, 1) if old else text + new)
+                    self.assertIn(old, text)
+                    path.write_text(text.replace(old, new, 1))
                     self.assertNotEqual([], reflection_contract_findings(root))
 
     def test_direction_resolver_has_one_complete_total_order(self) -> None:

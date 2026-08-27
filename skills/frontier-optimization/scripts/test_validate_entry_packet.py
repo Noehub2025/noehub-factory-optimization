@@ -1310,6 +1310,7 @@ class EntryPacketSchemaTests(unittest.TestCase):
             "references/user-decisions.md",
             "references/user-facing-handoff.md",
             "scripts/evaluation_target_contract.py",
+            "scripts/engineering_check_plan.py",
             "scripts/frontier_provenance_cli.py",
             "scripts/frontier_review_cli.py",
             "scripts/run_workflow_checks.py",

@@ -1,7 +1,7 @@
 {
   "name": "noehub-factory-optimization",
-  "version": "0.19.0",
-  "description": "Task-agnostic Recursive Self-Improvement research with bounded iteration, consequence-specific result adoption, and Git-backed evidence.",
+  "version": "0.20.0",
+  "description": "Task-agnostic Recursive Self-Improvement research with bounded iteration, generation reflection, and Git-backed evidence.",
   "author": {
     "name": "Ken Chen"
   },
@@ -32,6 +32,7 @@
     "./skills/frontier-optimization",
     "./skills/design-implementation",
     "./skills/research-frontier",
+    "./skills/reflect-frontier",
     "./skills/grill-frontier",
     "./skills/run-frontier-batch",
     "./skills/review-frontier"

@@ -119,7 +119,7 @@ A final-closeout update releases or dispositions every reservation, reports unkn
 
 ## Selection
 
-For the Entry Selection, use the Entry gate before any B exists. A later Selection that chooses another B or reallocates investment waits until every previously selected B has a terminal outcome and controlling Outcome Reflection, every applicable E is covered, and every completed parallel set has a joined X. A paused `waiting_for_input` B remains selected and blocks that dependent investment choice.
+For the Entry Selection, use the Entry gate before any B exists. A later Selection that chooses another B or reallocates investment waits until every previously selected B has an adopted terminal outcome, every eligible E has a disposition, and every completed parallel set has a joined X. A paused `waiting_for_input` B remains selected and blocks that dependent investment choice.
 
 When current rules remove an obsolete procedural blocker or an adopted parent change affects the actual next decision of the same selected B, record the change through the existing X and append a bounded Selection update without first ending that B. Preserve its identity, authority, actual execution inputs, effects, cumulative consumption, and surviving scope. This update cannot select another B, reallocate investment, or broaden permission. If the actual next decision is unchanged, reuse the existing Selection and create no event. F3 names the same Primary and Parallel identifiers.
 
@@ -129,8 +129,7 @@ Selection:
 - Campaign generation: <positive integer>
 - Recovery lineage: <prior CLOSEOUT_COMPLETE, recovery V and X identities, reused objects and limits; or None for generation 1>
 - Project provenance: <decision root and adopting Entry or Replan identity; no workflow identity>
-- Evidence-state identity: <immutable identity of current parents, controlling terminal outcomes, E, reflections, Q, V, D, X, Budget, W, and reviews>
-- Outcome reflections applied: <every controlling reflection, or None before the first B>
+- Evidence-state identity: <immutable identity of current parents, adopted terminal outcomes, E dispositions, Q, V, D, X, Budget, W, and reviews>
 - Route-set state: <complete for this decision | incomplete | reopened, with Q, T, peer-source basis, shared assumptions, exclusions, deferrals, prerequisites, and reopening evidence>
 - Direction resolution: <local R8 | local diagnostic | focused Q | route-landscape Q | strategic replan | stop | halt | blocked, with the first applicable row from learning-loop.md, its persisted condition, and exact next action>
 - Affected scope: <candidate | route | campaign, with exact affected identities and evidence; or not applicable>
@@ -150,7 +149,7 @@ Selection:
 - Implementation review gate: <required review before first measurement, integration, or incumbent use; reusable prior review and exact unchanged identity; or not applicable>
 - User values applied: <V identifiers and effective conditions or None>
 - Decision-relevant unknowns: <answered, deferred with event, or blocking>
-- Diagnostic decision: <controlling Reflection or Entry, ordered alternatives, selected path, investment rationale and switching condition under the single Learning Loop resolver; or not applicable>
+- Diagnostic decision: <current adopted evidence or Entry, ordered alternatives, selected path, investment rationale and switching condition under the single Learning Loop resolver; or not applicable>
 - Research disposition: <none with reason | local diagnosis | focused Q | route landscape refresh | isolated prototype | parent review>
 - Strategic replan gate: <assigned review path requiring adopted REPLAN_READY, unchanged prior identity, or not applicable>
 - Adopted replan review: <unchanged REPLAN_READY identity whose reviewed proposal exactly matches this Selection and B state, or not applicable>
@@ -167,6 +166,6 @@ Selection:
 - Deferred: <identifiers, reasons, unresolved or unavailable prerequisite consequences, and observable reconsideration events>
 ```
 
-Selection applies the reviewed Entry evidence or latest controlling reflection; it does not reinterpret validity, technical learning, route eligibility, progress, constraint meaning, diagnostic alternatives, dominance, affected scope, or surviving authority to make a proposed B pass. `complete for this decision` supports the current allocation only and makes no exhaustive-search, originality, or optimality claim. A sole eligible route is sufficient when every material decision-relevant mechanism class is dispositioned. Apply [Research hypotheses and action prerequisites](planning-records.md#research-hypotheses-and-action-prerequisites) to the selected action, and record any [opportunity-led reopening](learning-loop.md#opportunity-led-reconsideration) in the existing route-set state.
+Selection applies reviewed Entry evidence or current adopted project evidence through the sole resolver; it does not strengthen validity, technical learning, route eligibility, progress, constraint meaning, diagnostic alternatives, dominance, affected scope, or surviving authority to make a proposed B pass. `complete for this decision` supports the current allocation only and makes no exhaustive-search, originality, or optimality claim. A sole eligible route is sufficient when every material decision-relevant mechanism class is dispositioned. Apply [Research hypotheses and action prerequisites](planning-records.md#research-hypotheses-and-action-prerequisites) to the selected action, and record any [opportunity-led reopening](learning-loop.md#opportunity-led-reconsideration) in the existing route-set state.
 
 One evidence-state identity has exactly one persisted first applicable resolver row and deterministic resolution. Reject a competing Selection for that identity. Later workflow changes never recompute it. A new resolver run requires a new project decision event and a new evidence-state identity. Copy the diagnostic ordering recorded under the Learning Loop resolver; do not introduce a separate uniqueness test here. Use Q only for the resolver's named evidence gap and V only for a genuine user-owned tradeoff or exact authorization. No later spend authority exists until Selection cites its applicable evidence and gates and those facts remain current. Routine row 13 adds no research, diagnosis, or review; routine work cannot consume protected reserve.

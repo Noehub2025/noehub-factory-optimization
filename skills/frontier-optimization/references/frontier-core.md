@@ -13,7 +13,7 @@ Load this file for every Frontier invocation. It defines authority, canonical pa
 
 ## Authority and upstream handoff
 
-`frontier-optimization` is the only Coordinator. It chooses campaign actions, assigns budget, adopts worker evidence, writes Outcome Reflections, changes retained results, stops or halts work, and adopts reviewed claim wording.
+`frontier-optimization` is the only Coordinator. It chooses campaign actions, assigns budget, adopts worker evidence, changes retained results, stops or halts work, and adopts reviewed claim wording. `reflect-frontier` exclusively writes the one Generation Reflection assigned during full closeout; that file creates no campaign decision or authority.
 
 The four workers answer one assigned research question, preserve one user decision, execute one B packet, or review one immutable snapshot. Worker output changes no campaign meaning until the Coordinator checks it and writes the result to the canonical record.
 
@@ -42,6 +42,7 @@ docs/skills/optimization/<task-slug>/
 │   ├── ledger.md
 │   ├── bounds.md
 │   ├── claims.md
+│   ├── reflections/
 │   ├── reviews/
 │   ├── work/<W identifier>/
 │   │   ├── WORK.md
@@ -55,7 +56,8 @@ docs/skills/optimization/<task-slug>/
 
 | Content | Canonical path |
 |---|---|
-| T, V, B, E, Q, X, Outcome Reflection, Selection, Budget | `frontier/ledger.md` |
+| T, V, B, E, Q, X, Selection, Budget | `frontier/ledger.md` |
+| Generation Reflection | `frontier/reflections/generation-<number>.md` |
 | D | `frontier/bounds.md` |
 | C, A | `frontier/claims.md` |
 | W | `frontier/work/<W identifier>/WORK.md` |
@@ -102,14 +104,14 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 - **Stop:** a precommitted ordinary F7 rule triggered; safely finish or interrupt affected work and route to closeout.
 - **Halt:** a demonstrated safety, legality, authority, access or accounting boundary pauses its dependent action. Full closeout follows only a campaign-wide ending condition or explicit user stop. A parent revision, unresolved local question or refuted hypothesis alone does not end the campaign.
 - **Parent revision:** a versioned change adopted by the existing parent owner. Its actual effect, not prior spend or the revision number, determines which future decisions need updating.
-- **Semantic parent challenge:** parent identities remain unchanged, but a latest controlling Outcome Reflection with resolved implementation, measurement, and comparison validity concludes that a parent-owned objective, Representation, Slot H measurement meaning, R8 rule, permitted scope, or claim ceiling is no longer suitable or reachable after disposing every execution-level measurement, implementation, and local-mechanism explanation. Refer the affected rule to its parent owner and pause only dependent work under Change impact.
+- **Semantic parent challenge:** parent identities remain unchanged, but current adopted evidence with resolved implementation, measurement, and comparison validity establishes that a parent-owned objective, Representation, Slot H measurement meaning, R8 rule, permitted scope, or claim ceiling is no longer suitable or reachable after disposing every execution-level measurement, implementation, and local-mechanism explanation. Refer the affected rule to its parent owner and pause only dependent work under Change impact.
 - **Project provenance:** one typed decision root, exact project content roots, parent roots, review attestation, authority, execution state, and outcomes. Workflow source, release, Skill, validator, worker interface, test, deployment location, and source-module roots are not campaign identities.
 - **Campaign generation:** one append-only Frontier campaign under the canonical task. Generation 1 is implied for legacy records without this field. A later generation never rewrites, reopens, or resets an earlier generation.
 - **Post-closeout recovery:** a new campaign generation opened after adopted complete closeout under an applicable continuing user grant or an explicit current user request. It inherits recorded consumption, applies the current authorized ceiling and creates only the records and gates required by the next actual action.
 
 ## Opportunity proposals
 
-A potentially better route outside the current parent scope is a proposal, not evidence that the parent is invalid. Preserve it in the existing Q recommendation, `R&D implication`, or user-facing handoff for the owning parent stage. State the suggested change, its mechanism basis, and the decision it could improve; use the ordinary return without new project status or artifacts. The suggestion alone does not revoke current authority or end the campaign. Continue otherwise-selected in-scope work when its existing conditions allow it.
+A potentially better route outside the current parent scope is a proposal, not evidence that the parent is invalid. Preserve it in the existing Q recommendation or user-facing handoff; the Generation Reflection later consolidates surviving opportunities for the next Entry. State the suggested change, its mechanism basis, and the decision it could improve without creating a new project status. The suggestion alone does not revoke current authority or end the campaign. Continue otherwise-selected in-scope work when its existing conditions allow it.
 
 Actual parent adoption and out-of-scope work retain their existing owner, binding, and authorization rules. Within parent scope, apply [Opportunity-led reconsideration](learning-loop.md#opportunity-led-reconsideration). A demonstrated semantic parent challenge still uses the recorded-state router below; a proposal does not supply that finding.
 
@@ -138,7 +140,7 @@ If no row matches, record `BLOCKED` with the conflicting fields and return.
 
 A finished claim review always ends with an A disposition, including `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED`, and `BLOCKED`; only exact supported or reviewer-supplied downgraded wording receives external-use permission. If the request is withdrawn before review finishes, append X with `Disposition: withdrawn`. Either record resolves that C for routing, but neither a nonauthorizing A nor X authorizes wording. Record `CLAIM_REVIEW_COMPLETE`, preserve claim-only `campaign_status`, and return to Cycle when no other stop, halt, parent conflict, or unresolved C applies. Do not leave a completed or withdrawn claim branch without one of these terminal dispositions.
 
-Treat a return token as adopted only when `log.md` cites its reason and required identities. Before first spend, revise `FIRST_BATCH_PLANNED` only when its actual decision or a relied-on conclusion changes; use Entry's difference-focused repair review for the affected decision. A strategic allocation requires unchanged `REPLAN_READY`; a code design requires unchanged `DESIGN_READY`; candidate measurement, integration, or incumbent use requires unchanged `IMPLEMENTATION_READY`. Every later spend requires complete Outcome Reflection coverage, applicable adopted Q and V records, a joined X for dependent parallel work, and a latest authoritative Selection with one persisted `Direction resolution` created by the [Integrated direction resolver](learning-loop.md#integrated-direction-resolver). Reuse its persisted resolution while its decision-relevant facts and permitted consequence remain applicable. A changed decision-relevant fact or removal of an obsolete procedural blocker creates the next decision event and resolution through the same resolver; an update with no decision effect does not rerun it. A candidate- or route-scope disposition blocks only work outside its recorded surviving authority. A campaign-scope stop or halt remains unresolved until affected started B records reconcile spend, artifacts, W state, and required Outcome Reflection.
+Treat a return token as adopted only when `log.md` cites its reason and required identities. Before first spend, revise `FIRST_BATCH_PLANNED` only when its actual decision or a relied-on conclusion changes; use Entry's difference-focused repair review for the affected decision. A strategic allocation requires unchanged `REPLAN_READY`; a code design requires unchanged `DESIGN_READY`; candidate measurement, integration, or incumbent use requires unchanged `IMPLEMENTATION_READY`. Every later spend requires adopted terminal outcomes and eligible E dispositions, applicable Q and V records, a joined X for dependent parallel work, and a latest authoritative Selection with one persisted `Direction resolution` created by the [Integrated direction resolver](learning-loop.md#integrated-direction-resolver). Reuse its persisted resolution while its decision-relevant facts and permitted consequence remain applicable. A changed decision-relevant fact or removal of an obsolete procedural blocker creates the next decision event and resolution through the same resolver; an update with no decision effect does not rerun it. A candidate- or route-scope disposition blocks only work outside its recorded surviving authority. A campaign-scope stop or halt enters full closeout after affected started B records reconcile spend, artifacts, W state, and terminal evidence; Generation Reflection then runs once before `CLOSEOUT_COMPLETE`.
 
 An unresolved or unaffordable validity, implementation, or local-mechanism diagnostic is not a semantic parent challenge. It follows the resolver's Budget, validity, or exact-blocker row. A valid semantic parent challenge pauses dependent allocation and refers that rule to its owner through Change impact; it does not force closeout or pause unrelated permitted work.
 

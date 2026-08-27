@@ -42,7 +42,8 @@ For a changed parent or retained result, apply [Change impact](references/fronti
 | Review Entry, design, implementation or claims | [Review branch](references/review-branches.md) |
 | Dispatch or continue B | [Batch interface](references/batch-interface.md) |
 | Validate or adopt a terminal result | [Batch result](references/batch-result.md), [Result adoption](references/result-adoption.md) |
-| Interpret evidence or select the next investment | [Reflection analysis](references/reflection-analysis.md) when it has technical meaning, then [Learning loop](references/learning-loop.md) |
+| Select the next investment from adopted evidence | [Learning loop](references/learning-loop.md) |
+| Close one technical campaign generation | [Closeout and claims](references/closeout-and-claims.md), then `reflect-frontier` at its closeout trigger |
 | Prepare a selected strategic replan | [Replan review](references/replan-review.md) |
 | Interpret a finding | [Finding effects](references/finding-effects.md) |
 
@@ -53,6 +54,7 @@ Create the assignment with fixed purpose, project parents, allowed writes, limit
 - `research-frontier`: one bounded evidence question.
 - `grill-frontier`: one unresolved user-owned decision.
 - `design-implementation`: professional design in a fresh context.
+- `reflect-frontier`: one Generation Reflection after technical closeout reconciliation.
 - `run-frontier-batch`: the selected B.
 - `review-frontier`: the selected independent review.
 
@@ -60,6 +62,6 @@ The designer writes professional concerns, not lifecycle records or executable o
 
 Adopt a worker result only after its assignment and evidence match. Preserve the specialist's professional meaning; send an actual defect to its owner rather than silently rewriting it. A draft preparation failure remains editable work, not a new review or recovery chain.
 
-Use the [Batch continuation rule](references/batch-interface.md#boundary-preserving-continuation) for working changes and repairs. Use the [single resolver](references/learning-loop.md#integrated-direction-resolver) for direction; its controlling Reflection precedes later investment. Neither worker output nor a technical review chooses another route or grants a new user permission.
+Use the [Batch continuation rule](references/batch-interface.md#boundary-preserving-continuation) for working changes and repairs. Use the [single resolver](references/learning-loop.md#integrated-direction-resolver) for direction directly from adopted current evidence. Generation Reflection improves the next generation's search after closeout; it does not choose a route or grant permission. Neither worker output nor a technical review chooses another route or grants a new user permission.
 
 Completion means the persisted outcome supports the report and the user-facing return explains progress and legal next actions. The task's objective, budget, access and actual consequences determine continuation, not the number of artifacts produced.

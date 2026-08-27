@@ -10,7 +10,7 @@ Return exactly `CLAIMS_SUPPORTED`, `CLAIMS_DOWNGRADED`, `EVIDENCE_REQUIRED`, `PA
 
 ## Packet
 
-Supply the canonical task path; project-snapshot manifest and identity; exact C identifiers, wording, and intended use; current parent bindings and Frontier scope; `FRONTIER.md`; cited Outcome Reflections and replans; Q/E/D/X and earlier applicable A records; cited W and B; design-review and authorization lineage; candidate manifests and implementation reviews; engineering and measurement evidence; exact F8 and R8 sources; applicable Slots D, E, and H; module contracts; search-state dispositions; and one exclusive review path. Every cited project input must appear in the snapshot manifest and remain immutable during review.
+Supply the canonical task path; project-snapshot manifest and identity; exact C identifiers, wording, and intended use; current parent bindings and Frontier scope; `FRONTIER.md`; cited Generation Reflections or legacy Outcome Reflections and replans; Q/E/D/X and earlier applicable A records; cited W and B; design-review and authorization lineage; candidate manifests and implementation reviews; engineering and measurement evidence; exact F8 and R8 sources; applicable Slots D, E, and H; module contracts; search-state dispositions; and one exclusive review path. Every cited project input must appear in the snapshot manifest and remain immutable during review.
 
 ```yaml
 review_kind: claims

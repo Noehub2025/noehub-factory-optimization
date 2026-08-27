@@ -1,6 +1,6 @@
 # Frontier Evidence Records
 
-Load only when writing a bound/reference D or disposition X. Outcome Reflection has its own action file.
+Load only when writing a bound/reference D or disposition X. Generation Reflection is a closeout worker output, not an evidence-record branch.
 
 ## D: reference, conjecture, or bound
 

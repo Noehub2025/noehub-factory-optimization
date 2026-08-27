@@ -236,10 +236,10 @@ acceptance_scenarios:
   - {number: 22, name: No credible alternative, target: {kind: resolver-fixture, id: evidence-determines-stop}}
   - {number: 23, name: Positive but unreachable, target: {kind: resolver-fixture, id: positive-but-unreachable}}
   - {number: 24, name: Parallel results, target: {kind: resolver-fixture, id: coverage-gap-dominates-budget}}
-  - {number: 25, name: One-shot work, target: {kind: contract-assertion, path: references/learning-loop.md, marker: For one-shot work}}
+  - {number: 25, name: One-shot work, target: {kind: contract-assertion, path: references/campaign-cycle.md, marker: One-shot, administrative, or implementation-only work has no cross-B performance meaning}}
   - {number: 26, name: Qualitative iterative route, target: {kind: contract-assertion, path: references/planning-records.md, marker: mechanism checkpoint}}
   - {number: 27, name: Post-hoc rule, target: {kind: contract-assertion, path: references/learning-loop.md, marker: prospective}}
-  - {number: 28, name: Semantic conflict, target: {kind: contract-assertion, path: references/campaign-state.md, marker: Selection applies the reviewed Entry evidence or latest controlling reflection}}
+  - {number: 28, name: Semantic conflict, target: {kind: contract-assertion, path: references/campaign-state.md, marker: Selection applies reviewed Entry evidence or current adopted project evidence through the sole resolver}}
   - {number: 29, name: Compaction recovery, target: {kind: regression-test, path: scripts/test_frontier_provenance.py, test: test_complete_handoff_references_git_and_retained_legacy_roots}}
   - {number: 30, name: Claims boundary, target: {kind: contract-assertion, path: references/closeout-and-claims.md, marker: local optimum}}
   - {number: 31, name: Mid-campaign workflow update, target: {kind: contract-assertion, path: references/frontier-core.md, marker: 'Apply current workflow rules to its next decision'}}

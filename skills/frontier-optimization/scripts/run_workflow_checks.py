@@ -59,7 +59,7 @@ FRAME_SKILLS = {
     "review-representation",
 }
 DESIGN_SKILLS = {"design-implementation"}
-DIRECTION_SKILLS = {"research-frontier", "grill-frontier"}
+DIRECTION_SKILLS = {"research-frontier", "grill-frontier", "reflect-frontier"}
 
 DIRECTION_REFERENCES = {
     "campaign-cycle.md",
@@ -67,8 +67,6 @@ DIRECTION_REFERENCES = {
     "entry-and-planning.md",
     "learning-loop.md",
     "planning-records.md",
-    "reflection-analysis.md",
-    "reflection-calibration.md",
 }
 ENTRY_REFERENCES = {
     "entry-code-planning.md",

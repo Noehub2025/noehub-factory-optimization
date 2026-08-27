@@ -34,6 +34,7 @@ EXPECTED_SKILLS = {
     "review-optimization": True,
     "review-representation": True,
     "frontier-optimization": False,
+    "reflect-frontier": True,
     "research-frontier": True,
     "grill-frontier": True,
     "run-frontier-batch": True,
@@ -41,6 +42,7 @@ EXPECTED_SKILLS = {
 }
 REQUIRED_COORDINATOR_SCRIPTS = {
     "authorization_target_contract.py",
+    "engineering_check_plan.py",
     "freeze_execution_baseline.py",
     "finding_effects.py",
     "identity_bindings.py",

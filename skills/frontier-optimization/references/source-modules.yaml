@@ -16,6 +16,9 @@ modules:
     depends_on: [graph-core]
     files:
       - frontier-optimization/references/review-snapshots.md
+      - frontier-optimization/scripts/engineering_check_plan.py
+      - frontier-optimization/scripts/validate_candidate_package.py
+      - frontier-optimization/scripts/identity_bindings.py
       - frontier-optimization/scripts/frontier_provenance/__init__.py
       - frontier-optimization/scripts/frontier_provenance/content.py
       - frontier-optimization/scripts/frontier_provenance/facade.py
@@ -44,8 +47,8 @@ modules:
       - frontier-optimization/references/entry-review.md
       - frontier-optimization/references/learning-loop.md
       - frontier-optimization/references/planning-records.md
-      - frontier-optimization/references/reflection-analysis.md
-      - frontier-optimization/references/reflection-calibration.md
+      - reflect-frontier/SKILL.md
+      - reflect-frontier/agents/openai.yaml
       - design-implementation/SKILL.md
       - design-implementation/agents/openai.yaml
       - grill-frontier/SKILL.md
@@ -84,7 +87,6 @@ modules:
       - frontier-optimization/scripts/frontier_provenance/compatibility.py
       - frontier-optimization/scripts/authorization_target_contract.py
       - frontier-optimization/scripts/freeze_execution_baseline.py
-      - frontier-optimization/scripts/identity_bindings.py
       - frontier-optimization/scripts/package_frontier_handoff.py
       - frontier-optimization/scripts/post_adoption_state.py
       - frontier-optimization/scripts/project_snapshot.py

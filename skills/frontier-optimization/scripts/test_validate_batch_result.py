@@ -551,6 +551,213 @@ def current_project_result(packet: dict | None = None) -> dict:
     return result
 
 
+def current_engineering_evidence_fixture(root: Path) -> tuple[dict, dict]:
+    """Create one valid current external-plan evidence chain."""
+
+    plan_path = root / "entry/engineering-checks.yaml"
+    plan_path.parent.mkdir(parents=True)
+    plan_document = {
+        "contract_version": "frontier-project-engineering-check-plan/1",
+        "batch_id": "B900",
+        "consequence": "engineering evidence only",
+        "limits": {
+            "cumulative_local_wall_seconds": 60,
+            "per_command_timeout_seconds": 30,
+            "processes": 1,
+            "new_output_bytes": 4096,
+            "proposal_attempts": 1,
+            "development_schedules": 0,
+            "evaluator_runs": 0,
+            "games": 0,
+            "sealed_inputs": 0,
+            "paid_actions": 0,
+        },
+        "formal_units": [{"id": "focused-check", "argv": ["tool", "check"]}],
+    }
+    plan_path.write_text(yaml.safe_dump(plan_document, sort_keys=False))
+    packet = {
+        "batch_id": "B900",
+        "engineering_check_plan": "entry/engineering-checks.yaml",
+        "candidate_root_path": "candidates/B900",
+        "candidate_package_inventory_path": "output/inventory.yaml",
+        "candidate_manifest_path": "output/manifest.yaml",
+        "execution_frozen_inputs": [
+            {
+                "path": "entry/engineering-checks.yaml",
+                "scope": "file",
+                "identity": "sha256:" + file_sha256(plan_path),
+            }
+        ],
+    }
+
+    evidence_path = root / "evidence/output.txt"
+    evidence_path.parent.mkdir(parents=True)
+    evidence_path.write_text("passed\n")
+    argv = ["tool", "check"]
+    argv_digest = MODULE.command_sha256(argv)
+    log_path = root / "evidence/check.json"
+    log_path.write_text(
+        json.dumps(
+            {
+                "argv": argv,
+                "argv_sha256": argv_digest,
+                "elapsed_seconds": 1.5,
+                "exit_status": 0,
+                "timed_out": False,
+            }
+        )
+    )
+    transient_root = root / "working/candidate"
+    transient_root.mkdir(parents=True)
+    (transient_root / "main.py").write_text(
+        "def agent(observation, configuration):\n    return {}\n"
+    )
+    _, package_identity = PACKAGE.tree_inventory(
+        transient_root, PACKAGE.PACKAGE_PATH_SIZE_SHA256_V1
+    )
+    candidate_id = "B900-candidate-sha256:" + package_identity.removeprefix("sha256:")
+    inventory_path = root / "evidence/submitted-inventory.yaml"
+    inventory = PACKAGE.write_candidate_inventory(
+        root,
+        "working/candidate",
+        "evidence/submitted-inventory.yaml",
+        candidate_id,
+    )
+    inventory_id = inventory["inventory_id"]
+    inventory_digest = inventory["inventory_sha256"]
+    proposal_path = root / "evidence/proposal.yaml"
+    proposal_path.write_text(
+        yaml.safe_dump(
+            {
+                "contract_version": "frontier-project-formal-proposal/1",
+                "batch_id": "B900",
+                "proposal_identity": candidate_id,
+                "package_inventory": {
+                    "path": "evidence/submitted-inventory.yaml",
+                    "inventory_id": inventory_id,
+                    "file_sha256": inventory_digest,
+                },
+            },
+            sort_keys=False,
+        )
+    )
+    report_path = root / "evidence/report.json"
+    report = {
+        "contract_version": "frontier-engineering-check-report/1",
+        "batch_id": "B900",
+        "snapshot_id": "sha256:" + inventory_digest,
+        "candidate_id": candidate_id,
+        "inventory_id": inventory_id,
+        "proposal": {
+            "path": "evidence/proposal.yaml",
+            "file_sha256": file_sha256(proposal_path),
+            "proposal_attempts_incurred": 1,
+        },
+        "checks": [
+            {
+                "id": "focused-check",
+                "argv_sha256": argv_digest,
+                "result": "pass",
+                "exit_status": 0,
+                "log": "evidence/check.json",
+                "log_sha256": file_sha256(log_path),
+                "evidence": [
+                    {"path": "evidence/output.txt", "file_sha256": file_sha256(evidence_path)}
+                ],
+            }
+        ],
+        "ordered_checks_complete": True,
+        "all_pass": True,
+        "formal_command_elapsed_seconds": 1.5,
+        "resource_accounting": {
+            "proposal_attempts": 1,
+            "development_schedules": 0,
+            "evaluator_runs": 0,
+            "games": 0,
+            "sealed_inputs": 0,
+            "paid_actions": 0,
+            "processes_concurrent": 1,
+            "execution_seconds_limit": 60,
+            "output_bytes_limit": 4096,
+        },
+        "official_candidate_created": False,
+        "publication_state": "prepublication",
+    }
+    report_path.write_text(json.dumps(report))
+    observation_path = root / "evidence/resources.yaml"
+    observation = {
+        "contract_version": "frontier-project-local-resource-observation/1",
+        "batch_id": "B900",
+        "release_to_observation_elapsed_seconds": 2.0,
+        "formal_command_elapsed_seconds": 1.5,
+        "payload_observed_before_this_receipt": {"bytes": 512},
+        "processes_concurrent_maximum": 1,
+        "development_schedules": 0,
+        "evaluator_runs": 0,
+        "games": 0,
+        "sealed_inputs": 0,
+        "paid_actions": 0,
+        "within_limits": True,
+    }
+    observation_path.write_text(yaml.safe_dump(observation, sort_keys=False))
+    result = {
+        "candidate_identity": candidate_id,
+        "candidate_manifest": None,
+        "engineering_validation": [
+            {
+                "contract_version": "frontier-engineering-check-report/1",
+                "path": "evidence/report.json",
+                "file_sha256": file_sha256(report_path),
+            },
+            {
+                "contract_version": "frontier-project-local-resource-observation/1",
+                "path": "evidence/resources.yaml",
+                "file_sha256": file_sha256(observation_path),
+            },
+        ],
+    }
+    return packet, result
+
+
+def attach_official_inventory_and_manifest(
+    root: Path, packet: dict, result: dict
+) -> tuple[dict, Path]:
+    """Publish an identical candidate under a distinct root and bind its inventory."""
+
+    transient_root = root / "working/candidate"
+    official_root = root / packet["candidate_root_path"]
+    official_root.mkdir(parents=True)
+    for source in transient_root.iterdir():
+        (official_root / source.name).write_bytes(source.read_bytes())
+
+    official_inventory = PACKAGE.write_candidate_inventory(
+        root,
+        packet["candidate_root_path"],
+        packet["candidate_package_inventory_path"],
+        result["candidate_identity"],
+    )
+    report_binding = result["engineering_validation"][0]
+    manifest = {
+        "candidate_id": result["candidate_identity"],
+        "engineering_evidence": [
+            {
+                "path": report_binding["path"],
+                "file_sha256": report_binding["file_sha256"],
+            }
+        ],
+        "package_inventory": {
+            "path": packet["candidate_package_inventory_path"],
+            "inventory_id": official_inventory["inventory_id"],
+            "file_sha256": official_inventory["inventory_sha256"],
+        },
+    }
+    manifest_path = root / packet["candidate_manifest_path"]
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(yaml.safe_dump(manifest, sort_keys=False))
+    result["candidate_manifest"] = packet["candidate_manifest_path"]
+    return official_inventory, official_root
+
+
 def formal_evaluation_target() -> dict:
     return {
         "mode": "formal-slot-h",
@@ -1049,6 +1256,159 @@ def post_check_publication_workspace(root: Path) -> tuple[dict, dict, Path]:
 
 
 class BatchResultValidationTests(unittest.TestCase):
+    def test_current_external_engineering_evidence_passes_without_legacy_composition(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result = current_engineering_evidence_fixture(root)
+            self.assertEqual(MODULE.validate_current_evidence(result, packet, root), [])
+
+    def test_current_engineering_evidence_accepts_identical_bytes_at_official_root(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result = current_engineering_evidence_fixture(root)
+            transient_inventory = yaml.safe_load(
+                (root / "evidence/submitted-inventory.yaml").read_text()
+            )
+            official_inventory, _ = attach_official_inventory_and_manifest(
+                root, packet, result
+            )
+
+            self.assertNotEqual(
+                transient_inventory["candidate_root"], official_inventory["candidate_root"]
+            )
+            self.assertNotEqual(
+                transient_inventory["inventory_id"], official_inventory["inventory_id"]
+            )
+            self.assertEqual(
+                MODULE.validate_current_evidence(result, packet, root), []
+            )
+
+    def test_current_engineering_evidence_rejects_official_byte_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result = current_engineering_evidence_fixture(root)
+            _, official_root = attach_official_inventory_and_manifest(root, packet, result)
+            (official_root / "main.py").write_text("def agent(*args):\n    return {'drift': True}\n")
+
+            errors = MODULE.validate_current_evidence(result, packet, root)
+            self.assertTrue(any("official inventory is invalid" in item for item in errors), errors)
+
+    def test_current_engineering_evidence_rejects_submitted_byte_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result = current_engineering_evidence_fixture(root)
+            attach_official_inventory_and_manifest(root, packet, result)
+            (root / "working/candidate/main.py").write_text(
+                "def agent(*args):\n    return {'drift': True}\n"
+            )
+
+            errors = MODULE.validate_current_evidence(result, packet, root)
+            self.assertTrue(any("submitted inventory is invalid" in item for item in errors), errors)
+
+    def test_current_engineering_evidence_rejects_official_root_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result = current_engineering_evidence_fixture(root)
+            attach_official_inventory_and_manifest(root, packet, result)
+            packet["candidate_root_path"] = "candidates/different-root"
+
+            errors = MODULE.validate_current_evidence(result, packet, root)
+            self.assertTrue(any("batch plan candidate_root_path" in item for item in errors), errors)
+
+    def test_current_engineering_evidence_rejects_alternate_official_inventory_path(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result = current_engineering_evidence_fixture(root)
+            _, _ = attach_official_inventory_and_manifest(root, packet, result)
+            manifest_path = root / packet["candidate_manifest_path"]
+            manifest = yaml.safe_load(manifest_path.read_text())
+            alternate_path = root / "output/alternate-inventory.yaml"
+            alternate_path.write_bytes(
+                (root / packet["candidate_package_inventory_path"]).read_bytes()
+            )
+            manifest["package_inventory"]["path"] = "output/alternate-inventory.yaml"
+            manifest_path.write_text(yaml.safe_dump(manifest, sort_keys=False))
+
+            errors = MODULE.validate_current_evidence(result, packet, root)
+            self.assertTrue(
+                any("candidate_package_inventory_path" in item for item in errors), errors
+            )
+
+    def test_current_engineering_evidence_rejects_nonfinite_plan_limits(self) -> None:
+        for nonfinite in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(nonfinite=nonfinite), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                packet, result = current_engineering_evidence_fixture(root)
+                plan_path = root / packet["engineering_check_plan"]
+                plan = yaml.safe_load(plan_path.read_text())
+                plan["limits"]["per_command_timeout_seconds"] = nonfinite
+                plan_path.write_text(yaml.safe_dump(plan, sort_keys=False))
+                packet["execution_frozen_inputs"][0]["identity"] = (
+                    "sha256:" + file_sha256(plan_path)
+                )
+
+                errors = MODULE.validate_current_evidence(result, packet, root)
+                self.assertTrue(any("per_command_timeout_seconds" in item for item in errors), errors)
+
+    def test_current_engineering_evidence_rejects_nonfinite_resource_observations(self) -> None:
+        for nonfinite in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(nonfinite=nonfinite), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                packet, result = current_engineering_evidence_fixture(root)
+                binding = result["engineering_validation"][1]
+                observation_path = root / binding["path"]
+                observation = yaml.safe_load(observation_path.read_text())
+                observation["release_to_observation_elapsed_seconds"] = nonfinite
+                observation_path.write_text(yaml.safe_dump(observation, sort_keys=False))
+                binding["file_sha256"] = file_sha256(observation_path)
+
+                errors = MODULE.validate_current_evidence(result, packet, root)
+                self.assertTrue(
+                    any("cumulative_local_wall_seconds" in item for item in errors), errors
+                )
+
+    def test_result_validator_routes_external_plan_to_current_evidence_arm(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result = current_engineering_evidence_fixture(root)
+            packet["candidate_package_inventory_path"] = "output/inventory.yaml"
+            result.update(
+                {
+                    "changes_executable_candidate": True,
+                    "materialization_state": "materialized-stopped",
+                }
+            )
+            findings: list[dict[str, str]] = []
+            MODULE.validate_prepublication_engineering_evidence(
+                result, packet, root, findings
+            )
+            self.assertEqual(findings, [])
+
+    def test_current_external_engineering_evidence_rejects_plan_report_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result = current_engineering_evidence_fixture(root)
+            report_path = root / result["engineering_validation"][0]["path"]
+            report = json.loads(report_path.read_text())
+            report["checks"][0]["id"] = "different-check"
+            report_path.write_text(json.dumps(report))
+            result["engineering_validation"][0]["file_sha256"] = file_sha256(report_path)
+            errors = MODULE.validate_current_evidence(result, packet, root)
+            self.assertTrue(any("frozen order" in item for item in errors), errors)
+
+    def test_current_external_engineering_evidence_rejects_resource_overrun(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result = current_engineering_evidence_fixture(root)
+            binding = result["engineering_validation"][1]
+            observation_path = root / binding["path"]
+            observation = yaml.safe_load(observation_path.read_text())
+            observation["payload_observed_before_this_receipt"]["bytes"] = 4097
+            observation_path.write_text(yaml.safe_dump(observation, sort_keys=False))
+            binding["file_sha256"] = file_sha256(observation_path)
+            errors = MODULE.validate_current_evidence(result, packet, root)
+            self.assertTrue(any("new_output_bytes" in item for item in errors), errors)
+
     def test_current_spend_record_accepts_consumption_without_publication(self) -> None:
         for work_kind, outcome, actual in (
             ("mixed", "failed", "1 proposal attempt; 2 local runs"),
@@ -2087,6 +2447,137 @@ class BatchResultValidationTests(unittest.TestCase):
                     packet=packet,
                     state=state,
                     baseline_raw=extra_baseline,
+                    repo_root=root,
+                )
+
+    def test_current_project_frozen_inputs_append_exact_authorized_sealed_runtime_input(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            public = root / "project/public.txt"
+            second_public = root / "project/second-public.txt"
+            sealed = root / "project/sealed.json"
+            public.parent.mkdir(parents=True)
+            public.write_bytes(b"public input\n")
+            second_public.write_bytes(b"second public input\n")
+            sealed.write_bytes(b"sealed input\n")
+            public_entry = {
+                "path": public.relative_to(root).as_posix(),
+                "scope": "file",
+                "identity": "sha256:" + hashlib.sha256(public.read_bytes()).hexdigest(),
+            }
+            second_public_entry = {
+                "path": second_public.relative_to(root).as_posix(),
+                "scope": "file",
+                "identity": "sha256:"
+                + hashlib.sha256(second_public.read_bytes()).hexdigest(),
+            }
+            sealed_entry = {
+                "path": sealed.relative_to(root).as_posix(),
+                "scope": "file",
+                "identity": "sha256:" + hashlib.sha256(sealed.read_bytes()).hexdigest(),
+            }
+            sealed_binding = {
+                "path": sealed_entry["path"],
+                "disclosed_sha256": sealed_entry["identity"].removeprefix("sha256:"),
+                "access_before_exact_authorization": "forbidden",
+                "entry_subject_membership": "forbidden",
+                "execution_binding": "Bind the exact bytes after authorization.",
+            }
+            packet = {
+                "execution_frozen_inputs": [public_entry, second_public_entry],
+                "sealed_runtime_input": sealed_binding,
+            }
+            state = {
+                "execution_frozen_inputs": [
+                    copy.deepcopy(public_entry),
+                    copy.deepcopy(sealed_entry),
+                    copy.deepcopy(second_public_entry),
+                ]
+            }
+            baseline = {
+                "project/state/frozen-inputs/" + public_entry["path"]: public.read_bytes(),
+                "project/state/frozen-inputs/" + second_public_entry["path"]:
+                second_public.read_bytes(),
+                "project/state/frozen-inputs/" + sealed_entry["path"]: sealed.read_bytes(),
+            }
+
+            MODULE.verify_current_execution_frozen_inputs(
+                packet=packet,
+                state=state,
+                baseline_raw=baseline,
+                repo_root=root,
+            )
+
+            invalid_states = {
+                "missing sealed input": [
+                    copy.deepcopy(public_entry),
+                    copy.deepcopy(second_public_entry),
+                ],
+                "reordered public inputs": [
+                    copy.deepcopy(second_public_entry),
+                    copy.deepcopy(sealed_entry),
+                    copy.deepcopy(public_entry),
+                ],
+                "wrong sealed digest": [
+                    copy.deepcopy(public_entry),
+                    {**sealed_entry, "identity": "sha256:" + "0" * 64},
+                    copy.deepcopy(second_public_entry),
+                ],
+                "extra input": [
+                    copy.deepcopy(public_entry),
+                    copy.deepcopy(sealed_entry),
+                    copy.deepcopy(second_public_entry),
+                    {"path": "project/extra.txt", "scope": "file", "identity": "sha256:" + "0" * 64},
+                ],
+            }
+            for label, entries in invalid_states.items():
+                with self.subTest(label=label), self.assertRaisesRegex(
+                    ValueError, "complete frozen-input list"
+                ):
+                    MODULE.verify_current_execution_frozen_inputs(
+                        packet=packet,
+                        state={"execution_frozen_inputs": entries},
+                        baseline_raw=baseline,
+                        repo_root=root,
+                    )
+
+            invalid_bindings = {
+                "missing field": {
+                    key: value
+                    for key, value in sealed_binding.items()
+                    if key != "execution_binding"
+                },
+                "extra field": {**sealed_binding, "unexpected": True},
+                "pre-authorized access": {
+                    **sealed_binding,
+                    "access_before_exact_authorization": "permitted",
+                },
+                "entry membership": {
+                    **sealed_binding,
+                    "entry_subject_membership": "permitted",
+                },
+            }
+            for label, binding in invalid_bindings.items():
+                with self.subTest(label=label), self.assertRaisesRegex(
+                    ValueError, "incomplete or invalid binding"
+                ):
+                    MODULE.verify_current_execution_frozen_inputs(
+                        packet={
+                            "execution_frozen_inputs": [public_entry, second_public_entry],
+                            "sealed_runtime_input": binding,
+                        },
+                        state=state,
+                        baseline_raw=baseline,
+                        repo_root=root,
+                    )
+
+            duplicate_packet = copy.deepcopy(packet)
+            duplicate_packet["execution_frozen_inputs"].append(copy.deepcopy(sealed_entry))
+            with self.assertRaisesRegex(ValueError, "separate from pre-authorization"):
+                MODULE.verify_current_execution_frozen_inputs(
+                    packet=duplicate_packet,
+                    state=state,
+                    baseline_raw=baseline,
                     repo_root=root,
                 )
 
