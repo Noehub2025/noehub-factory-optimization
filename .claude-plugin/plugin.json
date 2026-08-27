@@ -1,7 +1,7 @@
 {
   "name": "noehub-factory-optimization",
-  "version": "0.18.0",
-  "description": "Task-agnostic optimization research with bounded iteration, prepublication review, Git-backed project evidence, and retained artifact handoffs.",
+  "version": "0.19.0",
+  "description": "Task-agnostic Recursive Self-Improvement research with bounded iteration, consequence-specific result adoption, and Git-backed evidence.",
   "author": {
     "name": "Ken Chen"
   },

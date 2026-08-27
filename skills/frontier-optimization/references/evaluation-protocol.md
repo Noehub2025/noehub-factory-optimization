@@ -6,7 +6,7 @@ Load this reference only when Entry may authorize code materialization followed 
 
 | Mode | When it runs | Maximum consequence |
 |---|---|---|
-| `diagnostic-only` | A low-risk local probe before implementation review under the existing diagnostic exception | B evidence only |
+| `diagnostic-only` | A bounded observation of unpublished working material inside its existing B, or the exact separate-B historical-candidate exception | B evidence only |
 | `routine-local` | The one pre-authorized screen of the unique final candidate after a finding-free implementation review | B evidence only |
 | `formal-slot-h` | Independent evaluation under the current Slot H contract | The exact reviewed Slot H consequence |
 
@@ -90,6 +90,6 @@ When measurement completes, the single routine result item contains only measure
 
 ## Version support and cutover
 
-The exact historical combination `frontier-review-subject/1`, `frontier-review-role-adapter/1`, `frontier-project-batch-plan/2`, and `frontier-batch-result/1` remains readable only for audit. Current writing and runtime use subject `/2`, role adapter `/2`, plan `/3`, evaluation target `/2`, and result `/2`. Reject historical or mixed combinations from current review, authority, execution, and result adoption.
+The exact historical combination `frontier-review-subject/1`, `frontier-review-role-adapter/1`, `frontier-project-batch-plan/2`, and `frontier-batch-result/1` remains readable only for audit. Current writing and runtime use subject `/2`, role adapter `/2`, plan `/3`, evaluation target `/2`, and result `/2`. Historical audit readability does not make an old or mixed combination eligible for a new current review, authority, execution, or result adoption.
 
-Install the current runtime only when no active authority or execution still depends on an older contract. Preserve historical bytes and identities. Close an old unexecuted Entry and rebuild it under current contracts; never reinterpret an old implementation review as current readiness.
+Apply current workflow rules to the next affected action under [Change impact and retained results](frontier-core.md#change-impact-and-retained-results). Installing or updating the runtime does not require ending unaffected active chains. When the next action genuinely needs a current contract that its retained object cannot supply, preserve the old object and prepare only that affected current decision under applicable permission. Do not reinterpret an old implementation review as current readiness or build a general migration layer.

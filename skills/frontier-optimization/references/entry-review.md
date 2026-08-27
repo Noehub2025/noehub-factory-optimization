@@ -47,15 +47,16 @@ state, persisted resolver result, affected scope, surviving authority, B plan, a
 needed for review. It contains no workflow source binding, semantic-rule version,
 validator or worker identity, deployment path, installation time, or release
 locator. The review report is separate `review-report` content and the
-attestation payload contains no validator identity. A later-spend check validates
-the persisted Selection and cited project facts; it never reruns the resolver
-under a later workflow.
+attestation payload contains no validator identity. For an unchanged evidence state,
+a later-spend check validates the persisted Selection and cited project facts and
+does not rerun the resolver. A real next-decision change follows Frontier Core's
+existing X/Selection path; it does not rewrite this Entry or its attestation.
 
 Current Entry uses `frontier-project-batch-plan/3`. When that plan contains a `frontier-routine-follow-up/1`, the same complete subject must also contain the exact protocol, current calibration, single-use slot, scientific question, experiment template, ceilings, Budget boundary, and prohibitions defined by [Evaluation protocol reuse](evaluation-protocol.md). The review authorizes only the materialization and that conditional screen. The screen is admitted later from derived candidate and implementation-review evidence; it does not require another Entry, review, V, or authority.
 
 Selection must be copied from persisted Reflection without reinterpretation.
 The attested `project-decision` content includes the resolver row, route-set state, direction, affected scope, surviving authority,
-research disposition, diagnostic dominance or exact blocker, Budget and
+research disposition, diagnostic ordering or exact decision-preventing blocker, Budget and
 protected reserve, and every later-spend gate. A strategic change cannot bind
 authority for dependent spend until the same decision has `REPLAN_READY`.
 Unresolved validity remains an unresolved fact; it cannot be encoded as route

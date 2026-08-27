@@ -11,7 +11,7 @@ The reply is complete only when a reader can identify, without decoding record i
 3. the important limit on that learning;
 4. the valid objective gap from F6, or why it is `unknown`, plus the nearest decision-changing evidence milestone and any conditional parent milestones;
 5. every decision-relevant next candidate from the persisted resolver result and Selection, or the exact event needed to complete that set;
-6. the recorded ordering, including the dominance reason, switching conditions, or exact non-dominated technical blocker;
+6. the recorded ordering, including the dominance or investment reason, stable operational order when technical evidence does not distinguish eligible options, switching conditions, or an exact decision-preventing blocker;
 7. one copyable instruction for each action the user can choose now, with its effect and next stop; and
 8. the current Budget and authority boundary and what the Coordinator will do after each instruction.
 

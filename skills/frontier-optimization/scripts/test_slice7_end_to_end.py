@@ -1116,7 +1116,7 @@ class Slice7ContractTests(unittest.TestCase):
             "the important limit on that learning",
             "the valid objective gap from F6",
             "every decision-relevant next candidate",
-            "the dominance reason, switching conditions, or exact non-dominated technical blocker",
+            "the dominance or investment reason, stable operational order when technical evidence does not distinguish eligible options",
             "Pair every procedural gate with the substantive question",
             "direction is not yet resolved",
             "surface every decision-relevant candidate and its recorded ordering",

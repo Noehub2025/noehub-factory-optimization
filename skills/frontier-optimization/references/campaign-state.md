@@ -119,7 +119,9 @@ A final-closeout update releases or dispositions every reservation, reports unkn
 
 ## Selection
 
-For the Entry Selection, use the Entry gate before any B exists. For every later Selection, append only after every previously selected B has a terminal outcome and controlling Outcome Reflection, every applicable E is covered, and every completed parallel set has a joined X. A paused `waiting_for_input` B remains selected and blocks dependent Selection. F3 names the same Primary and Parallel identifiers.
+For the Entry Selection, use the Entry gate before any B exists. A later Selection that chooses another B or reallocates investment waits until every previously selected B has a terminal outcome and controlling Outcome Reflection, every applicable E is covered, and every completed parallel set has a joined X. A paused `waiting_for_input` B remains selected and blocks that dependent investment choice.
+
+When current rules remove an obsolete procedural blocker or an adopted parent change affects the actual next decision of the same selected B, record the change through the existing X and append a bounded Selection update without first ending that B. Preserve its identity, authority, actual execution inputs, effects, cumulative consumption, and surviving scope. This update cannot select another B, reallocate investment, or broaden permission. If the actual next decision is unchanged, reuse the existing Selection and create no event. F3 names the same Primary and Parallel identifiers.
 
 ```markdown
 Selection:

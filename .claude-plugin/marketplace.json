@@ -4,16 +4,16 @@
     "name": "Ken Chen",
     "url": "https://github.com/Noehub2025"
   },
-  "description": "Noehub Skills for optimization framing, bounded research iteration, and Git-backed Frontier campaigns, installable as a Claude Code plugin.",
+  "description": "Noehub Skills for task-agnostic Recursive Self-Improvement research, bounded iteration, and Git-backed Frontier campaigns.",
   "metadata": {
-    "description": "Noehub Skills for optimization framing, bounded research iteration, and Git-backed Frontier campaigns, installable as a Claude Code plugin."
+    "description": "Noehub Skills for task-agnostic Recursive Self-Improvement research, bounded iteration, and Git-backed Frontier campaigns."
   },
   "plugins": [
     {
       "name": "noehub-factory-optimization",
       "source": "./",
-      "version": "0.18.0",
-      "description": "Frame optimization problems, iterate within explicit limits, and retain reviewed project evidence through Git and artifact references.",
+      "version": "0.19.0",
+      "description": "Frame optimization problems, iterate within explicit limits, and recheck authorization before consequential result adoption.",
       "category": "engineering",
       "keywords": [
         "optimization",

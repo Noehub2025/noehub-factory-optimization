@@ -61,7 +61,9 @@ def write_line_identified_yaml(
     return yaml.safe_load(path.read_text())
 
 
-def write_project_dispatch_fixture(root: Path, family: str, *, design_revision=None, diagnostic_target=None) -> tuple[dict, dict, Path]:
+def write_project_dispatch_fixture(root: Path, family: str, *, design_revision=None, diagnostic_target=None,
+                                  entry_stage="authorization-readiness", entry_result=None,
+                                  missing_basis=False, report_change=None, uppercase_plan=False) -> tuple[dict, dict, Path]:
     """Create one complete typed project dispatch without mocking validation."""
 
     if family not in {"current", "legacy"}:
@@ -78,7 +80,16 @@ def write_project_dispatch_fixture(root: Path, family: str, *, design_revision=N
         }
     ]
 
-    spec = write_entry(root)
+    if entry_stage == "spend-readiness":
+        from test_user_decision_reuse import reuse_fixture
+        spec, _ = reuse_fixture(root, "B001")
+        if missing_basis:
+            gate_path = root / "entry/gate.yaml"
+            gate = yaml.safe_load(gate_path.read_bytes())
+            gate.pop("authorization_basis")
+            gate_path.write_text(yaml.safe_dump(gate))
+    else:
+        spec = write_entry(root)
     if design_revision is not None:
         projection, proof = design_revision
         scope = dict(projection["design_revision_scope"])
@@ -177,6 +188,10 @@ def write_project_dispatch_fixture(root: Path, family: str, *, design_revision=N
         )
 
     decision_parent = root / "artifacts/frontier/B001/entry-R900-complete"
+    if uppercase_plan:
+        for item in spec["artifacts"]:
+            if item["path"] == "entry/plan.yaml":
+                item["logical_name"] = item["logical_name"].removesuffix(".yaml") + ".YAML"
     prepared = prepare_review(spec, root, decision_parent)
     assert prepared["status"] == "SEALED", prepared
     decision_bundle = decision_parent / "snapshot"
@@ -185,14 +200,29 @@ def write_project_dispatch_fixture(root: Path, family: str, *, design_revision=N
 
     entry_review_path = root / "artifacts/frontier/B001/entry-R900.md"
     entry_review_path.parent.mkdir(parents=True, exist_ok=True)
-    entry_review_path.write_text("# Entry review\n\nResult: AUTHORIZATION_READY\n")
+    entry_result = entry_result or (
+        "ENTRY_READY" if entry_stage == "spend-readiness" else "AUTHORIZATION_READY"
+    )
+    metadata = {
+        "review_id": prepared["review_id"], "review_result": entry_result,
+        "decision_root": prepared["decision_root"],
+    }
+    if report_change and report_change != "not-attested":
+        metadata[report_change] = "different"
+    entry_review_path.write_text(
+        "---\n" + yaml.safe_dump(metadata) + "---\n# Entry review\n\nResult: " + entry_result + "\n"
+    )
     review_bundle = entry_review_path.with_name(
         f"{entry_review_path.stem}-review-report"
     )
+    captured_report = entry_review_path
+    if report_change == "not-attested":
+        captured_report = entry_review_path.with_name("unrelated-review.md")
+        captured_report.write_text("# An unrelated report\n")
     save_fixture(root)
     review_content = ProjectPortableStore().capture(
         "review",
-        [ArtifactSource("project/review/entry-R900.md", entry_review_path)],
+        [ArtifactSource("project/review/entry-R900.md", captured_report)],
         review_bundle,
         project_root=root,
     )
@@ -239,7 +269,7 @@ def write_project_dispatch_fixture(root: Path, family: str, *, design_revision=N
         },
         "entry_review": {
             "path": entry_review_path.relative_to(root).as_posix(),
-            "result": "AUTHORIZATION_READY",
+            "result": entry_result,
             "file_sha256": file_sha256(entry_review_path),
         },
         "entry_attestation": attestation["node_id"],

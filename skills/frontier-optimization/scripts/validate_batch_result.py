@@ -28,6 +28,7 @@ from frontier_provenance.facade import verify_for, validate_design_revision
 from frontier_provenance.handoff import verify_handoff
 from frontier_provenance.repository import NodeRepository
 from frontier_provenance.review_subject import require_current_review_subject
+from frontier_provenance.review_contract import validate_and_project
 from frontier_provenance.stores import PortableBundleStore, ProjectPortableStore
 from evaluation_target_contract import (
     DIAGNOSTIC_PROHIBITED_CONSEQUENCES,
@@ -503,6 +504,59 @@ def verify_current_execution_frozen_inputs(
             )
 
 
+def verify_entry_readiness(
+    *, current_plan: bool, decision_result: dict[str, Any],
+    decision_raw: dict[str, bytes], packet: dict[str, Any], decision_id: str,
+    entry_review: dict[str, Any], entry_raw: bytes, review_raw: dict[str, bytes],
+) -> None:
+    """Admit spend-readiness only through its reviewed, adopted continuing grant."""
+    result = entry_review.get("result")
+    if not current_plan:
+        if result != "AUTHORIZATION_READY":
+            raise ValueError("legacy project dispatch Entry review is not authorization-ready")
+        return
+    subject = require_current_review_subject(
+        decision_result.get("review_subject"), expected_kind="entry"
+    )
+    projection = subject["semantic_projection"]
+    stage = projection.get("review_stage")
+    if stage == "authorization-readiness":
+        if result != "AUTHORIZATION_READY":
+            raise ValueError("Entry readiness result does not match authorization-readiness")
+        return
+    if stage != "spend-readiness" or result != "ENTRY_READY":
+        raise ValueError("Entry readiness result does not match spend-readiness")
+
+    # Stored-content verification alone deliberately does not reinterpret semantics.
+    # This new consequence checks the existing grant adapter against its actual bytes.
+    derived = validate_and_project(
+        "entry", decision_raw, review_stage="spend-readiness",
+        closed_collections=subject["closed_collections"],
+    )
+    if derived != projection or not isinstance(derived.get("authorization_basis"), dict):
+        raise ValueError("spend-readiness lacks its exact adopted continuing authorization")
+    plans = [
+        yaml.safe_load(raw) for name, raw in decision_raw.items()
+        if name.startswith("project/decision/entry/") and name.lower().endswith((".yaml", ".yml", ".json"))
+    ]
+    plans = [item for item in plans if isinstance(item, dict)
+             and item.get("contract_version") == PROJECT_BATCH_PLAN_CONTRACT]
+    if plans != [packet]:
+        raise ValueError("spend-readiness does not attest this exact dispatch plan")
+    if entry_raw not in review_raw.values():
+        raise ValueError("spend-readiness report is not in its attested review content")
+    text = entry_raw.decode("utf-8")
+    if not text.startswith("---\n") or "\n---\n" not in text[4:]:
+        raise ValueError("spend-readiness report lacks YAML frontmatter")
+    metadata = yaml.safe_load(text[4:].split("\n---\n", 1)[0])
+    expected = {
+        "review_result": "ENTRY_READY", "decision_root": decision_id,
+        "review_id": subject["review_id"],
+    }
+    if not isinstance(metadata, dict) or any(metadata.get(k) != v for k, v in expected.items()):
+        raise ValueError("spend-readiness report does not bind the exact reviewed decision")
+
+
 def verify_project_nested_dispatch(
     *,
     document: dict[str, Any],
@@ -716,7 +770,8 @@ def verify_project_nested_dispatch(
     _, execution_bundle = resolve_project_directory(
         repo_root, start.get("starting_state_path", packet.get("execution_baseline_root")), "starting_state_path"
     )
-    decision_result = ProjectPortableStore().verify(decision_bundle, expected_role="decision")
+    decision_raw: dict[str, bytes] = {}
+    decision_result = ProjectPortableStore().verify(decision_bundle, expected_role="decision", raw_out=decision_raw)
     authority_result = ProjectPortableStore().verify(authority_bundle, expected_role="authority")
     baseline_raw: dict[str, bytes] = {}
     execution_result = ProjectPortableStore().verify(execution_bundle, expected_role="state", raw_out=baseline_raw)
@@ -745,16 +800,15 @@ def verify_project_nested_dispatch(
     entry_relative, entry_path = resolve_repo_file(
         repo_root, entry_review.get("path"), "entry_review.path"
     )
-    require_file_sha256(
+    entry_raw = require_file_sha256(
         entry_path, entry_review.get("file_sha256"), "Entry review"
     )
-    if entry_review.get("result") != "AUTHORIZATION_READY":
-        raise ValueError("project dispatch Entry review is not authorization-ready")
     review_bundle_name = f"{Path(entry_relative).stem}-review-report"
     review_bundle = entry_path.parent / review_bundle_name
     if not review_bundle.is_dir() or review_bundle.is_symlink():
         raise ValueError("project dispatch review-report bundle is missing or unsafe")
-    review_result = ProjectPortableStore().verify(review_bundle, expected_role="review")
+    review_raw: dict[str, bytes] = {}
+    review_result = ProjectPortableStore().verify(review_bundle, expected_role="review", raw_out=review_raw)
 
     nodes_root = decision_bundle.parent / "nodes"
     repository = NodeRepository(nodes_root)
@@ -798,6 +852,12 @@ def verify_project_nested_dispatch(
     )
     if audit.get("ready") is not True or audit.get("static_chain_verified") is not True:
         raise ValueError("project execution provenance did not verify")
+
+    verify_entry_readiness(
+        current_plan=current_plan, decision_result=decision_result, decision_raw=decision_raw,
+        packet=packet, decision_id=decision_id, entry_review=entry_review,
+        entry_raw=entry_raw, review_raw=review_raw,
+    )
 
     if start.get("starting_state_path", packet.get("execution_baseline_root")) != packet.get("execution_baseline_root"):
         if not any(name.startswith("project/state/design-revision/") for name in baseline_raw):

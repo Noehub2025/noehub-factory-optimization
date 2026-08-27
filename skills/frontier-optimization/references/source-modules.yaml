@@ -111,6 +111,7 @@ modules:
       - frontier-optimization/scripts/test_project_snapshot.py
       - frontier-optimization/scripts/test_run_workflow_checks.py
       - frontier-optimization/scripts/test_slice7_end_to_end.py
+      - frontier-optimization/scripts/test_user_decision_reuse.py
       - frontier-optimization/scripts/test_validate_authorization_adoption.py
       - frontier-optimization/scripts/test_validate_batch_packet.py
       - frontier-optimization/scripts/test_validate_batch_result.py

@@ -207,8 +207,8 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "Make no trajectory, route, or parent inference",
             "one additional evidence-completion round only through row 7 or row 8",
             "further retrieval is unlikely to change the current allocation",
-            "Entry adoption fixes one project decision root",
-            "Selected, authorized, acknowledged, or execution-started B records continue under their exact project chain",
+            "Entry adoption fixes the producing project decision root and historical chain",
+            "Selected, authorized, acknowledged, or execution-started B records preserve their exact authority and execution inputs",
         ),
         "campaign-state.md": (
             "first applicable row from learning-loop.md",
