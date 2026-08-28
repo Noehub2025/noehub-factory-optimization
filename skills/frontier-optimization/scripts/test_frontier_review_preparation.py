@@ -269,6 +269,55 @@ def rewrite_entry_plan(root: Path, mutate) -> None:
     )
 
 
+def bind_entry_evaluation_target(
+    root: Path,
+    *,
+    identity_field: str = "matrix_id",
+    target_identity: str | None = None,
+) -> str:
+    """Bind one exact evaluation source into the mutable Entry plan."""
+
+    source = self_identified(
+        identity_field,
+        "B001-measurement-sha256:",
+        b"contract_version: measurement-source/1\nbatch_id: B001\n",
+    )
+    (root / "entry/experiment.yaml").write_bytes(source)
+    source_identity = source.decode().splitlines()[0].split(": ", 1)[1]
+    bound_identity = target_identity or source_identity
+
+    def mutate(plan: dict) -> None:
+        plan["evaluation_target"] = {
+            "contract_version": "frontier-evaluation-target/2",
+            "mode": "diagnostic-only",
+            "result_contract_version": "frontier-batch-result/2",
+            "working_scope": {
+                "question": "What does the bounded observation distinguish?",
+                "subjects": ["one exact working subject"],
+                "methods": ["one bounded observation"],
+                "resources": {"runs": 1},
+                "exposure": {},
+            },
+            "experiment": {
+                "path": "entry/experiment.yaml",
+                "experiment_id": bound_identity,
+                "file_sha256": hashlib.sha256(source).hexdigest(),
+            },
+            "consequence_limit": "B evidence only",
+            "prohibited_consequences": [
+                "E",
+                "integration",
+                "incumbent use",
+                "promotion",
+                "submission",
+                "strength claim",
+            ],
+        }
+
+    rewrite_entry_plan(root, mutate)
+    return source_identity
+
+
 def add_routine_follow_up(root: Path, spec: dict) -> None:
     protocol_id = "protocol-sha256:" + "1" * 64
     calibration_id = "calibration-sha256:" + "2" * 64
@@ -503,6 +552,32 @@ def test_entry_rejects_current_engineering_plan_digest_drift() -> None:
         result = prepare_review(spec, root, root / "sealed")
         assert result["status"] == "NOT_READY"
         assert "frozen input binding" in result["findings"][0]["message"]
+
+
+def test_entry_accepts_descriptive_evaluation_source_identity() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        spec = write_entry(root)
+        bind_entry_evaluation_target(root)
+        result = prepare_review(spec, root, root / "sealed")
+        assert result["status"] == "SEALED", result.get("findings")
+
+
+def test_entry_rejects_target_identity_that_differs_from_captured_source() -> None:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        spec = write_entry(root)
+        bind_entry_evaluation_target(
+            root,
+            target_identity="B001-measurement-sha256:" + "0" * 64,
+        )
+        result = prepare_review(spec, root, root / "sealed")
+        assert result["status"] == "NOT_READY"
+        assert (
+            "does not match evaluation_target experiment_id"
+            in result["findings"][0]["message"]
+        )
+        assert not (root / "sealed").exists()
 
 
 def test_duplicate_record_identifier_returns_not_ready_without_review_id() -> None:

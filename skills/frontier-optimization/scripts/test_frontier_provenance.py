@@ -563,8 +563,15 @@ def routine_execution_fixture(root: Path) -> dict[str, object]:
             return {key: bind(item) for key, item in value.items()}
         return value
 
+    experiment_document = {
+        "identity_rule": (
+            "B002-experiment-sha256 of exact UTF-8 bytes with the complete "
+            "experiment_id line omitted"
+        ),
+        **bind(template["experiment"]),
+    }
     experiment_body = yaml.safe_dump(
-        bind(template["experiment"]), sort_keys=False, allow_unicode=True
+        experiment_document, sort_keys=False, allow_unicode=True
     ).encode()
     experiment_id = (
         "B002-experiment-sha256:" + hashlib.sha256(experiment_body).hexdigest()

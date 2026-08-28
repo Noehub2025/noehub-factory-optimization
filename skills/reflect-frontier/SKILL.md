@@ -47,7 +47,9 @@ Write a concise synthesis that updates the next search along the dimensions supp
 
 Preserve diversity only where a distinct lineage offers material ceiling, a stepping stone, or protection from a deceptive local optimum. Do not spread effort evenly across dominated alternatives.
 
-This step is complete when a fresh optimizer can generate a materially better candidate set than it could from the raw results alone.
+When adopted evidence may change a durable parent premise, name the possible parent implication in the relevant search-advantage or opportunity prose. Cite the underlying adopted evidence, explain how the premise could change future search, and state the conclusion that the evidence does not yet support. Use the evidence chain already required for the Reflection; perform no separate parent audit. A new elite, routine success or failure, stronger confirmation, unknown component contribution, or route change within the current Frame remains a Frontier lesson unless the evidence challenges durable parent meaning.
+
+This step is complete when a fresh optimizer can generate a materially better candidate set than it could from the raw results alone and any stated parent implication is grounded in cited adopted evidence rather than the Reflection itself.
 
 ## 3. Propose worthwhile opportunities
 
@@ -98,4 +100,4 @@ generated: { by: reflect-frontier/1, at: "<ISO-8601 datetime>" }
 
 Use natural technical prose rather than reproducing the headings of every source record. The Reflection is complete when reversing a cited result would change the corresponding search lesson, unsupported attribution is bounded, positive whole-solution evidence remains usable, each opportunity is actionable for candidate generation, and process status can be removed without losing the insight.
 
-The Coordinator may request one consolidated correction for an evidence error, material omission, or search-inert process summary. Revise the same exclusive file once. Return the final path and a one-sentence statement of the search advantage. The Reflection creates no Selection, route verdict, Budget allocation, authority, review result, or claim.
+The Coordinator may request one consolidated correction for an evidence error, material omission, or search-inert process summary. Revise the same exclusive file once. Return the final path and a one-sentence statement of the search advantage. A possible parent implication is advisory: the next Entry may carry its cited adopted evidence into the existing integrated resolver, and only that resolver's existing row 4 can formally refer an affected rule to Framing. The Reflection neither modifies nor triggers Frame, delays closeout, or requires extra research or diagnosis. The Reflection creates no Selection, route verdict, Budget allocation, authority, review result, or claim.

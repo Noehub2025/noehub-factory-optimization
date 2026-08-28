@@ -17,6 +17,10 @@ from engineering_check_plan import (
     EngineeringCheckPlanError,
     normalize_current_plan_bytes,
 )
+from evaluation_target_contract import (
+    derive_omit_line_identity,
+    validate_experiment_source,
+)
 from frontier_provenance import NodeRepository, ProvenanceError, freeze_decision
 from frontier_provenance.content import canonical_json
 from frontier_provenance.git_content import GitReferenceStore
@@ -37,21 +41,6 @@ PREPARATION_CONTRACT = "frontier-review-preparation/1"
 PACKET_CONTRACT = "frontier-review-packet/1"
 ASSIGNMENT_CONTRACT = "frontier-review-assignment/1"
 INDEX_LOGICAL_NAME = "project/decision/review-subject-index.json"
-SELF_ID_RULE = re.compile(
-    r"^(?P<prefix>[A-Za-z0-9_.-]+-sha256) of exact UTF-8 bytes with the complete "
-    r"(?P<field>[A-Za-z][A-Za-z0-9_]*) line omitted$"
-)
-SELF_ID_RULE_WITHOUT_PREFIX = re.compile(
-    r"^exact UTF-8 bytes with the complete (?P<field>[A-Za-z][A-Za-z0-9_]*) line omitted$"
-)
-SELF_ID_REMOVE_LINE_RULE = re.compile(
-    r"^Remove the complete (?P<field>[A-Za-z][A-Za-z0-9_]*) line, then compute "
-    r"SHA-256 over the remaining UTF-8 file bytes including the final newline\.$"
-)
-SELF_ID_SHA_RULE = re.compile(
-    r"^SHA-256 of these UTF-8 bytes with the (?P<field>[A-Za-z][A-Za-z0-9_]*) "
-    r"line omitted(?:;.*)?$"
-)
 DESIGN_TRACEABILITY_IDENTITY_RULE = (
     "SHA-256 of these UTF-8 bytes with the design_contract_identity line omitted"
 )
@@ -282,6 +271,13 @@ def _read_and_validate(spec: dict[str, Any], project_root: Path) -> dict[str, An
         source_by_path,
         root,
     )
+    _validate_entry_experiment_source(
+        spec,
+        parsed_by_name,
+        raw_by_name,
+        source_by_path,
+        root,
+    )
     _validate_entry_design_traceability_binding(
         spec,
         parsed_by_name,
@@ -357,6 +353,61 @@ def _validate_entry_engineering_check_plan(
         raise ProvenanceError(str(exc)) from exc
 
 
+def _validate_entry_experiment_source(
+    spec: dict[str, Any],
+    parsed_by_name: dict[str, Any],
+    raw_by_name: dict[str, bytes],
+    source_by_path: dict[Path, ArtifactSource],
+    project_root: Path,
+) -> None:
+    """Validate the captured experiment source before sealing an Entry subject."""
+
+    if spec["review_kind"] != "entry":
+        return
+    plans = [
+        document
+        for logical_name, document in parsed_by_name.items()
+        if logical_name.startswith("project/decision/entry/")
+        and isinstance(document, dict)
+        and document.get("contract_version") == "frontier-project-batch-plan/3"
+    ]
+    if len(plans) != 1:
+        return
+    target = plans[0].get("evaluation_target")
+    if target is None:
+        return
+    if not isinstance(target, dict) or not isinstance(target.get("experiment"), dict):
+        return  # The shared semantic contract reports the malformed target.
+    experiment = target["experiment"]
+    path_value = experiment.get("path")
+    if not isinstance(path_value, str) or not path_value.strip():
+        return  # The shared semantic contract reports the malformed path.
+
+    bound_path = Path(path_value)
+    if not bound_path.is_absolute():
+        bound_path = project_root / bound_path
+    bound_path = bound_path.resolve()
+    try:
+        relative = bound_path.relative_to(project_root).as_posix()
+    except ValueError as exc:
+        raise ProvenanceError("Entry experiment source is outside project_root") from exc
+    source = source_by_path.get(bound_path)
+    if source is None:
+        raise ProvenanceError("Entry experiment source is absent from the review subject")
+
+    findings: list[dict[str, str]] = []
+    validate_experiment_source(
+        experiment,
+        logical_name=relative,
+        raw=raw_by_name[source.logical_name],
+        findings=findings,
+        mode=target.get("mode"),
+    )
+    if findings:
+        details = "; ".join(item["detail"] for item in findings)
+        raise ProvenanceError(f"Entry experiment source is invalid: {details}")
+
+
 def _parse_document(path: Path, raw: bytes, *, logical_name: str) -> Any:
     is_traceability = _is_design_traceability_logical_name(logical_name)
     if not is_traceability and path.suffix.lower() not in {".yaml", ".yml", ".json"}:
@@ -381,25 +432,10 @@ def _validate_self_identity(
         raise ProvenanceError(f"identity_rule must be text: {path}")
     if _is_design_traceability_normalization_rule(logical_name, parsed):
         return {}
-    match = SELF_ID_RULE.fullmatch(rule)
-    prefixless = SELF_ID_RULE_WITHOUT_PREFIX.fullmatch(rule)
-    remove_line = SELF_ID_REMOVE_LINE_RULE.fullmatch(rule)
-    sha_rule = SELF_ID_SHA_RULE.fullmatch(rule)
-    recognized = match or prefixless or remove_line or sha_rule
-    if recognized is None:
-        raise ProvenanceError(f"unsupported identity_rule in {path}")
-    field = recognized.group("field")
-    declared = parsed.get(field)
-    if not isinstance(declared, str):
-        raise ProvenanceError(f"{field} is missing from {path}")
-    digest = _omit_top_level_field(raw, field)
-    if match is not None:
-        prefix = match.group("prefix") + ":"
-    else:
-        if ":" not in declared:
-            raise ProvenanceError(f"{field} has no identity prefix in {path}")
-        prefix = declared.rsplit(":", 1)[0] + ":"
-    expected = prefix + digest
+    try:
+        field, declared, expected = derive_omit_line_identity(raw, rule)
+    except (ValueError, yaml.YAMLError) as exc:
+        raise ProvenanceError(f"{path}: {exc}") from exc
     if declared != expected:
         raise ProvenanceError(
             f"{path} declares {declared}, but final raw bytes derive {expected}"
@@ -502,20 +538,6 @@ def _sha256_digest(value: Any) -> str:
     if SHA256_DIGEST.fullmatch(digest) is None:
         raise ProvenanceError("W-backed entry design_traceability sha256 is invalid")
     return digest
-
-
-def _omit_top_level_field(raw: bytes, field: str) -> str:
-    marker = f"{field}:".encode()
-    kept: list[bytes] = []
-    found = 0
-    for line in raw.splitlines(keepends=True):
-        if line.startswith(marker):
-            found += 1
-        else:
-            kept.append(line)
-    if found != 1:
-        raise ProvenanceError(f"source must contain exactly one top-level {field} line")
-    return hashlib.sha256(b"".join(kept)).hexdigest()
 
 
 def _validate_cross_file_bindings(

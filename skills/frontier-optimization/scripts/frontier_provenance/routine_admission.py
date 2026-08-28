@@ -478,6 +478,13 @@ def _materialize_experiment(
     template: dict[str, Any], bindings: dict[str, str], batch_id: str
 ) -> tuple[bytes, str, str]:
     document = _bind_template(template, bindings)
+    document = {
+        "identity_rule": (
+            f"{batch_id}-experiment-sha256 of exact UTF-8 bytes with the "
+            "complete experiment_id line omitted"
+        ),
+        **document,
+    }
     body = yaml.safe_dump(document, sort_keys=False, allow_unicode=True).encode()
     experiment_id = f"{batch_id}-experiment-sha256:{hashlib.sha256(body).hexdigest()}"
     raw = f"experiment_id: {experiment_id}\n".encode() + body

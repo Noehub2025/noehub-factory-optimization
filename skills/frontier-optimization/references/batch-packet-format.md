@@ -180,6 +180,8 @@ evaluation_target:
 
 Diagnostic-only targets use either `working_scope` or the published-candidate `exception_evidence`, with `consequence_limit: B evidence only` and the complete prohibited-consequence list. They omit implementation and Slot H review bindings. The result reproduces the complete target exactly; actual working-subject identities belong in observations. Keep `evaluation_target.experiment` as the sole experiment-identity owner. Verify its contract bytes and all applicable candidate, review, or Slot H bindings before use; unpublished working observations have no candidate manifest to verify. Result validation selects the branch from the frozen target, never the worker's performance-state label.
 
+The referenced source declares its own identity field through one supported top-level `identity_rule`. That field may use a descriptive name such as `matrix_id`; `evaluation_target.experiment.experiment_id` remains the canonical binding and must equal the source field's value. Entry preparation and result publication apply the same declared omit-line SHA-256 rule to the same exact source bytes and verify `file_sha256`. Never infer an identity field from its name or from another field that happens to contain the same value.
+
 Path fields have three different meanings and are not interchangeable:
 
 - `allowed_code_paths`, `artifact_paths`, acknowledgment, result validation, result, and assigned W sections are the worker's exclusive write surface.

@@ -820,7 +820,11 @@ def seed_evaluation_sources(root: Path, target: dict) -> None:
         manifest_path.read_bytes()
     ).hexdigest()
 
-    payload = b"mode: test\n"
+    payload = (
+        b"identity_rule: B900-experiment-sha256 of exact UTF-8 bytes with the "
+        b"complete experiment_id line omitted\n"
+        b"mode: test\n"
+    )
     experiment_id = "B900-experiment-sha256:" + hashlib.sha256(payload).hexdigest()
     experiment_path = root / target["experiment"]["path"]
     experiment_path.parent.mkdir(parents=True, exist_ok=True)

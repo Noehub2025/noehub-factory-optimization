@@ -8,7 +8,10 @@ Keep a new Entry or Replan mutable until its deterministic checks pass. Call
 `prepare_review(draft_spec, project_root, output_root)` once. It validates final
 raw-byte self-identities, cross-file path, digest, and identity bindings,
 monotonic record namespaces, review-kind role schemas, selected paths, and
-closed collections. The caller supplies only the Entry review stage. The role
+closed collections. For an experiment source, it applies the source-declared
+identity rule described in [Batch packet format](batch-packet-format.md) to the
+captured bytes; result publication uses the same validator. The caller supplies
+only the Entry review stage. The role
 adapter derives affected scope, Budget, Selection, authority target, and the
 later-spend gate from canonical project objects; caller-written summaries are
 not accepted. `NOT_READY` returns findings only: it allocates no R

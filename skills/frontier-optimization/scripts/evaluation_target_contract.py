@@ -6,7 +6,6 @@ import hashlib
 import math
 import re
 from typing import Any
-import math
 
 from finding_effects import add_finding
 
@@ -25,6 +24,21 @@ CALIBRATION_RESULT_CONTRACT = "frontier-protocol-calibration-result/1"
 
 SHA256_VALUE = re.compile(r"^(?:sha256:)?[0-9a-f]{64}$")
 CONTENT_ROOT = re.compile(r"^frontier-content-root-sha256:[0-9a-f]{64}$")
+SELF_ID_RULE = re.compile(
+    r"^(?P<prefix>[A-Za-z0-9_.-]+-sha256) of exact UTF-8 bytes with the complete "
+    r"(?P<field>[A-Za-z][A-Za-z0-9_]*) line omitted$"
+)
+SELF_ID_RULE_WITHOUT_PREFIX = re.compile(
+    r"^exact UTF-8 bytes with the complete (?P<field>[A-Za-z][A-Za-z0-9_]*) line omitted$"
+)
+SELF_ID_REMOVE_LINE_RULE = re.compile(
+    r"^Remove the complete (?P<field>[A-Za-z][A-Za-z0-9_]*) line, then compute "
+    r"SHA-256 over the remaining UTF-8 file bytes including the final newline\.$"
+)
+SELF_ID_SHA_RULE = re.compile(
+    r"^SHA-256 of these UTF-8 bytes with the (?P<field>[A-Za-z][A-Za-z0-9_]*) "
+    r"line omitted(?:;.*)?$"
+)
 LEGACY_KEYS = {
     "candidate_identity",
     "candidate_manifest",
@@ -88,12 +102,82 @@ SCOPE_FIELDS = {
 }
 
 
+class UniqueKeyLoader(yaml.SafeLoader):
+    """Reject duplicate YAML mapping keys before identity interpretation."""
+
+
+def _construct_unique_mapping(
+    loader: UniqueKeyLoader, node: yaml.MappingNode, deep: bool = False
+) -> dict[Any, Any]:
+    mapping: dict[Any, Any] = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in mapping:
+            raise yaml.constructor.ConstructorError(
+                "while constructing a mapping",
+                node.start_mark,
+                f"found duplicate key {key!r}",
+                key_node.start_mark,
+            )
+        mapping[key] = loader.construct_object(value_node, deep=deep)
+    return mapping
+
+
+UniqueKeyLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    _construct_unique_mapping,
+)
+
+
+def derive_omit_line_identity(raw: bytes, identity_rule: Any) -> tuple[str, str, str]:
+    """Apply one declared top-level omit-line SHA-256 identity rule."""
+
+    if not isinstance(identity_rule, str):
+        raise ValueError("identity_rule must be text")
+    match = SELF_ID_RULE.fullmatch(identity_rule)
+    prefixless = SELF_ID_RULE_WITHOUT_PREFIX.fullmatch(identity_rule)
+    remove_line = SELF_ID_REMOVE_LINE_RULE.fullmatch(identity_rule)
+    sha_rule = SELF_ID_SHA_RULE.fullmatch(identity_rule)
+    recognized = match or prefixless or remove_line or sha_rule
+    if recognized is None:
+        raise ValueError("unsupported identity_rule")
+
+    parsed = yaml.load(raw, Loader=UniqueKeyLoader)
+    if not isinstance(parsed, dict):
+        raise ValueError("identity source must be a mapping")
+    field = recognized.group("field")
+    declared = parsed.get(field)
+    if not isinstance(declared, str):
+        raise ValueError(f"{field} is missing")
+
+    marker = f"{field}:".encode()
+    kept: list[bytes] = []
+    found = 0
+    for line in raw.splitlines(keepends=True):
+        if line.startswith(marker):
+            found += 1
+        else:
+            kept.append(line)
+    if found != 1:
+        raise ValueError(f"source must contain exactly one top-level {field} line")
+
+    if match is not None:
+        prefix = match.group("prefix") + ":"
+    else:
+        if ":" not in declared:
+            raise ValueError(f"{field} has no identity prefix")
+        prefix = declared.rsplit(":", 1)[0] + ":"
+    derived = prefix + hashlib.sha256(b"".join(kept)).hexdigest()
+    return field, declared, derived
+
+
 def validate_experiment_source(
     experiment: Any,
     *,
     logical_name: str,
     raw: bytes,
     findings: list[dict[str, str]],
+    mode: str | None = None,
 ) -> None:
     """Validate one exact experiment file against its canonical target binding."""
 
@@ -110,6 +194,12 @@ def validate_experiment_source(
             "EXPERIMENT_IDENTITY_MISMATCH",
             "experiment source path does not match evaluation_target",
         )
+    if set(experiment) != {"path", "experiment_id", "file_sha256"}:
+        add_finding(
+            findings,
+            "EXPERIMENT_IDENTITY_MISMATCH",
+            "evaluation_target experiment must contain only path, experiment_id, and file_sha256",
+        )
     expected_sha = experiment.get("file_sha256")
     observed_sha = hashlib.sha256(raw).hexdigest()
     if not isinstance(expected_sha, str) or expected_sha.removeprefix("sha256:") != observed_sha:
@@ -120,25 +210,21 @@ def validate_experiment_source(
         )
     declared_id = experiment.get("experiment_id")
     try:
-        lines = raw.splitlines(keepends=True)
-        identity_lines = [
-            index for index, line in enumerate(lines) if line.startswith(b"experiment_id:")
-        ]
-        if len(identity_lines) != 1:
+        parsed = yaml.load(raw, Loader=UniqueKeyLoader)
+        if not isinstance(parsed, dict):
+            raise ValueError("experiment source must be a mapping")
+        identity_field, source_id, derived_id = derive_omit_line_identity(
+            raw, parsed.get("identity_rule")
+        )
+        if source_id != declared_id:
             raise ValueError(
-                "experiment source must contain exactly one top-level experiment_id line"
+                f"experiment source {identity_field} does not match evaluation_target experiment_id"
             )
-        parsed = yaml.safe_load(raw)
-        if not isinstance(parsed, dict) or parsed.get("experiment_id") != declared_id:
-            raise ValueError("experiment source experiment_id does not match evaluation_target")
         if not isinstance(declared_id, str) or ":" not in declared_id:
             raise ValueError("experiment_id must be namespaced")
-        index = identity_lines[0]
-        digest = hashlib.sha256(b"".join(lines[:index] + lines[index + 1 :])).hexdigest()
-        expected_id = f"{declared_id.rsplit(':', 1)[0]}:{digest}"
-        if declared_id != expected_id:
+        if declared_id != derived_id:
             raise ValueError(
-                f"experiment_id {declared_id!r} does not equal byte-derived {expected_id!r}"
+                f"{identity_field} {declared_id!r} does not equal byte-derived {derived_id!r}"
             )
     except (UnicodeDecodeError, ValueError, yaml.YAMLError) as exc:
         add_finding(

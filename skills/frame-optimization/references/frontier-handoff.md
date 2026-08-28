@@ -12,6 +12,22 @@ This interface connects the repository's two Coordinator stages. `frame-optimiza
 
 The user's task selects the initial Coordinator. Technical stage transitions within its grant need no new user question; workers still return to their assigned owner.
 
+## Stable contract and live state
+
+Frame documents and the handoff bind durable problem, representation, comparison, resource, feedback, stop, claim, and reuse rules. Frontier owns live campaign facts:
+
+| Live fact | Current owner |
+|---|---|
+| Generation, campaign status, Selection, authorization, and dispatch | `FRONTIER.md` `current_state` |
+| Actual and unknown spend, reservations, balance, adopted results, and their decision use | `frontier/ledger.md` |
+| Completed Generation and its recovery entry | latest complete `CLOSEOUT_COMPLETE` |
+
+Current retained-result status means adoption, elite or survivor status, current Selection, or intended next use. It does not include the stable reference-baseline definition, comparison meaning, result-comparability rules, search-state compatibility, or old-work reuse rules; those remain with Framing.
+
+Do not copy live values into normative Frame content or use them to decide parent freshness. A historical handoff or Frame explanation that contains such values remains a point-in-time record. When the typed Frontier owners agree, a difference confined to that nonauthoritative explanation is an advisory under [Frontier finding effects](../../frontier-optimization/references/finding-effects.md), not a parent mismatch. It does not invalidate a handoff or review, require reframing or reauthorization, or block Frontier work.
+
+Only a changed durable parent meaning or concrete contrary evidence can affect a parent conclusion. Leave historical summaries unchanged unless one actually misleads the current read or the owning document is already changing for a valid reason; this rule creates no mass cleanup, rebinding, or review work.
+
 ## Handoff contract
 
 Emit the current handoff from applicable positive conclusions and adopted changes. Cite each saved review for its actual scope; a new handoff does not claim an old review signed changed bytes. Bind:
@@ -32,7 +48,7 @@ Emit the current handoff from applicable positive conclusions and adopted change
 
 ## Frontier admission
 
-Bind the current adopted parent and handoff for the next action, retaining saved reviews for the scope they actually established. Use [Change impact and retained results](../../frontier-optimization/references/frontier-core.md#change-impact-and-retained-results) for revisions: inspect the changed meaning and its dependencies, not every historical object. A missing applicable requirement pauses only dependent work. A workflow-only update does not invalidate the project handoff, and workflow bytes remain outside project identities.
+Bind the current adopted parent and handoff for the next action, retaining saved reviews for the scope they actually established. Read live campaign facts from the owners above. Use [Change impact and retained results](../../frontier-optimization/references/frontier-core.md#change-impact-and-retained-results) for revisions: inspect the changed meaning and its dependencies, not every historical object. A missing applicable requirement pauses only dependent work. A workflow-only update or stale live-state explanation does not invalidate the project handoff, and workflow bytes remain outside project identities.
 
 Admission copies the handoff bindings into Frontier state without changing their meaning. A positive handoff defines permitted search work; it does not authorize candidate development, spend, measurement, integration, incumbent use, promotion, production changes, or claims. Frontier applies its own Entry and lifecycle gates for those consequences.
 

@@ -199,6 +199,22 @@ class FrameSkillBundleTests(unittest.TestCase):
         self.assertIn("workflow bytes remain outside project identities", handoff)
         self.assertIn("Exclude Skill files, workflow source or release data", reviewer)
 
+    def test_handoff_separates_durable_framing_from_live_campaign_state(self) -> None:
+        coordinator = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        documents = (
+            SKILL_ROOT / "references/representation-documents.md"
+        ).read_text(encoding="utf-8")
+        handoff = (SKILL_ROOT / "references/frontier-handoff.md").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("That reference owns the boundary", coordinator)
+        self.assertIn("Framing owns the stable reference-baseline definition", documents)
+        self.assertIn("## Stable contract and live state", handoff)
+        self.assertIn("`FRONTIER.md` `current_state`", handoff)
+        self.assertIn("not a parent mismatch", handoff)
+        self.assertIn("creates no mass cleanup, rebinding, or review work", handoff)
+
     def test_relative_markdown_links_resolve(self) -> None:
         checked_files = (
             SKILL_ROOT / "SKILL.md",

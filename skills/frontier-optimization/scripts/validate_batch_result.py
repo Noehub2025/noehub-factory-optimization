@@ -1365,6 +1365,7 @@ def validate_evaluation_target_sources(
                 logical_name=relative,
                 raw=path.read_bytes(),
                 findings=findings,
+                mode=target.get("mode"),
             )
         except (IdentityBindingError, OSError) as exc:
             add_finding(

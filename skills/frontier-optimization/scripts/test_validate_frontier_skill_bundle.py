@@ -139,6 +139,9 @@ def generation_reflection_contract_findings(skills_root: Path) -> list[str]:
             "the cheapest direct observation that could test its promise",
             "the result that would make it unattractive",
             "exploration or exploitation tendency",
+            "name the possible parent implication",
+            "A new elite, routine success or failure, stronger confirmation, unknown component contribution, or route change within the current Frame remains a Frontier lesson",
+            "only that resolver's existing row 4 can formally refer",
             "The Reflection creates no Selection, route verdict, Budget allocation, authority, review result, or claim",
         ),
         "frontier-optimization/SKILL.md": (
@@ -169,7 +172,9 @@ def generation_reflection_contract_findings(skills_root: Path) -> list[str]:
         ),
         "frontier-optimization/references/entry-and-planning.md": (
             "Use the prior Generation Reflection as candidate-generation input",
-            "The Reflection is advisory; the integrated resolver still makes the formal direction decision",
+            "add its cited adopted evidence—not the Reflection as a verdict—to the next ordinary evidence state",
+            "run the integrated resolver once",
+            "only the resolver's existing row 4 can formally refer",
         ),
     }
     for relative, markers in required.items():

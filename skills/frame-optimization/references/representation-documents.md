@@ -218,6 +218,8 @@ Use this ownership boundary:
 | Coupling and local-to-global claim limits | `REPRESENTATION.md` R7 |
 | Search-run rules, validation, and old-work compatibility | `REPRESENTATION.md` R8 |
 
+Framing owns the stable reference-baseline definition, comparison meaning, result-comparability rules, search-state compatibility, and old-work reuse rules. Frontier owns whether a result is currently adopted, elite, survivor, selected, or intended for the next action, together with live Generation, accounting, authorization, and dispatch state. Keep those live facts out of `PROBLEM.md`, `REPRESENTATION.md`, and their normative details. A handoff may point to their Frontier owners without copying the current values.
+
 A search representation can cover a subset of legal solutions. It cannot redefine the legal solution space.
 
 A module can define a local objective. It cannot replace the parent objective, weaken a parent constraint, expand the information model, or increase the parent resource limit.
@@ -415,6 +417,8 @@ A positive handoff contains:
 - required coordination and global evaluation;
 - search-state compatibility rules;
 - Slot H harness and baseline identity.
+
+These are stable rules and bindings. The selection item is the parent-owned survivor-selection rule, not the current Frontier Selection; retained search-state dispositions describe compatibility, not a result's current elite, survivor, or next-use status.
 
 Require the downstream workflow to acknowledge the task path, parent epoch, parent binding, representation revision, and permitted scope before recording search state or results.
 
