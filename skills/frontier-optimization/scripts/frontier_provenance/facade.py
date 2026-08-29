@@ -13,6 +13,7 @@ import json
 import yaml
 
 from .content import ProvenanceError, verify_manifest
+from .execution_inputs import execution_state_form, verify_retained_decision_inputs
 from .graph import build_node, collect_chain, verify_node
 from .stores import ProjectPortableStore
 from .repository import NodeRepository
@@ -189,14 +190,60 @@ def freeze_execution(
     repository: NodeRepository | None = None,
     resolve_content: Callable[[str], dict[str, Any]] | None = None,
     read_content: Callable[[str], dict[str, bytes]] | None = None,
+    resolve_binding: Callable[[str], dict[str, Any]] | None = None,
     live_facts: dict[str, dict[str, Any]] | None = None,
     checked_at: str | None = None,
 ) -> dict[str, Any]:
     if repository is not None and resolve_content is not None and read_content is not None:
         decision = repository.load(next(parent["node_id"] for parent in authority["parents"] if parent["edge"] == "decision"))
-        subject = require_current_review_subject(resolve_content(decision["artifact_roots"][0]).get("review_subject"))
+        decision_root = decision["artifact_roots"][0]
+        decision_content = resolve_content(decision_root)
+        subject = require_current_review_subject(decision_content.get("review_subject"))
         state_raw = read_content(starting_state_root)
-        validate_design_revision(subject["semantic_projection"], state_raw)
+        design_input_changes = validate_design_revision(
+            subject["semantic_projection"], state_raw
+        )
+        state_document_raw = state_raw.get("project/state/execution-state.yaml")
+        if state_document_raw is not None:
+            try:
+                state_document = yaml.safe_load(state_document_raw)
+            except yaml.YAMLError as exc:
+                raise ProvenanceError("project execution-state is unreadable") from exc
+            if not isinstance(state_document, dict):
+                raise ProvenanceError("project execution-state must contain a mapping")
+            form = execution_state_form(state_document)
+            if form == "retained-decision":
+                if resolve_binding is None:
+                    raise ProvenanceError(
+                        "retained-decision execution requires its reviewed content binding"
+                    )
+                try:
+                    plan = yaml.safe_load(state_raw["project/state/plan.yaml"])
+                    acknowledgment = yaml.safe_load(
+                        state_raw["project/state/acknowledgment.yaml"]
+                    )
+                except (KeyError, yaml.YAMLError) as exc:
+                    raise ProvenanceError(
+                        "retained-decision execution state is incomplete or unreadable"
+                    ) from exc
+                if not isinstance(plan, dict) or not isinstance(acknowledgment, dict):
+                    raise ProvenanceError(
+                        "retained-decision plan and acknowledgment must be mappings"
+                    )
+                binding = resolve_binding(decision_root)
+                verify_retained_decision_inputs(
+                    plan=plan,
+                    acknowledgment=acknowledgment,
+                    state=state_document,
+                    baseline_raw=state_raw,
+                    decision_id=decision["node_id"],
+                    decision_content_root=decision_root,
+                    authority_id=authority["node_id"],
+                    decision_manifest=binding["manifest"],
+                    decision_binding=binding,
+                    decision_raw=read_content(decision_root),
+                    design_input_changes=design_input_changes,
+                )
         if subject["semantic_projection"].get("design_revision_scope") is not None:
             current = verify_for(authority["node_id"], repository.load, resolve_content,
                                  consequence="execution", live_facts=live_facts, checked_at=checked_at)

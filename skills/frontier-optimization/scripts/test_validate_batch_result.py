@@ -19,11 +19,13 @@ import yaml
 import validate_candidate_package as PACKAGE
 from frontier_provenance import (
     NodeRepository,
+    ProvenanceError,
     attest,
     bind_authority,
     freeze_execution,
 )
 from frontier_provenance.stores import ArtifactSource, ProjectPortableStore
+from frontier_provenance_cli import REQUEST_CONTRACT, apply_operation
 from test_freeze_execution_baseline import write_bound_dispatch_draft
 from test_frontier_review_preparation import write_entry, prepare_review
 from test_frontier_provenance import save_fixture
@@ -36,6 +38,11 @@ MODULE = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
 HASH = "a" * 64
+BASELINE_RELEASE_TEXT = "Release requires a verified execution start."
+RETAINED_RELEASE_TEXT = (
+    "Release requires the reviewed decision, current live checks, and accepted acknowledgment."
+)
+RETAINED_INPUT_NOTE = "Inputs resolve from the reviewed Git decision."
 
 
 def file_sha256(path: Path) -> str:
@@ -63,11 +70,17 @@ def write_line_identified_yaml(
 
 def write_project_dispatch_fixture(root: Path, family: str, *, design_revision=None, diagnostic_target=None,
                                   entry_stage="authorization-readiness", entry_result=None,
-                                  missing_basis=False, report_change=None, uppercase_plan=False) -> tuple[dict, dict, Path]:
+                                  missing_basis=False, report_change=None, uppercase_plan=False,
+                                  execution_state_shape="baseline", state_change=None,
+                                  acknowledgment_change=None,
+                                  sealed_runtime_input=False,
+                                  execution_start_long_scalar=False) -> tuple[dict, dict, Path]:
     """Create one complete typed project dispatch without mocking validation."""
 
     if family not in {"current", "legacy"}:
         raise ValueError(f"unsupported dispatch family: {family}")
+    if execution_state_shape not in {"baseline", "retained-decision"}:
+        raise ValueError(f"unsupported execution-state shape: {execution_state_shape}")
 
     frozen_input = root / "project/input.txt"
     frozen_input.parent.mkdir(parents=True)
@@ -90,6 +103,15 @@ def write_project_dispatch_fixture(root: Path, family: str, *, design_revision=N
             gate_path.write_text(yaml.safe_dump(gate))
     else:
         spec = write_entry(root)
+    if execution_state_shape == "retained-decision":
+        spec["artifacts"].append(
+            {
+                "logical_name": "project/decision/runtime/input.txt",
+                "path": frozen_input.relative_to(root).as_posix(),
+                "kind": "blob",
+                "behavioral_metadata": {},
+            }
+        )
     if design_revision is not None:
         projection, proof = design_revision
         scope = dict(projection["design_revision_scope"])
@@ -138,6 +160,14 @@ def write_project_dispatch_fixture(root: Path, family: str, *, design_revision=N
             "file_sha256": file_sha256(experiment_path),
         }
         common["evaluation_target"] = target
+    if sealed_runtime_input:
+        common["sealed_runtime_input"] = {
+            "path": "sealed/input.json",
+            "disclosed_sha256": "b" * 64,
+            "access_before_exact_authorization": "forbidden",
+            "entry_subject_membership": "forbidden",
+            "execution_binding": "exact authorized sealed input",
+        }
     if family == "current":
         common["execution_frozen_inputs"] = frozen_inputs
         packet = write_line_identified_yaml(
@@ -287,6 +317,8 @@ def write_project_dispatch_fixture(root: Path, family: str, *, design_revision=N
             "preflight_id": preflight["preflight_id"],
             "file_sha256": file_sha256(preflight_path),
         }
+    if acknowledgment_change is not None:
+        acknowledgment_change(acknowledgment_document)
     acknowledgment_path = root / "artifacts/frontier/B001/acknowledgment.yaml"
     acknowledgment = write_line_identified_yaml(
         acknowledgment_path,
@@ -295,18 +327,32 @@ def write_project_dispatch_fixture(root: Path, family: str, *, design_revision=N
         "B001-acknowledgment-sha256:",
     )
 
-    state_document = {
-        "decision_root": decision["node_id"],
-        "authority_id": authority["node_id"],
-        "acknowledgment": {"identity": acknowledgment["acknowledgment_id"]},
-        "plan": {"identity": dispatch_identity},
-        "worker_may_start": False,
-        "release_condition": (
-            "exact execution-start.yaml with finding-free execution verification"
-        ),
-    }
-    if family == "current":
+    if execution_state_shape == "retained-decision":
+        state_document = {
+            "contract_version": "frontier-project-execution-state/1",
+            "batch_id": "B001",
+            "campaign_generation": packet["campaign_generation"],
+            "decision_root": decision["node_id"],
+            "decision_content_root": prepared["content_root"],
+            "authority_id": authority["node_id"],
+            "plan_id": dispatch_identity,
+            "acknowledgment_id": acknowledgment["acknowledgment_id"],
+            "worker_may_start": False,
+            "release_condition": RETAINED_RELEASE_TEXT,
+        }
+    else:
+        state_document = {
+            "decision_root": decision["node_id"],
+            "authority_id": authority["node_id"],
+            "acknowledgment": {"identity": acknowledgment["acknowledgment_id"]},
+            "plan": {"identity": dispatch_identity},
+            "worker_may_start": False,
+            "release_condition": BASELINE_RELEASE_TEXT,
+        }
+    if family == "current" and execution_state_shape == "baseline":
         state_document["execution_frozen_inputs"] = copy.deepcopy(frozen_inputs)
+    if state_change is not None:
+        state_change(state_document)
     state_path = root / "artifacts/frontier/B001/execution-state.yaml"
     state_path.write_text(yaml.safe_dump(state_document, sort_keys=False))
     state_sources = [
@@ -319,18 +365,102 @@ def write_project_dispatch_fixture(root: Path, family: str, *, design_revision=N
         state_sources.append(
             ArtifactSource("project/state/preflight.json", preflight_path)
         )
-    else:
+    elif execution_state_shape == "baseline":
         state_sources.extend(ArtifactSource("project/state/frozen-inputs/" + item["path"], root / item["path"]) for item in frozen_inputs)
     execution_bundle = root / packet["execution_baseline_root"]
     save_fixture(root)
     execution_content = ProjectPortableStore().capture(
         "state", state_sources, execution_bundle, project_root=root
     )
-    execution = freeze_execution(
-        authority=authority,
-        starting_state_root=execution_content["content_root"],
-    )
-    repository.write(execution)
+    if family == "current":
+        content_bindings = [
+            {
+                "adapter": "git-reference/1",
+                "repo_root": str(root),
+                "path": str(path),
+            }
+            for path in (
+                decision_bundle,
+                review_bundle,
+                authority_bundle,
+                execution_bundle,
+            )
+        ]
+        live_facts: dict[str, dict[str, str]] = {}
+        checked_at: str | None = None
+        if design_revision is not None:
+            receipt_source = root / "artifacts/frontier/B001/live-facts.txt"
+            receipt_source.write_text("current execution facts\n")
+            receipt_bundle = root / "artifacts/frontier/B001/live-receipts"
+            save_fixture(root)
+            receipt = apply_operation(
+                {
+                    "contract_version": REQUEST_CONTRACT,
+                    "operation": "capture-project",
+                    "role": "receipt",
+                    "project_root": str(root),
+                    "artifacts": [
+                        {
+                            "logical_name": f"receipts/{name}.txt",
+                            "path": str(receipt_source),
+                            "kind": "external-receipt",
+                            "behavioral_metadata": {
+                                "fact": name,
+                                "status": "pass",
+                                "observed_at": "2026-08-17T00:00:00Z",
+                                "expires_at": "2026-08-17T02:00:00Z",
+                            },
+                        }
+                        for name in (
+                            "authority_current",
+                            "budget_current",
+                            "reservation_current",
+                            "inputs_current",
+                            "resources_available",
+                        )
+                    ],
+                    "closed_collections": [],
+                    "destination": str(receipt_bundle),
+                },
+                repository,
+            )
+            content_bindings.append(
+                {
+                    "adapter": "git-reference/1",
+                    "repo_root": str(root),
+                    "path": str(receipt_bundle),
+                }
+            )
+            live_facts = {
+                name: {"receipt_root": receipt["content_root"]}
+                for name in (
+                    "authority_current",
+                    "budget_current",
+                    "reservation_current",
+                    "inputs_current",
+                    "resources_available",
+                )
+            }
+            checked_at = "2026-08-17T01:00:00Z"
+        frozen = apply_operation(
+            {
+                "contract_version": REQUEST_CONTRACT,
+                "operation": "freeze-execution",
+                "authority_id": authority["node_id"],
+                "starting_state_root": execution_content["content_root"],
+                "content_bindings": content_bindings,
+                "live_facts": live_facts,
+                "checked_at": checked_at,
+            },
+            repository,
+        )
+        execution = repository.load(frozen["node_id"])
+    else:
+        execution = freeze_execution(
+            authority=authority,
+            starting_state_root=execution_content["content_root"],
+        )
+        repository.write(execution)
 
     verification_path = root / "artifacts/frontier/B001/execution-verification.json"
     verification_path.write_text(
@@ -367,13 +497,32 @@ def write_project_dispatch_fixture(root: Path, family: str, *, design_revision=N
             "unresolved_live_facts": [],
         },
     }
+    if execution_start_long_scalar:
+        start_document["formal_charge_event"] = (
+            "immediately before the first frozen formal unit against one exact "
+            "transient inventory"
+        )
     execution_start_path = root / "artifacts/frontier/B001/execution-start.yaml"
-    execution_start = write_line_identified_yaml(
-        execution_start_path,
-        start_document,
-        "execution_start_id",
-        "B001-execution-start-sha256:",
-    )
+    if execution_start_long_scalar:
+        execution_start_id = MODULE.load_baseline_tool().compute_execution_start_id(
+            start_document
+        )
+        execution_start_path.write_text(
+            yaml.safe_dump(
+                {"execution_start_id": execution_start_id, **start_document},
+                sort_keys=False,
+                allow_unicode=True,
+                width=4096,
+            )
+        )
+        execution_start = yaml.safe_load(execution_start_path.read_text())
+    else:
+        execution_start = write_line_identified_yaml(
+            execution_start_path,
+            start_document,
+            "execution_start_id",
+            "B001-execution-start-sha256:",
+        )
 
     result = base_result()
     result.update(
@@ -2629,6 +2778,86 @@ class BatchResultValidationTests(unittest.TestCase):
                 ),
             )
 
+    def test_execution_start_uses_canonical_identity_across_yaml_layouts(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, _ = write_project_dispatch_fixture(
+                root,
+                "current",
+                execution_start_long_scalar=True,
+            )
+            start_path = root / result["execution_start"]["path"]
+            raw_identity = MODULE.omitted_line_identity(
+                start_path.read_bytes(),
+                "execution_start_id",
+                "B001-execution-start-sha256:",
+            )
+            self.assertNotEqual(result["execution_start"]["identity"], raw_identity)
+
+            validation = MODULE.validate(
+                result, "draft", packet, repo_root=root, check_dispatch=True
+            )
+
+            self.assertTrue(
+                validation["result_structure_ready"], validation["findings"]
+            )
+
+    def test_execution_start_canonical_identity_rejects_semantic_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, _ = write_project_dispatch_fixture(
+                root,
+                "current",
+                execution_start_long_scalar=True,
+            )
+            start_path = root / result["execution_start"]["path"]
+            start = yaml.safe_load(start_path.read_text())
+            start["formal_charge_event"] += " after an unreviewed change"
+            start_path.write_text(
+                yaml.safe_dump(
+                    start,
+                    sort_keys=False,
+                    allow_unicode=True,
+                    width=4096,
+                )
+            )
+            result["execution_start"]["file_sha256"] = file_sha256(start_path)
+
+            validation = MODULE.validate(
+                result, "draft", packet, repo_root=root, check_dispatch=True
+            )
+
+            failures = [
+                finding
+                for finding in validation["findings"]
+                if finding["code"] == "PROJECT_DISPATCH_RECOVERY_FAILED"
+            ]
+            self.assertEqual(1, len(failures), validation["findings"])
+            self.assertIn("canonical document", failures[0]["detail"])
+
+    def test_execution_start_exact_file_digest_rejects_byte_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, _ = write_project_dispatch_fixture(
+                root,
+                "current",
+                execution_start_long_scalar=True,
+            )
+            start_path = root / result["execution_start"]["path"]
+            start_path.write_bytes(start_path.read_bytes() + b"# byte drift\n")
+
+            validation = MODULE.validate(
+                result, "draft", packet, repo_root=root, check_dispatch=True
+            )
+
+            failures = [
+                finding
+                for finding in validation["findings"]
+                if finding["code"] == "DISPATCH_CHAIN_BINDING_INVALID"
+            ]
+            self.assertEqual(1, len(failures), validation["findings"])
+            self.assertIn("file SHA-256 mismatch", failures[0]["detail"])
+
     def test_current_project_dispatch_rechecks_live_frozen_inputs_in_both_phases(self) -> None:
         for phase in ("draft", "frozen"):
             with self.subTest(phase=phase), tempfile.TemporaryDirectory() as directory:
@@ -2681,6 +2910,263 @@ class BatchResultValidationTests(unittest.TestCase):
             ]
             self.assertEqual(1, len(failures), validation["findings"])
             self.assertFalse(validation["result_structure_ready"])
+
+    def test_retained_decision_dispatch_validates_exact_snapshot_in_both_phases(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, frozen_input = write_project_dispatch_fixture(
+                root, "current", execution_state_shape="retained-decision"
+            )
+            frozen_input.write_bytes(b"later live lifecycle change\n")
+
+            draft = MODULE.validate(
+                result, "draft", packet, repo_root=root, check_dispatch=True
+            )
+            self.assertTrue(draft["result_structure_ready"], draft["findings"])
+            frozen = copy.deepcopy(result)
+            frozen["result_packet_id"] = draft["computed_result_packet_id"]
+            self.assertEqual(
+                draft,
+                MODULE.validate(
+                    frozen, "frozen", packet, repo_root=root, check_dispatch=True
+                ),
+            )
+
+    def test_execution_state_narrative_fields_do_not_control_dispatch(self) -> None:
+        def different_retained_narrative(state: dict) -> None:
+            state["release_condition"] = (
+                "Current Budget, one reservation, and every declared input must pass."
+            )
+            state["resource_envelope"] = {"reservations": 1}
+            state["retained_input_source"] = {
+                "adapter": "historical-only",
+                "commit": "not-authoritative",
+                "decision_snapshot": "not-used",
+                "note": RETAINED_INPUT_NOTE,
+            }
+
+        def omit_retained_narrative(state: dict) -> None:
+            state.pop("release_condition")
+
+        def omit_baseline_narrative(state: dict) -> None:
+            state.pop("release_condition")
+
+        for name, shape, change in (
+            ("different retained narrative", "retained-decision", different_retained_narrative),
+            ("omitted retained narrative", "retained-decision", omit_retained_narrative),
+            ("omitted baseline narrative", "baseline", omit_baseline_narrative),
+        ):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                packet, result, _ = write_project_dispatch_fixture(
+                    root,
+                    "current",
+                    execution_state_shape=shape,
+                    state_change=change,
+                )
+                validation = MODULE.validate(
+                    result, "draft", packet, repo_root=root, check_dispatch=True
+                )
+                self.assertTrue(validation["result_structure_ready"], validation["findings"])
+                self.assertEqual(
+                    validation,
+                    MODULE.validate(
+                        result, "draft", packet, repo_root=root, check_dispatch=True
+                    ),
+                )
+
+    def test_baseline_execution_state_rejects_non_string_narrative(self) -> None:
+        def make_release_non_string(state: dict) -> None:
+            state["release_condition"] = {"text": "not narrative"}
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, _ = write_project_dispatch_fixture(
+                root,
+                "current",
+                execution_state_shape="baseline",
+                state_change=make_release_non_string,
+            )
+            validation = MODULE.validate(
+                result, "draft", packet, repo_root=root, check_dispatch=True
+            )
+            failures = [
+                finding
+                for finding in validation["findings"]
+                if finding["code"] == "PROJECT_DISPATCH_RECOVERY_FAILED"
+            ]
+            self.assertEqual(1, len(failures), validation["findings"])
+            self.assertIn("release_condition must be a string", failures[0]["detail"])
+
+    def test_freeze_execution_rejects_incomplete_or_mixed_retained_state(self) -> None:
+        def remove_plan_id(state: dict) -> None:
+            state.pop("plan_id")
+
+        def mix_nested_plan(state: dict) -> None:
+            state["plan"] = {"identity": state["plan_id"]}
+
+        for name, change in (
+            ("missing plan identity", remove_plan_id),
+            ("mixed nested fields", mix_nested_plan),
+        ):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                with self.assertRaises(ProvenanceError):
+                    write_project_dispatch_fixture(
+                        root,
+                        "current",
+                        execution_state_shape="retained-decision",
+                        state_change=change,
+                    )
+
+    def test_freeze_execution_rejects_wrong_reviewed_manifest_before_node(self) -> None:
+        def change_manifest_hash(acknowledgment: dict) -> None:
+            acknowledgment["decision_content"]["manifest_file_sha256"] = "0" * 64
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self.assertRaisesRegex(
+                ProvenanceError, "exact reviewed decision manifest"
+            ):
+                write_project_dispatch_fixture(
+                    root,
+                    "current",
+                    execution_state_shape="retained-decision",
+                    acknowledgment_change=change_manifest_hash,
+                )
+            repository = NodeRepository(
+                root / "artifacts/frontier/B001/entry-R900-complete/nodes"
+            )
+            self.assertEqual([], list(repository.iter_role("execution")))
+
+    def test_result_rejects_malformed_nonauthoritative_state_descriptions(self) -> None:
+        def make_release_non_string(state: dict) -> None:
+            state["release_condition"] = ["not narrative"]
+
+        def make_resource_envelope_non_mapping(state: dict) -> None:
+            state["resource_envelope"] = "not a resource summary"
+
+        for name, change in (
+            ("non-string release condition", make_release_non_string),
+            ("non-mapping resource envelope", make_resource_envelope_non_mapping),
+        ):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                packet, result, _ = write_project_dispatch_fixture(
+                    root,
+                    "current",
+                    execution_state_shape="retained-decision",
+                    state_change=change,
+                )
+                validation = MODULE.validate(
+                    result, "draft", packet, repo_root=root, check_dispatch=True
+                )
+                self.assertFalse(validation["result_structure_ready"])
+
+    def test_historical_retained_input_source_does_not_control_dispatch(self) -> None:
+        def add_stale_locator(state: dict) -> None:
+            state["retained_input_source"] = {
+                "adapter": "git-reference/1",
+                "commit": "0" * 40,
+                "decision_snapshot": "entry/other-snapshot",
+                "authority": "historical-extra-field",
+                "note": {"historical": True},
+            }
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, _ = write_project_dispatch_fixture(
+                root,
+                "current",
+                execution_state_shape="retained-decision",
+                state_change=add_stale_locator,
+            )
+            validation = MODULE.validate(
+                result, "draft", packet, repo_root=root, check_dispatch=True
+            )
+            self.assertTrue(validation["result_structure_ready"], validation["findings"])
+
+    def test_retained_decision_dispatch_rejects_legacy_plan_and_sealed_input(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, result, _ = write_project_dispatch_fixture(
+                root,
+                "legacy",
+                execution_state_shape="retained-decision",
+            )
+            validation = MODULE.validate(
+                result, "draft", packet, repo_root=root, check_dispatch=True
+            )
+            self.assertFalse(validation["result_structure_ready"])
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self.assertRaisesRegex(
+                ProvenanceError, "do not support sealed_runtime_input"
+            ):
+                write_project_dispatch_fixture(
+                    root,
+                    "current",
+                    execution_state_shape="retained-decision",
+                    sealed_runtime_input=True,
+                )
+
+    def test_retained_decision_input_verifier_rejects_digest_and_path_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packet, _, _ = write_project_dispatch_fixture(
+                root, "current", execution_state_shape="retained-decision"
+            )
+            decision_bundle = root / "artifacts/frontier/B001/entry-R900-complete/snapshot"
+            decision_raw: dict[str, bytes] = {}
+            decision_result = MODULE.ProjectPortableStore().verify(
+                decision_bundle, expected_role="decision", raw_out=decision_raw
+            )
+            decision_manifest_raw = (decision_bundle / "manifest.json").read_bytes()
+            decision_manifest = json.loads(decision_manifest_raw)
+            state = yaml.safe_load(
+                (root / "artifacts/frontier/B001/execution-state.yaml").read_text()
+            )
+            acknowledgment = yaml.safe_load(
+                (root / "artifacts/frontier/B001/acknowledgment.yaml").read_text()
+            )
+            baseline_raw: dict[str, bytes] = {}
+            MODULE.ProjectPortableStore().verify(
+                root / packet["execution_baseline_root"],
+                expected_role="state",
+                raw_out=baseline_raw,
+            )
+            common = {
+                "acknowledgment": acknowledgment,
+                "state": state,
+                "baseline_raw": baseline_raw,
+                "decision_id": state["decision_root"],
+                "decision_content_root": decision_result["content_root"],
+                "authority_id": state["authority_id"],
+                "decision_manifest": decision_manifest,
+                "decision_binding": {
+                    "path": decision_bundle.relative_to(root).as_posix(),
+                    "manifest_file_sha256": hashlib.sha256(
+                        decision_manifest_raw
+                    ).hexdigest(),
+                    "manifest": decision_manifest,
+                },
+                "decision_raw": decision_raw,
+            }
+            bad_digest = copy.deepcopy(packet)
+            bad_digest["execution_frozen_inputs"][0]["identity"] = "sha256:" + "0" * 64
+            with self.assertRaisesRegex(ValueError, "bytes do not match frozen input"):
+                MODULE.verify_retained_decision_inputs(plan=bad_digest, **common)
+            bad_path = copy.deepcopy(packet)
+            bad_path["execution_frozen_inputs"][0]["path"] = "project/absent.txt"
+            with self.assertRaisesRegex(ValueError, "does not contain frozen input"):
+                MODULE.verify_retained_decision_inputs(plan=bad_path, **common)
+            bad_raw = dict(decision_raw)
+            bad_raw["project/decision/runtime/input.txt"] = b"substituted bytes\n"
+            with self.assertRaisesRegex(ValueError, "bytes do not match frozen input"):
+                MODULE.verify_retained_decision_inputs(
+                    plan=packet, **{**common, "decision_raw": bad_raw}
+                )
 
     def test_legacy_project_dispatch_validates_complete_v3_chain_end_to_end(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

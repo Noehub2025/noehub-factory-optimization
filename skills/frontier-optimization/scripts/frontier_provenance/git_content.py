@@ -233,7 +233,7 @@ class ContentSession:
 
         if not isinstance(bindings, list):
             raise ProvenanceError("content_bindings must be a list")
-        self.results, self.raw, self.paths = {}, {}, {}
+        self.results, self.raw, self.paths, self.bindings = {}, {}, {}, {}
         for binding in bindings:
             if (not isinstance(binding, dict) or not {"adapter", "path"} <= set(binding)
                     or set(binding) - {"adapter", "path", "repo_root"}):
@@ -252,6 +252,23 @@ class ContentSession:
             if root in self.results:
                 raise ProvenanceError(f"duplicate content binding: {root}")
             self.results[root], self.raw[root], self.paths[root] = result, raw, path
+            try:
+                project_root = repository_root(
+                    Path(binding.get("repo_root", path)).resolve()
+                )
+                binding_path = path.resolve().relative_to(project_root).as_posix()
+            except (OSError, ValueError, ProvenanceError):
+                binding_path = path.as_posix()
+            manifest_raw = (path / "manifest.json").read_bytes()
+            try:
+                manifest = json.loads(manifest_raw)
+            except json.JSONDecodeError as exc:
+                raise ProvenanceError("content binding manifest is unreadable") from exc
+            self.bindings[root] = {
+                "path": binding_path,
+                "manifest_file_sha256": hashlib.sha256(manifest_raw).hexdigest(),
+                "manifest": manifest,
+            }
 
     def resolve(self, root: str) -> dict[str, Any]:
         try:
@@ -262,3 +279,7 @@ class ContentSession:
     def read(self, root: str) -> dict[str, bytes]:
         self.resolve(root)
         return self.raw[root]
+
+    def binding(self, root: str) -> dict[str, Any]:
+        self.resolve(root)
+        return self.bindings[root]

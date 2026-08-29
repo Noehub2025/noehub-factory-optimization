@@ -193,6 +193,7 @@ def apply_operation(request: dict[str, Any], repository: NodeRepository) -> dict
                 repository=repository,
                 resolve_content=content.resolve,
                 read_content=content.read,
+                resolve_binding=content.binding,
                 live_facts=request["live_facts"],
                 checked_at=request["checked_at"],
             )

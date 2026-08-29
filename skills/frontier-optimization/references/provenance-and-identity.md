@@ -90,6 +90,40 @@ evidence needed for the action, and actual unauthorized effects remain errors.
 | execution | `project-state` | `project/state/` |
 | outcome | `project-outcome` | `project/outcome/` |
 
+### Execution-state authority
+
+`project/state/execution-state.yaml` binds one pre-release starting state to
+its exact decision, authority, plan, acknowledgment, and input-resolution
+method. It is execution content, not an authority node or a live-fact source.
+Its `worker_may_start: false` never releases work. The authority node defines
+permitted consequences; consequence-gate receipts establish current Budget,
+reservation, inputs, resources, and prior effects; a finding-free
+`execution-start` performs the release.
+
+Use one complete input form. A retained-decision state is identified by its
+flat decision-content, plan and acknowledgment identities. The acknowledgment's
+exact decision-content binding selects the reviewed manifest; that manifest is
+the only authority for the retained Git location and project paths. Do not
+repeat those locators in a new execution state. Historical
+`retained_input_source` content remains preserved but has no effect on form,
+permission or input identity.
+
+A retained-decision state resolves every frozen input from that exact reviewed
+decision and cannot carry sealed runtime input or a delegated design revision.
+A baseline state is identified by its nested plan and acknowledgment bindings
+plus logical frozen-input members; use it when execution must add either of
+those inputs or another input not fully resolvable from the reviewed decision.
+Both forms may use `git-reference/1`; a logical
+`project/state/frozen-inputs/` member is not a second physical copy of the
+project file. Do not mix the authoritative forms.
+
+`release_condition`, retained-input `note`, and a historical
+`resource_envelope` are nonauthoritative descriptions. Preserve their original
+bytes, but do not derive permission, current facts, or input identity from
+their wording. New states need not repeat those descriptions. A reader update
+validates exact structured parents and input bytes without requiring historical
+records to adopt later prose or metadata.
+
 Live receipts use `live-receipt` under `receipts/`. Workflow releases use
 `workflow-release`, never a project role. The release-only source module
 inventory and tests remain outside project operations.
@@ -120,6 +154,12 @@ Acknowledgment remains static and grants no execution. The existing
 `frontier-consequence-gates/2` owns live facts, expiry, and limits at execution
 and later consequence boundaries. Reusing a static read does not cache live
 permission or reset spend.
+
+For a current retained-decision state, the existing `freeze-execution`
+operation verifies the acknowledgment's exact reviewed manifest and every Plan
+frozen input before it creates the execution node. Result publication repeats
+the same pure verification. This is one check at two existing consequence
+boundaries, not a new preflight, receipt, review or persistent gate.
 
 For an execution that reads directly from a retained Git version, later edits
 to the working copy are not input drift. If a tool must read mutable paths,

@@ -25,6 +25,10 @@ from engineering_check_plan import validate_current_evidence
 from validate_candidate_package import validate_candidate_package
 from frontier_provenance.content import ProvenanceError
 from frontier_provenance.compatibility import require_v1_completion
+from frontier_provenance.execution_inputs import (
+    execution_state_form,
+    verify_retained_decision_inputs,
+)
 from frontier_provenance.facade import verify_for, validate_design_revision
 from frontier_provenance.handoff import verify_handoff
 from frontier_provenance.repository import NodeRepository
@@ -559,6 +563,58 @@ def verify_current_execution_frozen_inputs(
             )
 
 
+def classify_current_execution_state(
+    *,
+    state: dict[str, Any],
+    packet: dict[str, Any],
+    current_plan: bool,
+    decision_id: str,
+    decision_content_root: str,
+    authority_id: str,
+    acknowledgment_id: str,
+    plan_id: str,
+) -> str:
+    """Validate and classify one complete, mutually exclusive execution-state form."""
+
+    retained_fields = {"acknowledgment_id", "plan_id", "decision_content_root"}
+    state_form = execution_state_form(state)
+    if state.get("decision_root") != decision_id or state.get("authority_id") != authority_id:
+        raise ValueError("project execution-state binds a different decision or authority")
+    if state.get("worker_may_start") is not False:
+        raise ValueError("project execution-state must precede worker release")
+    release_condition = state.get("release_condition")
+    if release_condition is not None and not isinstance(release_condition, str):
+        raise ValueError("project execution-state release_condition must be a string when present")
+    resource_envelope = state.get("resource_envelope")
+    if resource_envelope is not None and not isinstance(resource_envelope, dict):
+        raise ValueError("project execution-state resource_envelope must be a mapping when present")
+
+    if state_form == "baseline":
+        if (
+            not isinstance(state.get("acknowledgment"), dict)
+            or state["acknowledgment"].get("identity") != acknowledgment_id
+            or not isinstance(state.get("plan"), dict)
+            or state["plan"].get("identity") != plan_id
+        ):
+            raise ValueError("project execution-state baseline form is incomplete or mismatched")
+        return "baseline"
+
+    if state_form != "retained-decision" or not retained_fields.issubset(state):
+        raise ValueError("project execution-state has no complete supported binding form")
+    if not current_plan:
+        raise ValueError("retained-decision execution state requires a current batch_plan_id dispatch")
+    if (
+        state.get("contract_version") != "frontier-project-execution-state/1"
+        or state.get("batch_id") != packet.get("batch_id")
+        or state.get("campaign_generation") != packet.get("campaign_generation")
+        or state.get("decision_content_root") != decision_content_root
+        or state.get("acknowledgment_id") != acknowledgment_id
+        or state.get("plan_id") != plan_id
+    ):
+        raise ValueError("project execution-state retained-decision form is incomplete or mismatched")
+    return "retained-decision"
+
+
 def verify_entry_readiness(
     *, current_plan: bool, decision_result: dict[str, Any],
     decision_raw: dict[str, bytes], packet: dict[str, Any], decision_id: str,
@@ -645,13 +701,15 @@ def verify_project_nested_dispatch(
         "acknowledgment_id",
         f"{batch_id}-acknowledgment-sha256:",
     )
-    expected_start_id = omitted_line_identity(
-        execution_start.raw,
-        "execution_start_id",
-        f"{batch_id}-execution-start-sha256:",
-    )
-    if acknowledgment.identity != expected_ack_id or execution_start.identity != expected_start_id:
-        raise ValueError("project dispatch self-identity does not derive from exact bytes")
+    if acknowledgment.identity != expected_ack_id:
+        raise ValueError(
+            "project acknowledgment identity does not derive from exact bytes"
+        )
+    expected_start_id = load_baseline_tool().compute_execution_start_id(start)
+    if execution_start.identity != expected_start_id:
+        raise ValueError(
+            "project execution-start identity does not derive from the canonical document"
+        )
 
     shape = classify_project_dispatch_shape(packet, ack)
     current_plan = shape == "current-batch-plan"
@@ -816,7 +874,7 @@ def verify_project_nested_dispatch(
         raise ValueError("project dispatch content bindings are incomplete")
     if not isinstance(entry_review, dict):
         raise ValueError("project dispatch Entry review binding is incomplete")
-    _, decision_bundle = resolve_project_directory(
+    decision_bundle_relative, decision_bundle = resolve_project_directory(
         repo_root, decision_content.get("path"), "decision_content.path"
     )
     _, authority_bundle = resolve_project_directory(
@@ -841,11 +899,20 @@ def verify_project_nested_dispatch(
         require_current_review_subject(
             decision_result.get("review_subject"), expected_kind="entry"
         )
-    require_file_sha256(
+    decision_manifest_raw = require_file_sha256(
         decision_bundle / "manifest.json",
         decision_content.get("manifest_file_sha256"),
         "decision content manifest",
     )
+    try:
+        decision_manifest = json.loads(decision_manifest_raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError("reviewed decision manifest is unreadable") from exc
+    decision_binding = {
+        "path": decision_bundle_relative,
+        "manifest_file_sha256": hashlib.sha256(decision_manifest_raw).hexdigest(),
+        "manifest": decision_manifest,
+    }
     require_file_sha256(
         authority_bundle / "manifest.json",
         authority_content.get("content_manifest_sha256"),
@@ -933,27 +1000,44 @@ def verify_project_nested_dispatch(
         state = yaml.safe_load(state_raw)
     except (TypeError, yaml.YAMLError) as exc:
         raise ValueError("project execution-state evidence is unreadable") from exc
-    if not isinstance(state, dict) or (
-        state.get("decision_root") != decision_id
-        or state.get("authority_id") != authority_id
-        or state.get("acknowledgment", {}).get("identity") != acknowledgment.identity
-        or state.get("plan", {}).get("identity") != dispatch_plan_id
-        or state.get("worker_may_start") is not False
-        or state.get("release_condition")
-        != "exact execution-start.yaml with finding-free execution verification"
-    ):
-        raise ValueError("project execution-state evidence does not bind the dispatch chain")
+    if not isinstance(state, dict):
+        raise ValueError("project execution-state evidence must contain a mapping")
+    state_shape = classify_current_execution_state(
+        state=state,
+        packet=packet,
+        current_plan=current_plan,
+        decision_id=decision_id,
+        decision_content_root=decision_result["content_root"],
+        authority_id=authority_id,
+        acknowledgment_id=acknowledgment.identity,
+        plan_id=dispatch_plan_id,
+    )
     if current_plan:
         design_input_changes = validate_design_revision(
             decision_result["review_subject"]["semantic_projection"], baseline_raw
         )
-        verify_current_execution_frozen_inputs(
-            packet=packet,
-            state=state,
-            baseline_raw=baseline_raw,
-            repo_root=repo_root,
-            design_input_changes=design_input_changes,
-        )
+        if state_shape == "baseline":
+            verify_current_execution_frozen_inputs(
+                packet=packet,
+                state=state,
+                baseline_raw=baseline_raw,
+                repo_root=repo_root,
+                design_input_changes=design_input_changes,
+            )
+        else:
+            verify_retained_decision_inputs(
+                plan=packet,
+                acknowledgment=ack,
+                state=state,
+                baseline_raw=baseline_raw,
+                decision_id=decision_id,
+                decision_content_root=decision_result["content_root"],
+                authority_id=authority_id,
+                decision_manifest=decision_manifest,
+                decision_binding=decision_binding,
+                decision_raw=decision_raw,
+                design_input_changes=design_input_changes,
+            )
 
 
 def validate_dispatch_bindings(

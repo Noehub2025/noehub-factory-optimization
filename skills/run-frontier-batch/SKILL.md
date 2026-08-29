@@ -25,7 +25,7 @@ Start with the earliest useful checkpoint. Within [Batch continuation](../fronti
 Read only the relevant branch:
 
 - Changes executable candidate: [Code execution](../frontier-optimization/references/batch-code-execution.md).
-- Slot H, routine-local measurement or derived-result recovery: [Measurement](../frontier-optimization/references/batch-evaluation.md).
+- Any work that actually invokes measurement, including diagnostic-only, routine-local, Slot H, or derived-result recovery: [Measurement](../frontier-optimization/references/batch-evaluation.md).
 - Authorized observations of working material: [Bounded observations](../frontier-optimization/references/batch-interface.md#bounded-observations-before-publication).
 - Research or analysis: answer the assigned question using applicable sources, distinguish observations from hypotheses, explain uncertainty and what observation would change the decision. Do not load candidate or engineering publication rules.
 - Human input: follow the assigned request, provenance, confidentiality and acceptance conditions. Return `waiting_for_input` when the response is absent; distinguish receipt from validation. Evidence from a person is not automatically a user authorization.

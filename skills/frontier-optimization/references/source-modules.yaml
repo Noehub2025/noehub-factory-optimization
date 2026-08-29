@@ -21,6 +21,7 @@ modules:
       - frontier-optimization/scripts/identity_bindings.py
       - frontier-optimization/scripts/frontier_provenance/__init__.py
       - frontier-optimization/scripts/frontier_provenance/content.py
+      - frontier-optimization/scripts/frontier_provenance/execution_inputs.py
       - frontier-optimization/scripts/frontier_provenance/facade.py
       - frontier-optimization/scripts/frontier_provenance/graph.py
       - frontier-optimization/scripts/frontier_provenance/repository.py
