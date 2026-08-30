@@ -11,34 +11,18 @@ modules:
       - frontier-optimization/references/provenance-rollout.yaml
       - frontier-optimization/references/source-modules.yaml
       - frontier-optimization/scripts/finding_effects.py
-      - frontier-optimization/scripts/evaluation_target_contract.py
-  storage-recovery:
+  batch-runtime:
+    depends_on: []
+    files:
+      - frontier-optimization/references/batch-code-execution.md
+      - frontier-optimization/references/batch-current.md
+      - frontier-optimization/scripts/frontier_batch.py
+  validator-support:
     depends_on: [graph-core]
     files:
-      - frontier-optimization/references/review-snapshots.md
-      - frontier-optimization/scripts/engineering_check_plan.py
-      - frontier-optimization/scripts/validate_candidate_package.py
-      - frontier-optimization/scripts/identity_bindings.py
       - frontier-optimization/scripts/frontier_provenance/__init__.py
       - frontier-optimization/scripts/frontier_provenance/content.py
-      - frontier-optimization/scripts/frontier_provenance/execution_inputs.py
-      - frontier-optimization/scripts/frontier_provenance/facade.py
-      - frontier-optimization/scripts/frontier_provenance/graph.py
-      - frontier-optimization/scripts/frontier_provenance/repository.py
-      - frontier-optimization/scripts/frontier_provenance/routine_admission.py
-      - frontier-optimization/scripts/frontier_provenance/review_subject.py
-      - frontier-optimization/scripts/frontier_provenance/review_contract.py
       - frontier-optimization/scripts/frontier_provenance/source_modules.py
-      - frontier-optimization/scripts/frontier_provenance/stores.py
-      - frontier-optimization/scripts/frontier_provenance/git_content.py
-      - frontier-optimization/scripts/frontier_provenance/handoff.py
-  provenance-runtime:
-    depends_on: [graph-core, storage-recovery]
-    files:
-      - frontier-optimization/scripts/frontier_provenance_cli.py
-      - frontier-optimization/scripts/frontier_review/__init__.py
-      - frontier-optimization/scripts/frontier_review/preparation.py
-      - frontier-optimization/scripts/frontier_review_cli.py
   direction:
     depends_on: [graph-core]
     files:
@@ -59,16 +43,15 @@ modules:
       - review-frontier/SKILL.md
       - review-frontier/agents/openai.yaml
   execution:
-    depends_on: [graph-core, provenance-runtime]
+    depends_on: [graph-core, batch-runtime]
     files:
-      - frontier-optimization/references/batch-interface.md
-      - frontier-optimization/references/candidate-lifecycle.md
+      - frontier-optimization/references/batch-evaluation.md
       - frontier-optimization/references/evaluation-protocol.md
       - frontier-optimization/references/worker-interfaces.md
       - run-frontier-batch/SKILL.md
       - run-frontier-batch/agents/openai.yaml
   evidence:
-    depends_on: [graph-core, storage-recovery]
+    depends_on: [graph-core]
     files:
       - frontier-optimization/references/closeout-and-claims.md
       - frontier-optimization/references/evidence-records.md
@@ -82,10 +65,38 @@ modules:
       - frontier-optimization/references/claim-records.md
       - frontier-optimization/references/claim-review.md
       - frontier-optimization/references/closeout-and-claims.md
-  legacy-validation:
-    depends_on: [storage-recovery]
+  validator-runtime:
+    depends_on: [graph-core, validator-support]
     files:
+      - frontier-optimization/scripts/run_workflow_checks.py
+      - frontier-optimization/scripts/validate_frontier_skill_bundle.py
+  legacy-validation:
+    depends_on: [validator-support]
+    files:
+      - frontier-optimization/references/batch-interface.md
+      - frontier-optimization/references/batch-packet-format.md
+      - frontier-optimization/references/batch-result.md
+      - frontier-optimization/references/candidate-lifecycle.md
+      - frontier-optimization/references/entry-review-legacy.md
+      - frontier-optimization/references/review-snapshots.md
+      - frontier-optimization/scripts/engineering_check_plan.py
+      - frontier-optimization/scripts/evaluation_target_contract.py
+      - frontier-optimization/scripts/identity_bindings.py
       - frontier-optimization/scripts/frontier_provenance/compatibility.py
+      - frontier-optimization/scripts/frontier_provenance/execution_inputs.py
+      - frontier-optimization/scripts/frontier_provenance/facade.py
+      - frontier-optimization/scripts/frontier_provenance/git_content.py
+      - frontier-optimization/scripts/frontier_provenance/graph.py
+      - frontier-optimization/scripts/frontier_provenance/handoff.py
+      - frontier-optimization/scripts/frontier_provenance/repository.py
+      - frontier-optimization/scripts/frontier_provenance/review_contract.py
+      - frontier-optimization/scripts/frontier_provenance/review_subject.py
+      - frontier-optimization/scripts/frontier_provenance/routine_admission.py
+      - frontier-optimization/scripts/frontier_provenance/stores.py
+      - frontier-optimization/scripts/frontier_provenance_cli.py
+      - frontier-optimization/scripts/frontier_review/__init__.py
+      - frontier-optimization/scripts/frontier_review/preparation.py
+      - frontier-optimization/scripts/frontier_review_cli.py
       - frontier-optimization/scripts/authorization_target_contract.py
       - frontier-optimization/scripts/freeze_execution_baseline.py
       - frontier-optimization/scripts/package_frontier_handoff.py
@@ -99,20 +110,23 @@ modules:
       - frontier-optimization/scripts/validate_entry_packet.py
       - frontier-optimization/scripts/workflow_source_binding.py
   release-validation:
-    depends_on: [direction, execution, evidence, claims, legacy-validation]
+    depends_on: [direction, execution, evidence, claims, validator-runtime]
     files:
       - frame-optimization/scripts/test_validate_frame_skill_bundle.py
-      - frontier-optimization/scripts/run_workflow_checks.py
-      - frontier-optimization/scripts/validate_frontier_skill_bundle.py
       - frontier-optimization/scripts/test_direction_resolver_contract.py
       - frontier-optimization/scripts/test_finding_effects.py
+      - frontier-optimization/scripts/test_frontier_batch.py
+      - frontier-optimization/scripts/test_run_workflow_checks.py
+      - frontier-optimization/scripts/test_validate_current_frontier_skill_bundle.py
+  legacy-compatibility:
+    depends_on: [legacy-validation]
+    files:
       - frontier-optimization/scripts/test_freeze_execution_baseline.py
       - frontier-optimization/scripts/test_frontier_provenance.py
-      - frontier-optimization/scripts/test_git_project_content.py
       - frontier-optimization/scripts/test_frontier_review_preparation.py
+      - frontier-optimization/scripts/test_git_project_content.py
       - frontier-optimization/scripts/test_package_frontier_handoff.py
       - frontier-optimization/scripts/test_project_snapshot.py
-      - frontier-optimization/scripts/test_run_workflow_checks.py
       - frontier-optimization/scripts/test_slice7_end_to_end.py
       - frontier-optimization/scripts/test_user_decision_reuse.py
       - frontier-optimization/scripts/test_validate_authorization_adoption.py

@@ -58,7 +58,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
 
         self.assertEqual(
             plan.tests,
-            tuple(path.as_posix() for path in MODULE.DESIGN_TESTS),
+            tuple(path.as_posix() for path in MODULE.CURRENT_BATCH_TESTS),
         )
         self.assertTrue(plan.run_bundle_validator)
         self.assertFalse(plan.release)
@@ -114,7 +114,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
         for expected in (
             *MODULE.PROVENANCE_TESTS,
             *MODULE.ENTRY_TESTS,
-            *MODULE.BATCH_TESTS,
+            *MODULE.LEGACY_BATCH_TESTS,
             *MODULE.RECOVERY_TESTS,
         ):
             self.assertIn(expected.as_posix(), plan.tests)
@@ -156,7 +156,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
         self.assertTrue(plan.release)
         self.assertEqual(
             plan.tests,
-            tuple(path.as_posix() for path in MODULE.RELEASE_TEST_ROOTS),
+            tuple(sorted(path.as_posix() for path in MODULE.CURRENT_RELEASE_TESTS)),
         )
 
     def test_unknown_workflow_python_escalates_instead_of_skipping(self) -> None:
@@ -166,7 +166,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
         )
 
         self.assertTrue(plan.release)
-        self.assertIn("affected mode escalated to the complete suite", plan.reasons)
+        self.assertIn("affected mode escalated to the current contract suite", plan.reasons)
 
     def test_fast_mode_runs_no_pytest_group(self) -> None:
         plan = MODULE.select_checks(

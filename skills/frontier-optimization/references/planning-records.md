@@ -6,8 +6,8 @@ Load only when reading or writing T, V, B, E, or Q. This file is their sole temp
 
 - [T: route](#t-route)
 - [V: user decision](#v-user-decision)
-- [B: batch plan](#b-batch-plan)
-- [B terminal outcome](#b-terminal-outcome)
+- [B: Batch selection record](#b-batch-selection-record)
+- [B conclusion](#b-conclusion)
 - [E: evaluated result](#e-evaluated-result)
 - [Q: research finding](#q-research-finding)
 
@@ -49,7 +49,7 @@ Judge eligibility for the action being proposed, not for the route's eventual su
 
 Every prerequisite of the proposed action must be supported by current evidence, assigned a funded prerequisite-first check, or dispositioned as unavailable. While it remains unresolved, select only work that tests it without relying on it already being true; dependent delivery, adoption, and stronger claims remain ineligible. A failed prerequisite keeps dependent work ineligible until applicable evidence and Entry or Replan permit it.
 
-Use the existing [working observations](batch-interface.md#bounded-observations-before-publication) for authorized empirical tests without a complete W or published candidate. Research permission does not make the eventual route delivery-ready or waive parent-owned charges. Keep an existing full-delivery commitment intact unless its owner changes it through the existing revision path.
+Use [current Batch actions](batch-current.md#perform-an-action) for authorized empirical tests without a complete W or published candidate. Research Permission does not make the eventual route delivery-ready or waive parent-owned charges. Keep an existing full-delivery commitment intact unless its owner changes it through the existing revision path.
 
 ### Informative checkpoints
 
@@ -65,117 +65,48 @@ Preserve a useful non-winner's distinct capability, mechanism evidence, or plaus
 - Recorded at: <ISO-8601 datetime>
 - Campaign generation: <positive integer>
 - Decision kind: <tradeoff | authorization>
-- Authorization class: <campaign-opening | execution | not applicable for tradeoff>
+- Permission class: <campaign-opening | protected Consequence | not applicable for tradeoff>
 - Decision: <exact user-owned choice>
-- Evidence presented: <identifiers or stable links>
+- Evidence presented: <record handles or stable links>
 - Alternatives: <technically eligible options for tradeoff; authorize, decline, and conditional authorization for execution; current explicit request for campaign-opening>
 - Recommendation presented: <recommended option and evidence-bounded reason or None>
-- Applies to: <routes, batches, resources, or campaign choice>
-- Bound object: <prior closeout, current applicable parents, next generation, inherited Budget, and planning-only zero-spend boundary for campaign-opening; exact AUTHORIZATION_READY target, reviewed design contract and scope, immutable direct packet, preflight and source, layout, or resource for execution; or None for tradeoff>
-- Effective conditions: <facts and limits>
+- Applies to: <routes, B records, actions, resources, or campaign choice>
+- Permitted Consequences: <paid work beyond the existing cost boundary, external submission, sensitive access, irreversible change, user-controlled scarce consumption, or None>
+- Scope and resources: <allowed objective, resources, data, systems, cumulative limits, and important restrictions>
+- Effective conditions: <facts, start or end condition, withdrawal state, and stop boundary>
 - Reconsider when: <new evidence or event>
 - Consequence: <allocation, exclusion, priority, risk, or authorization effect>
 - Supersedes: <V identifier or None>
 ```
 
-A `campaign-opening` V records an explicit current post-closeout reopen request. Bind it to the prior closeout, current applicable parent identities, proposed next generation, inherited Budget, and `planning only; zero B spend`. It records the answer already present in the request, needs no `AUTHORIZATION_READY`, and cannot present the Coordinator-derived technical objective as a user choice. A later user-owned route tradeoff uses a separate V. An `execution` V retains the exact immutable target and readiness rules. Its canonical ledger row is the reviewed authorize-branch record at `decision_record_path`; before the answer, that row may bind the stable target specification and assigned result path but not a future target or answer identity. The byte-derived user-result file binds the final target and exact answer. A finding-free adoption joins the ledger path, decision identifier, result identity, and target identity; together they are the one execution V.
+A `campaign-opening` V records an explicit current post-closeout reopen request and inherited user boundaries. A later user-owned tradeoff uses a separate V. A protected-Consequence V states the exact user choice, affected scope, controlled resources or costs, permitted Consequences, cumulative limits, conditions and stop boundary. Internal campaign spend within the adopted total and workflow-owned single-use consumption do not require another V. It is a human decision record, not an execution token or cryptographic credential. The Batch cites the applicable V immediately before `Batch.perform`; do not create target, adoption, authority or result identities around it.
 
-## B: batch plan
+## B: Batch selection record
+
+Create one short selection record, then create or open its authoritative state through `Batch.open(B)`:
 
 ```markdown
 ## B001: <batch name>
 
 - Recorded at: <ISO-8601 datetime>
 - Campaign generation: <positive integer>
-- Recovery lineage: <prior closed B, candidate, V, X, review, and exact reuse consequence; or not applicable>
 - Route: <T identifier or None>
-- Campaign baseline: <chosen T identifier and role, plus incumbent E identifier when one exists, or not applicable>
-- Work kind: <design | prototype | code | human_input | experiment | research | external_action | mixed>
-- Changes executable candidate: <true | false>
-- Executor: <Agent, user, tool, service, or team>
-- Required inputs: <identifiers, paths, schemas, or None>
-- Human input contract: <exact request, response path, schema, provenance, quality and legality checks, confidentiality handling, accept or reject conditions, and resume event; or not applicable>
-- Human input meaning: <evidence only after workflow validation; never automatic technical conclusion, E, or user value choice; or not applicable>
-- Work plan: <W identifier, path, plan revision, and design contract identity; or None>
-- Design profile: <direct | module | system | not applicable>
-- Required design inputs: <exact W and indexed concern sections with identities, or None>
-- Design review: <adopted DESIGN_READY review bound to those inputs, pending for design work, or not applicable under direct profile>
-- Development authorization: <applicable user grant, current Entry readiness and execution authority; cite a new V only when User decisions requires one; not applicable when no execution is proposed>
-- Parallel set: <label or None>
-- Depends on: <identifiers or None>
-- User values applied: <V identifiers or None>
-- Epoch: <integer>
-- Representation revision: <integer>
-- Permitted scope: <exact reviewed scope>
-- Starting records: <identifiers>
-- Project provenance: <exact decision and authority roots governing this B>
-- Work: <operations, modules, and worker assignments>
-- Repository structure: <existing-integrated; new-in-scope; user-choice-needed with the missing decision; or not applicable>
-- Source base identity: <commit plus dirty-state identity, immutable source snapshot, or not applicable>
-- Workspace isolation: <branch and worktree for code-bearing work, shared sequential workspace with reason, or not applicable>
-- Candidate interface: <existing or user-approved seam and callers, or not applicable>
-- Allowed code paths: <exclusive paths assigned to this B or not applicable>
-- Worker-forbidden paths: <paths this B's worker must not write, including evaluator, runner, interface, schema, Coordinator outputs, or other shared paths; or not applicable>
-- Execution-frozen inputs: <path, identity, and exact scope that no actor may change after execution start; or not applicable>
-- Preparation: <sealed current decision and preparation result; a packet preflight only for an actual historical compatibility object>
-- Result contract version: <versioned result schema and validation branch frozen in the B packet>
-- Entry readiness: <current Entry identity, applicable AUTHORIZATION_READY or spend-readiness ENTRY_READY, original user target, current execution authority and adoption state>
-- Candidate package inventory: <assigned official immutable path, byte-derived identity rule, and parent or R8 rule that owns the charge event; or not applicable>
-- Candidate manifest: <assigned stable path and identity rule, or not applicable>
-- Engineering check plan: <path and SHA-256 of one external frontier-project-engineering-check-plan/1, with ordered formal units, cumulative resource limits, and engineering-only consequence; or not applicable>
-- Implementation review gate: <required before routine-local or first Slot H measurement, integration, or incumbent use; exact diagnostic-only exception under candidate-lifecycle.md; reusable prior review with exact unchanged identity; or not applicable>
-- Evaluation target: <for formal Slot H, immutable candidate, review, experiment, and Slot H contract; for diagnostic-only, its exception evidence and consequence boundary; for routine-local, the derived candidate plus exact pre-authorized slot, protocol, calibration, structured evidence scope, and B-evidence-only boundary; or not applicable>
-- Routine follow-up slot: <available slot identity and originating materialization B | consumed by exact execution root | invalid with reason | not applicable>
-- Preparation role: <why this work is necessary to establish the baseline or reach a decision, or not applicable>
-- Decision hypothesis: <mechanism or assumption this B tests or advances>
-- Expected observation: <observable result and direction, including what would contradict the hypothesis>
-- Trajectory contribution: <ordered comparison to named prior E under the T progress rule | first observation in the route | not applicable with reason>
-- Output contract: <one independently verifiable slice or design artifact and its observable behavior>
-- Implementation validation: <checks or exact WORK.md section>
-- Implementation definition of done: <conditions or exact WORK.md section>
-- Planned spend: <maximum amount and unit under the cited parent or R8 rule>
-- Actual spend: pending
-- Authorization gate: <AUTHORIZATION_READY followed by exact user V and Coordinator ENTRY_READY adoption; spend-readiness ENTRY_READY when an adopted grant applies or no new user decision is needed; adopted REPLAN_READY for a strategic later change; adopted implementation review before first Slot H measurement, integration, or incumbent use; exact diagnostic-only path under candidate-lifecycle.md; or exact later Selection authority>
-- Baseline-establishment checkpoint: <usable artifact and completion check or not applicable>
-- First performance check: <comparison or decision result, and whether this B or a later B runs it>
-- Preparation budget limit: <maximum allocation before that check>
-- Required follow-up reserve: <amount and mandatory confirmation or recovery purpose, or None with the governing rule>
-- Decision after checkpoint: <deepen, revise, abandon, or select by observable evidence>
-- Comparison-validity checks: <measurement identity, comparable conditions, data quality, drift, confounding, and execution checks required when this B measures a result>
-- Measurement and promotion: <Slot H and R8 path>
-- Artifacts: <assigned stable paths, including distinct attempt-evidence paths or one exclusive evidence subtree>
-- Resume when: <available input, event, or immediate>
-- Outcome: planned
+- Selection role: <Primary | Parallel with join owner | later independent work>
+- Batch state: artifacts/frontier/B001/batch.yaml
+- Independently judged result: <the result that makes this one B>
+- Why this is a new B: <independently evaluable, stoppable, or fundable boundary>
+- Depends on: <records or observations that must exist before an affected action, or None>
 ```
 
-A B authorizes one bounded objective, authority, evidence, and spend envelope rather than one command, slice, or internal try. Before authority or effects, deterministic draft repair stays in the same B while the target specification and every substantive, measurement, spend, effect, stop, and consequence field remain unchanged; failed draft bytes are diagnostic rather than a new B or review record. A repaired Entry follows [Entry repair review](entry-review.md#entry-repair-review), preserving saved versions and applicable conclusions. A workflow update alone does not change project identity or authority. During execution, apply [Boundary-preserving continuation](batch-interface.md#boundary-preserving-continuation). Count all effects and resources cumulatively. Require a new B after a substantive boundary changes, authoritative publication, or an immutable result. Do not make the first eligible engineering failure terminal by default or add an unbounded retry path.
+The `frontier-batch/1` record owns objective, acceptance, scope, R and V references, resource limits, expected Consequences, Candidate Revision, Measurement Definition, checks, observations, Attempts, actual consumption, Consequences, conclusion, and recovery. Do not duplicate those facts in this planning record, `FRONTIER.md`, a packet, or a terminal-outcome block.
 
-`Decision hypothesis` and `Expected observation` are the pre-spend owners of the B-level technical hypothesis. State the mechanism or assumption, predicted observable effect, contradiction, and decision it can resolve. A formal Slot H B that evaluates or confirms an unchanged candidate must state its immediate comparison hypothesis and cite the applicable originating T or W, design or implementation B, and exact candidate identity as mechanism lineage in the existing prose; reference measurements and candidates with no technical mechanism say `not applicable`. An upstream T or W provides only mechanism context explicitly inherited by B and cannot replace the B-level decision. Later evidence use and Generation Reflection must recover these sources rather than replace them with a result-shaped story. Identity recovery, record repair, and administrative work use `not applicable` rather than inventing a technical mechanism.
+A B is one stable allocation toward one independently judged result rather than one command, slice, candidate, dispatch, or internal try. Draft repair, implementation changes, Review or Permission updates, resource-limit revisions and Candidate Revision changes stay in the same B while that result remains the same. Create a new B only for work that can be evaluated, stopped, or funded independently. Apply [Boundary-preserving continuation](batch-current.md#boundary-preserving-continuation).
 
-When B tests an unresolved prerequisite, apply [Research hypotheses and action prerequisites](#research-hypotheses-and-action-prerequisites). Its work, paths, output, spend, and checkpoint end at that observation. `Depends on` and `Authorization gate` restrict later work that relies on a passing result, not the authorized test itself.
+State the technical hypothesis, expected observation, contradiction, and decision inside the Batch objective, acceptance, Measurement Definition, or action details as appropriate. An upstream T or W supplies only explicitly inherited mechanism context. Raw observations do not become E and a Batch conclusion does not select the next investment.
 
-Apply the canonical R8 vacuity definition before selecting B. Known-vacuous work is ineligible. An unknown measurement property may instead be the bounded first observation when its possible results lead to different permitted next actions. A diagnostic-only experiment follows `candidate-lifecycle.md`, remains B evidence, and cannot create E or any promotion, integration, incumbent, or strength consequence.
+## B conclusion
 
-A routine-local B follows [Evaluation protocol reuse](evaluation-protocol.md). It consumes the one slot reviewed with its materialization B, never protected reserve, and ends at an adopted terminal B outcome. It cannot create E or directly authorize another B; the integrated resolver decides any follow-up from the new evidence state.
-
-## B terminal outcome
-
-Append one block after Coordinator validation of a result with `completed`, `interrupted`, `failed`, or `blocked`. Do not rewrite the B plan. `waiting_for_input` is a paused attempt and has no terminal-outcome block until a resumed attempt terminates.
-
-```markdown
-B terminal outcome:
-- Recorded at: <ISO-8601 datetime>
-- Batch: <B identifier>
-- Result: <result-packet path and immutable identity>
-- Outcome: <completed | interrupted | failed | blocked>
-- Coordinator validation: <accepted, partially accepted, or rejected, with exact scope and evidence>
-- Output disposition: <available evidence, unavailable work, candidate materialized pending review, or other bounded meaning>
-- Checks and deviations: <passed, failed, missing, and out-of-scope items with evidence>
-- Spend: <actual amount and accounting evidence, or unknown and new-spend blocker>
-- Reservation disposition: <released, partially consumed, retained with reason, or unresolved>
-- Recovery: <stable recovery point and next permitted non-spend action>
-- Applicable next gate: <implementation review | evaluation selection | integrated resolver | accounting resolution | other exact gate>
-```
+Conclude through `Batch.apply(ConcludeBatch(...))`. The Batch record preserves the strongest supported result and remaining objective gap after every Attempt is resolved. Reconcile actual spend with Budget and adopt valid measurement meaning through E. Do not append another result identity, validation identity, or duplicate terminal outcome.
 
 ## E: evaluated result
 
@@ -185,11 +116,11 @@ B terminal outcome:
 - Recorded at: <ISO-8601 datetime>
 - Campaign generation: <positive integer>
 - Batch: <B identifier, reference-baseline establishment packet, or existing result identifier>
-- Candidate identity: <canonical Slot B identity>
-- Experiment identity: <candidate, evaluator, data, controls, protocol, environment, budget, and result-artifact binding>
+- Candidate Revision: <full Git commit and selected repository-relative paths, or retained external candidate reference>
+- Measurement source: <B identifier, Attempt, Batch-owned Measurement Definition, raw evidence, evaluator or protocol reference when independently reused>
 - Epoch: <integer>
 - Representation revision: <integer>
-- Measurement: <Slot H identity and evidence link>
+- Measurement: <formal-slot-h definition and evidence link>
 - Comparison validity: <measurement identity, comparable conditions, data quality, drift or confound checks, adaptive-exposure lineage across attempts and B/E records, selection mechanism, shared evaluator/data/seeds, material omitted negative attempts, independent-confirmation status, and conclusion; or not yet applicable for an unpaired reference>
 - Result: <complete parent-owned value or vector with required uncertainty, including every mandatory segment, tail, and delayed confirmation>
 - Constraints: <every parent-owned hard constraint and guardrail with legal outcome and checks>

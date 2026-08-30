@@ -14,13 +14,8 @@ from typing import Iterable, Sequence
 WORKFLOW_ROOT = PurePosixPath(".agents/skills")
 FRONTIER_SCRIPTS = WORKFLOW_ROOT / "frontier-optimization/scripts"
 FRAME_TEST = WORKFLOW_ROOT / "frame-optimization/scripts/test_validate_frame_skill_bundle.py"
-BUNDLE_TEST = FRONTIER_SCRIPTS / "test_validate_frontier_skill_bundle.py"
+BUNDLE_TEST = FRONTIER_SCRIPTS / "test_validate_current_frontier_skill_bundle.py"
 SELECTOR_TEST = FRONTIER_SCRIPTS / "test_run_workflow_checks.py"
-RELEASE_TEST_ROOTS = (
-    WORKFLOW_ROOT / "frame-optimization/scripts",
-    WORKFLOW_ROOT / "frontier-optimization/scripts",
-)
-
 DIRECTION_TESTS = (
     FRONTIER_SCRIPTS / "test_direction_resolver_contract.py",
     FRONTIER_SCRIPTS / "test_finding_effects.py",
@@ -40,7 +35,8 @@ ENTRY_TESTS = (
     FRONTIER_SCRIPTS / "test_validate_authorization_adoption.py",
     FRONTIER_SCRIPTS / "test_freeze_execution_baseline.py",
 )
-BATCH_TESTS = (
+CURRENT_BATCH_TESTS = (FRONTIER_SCRIPTS / "test_frontier_batch.py",)
+LEGACY_BATCH_TESTS = (
     FRONTIER_SCRIPTS / "test_validate_batch_packet.py",
     FRONTIER_SCRIPTS / "test_validate_batch_result.py",
     FRONTIER_SCRIPTS / "test_validate_candidate_package.py",
@@ -50,6 +46,13 @@ RECOVERY_TESTS = (
     FRONTIER_SCRIPTS / "test_slice7_end_to_end.py",
 )
 DESIGN_TESTS = (FRONTIER_SCRIPTS / "test_slice7_end_to_end.py",)
+CURRENT_RELEASE_TESTS = (
+    FRAME_TEST,
+    BUNDLE_TEST,
+    SELECTOR_TEST,
+    *DIRECTION_TESTS,
+    *CURRENT_BATCH_TESTS,
+)
 FRAME_SKILLS = {
     "frame-optimization",
     "design-measurement",
@@ -71,11 +74,11 @@ DIRECTION_REFERENCES = {
 ENTRY_REFERENCES = {
     "entry-code-planning.md",
     "entry-review.md",
-    "review-snapshots.md",
 }
 BATCH_REFERENCES = {
-    "batch-interface.md",
-    "candidate-lifecycle.md",
+    "batch-current.md",
+    "batch-evaluation.md",
+    "evaluation-protocol.md",
     "implementation-review.md",
     "technical-design.md",
     "work-plan.md",
@@ -85,6 +88,14 @@ RECOVERY_REFERENCES = {
     "closeout-and-claims.md",
     "packaging-and-recovery.md",
     "result-adoption.md",
+}
+LEGACY_REFERENCES = {
+    "batch-interface.md",
+    "batch-packet-format.md",
+    "batch-result.md",
+    "candidate-lifecycle.md",
+    "entry-review-legacy.md",
+    "review-snapshots.md",
 }
 CROSS_CUTTING_REFERENCES = {
     "frontier-core.md",
@@ -97,21 +108,22 @@ CROSS_CUTTING_REFERENCES = {
 SCRIPT_TESTS = {
     "authorization_target_contract.py": ENTRY_TESTS,
     "freeze_execution_baseline.py": ENTRY_TESTS,
+    "frontier_batch.py": (FRONTIER_SCRIPTS / "test_frontier_batch.py",),
     "identity_bindings.py": (*PROVENANCE_TESTS, *ENTRY_TESTS),
     "package_frontier_handoff.py": (*PROVENANCE_TESTS, *RECOVERY_TESTS),
     "post_adoption_state.py": ENTRY_TESTS,
     "project_snapshot.py": (*PROVENANCE_TESTS, *ENTRY_TESTS),
     "validate_authorization_adoption.py": ENTRY_TESTS,
-    "validate_batch_packet.py": (*BATCH_TESTS, FRONTIER_SCRIPTS / "test_slice7_end_to_end.py"),
-    "validate_batch_result.py": (*BATCH_TESTS, FRONTIER_SCRIPTS / "test_slice7_end_to_end.py"),
-    "validate_candidate_package.py": BATCH_TESTS,
+    "validate_batch_packet.py": (*LEGACY_BATCH_TESTS, FRONTIER_SCRIPTS / "test_slice7_end_to_end.py"),
+    "validate_batch_result.py": (*LEGACY_BATCH_TESTS, FRONTIER_SCRIPTS / "test_slice7_end_to_end.py"),
+    "validate_candidate_package.py": LEGACY_BATCH_TESTS,
     "validate_candidate_recovery.py": RECOVERY_TESTS,
     "validate_entry_packet.py": (*ENTRY_TESTS, FRONTIER_SCRIPTS / "test_slice7_end_to_end.py"),
     "validate_frontier_skill_bundle.py": (BUNDLE_TEST,),
-    "frontier_provenance_cli.py": (*PROVENANCE_TESTS, *ENTRY_TESTS, *BATCH_TESTS, *RECOVERY_TESTS),
+    "frontier_provenance_cli.py": (*PROVENANCE_TESTS, *ENTRY_TESTS, *LEGACY_BATCH_TESTS, *RECOVERY_TESTS),
     "frontier_review_cli.py": REVIEW_PREPARATION_TESTS,
     "run_workflow_checks.py": (SELECTOR_TEST,),
-    "workflow_source_binding.py": (*ENTRY_TESTS, *BATCH_TESTS, *RECOVERY_TESTS),
+    "workflow_source_binding.py": (*ENTRY_TESTS, *LEGACY_BATCH_TESTS, *RECOVERY_TESTS),
 }
 
 
@@ -160,8 +172,8 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
             mode=mode,
             changed_paths=changed,
             workflow_paths=workflow,
-            tests=tuple(path.as_posix() for path in RELEASE_TEST_ROOTS),
-            reasons=("release mode requires the complete workflow suite",),
+            tests=tuple(path.as_posix() for path in CURRENT_RELEASE_TESTS),
+            reasons=("release mode requires the current workflow contract suite",),
             run_bundle_validator=True,
             release=True,
         )
@@ -197,19 +209,19 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
             _add_tests(selected, reasons, (FRAME_TEST,), f"framing Skill changed: {skill}")
             continue
         if skill in DESIGN_SKILLS:
-            _add_tests(selected, reasons, DESIGN_TESTS, f"implementation designer changed: {skill}")
+            _add_tests(selected, reasons, CURRENT_BATCH_TESTS, f"implementation designer changed: {skill}")
             continue
         if skill in DIRECTION_SKILLS:
             _add_tests(selected, reasons, DIRECTION_TESTS, f"direction worker changed: {skill}")
             continue
         if skill == "run-frontier-batch":
-            _add_tests(selected, reasons, BATCH_TESTS, "execution worker changed")
+            _add_tests(selected, reasons, CURRENT_BATCH_TESTS, "execution worker changed")
             continue
         if skill == "review-frontier":
             _add_tests(
                 selected,
                 reasons,
-                (*ENTRY_TESTS, *RECOVERY_TESTS),
+                CURRENT_RELEASE_TESTS,
                 "shared Frontier reviewer changed",
             )
             continue
@@ -229,11 +241,13 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
             elif path.name in DIRECTION_REFERENCES:
                 _add_tests(selected, reasons, DIRECTION_TESTS, f"direction contract changed: {path.name}")
             elif path.name in ENTRY_REFERENCES:
-                _add_tests(selected, reasons, ENTRY_TESTS, f"Entry contract changed: {path.name}")
+                _add_tests(selected, reasons, (*DIRECTION_TESTS, *CURRENT_BATCH_TESTS), f"Entry contract changed: {path.name}")
             elif path.name in BATCH_REFERENCES:
-                _add_tests(selected, reasons, BATCH_TESTS, f"execution contract changed: {path.name}")
+                _add_tests(selected, reasons, CURRENT_BATCH_TESTS, f"execution contract changed: {path.name}")
             elif path.name in RECOVERY_REFERENCES:
-                _add_tests(selected, reasons, RECOVERY_TESTS, f"recovery contract changed: {path.name}")
+                _add_tests(selected, reasons, (*DIRECTION_TESTS, *CURRENT_BATCH_TESTS), f"current recovery contract changed: {path.name}")
+            elif path.name in LEGACY_REFERENCES:
+                _add_tests(selected, reasons, (*ENTRY_TESTS, *LEGACY_BATCH_TESTS, *RECOVERY_TESTS), f"legacy compatibility contract changed: {path.name}")
             continue
 
         if area == "scripts":
@@ -257,7 +271,7 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
                 _add_tests(
                     selected,
                     reasons,
-                    (*PROVENANCE_TESTS, *ENTRY_TESTS, *BATCH_TESTS, *RECOVERY_TESTS),
+                    (*PROVENANCE_TESTS, *ENTRY_TESTS, *LEGACY_BATCH_TESTS, *RECOVERY_TESTS),
                     "shared provenance module changed",
                 )
                 continue
@@ -269,8 +283,8 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
                 reasons.add(f"unclassified workflow Python changed: {raw_path}")
 
     if escalate:
-        selected = {path.as_posix() for path in RELEASE_TEST_ROOTS}
-        reasons.add("affected mode escalated to the complete suite")
+        selected = {path.as_posix() for path in CURRENT_RELEASE_TESTS}
+        reasons.add("affected mode escalated to the current contract suite")
 
     return CheckPlan(
         mode=mode,

@@ -220,7 +220,7 @@ acceptance_scenarios:
   - {number: 6, name: Outside-allocation probe, target: {kind: resolver-fixture, id: outside-allocation-probe}}
   - {number: 7, name: Parent mismatch, target: {kind: resolver-fixture, id: parent-mismatch-after-frontier-work}}
   - {number: 8, name: Protected reserve, target: {kind: resolver-fixture, id: protected-reserve-exact-blocker}}
-  - {number: 9, name: General recovery request, target: {kind: contract-assertion, path: references/user-facing-handoff.md, marker: Grants campaign-opening planning only}}
+  - {number: 9, name: General recovery request, target: {kind: contract-assertion, path: references/user-facing-handoff.md, marker: If the user asked the workflow to continue and a legal internal action exists}}
   - {number: 10, name: No fake alternative, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'Create no fake alternative T'}}
   - {number: 11, name: Unfunded validity diagnosis, target: {kind: resolver-fixture, id: unfunded-validity-diagnosis}}
   - {number: 12, name: Unfunded route refresh, target: {kind: resolver-fixture, id: unfunded-route-refresh}}
@@ -243,8 +243,8 @@ acceptance_scenarios:
   - {number: 29, name: Compaction recovery, target: {kind: regression-test, path: scripts/test_frontier_provenance.py, test: test_complete_handoff_references_git_and_retained_legacy_roots}}
   - {number: 30, name: Claims boundary, target: {kind: contract-assertion, path: references/closeout-and-claims.md, marker: local optimum}}
   - {number: 31, name: Mid-campaign workflow update, target: {kind: contract-assertion, path: references/frontier-core.md, marker: 'Apply current workflow rules to its next decision'}}
-  - {number: 32, name: Project-only decision node, target: {kind: contract-assertion, path: references/entry-review.md, marker: '`project-decision` content root and an empty payload'}}
-  - {number: 33, name: General reopen request, target: {kind: contract-assertion, path: references/user-facing-handoff.md, marker: Grants campaign-opening planning only}}
+  - {number: 32, name: No workflow decision identity, target: {kind: contract-assertion, path: references/entry-review.md, marker: 'Do not create a content root, decision node'}}
+  - {number: 33, name: General reopen request, target: {kind: contract-assertion, path: references/user-facing-handoff.md, marker: If the user asked the workflow to continue and a legal internal action exists}}
   - {number: 34, name: Specific recovery request, target: {kind: regression-test, path: scripts/test_validate_candidate_recovery.py, test: test_requested_identity_mismatch_blocks_before_generation_artifacts}}
   - {number: 35, name: Critical source defect, target: {kind: resolver-fixture, id: hard-authority-stop-dominates-validity}}
   - {number: 36, name: Regression review is not campaign adoption, target: {kind: contract-assertion, path: references/packaging-and-recovery.md, marker: outside campaigns}}
@@ -255,7 +255,7 @@ acceptance_scenarios:
   - {number: 41, name: Parent-owned result vector, target: {kind: contract-assertion, path: references/learning-loop.md, marker: complete parent-owned vector}}
   - {number: 42, name: Mutable context and expiring action, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'action window'}}
   - {number: 43, name: Dominated diagnostic repeat, target: {kind: resolver-fixture, id: dominated-diagnostic-repeat}}
-  - {number: 44, name: Proportionate governance, target: {kind: contract-assertion, path: references/entry-review.md, marker: 'Expand review only where a changed dependency'}}
+  - {number: 44, name: Proportionate governance, target: {kind: contract-assertion, path: references/entry-review.md, marker: 'review the changed dependencies and affected conclusions; reuse unaffected conclusions'}}
   - {number: 45, name: Workflow identity exclusion, target: {kind: contract-assertion, path: references/learning-loop.md, marker: workflow source, semantic, validator, worker, deployment, or release change}}
   - {number: 46, name: Fabricated progress rule, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'Do not invent a number merely to complete the template'}}
   - {number: 47, name: Evidence-derived route before Q completion, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: provisional}}

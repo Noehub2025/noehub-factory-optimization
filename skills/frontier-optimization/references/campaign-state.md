@@ -6,7 +6,7 @@ These locators support comparison and scoped restore, not a second state ledger.
 Use [Provenance, Git, and retained artifacts](provenance-and-identity.md) for
 retention and restore behavior. Working restores preserve evidence and spend.
 
-Parent goals and rules remain in their owning contracts. Current consumption, reservations, generation and next action live here and in the ledger; parent summaries are explanatory only. Apply [Change impact](frontier-core.md#change-impact-and-retained-results) when a parent rule actually changes.
+Parent goals and rules remain in their owning contracts. Campaign generation and Selection live here. Budget owns campaign accounting and reservations; each B owns its actual consumption and Consequences, which Budget reconciles without copying the Batch lifecycle. Parent summaries are explanatory only. Apply [Change impact](frontier-core.md#change-impact-and-retained-results) when a parent rule actually changes.
 
 ## Contents
 
@@ -31,9 +31,9 @@ representation_generated_at: "<ISO-8601 datetime>"
 representation_review_result: <PROCEED_EXPLORATORY | PROCEED_MODULAR>
 representation_reviewed_at: "<ISO-8601 datetime>"
 representation_permitted: "<exact reviewed Permitted text>"
-project_provenance:
-  decision_root: <frontier-decision-root-sha256 identity>
-  adopted_by: <Entry or Replan packet and unchanged positive review identity>
+project_start:
+  commit: <full Git commit>
+  paths: [<repository-relative paths that define the campaign starting scope>]
 campaign_generation: <positive integer; legacy omission means 1>
 campaign_status: <planned | running | stopped | halted>
 current_state:
@@ -41,10 +41,6 @@ current_state:
   campaign_status: <same status>
   primary_batch: <B identifier or null>
   parallel_batches: [<B identifiers>]
-  decision_id: <current execution V identifier or null>
-  authorization_state: <pending | adopted | not-required | closed>
-  execution_batch: <current B identifier or null>
-  execution_state: <not-authorized | awaiting-acknowledgment | acknowledged | released | reported | terminal>
 updated: <ISO-8601 date>
 generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 ---
@@ -61,7 +57,7 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 |---|---|---|---|---|
 | F1 | Scope and bindings | <St> | Use problem epoch <n> and representation revision <n>; permit only <exact reviewed scope> with <required global checks>. | <detail link or blank> |
 | F2 | Spend | <St> | Authorize <total>; <prior and Entry cost> plus <B actual> is used, <reservations> is reserved, <required reserve> is protected, and <balance> remains. | [frontier/ledger.md](frontier/ledger.md) |
-| F3 | Baseline and next batch | <St> | Under <Entry or replan authority>, use <design and user authorization> for <baseline and B>; reach <check> within <limit>; reflect, protect <reserve>, then apply <R8>. | [frontier/ledger.md](frontier/ledger.md) |
+| F3 | Baseline and next batch | <St> | Under <Selection and current user boundaries>, use <design and applicable V> for <baseline and B>; reach <check> within <limit>; reflect, protect <reserve>, then apply <R8>. | [frontier/ledger.md](frontier/ledger.md) |
 | F4 | Retained results | <St> | Retain <E identities and parent-defined roles> under the current epoch; start with E001 as the reference baseline and name an incumbent only after valid measurement and retention. | [frontier/ledger.md](frontier/ledger.md) |
 | F5 | References and bounds | <St> | Use <D records and authority> for <allowed use>, or state that no usable reference exists. | <detail link or blank> |
 | F6 | Gap | <St> | Report <gap> from <compatible records>, or state why no valid gap exists. | <detail link or blank> |
@@ -79,17 +75,19 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 
 `St`: `P` decided; `~` usable with a stated limit; `O` blocks affected spend; `-` not relevant.
 
-`current_state` is the sole machine-readable owner of current Selection, authorization, and dispatch state. Ledger records own the decisions and evidence that justify it; `log.md` owns event order. The Brief and F table explain those records but grant no authority independently. Include the live and proposed state meaning in the complete current Entry and inspect its transition through Entry preparation and review. The historical `frontier-current-state-projection/1` and `validate_entry_packet.py` apply only to their original compatibility objects, not as an extra current writer. Authorization adoption preserves `campaign_status`, changes `authorization_state` from `pending` to `adopted`, changes execution only from `not-authorized` to `awaiting-acknowledgment`, and makes the reviewed Primary and Parallel list equal `selected_batches`. The later first-B lifecycle rule remains separate.
+`current_state` is the sole machine-readable owner of current Campaign and Selection state. It names the selected B records but does not copy their lifecycle, Reviews, Permissions, Budget, Attempts, consumption, Consequences, or results. Each current B owns that work state through [Current Batch](batch-current.md); R, V, Budget, and E retain their own facts. `log.md` owns event order. The Brief and F table explain those records but grant no authority independently.
 
-When a composite Entry has a routine follow-up, the governing B and latest Selection record the slot as `available`, `consumed: <execution root>`, or `invalid: <exact reason>`. The rebuildable slot index mirrors that fact but does not own authority. A consumed or invalid slot cannot reappear as available under the same evidence-state identity.
+Historical `current_state` fields such as `decision_id`, `authorization_state`, `execution_batch`, and `execution_state` remain readable in their original records. Do not populate them in a current record or use them as current writers. The historical `frontier-current-state-projection/1`, Entry packet, acknowledgment, execution-start, and first-B lifecycle transition apply only to B records that actually contain that contract.
 
-Generate the Brief and F-table status wording from `current_state` and its cited ledger decision before presentation. When those typed owners agree, stale explanatory wording is `NARRATIVE_STATE_STALE` advisory under [Finding effects](finding-effects.md), not a new B, V, snapshot, or review. A disagreement among typed owners, or wording that is itself the user-facing authorization scope, spend, stop, or consequence, remains blocking.
+When a composite Entry has a routine follow-up, the governing B records the slot as `available`, `consumed: B/<Attempt>`, or `invalid: <exact reason>`. Selection names the governing B but does not duplicate the slot state. A consumed or invalid slot cannot reappear as available without a recorded correction of the owning Batch fact.
 
-The first-B lifecycle transition is a bounded status patch, not a general `FRONTIER.md` rewrite. Use the structured [first-B lifecycle contract](batch-packet-format.md#batch-packet): after accepted acknowledgment, capture one RFC3339 UTC transition instant, change `campaign_status` from `planned` to `running`, set `generated.at` to that instant, derive `updated` from its UTC calendar date, and preserve `campaign_generation` plus every other byte. Freeze the complete post-change bytes and record the structured transition receipt before execution start. A packet fixes this derivation rule and the pre-transition identity; it never predicts the runtime timestamp or date.
+Generate the Brief and F-table status wording from Campaign and Selection state plus the cited Batch, R, V, Budget, and E owners before presentation. When the owners agree, stale explanatory wording is `NARRATIVE_STATE_STALE` advisory under [Finding effects](finding-effects.md), not a new B, V, snapshot, or review. A disagreement among owners, or wording that is itself the user-facing permission scope, spend, stop, or consequence, remains blocking.
+
+Change `campaign_status` from `planned` to `running` when the first selected B begins meaningful work. This is a Campaign fact, not a Batch execution credential. Update only Campaign and Selection state plus their explanatory wording; do not create an acknowledgment, snapshot, execution-start, transition receipt, or another identity. Historical records that used the old first-B lifecycle contract retain their original transition bytes.
 
 Pin F1-F4, F7, and F8 before first B spend. F1 copies exact `Permitted`; F8 copies every claim ceiling. E001 resolves the current-epoch reference-baseline identity and existing Slot H evidence from the handoff. Frontier does not create or repair that evidence. Selection keeps the replaceable campaign baseline in F3 and T/V/W/B; it enters F4 only after valid measurement creates E and Slots D, E, H, and R8 retain it.
 
-The Brief passes only when a fresh reader can identify the baselines, project integration when relevant, allowed work, first performance check, protected reserve, remaining budget, success and comparison rules, latest decisive learning, stopping rules, and claim limits without reading the table. Read current Selection, authorization, and dispatch state from `current_state`; keep historical chronology in ledger and log references instead of restating every superseded repair chain.
+The Brief passes only when a fresh reader can identify the baselines, project integration when relevant, allowed work, first performance check, protected reserve, remaining budget, success and comparison rules, latest decisive learning, stopping rules, and claim limits without reading the table. Read current Campaign and Selection state from `current_state`; read Batch progress from the selected B, Permission from V, spend from Budget, and adopted meaning from E. Keep historical chronology in ledger and log references instead of restating every superseded repair chain.
 
 ## Budget update
 
@@ -115,6 +113,8 @@ Budget update:
 
 Before Selection, replace `Pending` with a concrete reserve or `None` under R8. Account for Entry evidence work under the governing budget rule; it is not B spend, but it is never free when the authority charges it. In a recovery generation, carry earlier-generation spend forward exactly once and never reset the parent ceiling. Subtract prior setup spend, inherited closed-generation spend, charged current-generation Entry spend, current-generation campaign spend, active reservations, and the reserve exactly once. When the reserved purpose becomes a selected B, move that amount from required reserve to active reservation in one update.
 
+The Coordinator is the only owner that changes a Batch allocation. Increase or confirm the matching reservation before raising the Batch limit. Lower the Batch limit before releasing a reservation. After `Batch.perform`, retain the Attempt and actual `resource_use` first, then append the Budget update and disposition the reservation before making another dependent allocation. Use identical resource keys and units across Budget, reservation, Batch limit and actual use. A protected reserve is not an available Batch limit until Selection assigns its stated purpose.
+
 A final-closeout update releases or dispositions every reservation, reports unknown spend explicitly, and leaves no active spend authority. Claim-only processing never writes a final-closeout Budget update.
 
 ## Selection
@@ -128,7 +128,7 @@ Selection:
 - Recorded at: <ISO-8601 datetime>
 - Campaign generation: <positive integer>
 - Recovery lineage: <prior CLOSEOUT_COMPLETE, recovery V and X identities, reused objects and limits; or None for generation 1>
-- Project provenance: <decision root and adopting Entry or Replan identity; no workflow identity>
+- Project provenance: <full Git commit and affected repository-relative paths; no workflow identity>
 - Evidence-state identity: <immutable identity of current parents, adopted terminal outcomes, E dispositions, Q, V, D, X, Budget, W, and reviews>
 - Route-set state: <complete for this decision | incomplete | reopened, with Q, T, peer-source basis, shared assumptions, exclusions, deferrals, prerequisites, and reopening evidence>
 - Direction resolution: <local R8 | local diagnostic | focused Q | route-landscape Q | strategic replan | stop | halt | blocked, with the first applicable row from learning-loop.md, its persisted condition, and exact next action>
@@ -168,4 +168,4 @@ Selection:
 
 Selection applies reviewed Entry evidence or current adopted project evidence through the sole resolver; it does not strengthen validity, technical learning, route eligibility, progress, constraint meaning, diagnostic alternatives, dominance, affected scope, or surviving authority to make a proposed B pass. `complete for this decision` supports the current allocation only and makes no exhaustive-search, originality, or optimality claim. A sole eligible route is sufficient when every material decision-relevant mechanism class is dispositioned. Apply [Research hypotheses and action prerequisites](planning-records.md#research-hypotheses-and-action-prerequisites) to the selected action, and record any [opportunity-led reopening](learning-loop.md#opportunity-led-reconsideration) in the existing route-set state.
 
-One evidence-state identity has exactly one persisted first applicable resolver row and deterministic resolution. Reject a competing Selection for that identity. Later workflow changes never recompute it. A new resolver run requires a new project decision event and a new evidence-state identity. Copy the diagnostic ordering recorded under the Learning Loop resolver; do not introduce a separate uniqueness test here. Use Q only for the resolver's named evidence gap and V only for a genuine user-owned tradeoff or exact authorization. No later spend authority exists until Selection cites its applicable evidence and gates and those facts remain current. Routine row 13 adds no research, diagnosis, or review; routine work cannot consume protected reserve.
+One evidence-state identity has exactly one persisted first applicable resolver row and deterministic resolution. Reject a competing Selection for that identity. Later workflow changes never recompute it. A new resolver run requires a new project decision event and a new evidence-state identity. Copy the diagnostic ordering recorded under the Learning Loop resolver; do not introduce a separate uniqueness test here. Use Q only for the resolver's named evidence gap and V only for a genuine user-owned tradeoff or protected Consequence. No later spend allocation is valid until Selection cites its applicable evidence and gates and those facts remain current. Routine row 13 adds no research, diagnosis, or review; routine work cannot consume protected reserve.

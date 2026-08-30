@@ -166,16 +166,6 @@ def audit_python_dependencies(
                                         alias_base, [alias.name], python_files
                                     )
                                 )
-                elif (
-                    isinstance(node, ast.Constant)
-                    and isinstance(node.value, str)
-                    and node.value.endswith(".py")
-                ):
-                    candidate = PurePosixPath(node.value)
-                    for base in (current.parent, PurePosixPath(".")):
-                        resolved = (base / candidate).as_posix()
-                        if resolved in python_files:
-                            dependencies.add(resolved)
             dependencies.discard(relative)
             missing = sorted(dependencies - members)
             if missing:

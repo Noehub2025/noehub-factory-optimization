@@ -2059,14 +2059,16 @@ def test_live_source_module_manifest_covers_existing_files() -> None:
     closure = validate_source_modules(manifest, skills_root)
     assert {
         "graph-core",
-        "storage-recovery",
-        "provenance-runtime",
+        "batch-runtime",
+        "validator-support",
         "direction",
         "execution",
         "evidence",
         "claims",
+        "validator-runtime",
         "legacy-validation",
         "release-validation",
+        "legacy-compatibility",
     } == set(closure)
     assert all(source_module_root(manifest, skills_root, name) for name in closure)
     assert (

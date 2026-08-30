@@ -13,7 +13,7 @@
 
 Load only when proving a direct profile; preparing, reviewing, or repairing a `module` or `system` design assignment; changing a shared interface, state owner, lifecycle, or schema; running an evidence-producing design batch; or responding to evidence that requires a contract-bearing design change. This reference is the single source for profile triggers and concern coverage. Do not load it merely to execute a `ready` design; follow W's `Read when` pointers to the required concern contracts. Load `work-plan.md` only when W is required and `design-review.md` only when freezing or reviewing a `module` or `system` design.
 
-Treat a legacy code-bearing W without the current profile, map, identities, and review as `repair-required`. Preserve useful content, create a new revision, and re-run the applicable gates. Current development authorization is an external lifecycle record, not part of W completeness.
+Treat a legacy code-bearing W without the current profile, map, identities, and review as `repair-required` only when the next changed work relies on the missing technical meaning. Preserve useful content and update the affected design. Permission is owned by V, not by W completeness.
 
 ## W is the map
 
@@ -44,7 +44,7 @@ Use B without code-design W only when all are true:
 - remaining executor choices affect neither another B nor a later technical route; and
 - no unresolved user-owned design tradeoff remains.
 
-Record the evidence. Run finding-free draft and frozen packet preflight and Entry schema validation, obtain fresh `AUTHORIZATION_READY` for the complete target, and only then ask the user to authorize that immutable packet, preflight identity, source-base identity, scope, spend, and stop boundary together before code.
+Record the repository evidence and direct-profile reasoning. Apply the current Entry checks needed by the next actual Consequence. Development proceeds under an applicable existing V; ask the user only when [User decisions](user-decisions.md) identifies an uncovered boundary.
 
 ### Module
 
@@ -114,7 +114,7 @@ For each such choice:
 3. Adopt the answer in V, then invoke `design-implementation` to update the owning concern and W brief under a new revision when the answer changes contract-bearing meaning.
 4. Give local reversible executor choices explicit bounds instead of asking the user.
 
-Freeze design review only after every user choice needed by the planned slice resolves. After adopted `DESIGN_READY`, complete packet and Entry validation and obtain fresh `AUTHORIZATION_READY`; then ask separately for development authorization against the exact reviewed target and design identity. Design preference is not development permission.
+Prepare design review only after every user choice needed by the planned slice resolves. After adopted `DESIGN_READY`, apply the current Entry checks needed by the next actual Consequence. Reuse an applicable V; `DESIGN_READY` neither grants Permission nor creates a reason to ask again.
 
 ## Concern contracts
 
@@ -178,7 +178,7 @@ For new design identities, `traceability.yaml` indexes stable technical slices r
 
 Keep review-attempt identifiers, packet paths, snapshot paths, pending-review state, and adopted-review identity only in W frontmatter and other lifecycle records outside those contract-bearing sections. A contract-bearing section may require an independent versioned review and state its checks, but it must not name the review attempt that will review that same contract. Otherwise each replacement review changes the object being reviewed and creates an identity cycle.
 
-A contract-bearing change needs a new W revision and fresh technical review. The executor preserves the discovery; the Coordinator scopes the revision; `design-implementation` updates professional meaning; the Coordinator updates mechanical bindings. Follow [Boundary-preserving continuation](batch-interface.md#boundary-preserving-continuation) for reuse of the original explicit authority or return to Entry. Do not require a new user answer solely because a delegated technical concern changed. Lifecycle evidence alone does not change Design. A change to parent legality, permitted operations, acceptance, measurement meaning, or promotion returns to its owning stage.
+A contract-bearing change needs a new W revision and fresh technical review. The executor preserves the discovery; the Coordinator scopes the revision; `design-implementation` updates professional meaning; the Coordinator updates mechanical bindings. Follow [Boundary-preserving continuation](batch-current.md#boundary-preserving-continuation) for same-B work. Do not require a new user answer solely because a delegated technical concern changed. Lifecycle evidence alone does not change Design. A change to parent legality, permitted operations, acceptance, measurement meaning, or promotion returns to its owning stage.
 
 Apply assignment ownership prospectively. Preserve historical snapshots, verdicts, and explicit constraints; do not reopen them to tidy wording or as a prerequisite for unaffected work. When a frozen mandatory workflow clause actually obstructs current work, address the related conflicting obligations together in the next necessary scoped revision through the existing complete-review and authority path. Reuse unchanged work and evidence, not an old review or authorization for a changed identity. Nonbinding guidance needs no replacement identity.
 

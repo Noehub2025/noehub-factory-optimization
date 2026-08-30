@@ -1297,6 +1297,7 @@ class EntryPacketSchemaTests(unittest.TestCase):
         }
         post_v1_only = {
             "references/batch-code-execution.md",
+            "references/batch-current.md",
             "references/batch-evaluation.md",
             "references/batch-packet-format.md",
             "references/batch-result.md",
@@ -1313,6 +1314,7 @@ class EntryPacketSchemaTests(unittest.TestCase):
             "scripts/engineering_check_plan.py",
             "scripts/frontier_provenance_cli.py",
             "scripts/frontier_review_cli.py",
+            "scripts/frontier_batch.py",
             "scripts/run_workflow_checks.py",
         }
 

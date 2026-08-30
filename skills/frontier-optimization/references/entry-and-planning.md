@@ -11,15 +11,15 @@
 - [Resolve user-owned choices](#5-resolve-user-owned-choices)
 - [Plan the first observable work](#6-plan-the-first-observable-work)
 - [Select reproducibly](#7-select-reproducibly)
-- [Pin the Entry snapshot](#8-pin-the-entry-snapshot)
-- [Obtain independent Entry review](#9-review-before-authorization)
+- [Record the Entry decision](#8-record-the-entry-decision)
+- [Obtain independent Entry review](#9-review-the-entry-decision)
 - [Record one outcome, then finalize the return](#record-one-outcome-then-finalize-the-return)
 
 Use this stage for initial Entry, post-closeout recovery, or an affected decision after a parent revision. Initial Entry produces a reproducible first-batch plan with zero new-generation B spend and reconciled inherited and Entry cost. Parent revision follows its scoped branch below without reopening initial Entry.
 
 ## Load only what Entry reaches
 
-Load [Campaign state](campaign-state.md) and [Planning records](planning-records.md). Load [Evidence records](evidence-records.md) in post-closeout recovery mode. Load [Worker interfaces](worker-interfaces.md) before delegating research, a user decision, Entry review, or any other worker action. Load [Batch interface](batch-interface.md) before freezing any selected first-B packet. If any eligible first batch may change executable code, load [Entry code planning](entry-code-planning.md). When recovery proposes an existing candidate for measurement, load [Candidate lifecycle](candidate-lifecycle.md), [Review snapshots](review-snapshots.md), and [Implementation review](implementation-review.md). Load [Entry review](entry-review.md) only after the proposed Entry artifacts are frozen.
+Load [Campaign state](campaign-state.md) and [Planning records](planning-records.md). Load [Evidence records](evidence-records.md) in post-closeout recovery mode. Load [Worker interfaces](worker-interfaces.md) before delegating research, a user decision, Entry review, or any other worker action. Load [Current Batch](batch-current.md) before opening a selected B. If eligible work may change software, load [Entry code planning](entry-code-planning.md). When recovery proposes an existing historical candidate for measurement, load [Candidate lifecycle](candidate-lifecycle.md), [Review snapshots](review-snapshots.md), and [Implementation review](implementation-review.md). Load [Entry review](entry-review.md) only after the proposed Entry subject is complete.
 
 ## 1. Validate the handoff
 
@@ -103,9 +103,9 @@ List the legal result branches for the first check and their distinct allowed ne
 
 Also record `Trajectory contribution` before execution. For prerequisite-first work, bind the output and stop boundary to the prerequisite observation and make dependent implementation explicitly ineligible until the Coordinator adopts passing evidence through the applicable Entry or Replan gate.
 
-The plan separates worker write surfaces, forbidden paths and execution-frozen inputs, assigns Coordinator-owned execution-baseline and execution-start paths, and names the worker result path. For W-backed work, bind the reviewed design and `delivery_scope`; do not freeze the whole W or mutable work breakdown. Apply [Batch continuation](batch-interface.md#boundary-preserving-continuation) to distinguish working methods from fixed boundaries.
+The plan separates worker write surfaces from exact project bytes selected later for checks or Consequences. It does not assign execution snapshots, execution-start paths or result identities. For W-backed work, cite the reviewed design and stable delivery obligations; do not freeze the whole W or mutable work breakdown. Apply [Batch continuation](batch-current.md#boundary-preserving-continuation) to distinguish working methods from the independently judged result.
 
-Use [Entry preparation](entry-review.md) for current structural checks and sealing; do not create a parallel legacy packet/preflight family. A failed draft stays mutable within the same B and creates no review or successor B. The complete realization must cover its delivery obligations, lifecycle transition, recoverable execution inputs and applicable result-validation branch. Do not freeze runtime timestamps or place worker outputs inside frozen input collections.
+Use [Entry review](entry-review.md) only after ordinary structural checks pass and the complete subject is saved in Git. A failed draft stays mutable within the same B and creates no R, packet, snapshot, identity, or successor B. The reviewed decision must cover the objective, scope, applicable R and V, resource limits, delivery obligations, earliest useful check, result meaning, and recovery needed by the next Consequence.
 
 Preparation must end at the earliest check that can discriminate the chosen mechanism. A baseline-establishment slice may be simple, but it cannot become open-ended infrastructure work.
 
@@ -121,19 +121,19 @@ Technically filter first, then apply adopted V records. Propose one Primary B an
 
 Include the proposed Selection and F2-F4 patch in the reviewed target. Record the route set as `complete for this decision` or `incomplete`, cite the peer-source generation basis, prior-generation Reflection when applicable, shared assumptions, eligible routes, exclusions, deferrals, prerequisite consequences, and reopening evidence, and explain how the selected work reaches the first discriminating check. An incomplete route set may select only its bounded route-landscape, assumption, or prerequisite work; it cannot select dependent candidate work. Explain why the chosen campaign baseline is useful for later optimization and how every material alternative is dispositioned.
 
-## 8. Pin the Entry snapshot
+## 8. Record the Entry decision
 
 Write a plain-language Brief in `FRONTIER.md` that a fresh reader can use without following identifiers. It must name the reference baseline, replaceable campaign baseline, exact allowed work, remaining budget, selected B and W, first checkpoint, first performance check, preparation limit, protected reserve, comparison and promotion rules, stop and halt rules, and claim limits.
 
 Pin F1-F4, F7, and F8. F5 and F6 may remain provisional or not relevant when the parents provide no usable bound; missing bounds never widen F7 or F8. Confirm new-generation B spend is zero, inherited spend is exact, and every charged Entry cost is already accounted.
 
-## 9. Review before authorization
+## 9. Review the Entry decision
 
-Load [Entry review](entry-review.md) and use its current preparation path. Keep planning edits mutable until the complete version is ready; preparation owns deterministic validation and the saved project-only subject. Invoke `review-frontier` in a fresh context. For a corrected Entry, supply the prior finding and saved version plus a short change explanation, and assign [Entry repair review](entry-review.md#entry-repair-review), not a restart of unaffected work. Supply no expected verdict or mandatory repair method.
+Load [Entry review](entry-review.md). Keep planning edits mutable until the complete version is ready, run ordinary deterministic checks, then save the exact subject in Git. Invoke `review-frontier` in a fresh context and record one R against that commit and path set. For a corrected Entry, supply the prior finding and saved version plus a short change explanation, and assign [Entry repair review](entry-review.md#entry-repair-review), not a restart of unaffected work. Supply no expected verdict or mandatory repair method.
 
-Preserve every review at its saved version. Repair an `ENTRY_REPAIR_REQUIRED` draft, including deterministic defects, before submitting its corrected complete version for the scoped review above. A deterministic defect alone does not require a workflow-development task or another repair artifact. Obtain named evidence after `EVIDENCE_REQUIRED`, return parent conflicts upstream, and expose true blockers. For a target needing user authorization, adopt only finding-free `AUTHORIZATION_READY`, then ask the exact reviewed question. On an exact affirmative answer, write V, build the Coordinator Entry-adoption artifact, and require finding-free draft and frozen adoption validation before applying only the reviewed Selection and Budget transition and recording `entry_result: ENTRY_READY`. A decline grants no spend authority; a condition or changed target requires fresh review before another question. When no new user decision is needed, including reuse of an applicable grant, the reviewer may return `ENTRY_READY` directly under `spend-readiness`.
+Preserve every R at its saved Git version. Repair an `ENTRY_REPAIR_REQUIRED` draft, including deterministic defects, before submitting its corrected complete version for the scoped review above. A deterministic defect alone does not require a workflow-development task or another repair artifact. Obtain named evidence for an evidence-backed blocker and return parent conflicts upstream. When the Review identifies one missing user boundary, apply [User decisions](user-decisions.md), ask that question once and record V. An affirmative V permits only its stated Consequences and limits; a decline grants none. When an existing V applies, `ENTRY_READY` proceeds directly. Apply the reviewed Selection and Budget transition without creating an adoption artifact or authority identity.
 
-Append `FIRST_BATCH_PLANNED` only after direct `ENTRY_READY` or exact post-answer adoption. Include campaign generation, readiness snapshot and review, V and adoption when applicable, parents, selected B records, inherited and Entry-cost accounting, and zero-B-spend consequence. Do not execute the B.
+Append `FIRST_BATCH_PLANNED` only after direct `ENTRY_READY` or exact post-answer adoption. Include campaign generation, applicable Review and V when needed, parents, selected B records, inherited and Entry-cost accounting, and zero-B-spend consequence. Do not execute the B. Historical Entries retain their original readiness snapshot and adoption chain; a current Entry does not create that chain.
 
 ## Record one outcome, then finalize the return
 
@@ -146,4 +146,4 @@ Record exactly one stage outcome:
 
 Return the recorded stage outcome to the Coordinator.
 
-Entry is complete only when artifacts reconstruct campaign generation, planning-only opening authority and Coordinator-derived objective when applicable, original retained-result references, peer-source route generation, decision completeness, prerequisite dispositions, baseline choice, replacement boundary, inherited budget, proposed target, readiness review, separate user tradeoff and exact execution authorization when applicable, selected work, earliest discriminating check, code gates, and zero-B-spend boundary.
+Entry is complete only when project records reconstruct campaign generation, Coordinator-derived objective when applicable, retained-result references, route generation, decision completeness, prerequisite dispositions, baseline choice, replacement boundary, inherited Budget, applicable Entry Review and V, selected work, earliest discriminating check, code gates and zero-B-spend boundary. Technical work proceeds without a separate exact-execution authorization when those owners already cover it.

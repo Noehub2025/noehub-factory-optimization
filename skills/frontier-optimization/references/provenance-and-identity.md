@@ -69,18 +69,15 @@ Other project data is not excluded merely because its name contains
 `skills`, `validator`, or `.claude`. A workflow can change during project
 work without invalidating a review, authorization, candidate, or saved result.
 
-## Typed decision relationships
+## Historical typed decision relationships
 
-The existing `frontier-provenance-node/4` graph remains:
+The existing `frontier-provenance-node/4` graph remains a read-only compatibility model for records that already use it:
 
 ```text
 decision -> attestation -> authority -> execution -> outcome
 ```
 
-These records answer which decision, review, permission, starting state, and
-result support a consequence. They reference content; they do not duplicate
-the ancestor's files. Wrong parents, replay against another decision, missing
-evidence needed for the action, and actual unauthorized effects remain errors.
+Do not create execution or outcome nodes for a current `frontier-batch/1` B. The current Batch cites R and V, uses Git for exact selected bytes, and records Attempts and actual Consequences directly. Historical nodes still answer which decision, review, permission, starting state, and result supported their original consequence. They reference content; they do not duplicate the ancestor's files.
 
 | Role | Content domain | Logical namespace |
 |---|---|---|
@@ -90,9 +87,9 @@ evidence needed for the action, and actual unauthorized effects remain errors.
 | execution | `project-state` | `project/state/` |
 | outcome | `project-outcome` | `project/outcome/` |
 
-### Execution-state authority
+### Historical execution-state authority
 
-`project/state/execution-state.yaml` binds one pre-release starting state to
+For an existing historical chain, `project/state/execution-state.yaml` binds one pre-release starting state to
 its exact decision, authority, plan, acknowledgment, and input-resolution
 method. It is execution content, not an authority node or a live-fact source.
 Its `worker_may_start: false` never releases work. The authority node defines
@@ -150,12 +147,12 @@ does not replace review preparation.
    current authority, resources, reservation, required inputs, and prior
    effects. An immutable review cannot answer these live questions.
 
-Acknowledgment remains static and grants no execution. The existing
+In a historical chain, acknowledgment remains static and grants no execution. The existing
 `frontier-consequence-gates/2` owns live facts, expiry, and limits at execution
 and later consequence boundaries. Reusing a static read does not cache live
 permission or reset spend.
 
-For a current retained-decision state, the existing `freeze-execution`
+For a historical retained-decision state, the existing `freeze-execution`
 operation verifies the acknowledgment's exact reviewed manifest and every Plan
 frozen input before it creates the execution node. Result publication repeats
 the same pure verification. This is one check at two existing consequence

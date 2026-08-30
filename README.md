@@ -31,7 +31,7 @@ The workflow has two stages.
 | Stage | What happens | Main result |
 |---|---|---|
 | Define the task and search | Explain the real-world task, design the decision-relevant measurement protocol, decide what candidates may look like, and obtain an independent review. | `PROBLEM.md` and `REPRESENTATION.md` |
-| Run the improvement campaign | Choose a starting approach, design consequential implementation architecture when needed, authorize bounded work, implement and measure candidates separately, learn from results, and close or recover the campaign. | `FRONTIER.md` and records under `frontier/` |
+| Run the improvement campaign | Choose a starting approach, design consequential implementation architecture when needed, reuse or obtain Permission for protected consequences, implement and measure candidates separately, learn from results, and close or recover the campaign. | `FRONTIER.md` and records under `frontier/` |
 
 `PROBLEM.md` answers:
 
@@ -77,38 +77,37 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 
 - One coordinator owns the task definition and search design; another owns the later campaign. Worker Skills cannot silently change either contract.
 - A fresh-context measurement designer can create or repair the complete decision-relevant protocol. The framing coordinator must adopt that projection as a whole before it becomes part of the task contract.
-- A fresh-context implementation designer owns architecture and interface meaning when work changes a consequential technical seam. The campaign coordinator binds that design to delivery records, and a separate reviewer must approve it before development can be authorized.
+- A fresh-context implementation designer owns architecture and interface meaning when work changes a consequential technical seam. A separate reviewer checks the exact Git-backed design before affected implementation proceeds.
 - A consequential implementation design must positively ground every decisive feasibility claim under the relevant conditions. Missing final implementation, novelty, or ordinary implementation risk alone does not justify another evidence gate.
-- Implementation design owns stable technical slices and their verification meaning. Entry later binds one exact batch, execution source, worker surface, and internal output paths, so a new attempt or path does not silently rewrite approved architecture.
-- One bounded batch is an objective, authority, evidence, and spend envelope rather than one command or internal slice. Reversible working feedback stays inside it without a command history or a new lifecycle record. Sequential invocations verify required inputs, formal closing attempts, and cumulative effects; they do not reconstruct every debugging step.
-- Code-bearing batches use one frozen engineering-check plan shared by execution, review, result validation, and recovery. Formal evidence begins only when the first frozen check runs against the exact staged realization; reversible local preparation remains working feedback.
-- Planning, user authorization, worker acknowledgment, execution start, implementation review, measurement, result adoption, and claims are separate gates. Each gate applies only to the exact files and identities it names.
-- A current execution binds its frozen inputs in exactly one of two forms: resolve every input from the reviewed retained decision, or bind the complete input set in the execution baseline when sealed runtime input, an authorized design revision, or another unresolved input is required. The forms cannot be mixed, and explanatory prose never becomes authority.
-- The agent checks the current request and recorded decisions before asking a question. An explicitly continuing user grant can cover later batches within the same objective, cumulative limits, access, effects, and stop conditions. A changed execution plan still needs its applicable review and a new authority binding, but not a repeated user answer. Historical exact-only grants remain exact-only, and a new batch or generation never resets spending or widens permission.
-- Before a retained result can support a consequential follow-up action, the workflow checks the exact adopted continuing grant against that action's current plan, cumulative resource use, access, effects, withdrawal terms, and stop conditions. A structurally valid result or an earlier readiness decision does not create new permission.
+- One Batch is a stable allocation toward one independently judged result, not an immutable packet, command, proposal hash, or candidate identity. Its implementation, checks, Reviews, Permissions, limits, paths, and Candidate Revisions may evolve while that result remains the same.
+- The current Batch interface is deliberately small: `Batch.open` defines the work, `Batch.apply` records routine progress, and `Batch.perform` starts an action whose measurement or real-world Consequences make repetition matter.
+- Preparation, editing, local debugging, harmless checks, and repair stay inside the open Batch without acknowledgment, execution-start, snapshot, packet, or result identities. A failed check does not create another Batch or Attempt.
+- Git owns retained project bytes. A Candidate Revision is one full commit plus explicit repository-relative paths, so a Review, check, or action can name exact bytes without copying the repository into workflow snapshots.
+- R records own independent Review meaning. V records own user tradeoffs and Permission for uncovered paid, external, sensitive, irreversible, or user-controlled scarce-resource work. Review readiness does not create Permission, and Permission does not prove execution or improvement.
+- The agent reuses an applicable V instead of asking again. Ordinary technical choices, local implementation changes, Batch identities, and internal resource allocation do not become user questions.
+- Budget owns campaign-wide authorization, reservations, actual and unknown consumption, and remaining balance. A Batch receives local limits but cannot raise them or treat protected reserve as routine capacity.
 - Candidate creation and performance evaluation are separate steps. Passing engineering checks does not prove improvement.
-- Measurement evidence binds the released execution, final run specification, and raw outputs through the existing result or evidence manifest. The worker protects only the protocol's coarsest genuinely non-repeatable unit immediately before its first effect; an uncertain partial effect is preserved and bounded rather than silently rerun.
-- The controlling parent fixes when an identity, execution, sample, or other event becomes chargeable. Reversible unpublished work may continue only within that rule and its cumulative limits. Recovering the same recorded event avoids a duplicate charge; identical output bytes alone do not make a new proposal or execution free.
-- A fidelity finding may return to the same working loop. A disproven design assumption returns to the design owner and independent Design review. If the original authorization explicitly delegates that exact design revision, retain Entry and authority and freeze a new starting state; otherwise use the existing revision and authorization path. Do not repeat an unchanged deterministic failure, but new evidence or a material repair may justify another bounded attempt.
-- An explicitly authorized diagnostic may observe working material before a complete candidate is published. Record the actual subject, method, conditions, evidence, and cumulative resource and exposure use. Sequential observations remain cumulative inside that batch until its ordinary terminal result; they do not each create a terminal outcome. These observations guide only the current batch and do not authorize promotion or performance claims.
-- External, paid, human, and physical actions require an exact authorized target, action, affected scope, cumulative limits, stop conditions, and a tool capable of enforcing them. A mixed-work label never grants that authority.
+- Each Batch owns one Measurement Definition. `Batch.perform` verifies the selected Git bytes, required Reviews, applicable Permissions, checks, and resource limits immediately before invoking an operation adapter.
+- Attempts exist only when a measurement or possible Consequence makes repetition important. The workflow records actual use and effects, preserves an uncertain partial operation instead of blindly repeating it, and reconciles later facts into the same Attempt.
+- Operation bindings protect the real seam involved—such as a paid call, external submission, sensitive access, irreversible change, remote job, or single-use sample—without activating unrelated controls.
+- A technical or fidelity finding returns to its existing owner and remains in the same Batch when the independently judged result is unchanged. Only dependent work pauses; unaffected legal work continues.
+- Result adoption establishes measurement and comparison validity under the Batch-owned definition. Diagnostic and routine-local observations remain bounded Batch evidence; only a valid formal comparison may create adopted Evidence or support stronger claims.
 - After each terminal result is adopted, the coordinator establishes implementation, measurement, and comparison validity, connects the result to its pre-work hypothesis and exact technical lineage, and applies one ordered direction resolver directly to the adopted evidence. This creates no intermediate per-batch reflection gate or narrative artifact.
 - At a campaign-wide closeout, a fresh-context `reflect-frontier` pass turns the generation's adopted successes, failures, costs, retained assets, and remaining gap into search advantage and a small set of worthwhile opportunities for the next generation. It does not select work, allocate budget, or grant authority.
 - If closing evidence may challenge durable problem or representation meaning, Reflection carries the cited adopted evidence—not its own verdict—into the next ordinary Entry. The existing direction resolver may refer only the affected rule back to Framing; this creates no second resolver, extra diagnosis, or new reflection gate.
 - Results identify the problem and representation versions under which they were produced, so incompatible results are not compared.
-- Frame documents and handoffs own durable task, comparison, resource, feedback, stop, claim, and reuse rules. Live generation, selection, authorization, spending, adopted-result, and recovery state stays in `FRONTIER.md`, `frontier/ledger.md`, and the latest complete closeout, so a stale explanatory value in an older handoff does not by itself invalidate the task contract.
+- Frame documents and handoffs own durable task, comparison, resource, feedback, stop, claim, and reuse rules. Live generation, Selection, Permission, spending, adopted-result, and recovery state stays in `FRONTIER.md`, `frontier/ledger.md`, and the latest complete closeout, so a stale explanatory value in an older handoff does not by itself invalidate the task contract.
 - Parent revisions affect only decisions that depend on the changed meaning. Unaffected work and historical conclusions remain usable; prior spending or a new revision number alone does not force campaign closeout, a new generation, or a replacement candidate. The campaign coordinator can delegate an in-scope parent repair to the framing coordinator without asking the user to switch stages.
-- Project evidence and workflow releases use separate identities. Updating an installed Skill does not rewrite or invalidate an existing project decision, review, authorization, result, or handoff.
-- Review preparation binds selected project inputs to retained Git versions and exact content identities. It reuses those versions rather than copying the project at every step. Workflow files and unrelated changes remain outside the project decision identity; old portable bundles remain readable without forcing migration or reauthorization.
+- Project evidence and workflow releases remain separate. Updating an installed Skill does not rewrite or invalidate an existing project decision, Review, Permission, result, or handoff.
 - Budget, stopping rules, known limits, and permitted claims remain visible in the main campaign document.
 - One ordered direction resolver selects the first applicable next action or blocker, so research, diagnosis, direct attempts, budget limits, and parent escalation do not compete through separate decision paths.
 - If valid execution, measurement, and local-mechanism explanations are exhausted, the workflow can return an exact semantic challenge to the parent task contract instead of repeating in-scope work that can no longer reach the objective.
-- Independent reviews use exact retained versions of the evidence and an agent that has not seen the drafting conversation. If that independent review is unavailable, the workflow reports a blocker instead of readiness.
-- Entry repair reviews inspect the corrected saved version, its changes, and affected conclusions. They reuse earlier conclusions only where their assumptions still apply; the new report attests the complete current decision. A reviewer’s suggested repair does not become an extra acceptance requirement.
+- Independent reviews use one saved Git commit, explicit subject paths, and an agent that has not seen the drafting conversation. If that independent review is unavailable, the workflow reports a blocker instead of readiness.
+- Entry repair reviews inspect the corrected saved version, its changes, and affected conclusions. They reuse earlier conclusions only where their assumptions still apply; a reviewer’s suggested repair does not become an extra acceptance requirement.
 - Campaign state is recovered from retained Git versions, records, and required artifact payloads, not from conversation history. Normal edits do not invalidate reviews of saved bytes, and restoring working files does not undo spending, evidence, or external effects.
 - Reusing retained material preserves its original producing versions, reviews, and charges. Candidate recovery checks the content and latest accounting needed for the proposed use; it does not grant readiness or permission. Existing conclusions need further review only when a relevant change, a new use, or concrete contrary evidence affects them. Missing content pauses its dependent use, not all recovery planning.
 - A project handoff cites the existing closing record, Git history, and retained artifacts. An explicit export writes a small reference file, not another complete project archive. The receiving environment must have the referenced history and any payloads needed for its next action.
-- Project result recovery distinguishes legacy and current dispatch shapes as a fail-closed union, rejects mixed bindings, and rehashes every current frozen input before publication.
+- Historical packet, snapshot, acknowledgment, execution-start, result-identity, and typed-provenance formats remain readable through isolated compatibility checks. New work uses the current Batch record and does not backfill or regenerate those identities.
 
 ## Skills
 
@@ -128,11 +127,11 @@ Each Skill entry point routes the agent to the references needed for its current
 ### Run the improvement campaign
 
 - **[frontier-optimization](./skills/frontier-optimization/SKILL.md)** — Coordinates campaign entry, planning, budget, batch selection, accepted results, closeout, and recovery.
-- **[design-implementation](./skills/design-implementation/SKILL.md)** — Authors or repairs consequential implementation architecture in a fresh context without taking over campaign routing, review, authorization, or execution.
+- **[design-implementation](./skills/design-implementation/SKILL.md)** — Authors or repairs consequential implementation architecture in a fresh context without taking over campaign routing, Review, Permission, or execution.
 - **[research-frontier](./skills/research-frontier/SKILL.md)** — Researches one assigned approach landscape or evidence question.
-- **[grill-frontier](./skills/grill-frontier/SKILL.md)** — Collects one user tradeoff or authorization for an exact reviewed choice.
+- **[grill-frontier](./skills/grill-frontier/SKILL.md)** — Collects one unresolved user tradeoff or Permission decision after existing V records and technical evidence have been exhausted.
 - **[run-frontier-batch](./skills/run-frontier-batch/SKILL.md)** — Executes one bounded research, design, implementation, or evaluation batch.
-- **[review-frontier](./skills/review-frontier/SKILL.md)** — Independently reviews one frozen plan, design, implementation, recovery decision, or proposed claim.
+- **[review-frontier](./skills/review-frontier/SKILL.md)** — Independently reviews one exact Git-backed Entry, replan, design, implementation revision, or proposed claim.
 - **[reflect-frontier](./skills/reflect-frontier/SKILL.md)** — Converts one closing generation's adopted evidence into search assets and worthwhile opportunities for the next generation without choosing or authorizing work.
 
 Internally, the first stage uses A–H and R1–R8 as completeness checklists. Users do not need to learn those labels before starting; the main documents must explain their meaning in ordinary task language.
@@ -146,12 +145,12 @@ Define the problem
   -> independently approve an exact search scope
   -> choose a starting approach and budget
   -> design consequential implementation architecture in a fresh context when established seams are not sufficient
-  -> review and authorize one exact bounded batch when required
-  -> deterministically prepare the exact project-only subject for each fresh review
-  -> acknowledge the packet and freeze its execution baseline
-  -> iterate within the batch's authorized limits, using bounded diagnostics only when explicitly allowed
-  -> review exact implementations before publication when required, then authorize later measurement separately
-  -> measure under the approved comparison rules
+  -> save the exact project subject in Git and obtain only the Review needed by the next actual consequence
+  -> reuse an applicable V, or ask once for an uncovered user tradeoff or protected consequence
+  -> open one Batch for one independently judged result
+  -> apply routine preparation, editing, checking, and repair without creating Attempts or identity chains
+  -> perform measurement or consequential actions through a bound operation, recording actual use and effects
+  -> review exact implementations when required and measure under the approved comparison rules
   -> adopt the result, establish its validity, and apply one ordered direction resolver directly to the evidence
   -> on a campaign-wide stop or halt, reconcile the generation's evidence, spending, retained assets, and remaining gap
   -> reflect once in a fresh context to improve the next generation's search

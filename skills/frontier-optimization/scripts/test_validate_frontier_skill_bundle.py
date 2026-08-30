@@ -316,9 +316,10 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "Project provenance",
         ),
         "entry-review.md": (
-            "Budget, prior and unknown consumption, reservations and protected reserve agree",
-            "The current selection follows current adopted evidence and the sole resolver",
-            "`project-decision` content root and an empty payload",
+            "applicable parents, adopted evidence, Campaign, Selection and Budget",
+            "the resolver result and Selection support the proposed allocation",
+            "protected reserve is not assigned to routine work",
+            "Do not create a content root, decision node, attestation root, authority node, packet, snapshot, adoption identity or validation identity",
             "entry-review-legacy.md",
         ),
         "campaign-cycle.md": (
@@ -418,8 +419,8 @@ class FrontierSkillBundleTests(unittest.TestCase):
             ),
             (
                 "frontier-optimization/references/entry-review.md",
-                "Budget, prior and unknown consumption, reservations and protected reserve agree",
-                "Ignore earlier spending and permit routine use of protected reserve",
+                "protected reserve is not assigned to routine work",
+                "protected reserve may fund routine work",
             ),
         )
         for relative, old, new in mutations:
@@ -441,6 +442,9 @@ class FrontierSkillBundleTests(unittest.TestCase):
         skills_root = SCRIPT.parents[2]
         result = MODULE.validate(skills_root)
         self.assertTrue(result["bundle_ready"], result["findings"])
+        self.assertTrue(
+            result["legacy_compatibility_ready"], result["legacy_findings"]
+        )
         self.assertEqual(set(result["expected_skills"]), set(MODULE.EXPECTED_SKILLS))
         self.assertEqual(len(result["bundle_sha256"]), 64)
         self.assertGreater(len(result["source_manifest"]), 20)
@@ -585,13 +589,13 @@ class FrontierSkillBundleTests(unittest.TestCase):
                 {item["code"] for item in result["findings"]},
             )
 
-    def test_dispatch_callers_must_use_the_shared_state_machine(self) -> None:
+    def test_current_batch_callers_must_use_the_shared_interface(self) -> None:
         live_root = SCRIPT.parents[2]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "skills"
             shutil.copytree(live_root, root, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
             cycle = root / "frontier-optimization/references/campaign-cycle.md"
-            cycle.write_text(cycle.read_text().replace("batch-interface.md#dispatch-state-machine", "batch-interface.md"))
+            cycle.write_text(cycle.read_text().replace("batch-current.md", "batch-interface.md"))
             result = MODULE.validate(root)
             self.assertIn(
                 "DISPATCH_INTERFACE_POINTER_MISSING",
@@ -656,14 +660,14 @@ class FrontierSkillBundleTests(unittest.TestCase):
     def test_split_contract_routes_remain_required(self) -> None:
         live_root = SCRIPT.parents[2]
         routes = (
-            ("frontier-optimization/references/frontier-core.md", "finding-effects.md", "FINDING_EFFECT_CONTRACT_INVALID"),
-            ("frontier-optimization/references/entry-review.md", "entry-review-legacy.md", "FINDING_EFFECT_CONTRACT_INVALID"),
-            ("frontier-optimization/references/batch-interface.md", "batch-packet-format.md", "RESULT_CONTRACT_INVALID"),
-            ("frontier-optimization/references/batch-interface.md", "batch-result.md", "RESULT_CONTRACT_INVALID"),
-            ("run-frontier-batch/SKILL.md", "../frontier-optimization/references/batch-evaluation.md", "RESULT_CONTRACT_INVALID"),
-            ("frontier-optimization/references/review-branches.md", "replan-review.md", "REVIEW_BRANCH_REGISTRY_INVALID"),
+            ("frontier-optimization/references/frontier-core.md", "finding-effects.md", "FINDING_EFFECT_CONTRACT_INVALID", "findings"),
+            ("frontier-optimization/references/entry-review.md", "entry-review-legacy.md", "FINDING_EFFECT_CONTRACT_INVALID", "findings"),
+            ("frontier-optimization/references/batch-interface.md", "batch-packet-format.md", "RESULT_CONTRACT_INVALID", "legacy_findings"),
+            ("frontier-optimization/references/batch-interface.md", "batch-result.md", "RESULT_CONTRACT_INVALID", "legacy_findings"),
+            ("run-frontier-batch/SKILL.md", "../frontier-optimization/references/batch-evaluation.md", "RESULT_CONTRACT_INVALID", "legacy_findings"),
+            ("frontier-optimization/references/review-branches.md", "replan-review.md", "REVIEW_BRANCH_REGISTRY_INVALID", "findings"),
         )
-        for relative, pointer, expected in routes:
+        for relative, pointer, expected, result_key in routes:
             with self.subTest(relative=relative, pointer=pointer), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory) / "skills"
                 shutil.copytree(live_root, root, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
@@ -672,7 +676,7 @@ class FrontierSkillBundleTests(unittest.TestCase):
                 self.assertIn(pointer, MODULE.LINK_PATTERN.findall(text))
                 source.write_text(text.replace(pointer, "missing-contract.md"))
                 result = MODULE.validate(root)
-                self.assertIn(expected, {item["code"] for item in result["findings"]})
+                self.assertIn(expected, {item["code"] for item in result[result_key]})
 
     def test_boundary_preserving_continuation_callers_use_one_contract(self) -> None:
         live_root = SCRIPT.parents[2]
@@ -705,8 +709,10 @@ class FrontierSkillBundleTests(unittest.TestCase):
     def test_entry_identity_chain_is_one_source_derived_contract(self) -> None:
         live_root = SCRIPT.parents[2]
         result = MODULE.validate(live_root)
-        self.assertTrue(result["bundle_ready"], result["findings"])
-        for relative, markers in MODULE.ENTRY_IDENTITY_CONTRACT_REQUIREMENTS.items():
+        self.assertTrue(
+            result["legacy_compatibility_ready"], result["legacy_findings"]
+        )
+        for relative, markers in MODULE.LEGACY_ENTRY_IDENTITY_CONTRACT_REQUIREMENTS.items():
             text = (live_root / relative).read_text()
             for marker in markers:
                 with self.subTest(relative=relative, marker=marker):
@@ -715,8 +721,10 @@ class FrontierSkillBundleTests(unittest.TestCase):
     def test_packet_and_result_share_one_experiment_contract(self) -> None:
         live_root = SCRIPT.parents[2]
         result = MODULE.validate(live_root)
-        self.assertTrue(result["bundle_ready"], result["findings"])
-        for relative, markers in MODULE.RESULT_CONTRACT_REQUIREMENTS.items():
+        self.assertTrue(
+            result["legacy_compatibility_ready"], result["legacy_findings"]
+        )
+        for relative, markers in MODULE.LEGACY_RESULT_CONTRACT_REQUIREMENTS.items():
             text = (live_root / relative).read_text()
             for marker in markers:
                 with self.subTest(relative=relative, marker=marker):
@@ -741,7 +749,7 @@ class FrontierSkillBundleTests(unittest.TestCase):
             result = MODULE.validate(root)
             self.assertIn(
                 "RESULT_CONTRACT_INVALID",
-                {item["code"] for item in result["findings"]},
+                {item["code"] for item in result["legacy_findings"]},
             )
 
     def test_self_declared_binding_contract_cannot_replace_source_derivation(self) -> None:
@@ -758,27 +766,26 @@ class FrontierSkillBundleTests(unittest.TestCase):
             result = MODULE.validate(root)
             self.assertIn(
                 "ENTRY_IDENTITY_CONTRACT_INVALID",
-                {item["code"] for item in result["findings"]},
+                {item["code"] for item in result["legacy_findings"]},
             )
 
     def test_boundary_preserving_continuation_is_task_neutral_and_fail_closed(self) -> None:
         skills_root = SCRIPT.parents[2]
-        batch_interface = (
-            skills_root / "frontier-optimization/references/batch-interface.md"
+        batch_current = (
+            skills_root / "frontier-optimization/references/batch-current.md"
         ).read_text()
-        section = batch_interface.split("## Boundary-preserving continuation", 1)[1].split(
-            "## Batch packet", 1
+        section = batch_current.split("## Boundary-preserving continuation", 1)[1].split(
+            "## Perform an action", 1
         )[0]
         semantic_markers = (
-            "A B is one bounded objective, authority, evidence, and spend envelope",
-            "Apply [Charging and publication](#charging-and-publication)",
-            "The worker owns a mutable work breakdown",
-            "One execution-start may support several sequential worker invocations",
-            "preserve and count any limited effect already incurred",
-            "A realization is review-ready only when the complete B output",
-            "When implementation review returns a fidelity finding",
-            "Byte-identical output alone does not establish that two operations are the same event",
-            "After authoritative publication or the immutable result",
+            "same independently judged result",
+            "applicable Permissions",
+            "actual cumulative limits",
+            "does not by itself create another B",
+            "Do not copy the repository into execution snapshots",
+            "pause only dependent work",
+            "repair and rerun only affected checks",
+            "does not close the B automatically",
         )
         for marker in semantic_markers:
             with self.subTest(marker=marker):
@@ -812,17 +819,17 @@ class FrontierSkillBundleTests(unittest.TestCase):
                 "inventory identity establishes content equality, not whether a new budget event occurred",
             ),
             "worker": (
-                "Apply Batch Interface's continuation rule to fidelity findings, design revisions, and failed retries",
-                "it proves content equality, not a free new proposal",
+                "A finding returns to the same B unless it changes the independently judged result",
+                "Only a real external publication or package-consumption seam may require a separately immutable package",
             ),
             "entry": (
-                "use the bound parent as the source of budget, permission, and acceptance rules",
-                "rather than inventing parallel policies",
-                "batch-interface.md#charging-and-publication",
+                "applicable parents, adopted evidence, Campaign, Selection and Budget",
+                "applicable R and V references",
+                "Do not create a content root, decision node, attestation root, authority node, packet, snapshot, adoption identity or validation identity",
             ),
             "implementation_review": (
-                "complete all-pass realization ready for prepublication review",
-                "IMPLEMENTATION_READY` permits only authoritative publication",
+                "one exact Git Candidate Revision",
+                "`IMPLEMENTATION_READY` applies only to the reviewed Git bytes",
             ),
             "learning": (
                 "A pre-publication engineering-check failure has not entered this resolver path",
@@ -867,8 +874,8 @@ class FrontierSkillBundleTests(unittest.TestCase):
             with self.subTest(document=document[:80]):
                 self.assertIn(canonical_rule, document)
 
-        self.assertIn("Test the proxy's fitness for the intended consequence", entry_review)
-        self.assertIn("Preserve validity and claim limits", entry_review)
+        self.assertIn("required technical Review and Measurement Definition", entry_review)
+        self.assertIn("result branches, claim limits and recovery conditions", entry_review)
 
         self.assertIn("canonical R8 vacuity definition", representation_review)
         self.assertIn("headroom, noise, resolution", canonical)

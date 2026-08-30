@@ -18,7 +18,7 @@ Read [User decisions](references/user-decisions.md) when determining permission 
    - stop, halt or claim review: [Closeout and claims](references/closeout-and-claims.md);
    - packaging a closed campaign: [Packaging](references/packaging-and-recovery.md).
 3. Load action references only at their trigger below. Keep unrelated stage procedures and historical formats unloaded.
-4. After adopting the result, read [User-facing handoff](references/user-facing-handoff.md). Explain objective progress, evidence limits, remaining gap and material next choices before audit details. This return step does not rerun the resolver.
+4. Continue through legal internal actions while the current request, objective, Budget, access and Permission boundaries allow it. Read [User-facing handoff](references/user-facing-handoff.md) only for a requested pause or report, a true user-owned decision, completed requested scope, or a terminal state with no safe reachable action. This return step does not rerun the resolver.
 
 For a changed parent or retained result, apply [Change impact](references/frontier-core.md#change-impact-and-retained-results). Report only the exact unresolved dependency; a version difference alone does not end the campaign.
 
@@ -34,14 +34,16 @@ For a changed parent or retained result, apply [Change impact](references/fronti
 | Update C or A | [Claim records](references/claim-records.md) |
 | Create or maintain W lifecycle and mechanical bindings | [Work plan](references/work-plan.md) |
 | Delegate a worker | [Worker interfaces](references/worker-interfaces.md) |
-| Prepare a review subject | [Review preparation](references/review-snapshots.md) |
+| Save a current review subject | [Provenance and Git](references/provenance-and-identity.md), then [Review branch](references/review-branches.md) |
+| Read a historical review snapshot | [Review snapshots](references/review-snapshots.md) |
 | Prepare code-bearing Entry work | [Entry code planning](references/entry-code-planning.md) |
 | Assign or revise a professional implementation design | [Technical design](references/technical-design.md) |
-| Manage a formal candidate | [Candidate lifecycle](references/candidate-lifecycle.md) |
+| Select or use exact project bytes | [Current Batch](references/batch-current.md), then [Candidate lifecycle](references/candidate-lifecycle.md) only for historical or specialized publication |
 | Reuse calibration or a conditional routine screen | [Evaluation protocol](references/evaluation-protocol.md) |
 | Review Entry, design, implementation or claims | [Review branch](references/review-branches.md) |
-| Dispatch or continue B | [Batch interface](references/batch-interface.md) |
-| Validate or adopt a terminal result | [Batch result](references/batch-result.md), [Result adoption](references/result-adoption.md) |
+| Open, revise, perform or continue a current B | [Current Batch](references/batch-current.md) |
+| Read an identity-heavy historical B | [Historical Batch interface](references/batch-interface.md), and [Historical Batch result](references/batch-result.md) when present |
+| Validate or adopt a current result | [Current Batch](references/batch-current.md), [Result adoption](references/result-adoption.md) |
 | Select the next investment from adopted evidence | [Learning loop](references/learning-loop.md) |
 | Close one technical campaign generation | [Closeout and claims](references/closeout-and-claims.md), then `reflect-frontier` at its closeout trigger |
 | Prepare a selected strategic replan | [Replan review](references/replan-review.md) |
@@ -62,6 +64,6 @@ The designer writes professional concerns, not lifecycle records or executable o
 
 Adopt a worker result only after its assignment and evidence match. Preserve the specialist's professional meaning; send an actual defect to its owner rather than silently rewriting it. A draft preparation failure remains editable work, not a new review or recovery chain.
 
-Use the [Batch continuation rule](references/batch-interface.md#boundary-preserving-continuation) for working changes and repairs. Use the [single resolver](references/learning-loop.md#integrated-direction-resolver) for direction directly from adopted current evidence. Generation Reflection improves the next generation's search after closeout; it does not choose a route or grant permission. Neither worker output nor a technical review chooses another route or grants a new user permission.
+Use the [current Batch continuation rule](references/batch-current.md#boundary-preserving-continuation) for working changes and repairs. Use the [single resolver](references/learning-loop.md#integrated-direction-resolver) for direction directly from adopted current evidence. Generation Reflection improves the next generation's search after closeout; it does not choose a route or grant permission. Neither worker output nor a technical review chooses another route or grants a new user permission.
 
-Completion means the persisted outcome supports the report and the user-facing return explains progress and legal next actions. The task's objective, budget, access and actual consequences determine continuation, not the number of artifacts produced.
+Completion means the requested outcome is reached, a true user boundary is exposed, or no safe reachable action remains, and persisted state supports the report. A technical checkpoint, local resource adjustment, Review finding or internal result adoption is not completion while legal work remains. The task's objective, Budget, access and actual Consequences determine continuation, not the number of artifacts produced.

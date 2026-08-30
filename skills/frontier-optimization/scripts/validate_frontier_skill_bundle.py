@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from finding_effects import add_finding, finalize_findings
-from frontier_provenance import ProvenanceError
+from frontier_provenance.content import ProvenanceError
 from frontier_provenance.source_modules import (
     audit_python_dependencies,
     validate_source_modules,
@@ -40,31 +40,18 @@ EXPECTED_SKILLS = {
     "run-frontier-batch": True,
     "review-frontier": True,
 }
-REQUIRED_COORDINATOR_SCRIPTS = {
-    "authorization_target_contract.py",
-    "engineering_check_plan.py",
-    "freeze_execution_baseline.py",
+REQUIRED_CURRENT_SCRIPTS = {
+    "frontier_batch.py",
     "finding_effects.py",
-    "identity_bindings.py",
-    "package_frontier_handoff.py",
-    "post_adoption_state.py",
-    "project_snapshot.py",
-    "frontier_provenance_cli.py",
-    "validate_authorization_adoption.py",
-    "validate_batch_packet.py",
-    "validate_batch_result.py",
-    "validate_candidate_package.py",
-    "validate_candidate_recovery.py",
-    "validate_entry_packet.py",
     "validate_frontier_skill_bundle.py",
     "run_workflow_checks.py",
 }
 LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 RUNTIME_ARTIFACT_LINKS = {"FRONTIER.md", "log.md"}
 DISPATCH_INTERFACE_REQUIREMENTS = {
-    "frontier-optimization/SKILL.md": "references/batch-interface.md",
-    "frontier-optimization/references/campaign-cycle.md": "batch-interface.md#dispatch-state-machine",
-    "run-frontier-batch/SKILL.md": "../frontier-optimization/references/batch-interface.md",
+    "frontier-optimization/SKILL.md": "references/batch-current.md",
+    "frontier-optimization/references/campaign-cycle.md": "batch-current.md",
+    "run-frontier-batch/SKILL.md": "../frontier-optimization/references/batch-current.md",
 }
 ACTION_ROUTER_REQUIREMENTS = {
     "frontier-optimization/SKILL.md": "references/result-adoption.md",
@@ -85,21 +72,41 @@ STAGE_HANDOFF_REQUIREMENTS = {
 }
 BOUNDARY_CONTINUATION_REQUIREMENTS = {
     "frontier-optimization/references/planning-records.md": (
-        "batch-interface.md#boundary-preserving-continuation"
+        "batch-current.md#boundary-preserving-continuation"
     ),
     "frontier-optimization/references/entry-review.md": (
-        "batch-interface.md#boundary-preserving-continuation"
+        "batch-current.md#boundary-preserving-continuation"
     ),
     "frontier-optimization/references/worker-interfaces.md": (
-        "batch-interface.md#boundary-preserving-continuation"
+        "batch-current.md#boundary-preserving-continuation"
     ),
     "run-frontier-batch/SKILL.md": (
         "../frontier-optimization/references/"
-        "batch-interface.md#boundary-preserving-continuation"
+        "batch-current.md#boundary-preserving-continuation"
     ),
 }
 BOUNDARY_CONTINUATION_HEADING = "## Boundary-preserving continuation"
-ENTRY_IDENTITY_CONTRACT_REQUIREMENTS = {
+CURRENT_BATCH_REQUIREMENTS = {
+    "frontier-optimization/references/batch-current.md": (
+        "Batch.open(B)",
+        "Batch.apply(RoutineChange)",
+        "Batch.perform(Action)",
+        "frontier-batch/1",
+        "Historical compatibility",
+    ),
+    "frontier-optimization/scripts/frontier_batch.py": (
+        'CONTRACT_VERSION = "frontier-batch/1"',
+        "class OperationBinding:",
+        "PERMISSION_REQUIRED_CONSEQUENCES",
+        "_measurement_definition_for_action",
+        "class Batch:",
+        "def open(",
+        "def apply(",
+        "def perform(",
+        "class ReconcileAttempt:",
+    ),
+}
+LEGACY_ENTRY_IDENTITY_CONTRACT_REQUIREMENTS = {
     "frontier-optimization/references/entry-review-legacy.md": (
         "entry_bindings_ready: true",
         "target_file_sha256",
@@ -165,7 +172,7 @@ ENTRY_IDENTITY_CONTRACT_REQUIREMENTS = {
         "expected_receipt",
     ),
 }
-RESULT_CONTRACT_REQUIREMENTS = {
+LEGACY_RESULT_CONTRACT_REQUIREMENTS = {
     "frontier-optimization/references/batch-interface.md": (
         "batch-packet-format.md",
         "batch-result.md",
@@ -252,14 +259,9 @@ RESULT_CONTRACT_REQUIREMENTS = {
     ),
     "run-frontier-batch/SKILL.md": (
         "../frontier-optimization/references/batch-evaluation.md",
-        "../frontier-optimization/references/batch-result.md",
-    ),
-    "frontier-optimization/references/batch-evaluation.md": (
-        "canonical nested `evaluation_target`",
-        "result-publication recovery B",
     ),
 }
-FINDING_EFFECT_REQUIREMENTS = {
+CURRENT_FINDING_EFFECT_REQUIREMENTS = {
     "frontier-optimization/references/frontier-core.md": (
         "## Finding effects",
         "finding-effects.md",
@@ -275,6 +277,21 @@ FINDING_EFFECT_REQUIREMENTS = {
         "finding-effects.md",
         "entry-review-legacy.md",
     ),
+    "frontier-optimization/scripts/finding_effects.py": (
+        'BLOCK = "block"',
+        'REPAIR = "repair"',
+        'ADVISORY = "advisory"',
+        "return BLOCK",
+        "finalize_findings",
+    ),
+    "frontier-optimization/scripts/validate_frontier_skill_bundle.py": (
+        "finalize_findings",
+        '"blocking_findings"',
+        '"repair_findings"',
+        '"advisories"',
+    ),
+}
+LEGACY_FINDING_EFFECT_REQUIREMENTS = {
     "frontier-optimization/references/entry-review-legacy.md": (
         "frontier-entry-packet-schema/7",
         "zero `block` or `repair` findings",
@@ -287,13 +304,6 @@ FINDING_EFFECT_REQUIREMENTS = {
         '"blocking_findings": []',
         '"repair_findings": []',
         '"advisories": []',
-    ),
-    "frontier-optimization/scripts/finding_effects.py": (
-        'BLOCK = "block"',
-        'REPAIR = "repair"',
-        'ADVISORY = "advisory"',
-        "return BLOCK",
-        "finalize_findings",
     ),
     "frontier-optimization/scripts/validate_entry_packet.py": (
         "finalize_findings",
@@ -337,12 +347,6 @@ FINDING_EFFECT_REQUIREMENTS = {
         '"repair_findings"',
         '"advisories"',
     ),
-    "frontier-optimization/scripts/validate_frontier_skill_bundle.py": (
-        "finalize_findings",
-        '"blocking_findings"',
-        '"repair_findings"',
-        '"advisories"',
-    ),
 }
 
 
@@ -365,9 +369,46 @@ def parse_frontmatter(path: Path) -> dict[str, Any]:
     return parsed
 
 
+def source_module_subset(document: dict[str, Any], target: str) -> dict[str, Any]:
+    """Return one source module and its transitive dependencies."""
+    if not isinstance(document, dict) or not isinstance(document.get("modules"), dict):
+        raise ProvenanceError("source-module manifest requires modules")
+    modules = document["modules"]
+    selected: set[str] = set()
+    active: set[str] = set()
+
+    def include(name: str) -> None:
+        if name in active:
+            raise ProvenanceError(f"source-module dependency cycle at {name}")
+        if name in selected:
+            return
+        body = modules.get(name)
+        if not isinstance(body, dict):
+            raise ProvenanceError(f"unknown source module: {name}")
+        dependencies = body.get("depends_on")
+        if not isinstance(dependencies, list):
+            raise ProvenanceError(f"source module {name} dependencies are invalid")
+        active.add(name)
+        for dependency in dependencies:
+            if not isinstance(dependency, str) or not dependency:
+                raise ProvenanceError(f"source module {name} dependencies are invalid")
+            include(dependency)
+        active.remove(name)
+        selected.add(name)
+
+    include(target)
+    return {
+        "contract_version": document.get("contract_version"),
+        "modules": {name: modules[name] for name in modules if name in selected},
+    }
+
+
 def validate(skills_root: Path) -> dict[str, Any]:
     findings: list[dict[str, str]] = []
+    legacy_findings: list[dict[str, str]] = []
     source_files: list[dict[str, Any]] = []
+    current_source_paths: set[str] = set()
+    legacy_only_paths: set[str] = set()
     discovered = {path.name for path in skills_root.iterdir() if path.is_dir()}
     missing = sorted(set(EXPECTED_SKILLS) - discovered)
     for name in missing:
@@ -453,7 +494,7 @@ def validate(skills_root: Path) -> dict[str, Any]:
             )
 
     continuation_contract = (
-        skills_root / "frontier-optimization/references/batch-interface.md"
+        skills_root / "frontier-optimization/references/batch-current.md"
     )
     continuation_text = (
         continuation_contract.read_text() if continuation_contract.is_file() else ""
@@ -462,7 +503,7 @@ def validate(skills_root: Path) -> dict[str, Any]:
         add_finding(
             findings,
             "BOUNDARY_CONTINUATION_CONTRACT_INVALID",
-            "batch-interface.md must own boundary-preserving continuation",
+            "batch-current.md must own boundary-preserving continuation",
         )
     for relative, pointer in BOUNDARY_CONTINUATION_REQUIREMENTS.items():
         path = skills_root / relative
@@ -473,35 +514,56 @@ def validate(skills_root: Path) -> dict[str, Any]:
                 f"{relative} must point to {pointer}",
             )
 
-    for relative, markers in ENTRY_IDENTITY_CONTRACT_REQUIREMENTS.items():
+    for relative, markers in LEGACY_ENTRY_IDENTITY_CONTRACT_REQUIREMENTS.items():
         path = skills_root / relative
         text = path.read_text() if path.is_file() else ""
         for marker in markers:
             if marker not in text:
                 add_finding(
-                    findings,
+                    legacy_findings,
                     "ENTRY_IDENTITY_CONTRACT_INVALID",
                     f"{relative} must contain {marker}",
                 )
 
-    for relative, markers in RESULT_CONTRACT_REQUIREMENTS.items():
+    for relative, markers in CURRENT_BATCH_REQUIREMENTS.items():
         path = skills_root / relative
         text = path.read_text() if path.is_file() else ""
         for marker in markers:
             if marker not in text:
                 add_finding(
                     findings,
+                    "CURRENT_BATCH_CONTRACT_INVALID",
+                    f"{relative} must contain {marker}",
+                )
+
+    for relative, markers in LEGACY_RESULT_CONTRACT_REQUIREMENTS.items():
+        path = skills_root / relative
+        text = path.read_text() if path.is_file() else ""
+        for marker in markers:
+            if marker not in text:
+                add_finding(
+                    legacy_findings,
                     "RESULT_CONTRACT_INVALID",
                     f"{relative} must contain {marker}",
                 )
 
-    for relative, markers in FINDING_EFFECT_REQUIREMENTS.items():
+    for relative, markers in CURRENT_FINDING_EFFECT_REQUIREMENTS.items():
         path = skills_root / relative
         text = path.read_text() if path.is_file() else ""
         for marker in markers:
             if marker not in text:
                 add_finding(
                     findings,
+                    "FINDING_EFFECT_CONTRACT_INVALID",
+                    f"{relative} must contain {marker}",
+                )
+    for relative, markers in LEGACY_FINDING_EFFECT_REQUIREMENTS.items():
+        path = skills_root / relative
+        text = path.read_text() if path.is_file() else ""
+        for marker in markers:
+            if marker not in text:
+                add_finding(
+                    legacy_findings,
                     "FINDING_EFFECT_CONTRACT_INVALID",
                     f"{relative} must contain {marker}",
                 )
@@ -525,7 +587,7 @@ def validate(skills_root: Path) -> dict[str, Any]:
 
     scripts_root = skills_root / "frontier-optimization/scripts"
     observed_scripts = {path.name for path in scripts_root.glob("*.py") if not path.name.startswith("test_")}
-    for name in sorted(REQUIRED_COORDINATOR_SCRIPTS - observed_scripts):
+    for name in sorted(REQUIRED_CURRENT_SCRIPTS - observed_scripts):
         add_finding(findings, "REQUIRED_SCRIPT_MISSING", name)
 
     source_module_manifest = (
@@ -534,12 +596,26 @@ def validate(skills_root: Path) -> dict[str, Any]:
     )
     try:
         source_modules = yaml.safe_load(source_module_manifest.read_text())
-        validate_source_modules(source_modules, skills_root)
-        audit_python_dependencies(source_modules, skills_root)
+        current_modules = source_module_subset(source_modules, "release-validation")
+        current_closure = validate_source_modules(current_modules, skills_root)
+        audit_python_dependencies(current_modules, skills_root)
+        current_source_paths = current_closure["release-validation"]
     except (OSError, yaml.YAMLError, ProvenanceError) as exc:
         add_finding(
             findings,
             "SOURCE_MODULE_MANIFEST_INVALID",
+            str(exc),
+        )
+    try:
+        source_modules = yaml.safe_load(source_module_manifest.read_text())
+        legacy_modules = source_module_subset(source_modules, "legacy-compatibility")
+        legacy_closure = validate_source_modules(legacy_modules, skills_root)
+        audit_python_dependencies(legacy_modules, skills_root)
+        legacy_only_paths = legacy_closure["legacy-compatibility"] - current_source_paths
+    except (OSError, yaml.YAMLError, ProvenanceError) as exc:
+        add_finding(
+            legacy_findings,
+            "LEGACY_SOURCE_MODULE_MANIFEST_INVALID",
             str(exc),
         )
 
@@ -551,10 +627,15 @@ def validate(skills_root: Path) -> dict[str, Any]:
             if not path.is_file():
                 continue
             relative = path.relative_to(skills_root)
+            path_findings = (
+                legacy_findings
+                if relative.as_posix() in legacy_only_paths
+                else findings
+            )
             if "__pycache__" in relative.parts or path.suffix in {".pyc", ".pyo"}:
                 continue
             if path.is_symlink():
-                add_finding(findings, "SYMLINK_NOT_PORTABLE", relative.as_posix())
+                add_finding(path_findings, "SYMLINK_NOT_PORTABLE", relative.as_posix())
                 continue
             data = path.read_bytes()
             source_files.append(
@@ -568,7 +649,7 @@ def validate(skills_root: Path) -> dict[str, Any]:
                 text = data.decode()
                 if "/Users/" in text or "file://" in text:
                     add_finding(
-                        findings,
+                        path_findings,
                         "HOST_PATH_NOT_PORTABLE",
                         relative.as_posix(),
                     )
@@ -583,14 +664,14 @@ def validate(skills_root: Path) -> dict[str, Any]:
                         resolved.relative_to(skills_root.resolve())
                     except ValueError:
                         add_finding(
-                            findings,
+                            path_findings,
                             "LINK_ESCAPES_BUNDLE",
                             f"{relative.as_posix()} -> {raw_target}",
                         )
                         continue
                     if not resolved.exists():
                         add_finding(
-                            findings,
+                            path_findings,
                             "BROKEN_INTERNAL_LINK",
                             f"{relative.as_posix()} -> {raw_target}",
                         )
@@ -605,6 +686,7 @@ def validate(skills_root: Path) -> dict[str, Any]:
         ).encode()
     ).hexdigest()
     finding_summary = finalize_findings(findings)
+    legacy_finding_summary = finalize_findings(legacy_findings)
     return {
         "validator": VALIDATOR,
         "expected_skills": sorted(EXPECTED_SKILLS),
@@ -616,6 +698,12 @@ def validate(skills_root: Path) -> dict[str, Any]:
         "repair_findings": finding_summary["repair_findings"],
         "advisories": finding_summary["advisories"],
         "finding_effect_counts": finding_summary["finding_effect_counts"],
+        "legacy_compatibility_ready": legacy_finding_summary["ready"],
+        "legacy_findings": legacy_finding_summary["findings"],
+        "legacy_blocking_findings": legacy_finding_summary["blocking_findings"],
+        "legacy_repair_findings": legacy_finding_summary["repair_findings"],
+        "legacy_advisories": legacy_finding_summary["advisories"],
+        "legacy_finding_effect_counts": legacy_finding_summary["finding_effect_counts"],
     }
 
 

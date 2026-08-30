@@ -1,25 +1,43 @@
-# Batch measurement and result reuse
+# Current Batch measurement
 
-Read only for work that actually invokes measurement or derives a result from completed measurement. A bounded observation with no measurement invocation remains under Batch Interface. Use the packet's method and allowed consequence; none of these branches selects the next investment.
+Load only when current work invokes measurement or derives a result from completed measurement. The Batch-owned Measurement Definition fixes meaning; `Batch.perform` fixes the execution facts. Neither selects the next investment.
 
-## Bind one execution to its evidence
+## Use one Measurement Definition
 
-Keep the existing roles separate. The experiment identity defines the measurement meaning, frozen runtime inputs fix what the worker consumes, and execution-start proves that this execution was released. The measurement's existing result or evidence manifest is the single collection-level connection among the exact execution-start, the final run specification, and the raw evidence. It is not another authority. Do not copy the authorization chain into every observation. An observation needs a collection reference only when it can be stored or used apart from that manifest.
+Before measurement, the Coordinator writes one current definition through `Batch.apply(ReviseBatch(...))`. It states:
 
-Entry freezes the experiment, consumed inputs, output boundary, and any fields that may be resolved only after release. The Coordinator creates execution-start. When a final run specification needs an allowed late-bound field, the worker is its sole writer: after verifying the released execution and before the first measurement effect, derive the specification once from the frozen experiment, inputs, and execution-start, then atomically create it in the assigned exclusive surface. An existing file is not overwritten. Late binding cannot change the target, subjects, comparison, schedule, data, method, resource ceiling, or consequence. The support validator independently reproduces this derivation. `routine-local` continues to use `freeze_execution` as its sole admission writer and must not create a parallel run specification.
+- `mode`: `diagnostic-only`, `routine-local`, or `formal-slot-h`;
+- question, comparator, metric and scope;
+- resource ceiling and the non-repeatable unit;
+- `resource_owner`: `workflow` or `user`, plus its consumption control and execution owner;
+- evidence and interpretation limits; and
+- `result_owner`: `B` or `E`.
 
-A caller-supplied `expected` file is never an authority. It may be used only as a deterministic cache created once by the same writer before the first measurement effect, reproducible from the frozen inputs and execution-start, and bound by the existing result or evidence manifest. Otherwise the support validator derives the expected facts directly from those authoritative inputs.
+Equivalent existing definitions remain usable even when their field names predate this guide. Update meaning only when the intended measurement changes; do not create a migration or review merely to rename fields.
 
-## Protect only the protocol's non-repeatable unit
+An Action cannot supply another definition. `Batch.perform` reads the current one, binds it to the selected Git Candidate Revision and passing checks, checks applicable R, V and resource limits, then creates the consuming Attempt before the adapter begins.
 
-The frozen method states the coarsest unit whose duplicate execution would change evidence, exposure, cost, or an external effect. Protect that unit in the existing exclusive output surface immediately before its first such effect: use one run- or schedule-level atomic claim when the whole run is non-repeatable, per-observation claims only when the protocol permits completed observations to survive while unstarted ones continue, an existing external idempotency key when it already provides the guarantee, and no claim for an operation that is demonstrably idempotent and safely retryable. These claims are operational evidence, not identities, authority, a general journal, or an extension of the routine slot index.
+## Run the selected mode
 
-Complete deterministic checks that can fail without producing the governed effect before claiming the unit, then enter that effect without unrelated work between the claim and invocation. Re-enter a claimed unit only when the previous worker is proved terminated, the effect is proved not to have started or is safely retryable, the frozen method permits retry, and cumulative limits still hold. Otherwise preserve the partial bytes, report the effect as unknown, and do not rerun that unit. Whether other unclaimed units may continue follows the frozen method; an unknown unit does not by itself close the B or Generation. Do not add a lease, heartbeat, retry counter, or distributed lock.
+| Mode | Use | Maximum current consequence |
+|---|---|---|
+| `diagnostic-only` | A bounded observation that can change route, repair or measurement decisions | B evidence only |
+| `routine-local` | A local screen of the current reviewed material under a reusable protocol | B evidence only |
+| `formal-slot-h` | The parent-defined independent comparison | E only after comparison validity passes during Result Adoption |
 
-For a Slot H evaluation B, require `work_kind: experiment`, `changes_executable_candidate: false`, and the canonical nested `evaluation_target` from Batch Interface. The target binds one complete immutable candidate root and manifest, unchanged adopted `IMPLEMENTATION_READY`, the Slot H contract, and a precomputed experiment identity covering the evaluator, data, controls, protocol, environment, budget, campaign generation, and result paths. Treat `evaluation_target.experiment` as the only experiment-identity source; prose fields refer to it without copying the identity. Recompute both the complete candidate package and the experiment identity before acknowledgment. Stage the candidate into an exclusive runtime copy before any load and apply the same Python bytecode suppression. For recovery, use [Candidate recovery](candidate-lifecycle.md#post-closeout-recovery-reuse): bind the applicable grant, latest accounting and exact candidate for this evaluation. Reuse an unchanged applicable implementation conclusion; recovery alone requires neither a new implementation review nor a separate candidate preflight. Do not change candidate bytes, evaluator semantics, comparison controls, or measurement inputs. Run only the assigned measurement and comparison-validity checks, preserve raw results, and copy the complete packet `evaluation_target` exactly into the result. Do not add flat experiment-binding aliases, create E, retain or promote the candidate, or choose the next B.
+The worker runs only the fixed method and records raw observations, actual use, actual Consequences, external references and recovery state in the Attempt. It does not create E, retain or promote a candidate, choose another B, or broaden the interpretation limit.
 
-For `evaluation_target.mode: routine-local`, require the Coordinator's released execution node and exact consumed slot before loading the candidate. Copy the target and its structured `evidence_scope` unchanged. Run only the fixed single-use schedule and local-resource ceiling. Report B evidence only; do not create E, rerun calibration, add samples, satisfy formal Slot H, integrate, select an incumbent, promote, submit, publish, take an external or paid action, state a strength claim, or choose or authorize another B.
+## Protect the actual non-repeatable unit
 
-For a result-publication recovery B, do not rerun a completed measurement. Require the packet to bind the source B, each raw artifact and identity, unchanged measurement semantics, zero reruns, and a prohibition on new measurement execution. Recompute every bound source identity before acknowledgment, then recompute only the authorized derived summary. Report `actual_spend: 0 new measurement spend` and the exact zero-valued `evidence_reuse_accounting` mapping from Batch Interface, and publish under the new B identity. A missing byte, identity mismatch, changed interpretation, or contradictory accounting is `BLOCKED`; it is not permission to sample again.
+Use the narrowest control already present at the execution seam: the consuming Attempt, an exclusive output or slot key, or an external idempotency reference. Do not add a general lease, heartbeat, retry counter or global registry.
 
-This execution contract creates no new evidence-adoption or recovery exception. Preserve historical and partial bytes, but apply only the evidence use already allowed by the frozen target and Batch Result.
+- `resource_owner: workflow`: the Attempt and adapter control repetition; no V is needed merely because the unit is single-use.
+- `resource_owner: user`: an applicable V must cover the private, scarce or unrecoverable resource before the adapter begins.
+
+An uncertain unit cannot be rerun until observed facts prove the effect did not start, prove retry is safe, or reconcile the original Attempt. Unrelated routine work and unclaimed units remain legal when the definition permits them.
+
+## Reuse completed evidence
+
+Deriving a result from already completed measurement creates no new measurement Attempt when it reads unchanged raw evidence, uses unchanged semantics and performs no governed effect. Result Adoption records the derived meaning and its limits. Any new sampling, changed comparator, changed interpretation or effect uses a normal current Measurement Definition and `Batch.perform`.
+
+Historical evaluation targets, experiment identities, acknowledgments, execution-start records and frozen result packets remain readable through [Historical Batch interface](batch-interface.md) and [Historical Batch result](batch-result.md). They are not current admission writers.

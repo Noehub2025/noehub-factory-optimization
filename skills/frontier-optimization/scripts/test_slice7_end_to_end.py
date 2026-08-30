@@ -1022,8 +1022,8 @@ class Slice7ContractTests(unittest.TestCase):
         self.assert_contract_contains(
             "campaign-cycle.md",
             "Do not reload `technical-design.md` to execute a `ready` design",
-            "without adopted unchanged `IMPLEMENTATION_READY` cannot be selected for Slot H evaluation",
-            "exact diagnostic-only exception in `candidate-lifecycle.md`",
+            "one separate formal Slot H evaluation B for an unchanged `IMPLEMENTATION_READY` candidate",
+            "retained historical-candidate exception when it actually applies",
         )
 
     def test_implementation_design_has_one_professional_author_and_a_direct_escape(self) -> None:
@@ -1110,30 +1110,24 @@ class Slice7ContractTests(unittest.TestCase):
     def test_user_facing_handoff_is_manager_readable_and_exposes_each_real_decision(self) -> None:
         self.assert_contract_contains(
             "user-facing-handoff.md",
-            "Load this file last, immediately before the final reply",
-            "the current objective and reference point from the Brief, F1, and F3",
-            "the concrete work completed since the prior handoff",
-            "the important limit on that learning",
-            "the valid objective gap from F6",
-            "every decision-relevant next candidate",
-            "the dominance or investment reason, stable operational order when technical evidence does not distinguish eligible options",
-            "Pair every procedural gate with the substantive question",
-            "direction is not yet resolved",
-            "surface every decision-relevant candidate and its recorded ordering",
-            "If the current request already supplies a qualifying reopening request",
-            "Continue an open campaign after a terminal action when no later resolver result or Selection exists",
-            "present the complete next-step candidate set and its recorded ordering",
-            "do not invent an identifier or ask the user to authorize one",
-            "Authorization question withheld by request",
-            "requesting presentation of the unchanged exact question",
-            "Present the exact unchanged <V target> authorization question",
-            "response recommended by the unchanged Selection",
-            "Use $frame-optimization. Review <exact conflicting parent fields and identities>",
-            "Suggest no command",
+            "Load only when the workflow truly returns control",
+            "what materially changed and why it matters to the objective",
+            "the strongest supported conclusion and its important limit",
+            "the remaining objective gap or the observation needed to determine it",
+            "every material next candidate, recorded ordering and switching condition",
+            "A procedural gate must be paired with the substantive question it protects",
+            "Preserve non-dominated alternatives and switching conditions",
+            "perform it instead of returning a planning instruction",
+            "Ask only for a boundary owned by",
+            "Reuse an applicable V",
+            "If the current request already supplies the decision or Permission",
+            "Do not offer “authorize this exact B”",
+            "suggest no command",
         )
         coordinator = (SCRIPT_ROOT.parent / "SKILL.md").read_text()
         self.assertIn("references/user-facing-handoff.md", coordinator)
-        self.assertIn("After adopting the result, read", coordinator)
+        self.assertIn("Continue through legal internal actions", coordinator)
+        self.assertIn("only for a requested pause or report", coordinator)
         self.assertIn("This return step does not rerun the resolver", coordinator)
         for reference in (
             "entry-and-planning.md",

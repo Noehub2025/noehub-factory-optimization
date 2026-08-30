@@ -1,6 +1,8 @@
 # Fixed review inputs
 
-Load when preparing or reading a review. Storage, working-copy behavior,
+> Historical compatibility reference. A current review uses one full Git commit, explicit subject paths, and one R through `review-frontier`. Load this file only when a retained review actually contains a review-subject index, decision node, packet, snapshot manifest, or attestation.
+
+Storage, working-copy behavior,
 large artifacts, and historical continuation are owned by
 [Provenance, Git, and retained artifacts](provenance-and-identity.md).
 

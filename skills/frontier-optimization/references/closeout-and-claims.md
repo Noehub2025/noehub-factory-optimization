@@ -57,16 +57,16 @@ Do not leave a reviewed or withdrawn C active. Do not require a positive review 
 
 For an active C that is not withdrawn:
 
-1. freeze one immutable claims snapshot with the exact C wording, intended use, parents, F8, R8, applicable Slots D, E, and H, FRONTIER state, cited Generation Reflections or legacy Outcome Reflections, replans, Q, E, D, X, prior A, W, B, design, user authorization, candidate, implementation review, engineering, measurement, and search-state evidence required by the wording;
-2. create one immutable packet with `review_kind: claims`, one review identifier, one exclusive review-artifact path, and one completion check;
+1. select one full Git commit and the exact C wording plus only the parent, campaign, Review, V, B, E, design, implementation, measurement and search-state paths required by that wording;
+2. create one `review_kind: claims` assignment with one R handle, one exclusive review-artifact path and one completion check;
 3. invoke the existing `review-frontier` in a fresh context; and
-4. preserve the packet, snapshot, and artifact for every result.
+4. preserve the Git subject and review artifact for every result.
 
 The reviewer writes only the assigned review artifact. It cannot edit C, write A or X, change campaign status, repair evidence, choose follow-up work, authorize wording, publish, or write the final handoff.
 
 ## Adopt every finished review through A
 
-After `review-frontier` finishes, the Coordinator validates the packet, snapshot, artifact identity, named C, evidence freshness, and allowed result. Append exactly one A for each reviewed C, including:
+After `review-frontier` finishes, the Coordinator validates the exact Git subject, review artifact, named C, evidence applicability and allowed result. Append exactly one A for each reviewed C, including:
 
 - `CLAIMS_SUPPORTED`;
 - `CLAIMS_DOWNGRADED`;
@@ -93,7 +93,7 @@ When the user withdraws C before a complete review artifact exists, append X wit
 - `Consequence: claim branch complete; no wording authorized`; and
 - the unchanged campaign status and return condition.
 
-Do not write A for a review that did not finish. If the review artifact already finished, adopt it through A first; a later withdrawal is a separate X that removes any wording use. Preserve any partial packet, snapshot, or reviewer artifact as nonauthoritative evidence.
+Do not write A for a review that did not finish. If the review artifact already finished, adopt it through A first; a later withdrawal is a separate X that removes any wording use. Preserve any partial assignment or reviewer artifact as nonauthoritative evidence.
 
 ## Finish the claim-only branch
 
@@ -194,11 +194,11 @@ Write the final handoff to `log.md` and update the `FRONTIER.md` Brief and F2-F8
 - final budget and unresolved accounting;
 - measured and retained E with candidate and experiment identities;
 - completed, paused, superseded, invalid, or reusable T, W, B, and search state, including recovery steps;
-- applicable design, development authorization, implementation review, integration, and archive state;
+- applicable design, V, implementation review, integration, and archive state;
 - the Generation Reflection when required, compatible evidence sequence, bounded progress and constraint meaning, focused research, V, and replan lineage;
 - the Reflection's retained search assets, worthwhile opportunities, exploration/exploitation stance, and reconsideration signals without presenting them as formal Selection;
 - final route-set state, reopening events, diagnostic dominance, first applicable resolver row, and exact direction consequence;
-- project decision, attestation, authority, execution, and outcome roots for every surviving object;
+- exact Git and external references needed by every surviving current object, plus original historical roots only when the retained object already contains them;
 - active compatible D records and valid gap, or `gap: Unknown`;
 - C, A, X, supported wording, and wording that remains unauthorized; and
 - exact evidence, review, authorization, resource, or parent change required before continuation.

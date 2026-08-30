@@ -18,8 +18,10 @@ Frame documents and the handoff bind durable problem, representation, comparison
 
 | Live fact | Current owner |
 |---|---|
-| Generation, campaign status, Selection, authorization, and dispatch | `FRONTIER.md` `current_state` |
-| Actual and unknown spend, reservations, balance, adopted results, and their decision use | `frontier/ledger.md` |
+| Generation, campaign status and Selection | `FRONTIER.md` `current_state` |
+| User decisions and Permission | V records, citing the adopted Frame source when applicable |
+| Actual and unknown spend, reservations, balance, adopted results, and their decision use | Budget and E records in `frontier/ledger.md` |
+| Batch limits, Attempts, actual consumption and Consequences | current B record |
 | Completed Generation and its recovery entry | latest complete `CLOSEOUT_COMPLETE` |
 
 Current retained-result status means adoption, elite or survivor status, current Selection, or intended next use. It does not include the stable reference-baseline definition, comparison meaning, result-comparability rules, search-state compatibility, or old-work reuse rules; those remain with Framing.
@@ -42,7 +44,8 @@ Emit the current handoff from applicable positive conclusions and adopted change
 - coverage, reachability, redundancy, and claim limits;
 - applicable module contracts, interfaces, coupling, resource partitions, and global evaluation rules;
 - retained search-state dispositions; and
-- Slot H harness, baseline, evaluator, and measurement identities.
+- Slot H harness, baseline, evaluator, and measurement identities; and
+- adopted user decisions that constrain Frontier objective, total resources, access or protected Consequences.
 
 `PROCEED_EXPLORATORY` permits only the reviewed bounded whole-candidate scope. `PROCEED_MODULAR` adds only the exact modules and operations named in `Permitted`. A nonpositive, stale, malformed, incomplete, or mutable review emits no handoff.
 
@@ -50,7 +53,7 @@ Emit the current handoff from applicable positive conclusions and adopted change
 
 Bind the current adopted parent and handoff for the next action, retaining saved reviews for the scope they actually established. Read live campaign facts from the owners above. Use [Change impact and retained results](../../frontier-optimization/references/frontier-core.md#change-impact-and-retained-results) for revisions: inspect the changed meaning and its dependencies, not every historical object. A missing applicable requirement pauses only dependent work. A workflow-only update or stale live-state explanation does not invalidate the project handoff, and workflow bytes remain outside project identities.
 
-Admission copies the handoff bindings into Frontier state without changing their meaning. A positive handoff defines permitted search work; it does not authorize candidate development, spend, measurement, integration, incumbent use, promotion, production changes, or claims. Frontier applies its own Entry and lifecycle gates for those consequences.
+Admission references the handoff bindings without changing their meaning. A positive handoff does not select a route, allocate a Batch, prove technical readiness, establish measurement validity, promote a result or approve a claim. Within its adopted objective, total resources, access and protected-Consequence boundaries, Frontier makes those technical and allocation decisions without another user question. When a Batch needs a V handle for an already adopted Frame decision, the Coordinator records one operational reference to that source; V cannot reinterpret or widen it.
 
 The handoff is complete when a fresh reader can identify the active Coordinator, reproduce every binding, and reach the same admission result without conversation history or a global Skill installation.
 

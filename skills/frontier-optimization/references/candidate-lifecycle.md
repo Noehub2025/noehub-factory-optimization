@@ -1,6 +1,8 @@
 # Frontier Candidate Lifecycle
 
-Load only when a proposed or selected B has `changes_executable_candidate: true`, or when checking whether an implementation review remains reusable.
+Load only for historical candidate publication or a specialized publication seam that truly needs a separately retained package. Current working implementation and checks use [Current Batch](batch-current.md) and Git Candidate Revisions; changing bytes inside the same independently judged result does not create a Candidate identity, proposal, Attempt, charge, Review, Permission, or new B.
+
+The identity-heavy lifecycle below is a compatibility contract for retained records that already use it. It is not a sequence for a current B. Current development uses [Executable work](batch-code-execution.md), one Git Candidate Revision, focused checks and the applicable implementation Review. A new workflow must not select this file merely because work changes code, data, a model, configuration or another executable artifact. If an external publication boundary requires an immutable package, keep that external package reference in the producing Attempt and add only the controls required by that seam.
 
 ## Terms
 
@@ -10,7 +12,9 @@ Load only when a proposed or selected B has `changes_executable_candidate: true`
 - **Candidate identity:** immutable binding of parents, source base and result, code, configuration, dependencies, runtime factors, generated assets, and candidate interface. A path, branch, worktree, or role name is not identity.
 - **Experiment identity:** separate binding of candidate to evaluator, data, controls, protocol, environment, budget, and result artifacts.
 
-## Lifecycle
+## Historical retained lifecycle
+
+The numbered steps in this section describe old retained objects. Follow them only to interpret or validate an object that already contains those fields. Never generate acknowledgment, execution-start, snapshot, packet, candidate identity or experiment identity for current work from this section.
 
 1. **Assess structure.** Use Entry code planning's repository-fit dispositions from cited project evidence.
 2. **Decide placement.** Prefer the smallest native integration. The technical owner selects structure and tools; ask only for an unresolved user-owned consequence under [User decisions](user-decisions.md).

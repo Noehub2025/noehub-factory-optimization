@@ -1,46 +1,40 @@
-# Entry Planning for Executable Candidate Work
+# Entry planning for executable work
 
-Load only when an eligible Entry B may create or change executable candidate code. This file connects Entry planning to the technical-design and candidate-code gates without making every Entry load those systems.
+Load only when the selected B may change executable project material. This reference connects Entry to technical design, ordinary development and implementation review without activating historical candidate publication.
 
-## Assess repository fit
+## Assess the repository seam
 
-Inspect the existing project structure, build and dependency conventions, candidate interface, source base, tests, every selected test or check unit and its possible execution effects, exclusive worker write surfaces, worker-forbidden paths, execution-frozen inputs, the Coordinator lifecycle transition, exclusive execution-baseline root, execution-start path, package-inventory path, final-manifest path, result-validation path, and workspace isolation.
+Inspect the current Git structure, established interface, source and dependency conventions, relevant callers, tests, mutable working scope, worker-forbidden paths, required outputs and any real external publication seam.
 
 Record one disposition:
 
 - `existing-integrated`: use the established structure and seam;
-- `new-in-scope`: select a suitable layout within the current grant;
-- `user-choice-needed`: a specific unresolved value or access decision prevents selecting the layout;
-- `incompatible`: explain the conflict and return to route or design planning.
+- `new-in-scope`: choose a suitable layout inside the adopted objective and constraints;
+- `user-choice-needed`: one named value, access or protected-Consequence boundary prevents the technical choice; or
+- `incompatible`: return the concrete route or design conflict.
 
-The technical owner selects layout and tools within the objective and constraints. Use [User decisions](user-decisions.md) only when that choice changes a user-owned value or permission boundary; an absent structure alone is not a reason to ask.
+The technical owner chooses layout, tools and local commands. An absent structure, changed path or implementation preference is not a user decision.
 
 ## Choose the design profile
 
-Load [Technical design](technical-design.md). The Coordinator may choose `direct` only when every direct condition is supported by repository facts and change scope. Otherwise create a W scaffold and invoke `design-implementation` in a fresh context; the designer selects `module` or `system` and authors the professional design.
+Load [Technical design](technical-design.md). Use `direct` when the B fully specifies a bounded, reversible behavior change through established ownership, interfaces, schemas, lifecycle, dependency direction, failure semantics and migration. Touching several files alone does not make work architectural.
 
-- `direct`: the exact B fully specifies one bounded reversible behavior change through established seams. It may touch multiple files when ownership, interfaces, schemas, lifecycle, dependency direction, failure semantics, and migration remain unchanged. No design W or design review is required.
-- `module`: `design-implementation` writes the Design brief and triggered concern files for one module or stable seam.
-- `system`: `design-implementation` writes the Design brief and every applicable concern file for cross-module interaction, state ownership, migration, external operation, or coordinated rollout.
+Use `module` or `system` only when a professional design trigger is present. The Coordinator creates the W scaffold and `design-implementation` authors the relevant technical concerns. Design authoring is planning and creates no B Attempt, proposal identity or spend by itself.
 
-Load [Work plan](work-plan.md) only for `module` or `system`. The Coordinator owns the W scaffold, lifecycle, Design map, stable Delivery map, traceability, and identities; it mechanically binds the designer's exact concern and slice pointers without rewriting professional meaning or assigning a future B, attempt, internal path, or runtime status into Design. Resolve every user-owned design choice as V and return contract-bearing answers to the designer before freezing the design.
+This step is complete when the executor can implement the fixed behavior without inventing architecture, ownership, interface meaning, failure behavior, migration, test oracles or a user value choice.
 
-## Separate the gates
+## Separate technical readiness from Permission
 
-For `module` or `system`, adopt an applicable `DESIGN_READY` before preparing its Entry realization. For `direct`, record reproducible profile evidence without a design review. In both cases, prepare the complete B and use the current Entry checks once.
+`DESIGN_READY` establishes design readiness for `module` or `system`; `direct` records its supporting repository facts without a design review. Apply [User decisions](user-decisions.md) separately. Work inside an existing V proceeds without another question. A changed technical contract needs the affected design review, not a new user answer unless it crosses the adopted user boundary.
 
-Apply [User decisions](user-decisions.md). If the realization fits an adopted grant, use spend-readiness and bind current execution authority without asking again. Otherwise obtain `AUTHORIZATION_READY`, ask only for the missing user-owned permission and adopt that answer. Design preference, `DESIGN_READY` and packet structure do not themselves grant execution permission.
+Entry checks only the decision needed by the next actual Consequence. Same-B implementation revisions, local repair, harmless checks and working observations use [Boundary-preserving continuation](batch-current.md#boundary-preserving-continuation) rather than another Entry.
 
-A changed technical contract needs the affected design review and current execution binding. It does not automatically revoke a broader user grant. Use Batch continuation for delegated same-packet design changes or Entry spend-readiness for a new realization.
+## Plan development and review
 
-Design authoring itself is planning and creates no B or proposal identity. Account for actual resources under the parent rule. When the designer returns `EVIDENCE_REQUIRED`, obtain only decision-relevant evidence through the existing research, prototype or B path, then revise the affected design.
+The current B records its objective, scope, allowed writes, design references, local resource limits, expected Consequences, current Git Candidate Revision, relevant checks and implementation-review checkpoint. Working material remains mutable. Use Git to select exact bytes for a check or Review; do not copy the repository into a snapshot.
 
-## Plan candidate identity and review
+Develop, run focused checks and repair inside the same B until the selected revision satisfies its engineering conditions. A materially changed revision needs fresh implementation review before the first formal Slot H measurement, mainline integration, incumbent use or another consequence that relies on that review. Diagnostic working observations may occur inside the same B when their Measurement Definition limits them to B evidence.
 
-Load [Candidate lifecycle](candidate-lifecycle.md). Give every materialized implementation a pinned execution source, assigned workspace, allowed paths, interface, configuration space, transient evidence paths, official package-inventory path, final-manifest path, engineering checks, implementation-review path, and recovery point. When the parent Budget uses proposal, candidate, attempt, or an equivalent search-opportunity unit, cite the parent or R8 rule that owns the first formal identity, amount, and charge event in the existing B plan; do not copy it into another policy object. Otherwise record proposal charge as `not applicable`. Freeze every selected check unit, exact argument vector, content-addressed effect-classification source, and positive cumulative effect maximum across all attempts. A full or opaque suite is eligible only when that evidence bounds every possible effect. Keep local engineering fixtures separate from candidate performance measurement and limit their consequence to engineering evidence.
+Only a real external publication or independently consumed package may require a stable package checksum or provider artifact reference. Record it in the producing Attempt and load [Historical or specialized candidate publication](candidate-lifecycle.md) only when that seam actually exists.
 
-Every materially changed executable candidate must stop for fresh implementation review before its first Slot H measurement or mainline integration. Unpublished working material may receive a bounded observation inside the same B only through [Batch Interface](batch-interface.md#bounded-observations-before-publication). A separate diagnostic-only B before review is limited to the historical published-candidate exception in [Candidate lifecycle](candidate-lifecycle.md#diagnostic-only-exception); record its exact result branches, isolation, prohibited consequences, and stop boundary. Record the implementation-review checkpoint, review packet path, and protected follow-up budget in B and Selection. Keep E, integration, incumbent use, promotion, and claim use as later Coordinator decisions.
-
-Before freezing a first code B, run the current project preparation checks selected by [Batch interface](batch-interface.md) and require ownership, complete `delivery_scope`, frozen-subtree, required-output, prohibition, path-schema, and identity checks to pass. Use `scripts/validate_batch_packet.py` only for an exact historical object admitted by its legacy compatibility branch. Also prove that acknowledgment returns before any work or spend, the only required post-acknowledgment campaign edit is the exact `planned -> running` transition, the Coordinator freezes every post-transition input byte under the assigned execution-baseline root, and the worker starts only from the execution-start record that binds that snapshot. Require the current profile-aware draft and frozen result validation before the final result path. Do not freeze the whole W or a mutable implementation breakdown. Do not put the lifecycle edit, packet preflight, execution-baseline root, execution-start record, or any worker output under an execution-frozen directory. A worker-forbidden campaign path may remain Coordinator-owned; it is not globally immutable unless listed separately with an exact execution-frozen identity.
-
-Code planning is complete only when the selected B can satisfy its complete `delivery_scope` without requiring its executor to invent architecture, entity meaning, interface contracts, data flow, user choices, test oracles, or rollback behavior.
+Planning is complete when the B can begin ordinary implementation under current Git, Review, V and resource owners without acknowledgment, execution-start, snapshot, packet identity or a second authorization chain.

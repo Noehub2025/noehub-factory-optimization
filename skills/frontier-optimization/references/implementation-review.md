@@ -1,10 +1,26 @@
 # Frontier Implementation Review
 
-Load only when a code-bearing B has one complete all-pass realization ready for prepublication review, when the same B returns repaired fidelity bytes for another review, or when retained material has a missing review or an actual change affecting its prior conclusion. An unchanged published result in its original scope needs no new review solely for recovery.
+Load only when a later measurement, integration, external publication, irreversible operation, or other real Consequence requires independent technical judgment of one exact Git Candidate Revision, or when concrete contrary evidence affects a prior R. Ordinary implementation loops and harmless checks do not require this review.
 
-Use a new immutable review packet and path for each exact realization. Preserve every verdict. Include no expected verdict, suspected defect, or proposed repair.
+## Current review method
 
-## Review method
+The assigned subject contains one full Git commit and explicit Candidate Revision paths, applicable W sections or direct behavior target, relevant checks, dependencies that affect behavior, known findings, and the exact later Consequence the verdict may support. It needs no packet, snapshot, inventory, candidate ID, execution-start, authority lineage, content root, or closed collection.
+
+1. Resolve the exact Git revision and inspect its source artifacts, behavior, and applicable checks.
+2. Judge it only against the assigned objective, design obligations, interface, invariants, failure behavior, compatibility, performance or reliability conditions, and observable definition of done. Build success or a smoke run is insufficient when the claimed readiness needs more.
+3. Distinguish implementation fidelity from a changed contract. A defect against an unchanged requirement returns `IMPLEMENTATION_REPAIR_REQUIRED`; a necessary change in behavior, public seam, ownership, lifecycle, acceptance meaning, resource consequence, or load-bearing design assumption returns the affected owner.
+4. Check only the evidence required by the proposed later Consequence. An external publication may need an external artifact version; routine local development does not.
+5. Return `IMPLEMENTATION_READY`, `IMPLEMENTATION_REPAIR_REQUIRED`, `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED`, or `BLOCKED`. State the exact Git revision, checked conclusions, findings, assumptions, maximum supported Consequence, and recovery condition.
+
+`IMPLEMENTATION_READY` applies only to the reviewed Git bytes, assumptions, and named maximum Consequence. It does not itself grant V, spend, measurement, integration, promotion, publication, incumbent use, or a claim. A finding returns to the same B under [Current Batch](batch-current.md) unless the independently judged result changes.
+
+Write one R through `review-frontier`. Preserve earlier R records at their Git versions. A corrected revision receives a new R only when the later Consequence still needs independent judgment; review the changed dependencies and affected conclusions rather than restarting unaffected work.
+
+## Historical implementation review
+
+The sections below are compatibility rules for retained review packets and candidate-package lifecycles that already use those fields. Do not generate them for a current Git-backed Batch.
+
+### Historical review method
 
 1. Select `materialization` or `recovery-reuse`. For `materialization`, require the frozen B target, authorization lineage, execution-start, exact transient inventory, closed implementation collection, cumulative attempt reports, design or direct target, source and dependency identities, engineering checks, allowed feedback, and evidence that formal publication, Slot H measurement, integration, and incumbent use have not occurred. Assess formal identity and charge against the existing parent-owned boundary under [Boundary-preserving continuation](batch-interface.md#boundary-preserving-continuation), not a separate no-charge rule in this review. Retained unpublished material uses the same `materialization` mode and its original producing execution evidence, even after closeout; current permission governs the proposed use, not the historical execution. No final manifest is required. For `recovery-reuse`, require the exact published material and the evidence needed for the affected conclusion under [Change impact and retained results](frontier-core.md#change-impact-and-retained-results).
 2. Verify repository placement and the assigned interface against the reviewed disposition. An unapproved top-level root, toolchain or dependency-manager replacement, or public-entrypoint change is a finding.
@@ -14,7 +30,7 @@ Use a new immutable review packet and path for each exact realization. Preserve 
 6. For `materialization`, confirm the reviewed bytes have not been published, formally measured, integrated, or used as an incumbent. An authorized working observation under Batch Interface may precede review only as cumulative B evidence inside its fixed question, methods, resources, exposure, and consequence ceiling; it is not formal measurement or a publication. `IMPLEMENTATION_READY` permits only authoritative publication of the exact reviewed inventory. It grants no formal measurement, integration, incumbent, promotion, or claim authority. For `recovery-reuse`, the maximum consequence remains the separately governed unchanged-candidate reuse path.
 7. Return exactly `IMPLEMENTATION_READY`, `IMPLEMENTATION_REPAIR_REQUIRED`, `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED`, or `BLOCKED`. A positive result has no finding; every nonpositive result has at least one complete finding. State the exact affected realization, design input, or parent boundary.
 
-## Packet
+### Historical packet
 
 Use the existing implementation review input and complete project review subject. For `materialization`, bind the working realization rather than a final result or manifest:
 
@@ -60,7 +76,7 @@ completion_check: <every implementation requirement receives an evidence-backed 
 
 `working_inventory`, `attempt_reports`, and `prior_review_repairs` use already assigned B evidence paths. They do not create a new checkpoint, candidate, or review-history artifact type. The review subject's closed collection binds the exact implementation bytes. For `recovery-reuse`, bind the published candidate and applicable original evidence instead of prepublication fields. For retained unpublished material, keep `prepublication` and the original execution-start; do not create a fictitious current-generation execution. Readiness does not grant publication or measurement permission.
 
-## Artifact
+### Historical artifact
 
 Only `review-frontier` writes the assigned file.
 

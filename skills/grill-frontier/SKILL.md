@@ -1,24 +1,35 @@
 ---
 name: grill-frontier
-description: Ask one Frontier tradeoff or authorization question that only the user can decide, including the campaign baseline, design, interface, migration, cost, risk, dependency, reversibility, maintenance, operations, deadline, exploration, or permission to proceed. Use when `frontier-optimization` has created the target and supplied technically eligible options or one exact authorizable object with evidence.
+description: "Ask one unresolved Frontier user decision: a value tradeoff or permission for uncovered paid, external, sensitive, irreversible, or user-controlled scarce-resource work. Use only when the Coordinator has ruled out reuse of an existing V and technical evidence cannot decide."
 ---
 
 # Grill Frontier
 
-Collect one Coordinator-assigned user choice. Ask only the question needed for the named decision record.
+Collect one Coordinator-assigned user choice. Apply [User decisions](../frontier-optimization/references/user-decisions.md) first. Return an applicable recorded answer instead of asking again.
 
-Apply [User decisions](../frontier-optimization/references/user-decisions.md) before asking. Return an already recorded applicable answer without repeating the question. A technical choice or new B identity alone is not a user decision.
+## Accept one decision
 
-## Execute the assignment
+Require:
 
-1. Require `decision_kind: tradeoff | authorization`, exact `decision_root`, a reserved V identifier, exact decision, evidence, affected records, conditions, reconsideration trigger, and result-packet path. New packets must not include workflow release or implementation identities. For a post-result strategic tradeoff, also require the triggering adopted evidence and technically filtered options that the proposed replan cannot resolve from evidence. For `tradeoff`, require at least two technically eligible alternatives and return `BLOCKED` if the assignment asks the user to judge technical eligibility. For `authorization`, require one exact object, immutable identity, scope, reviewed basis, and the consequences of authorize, decline, and conditional authorization; do not require two technical alternatives. When that object names a concrete B packet, require unchanged finding-free `AUTHORIZATION_READY` for the exact target, reproduce the structural packet preflight, Entry schema, snapshot, and live-input identities, and require all bytes to match before presenting the question. Return `BLOCKED` before asking when any check is missing, failed, stale, or mismatched.
-2. Verify the typed project provenance chain, then use the installed shared worker interface. Workflow source closure is checked only when the workflow release is published or installed. Historical version 1 objects are audit evidence and never current user-decision assignments.
-   The installed workflow may change between invocations. That change never changes this assignment, its project identity, or its result path; apply the current interface only to the unchanged project facts.
-3. Present the decision in plain language. For `tradeoff`, present the evidence, technically eligible alternatives, recommendation when supported, uncertainty, consequence of each choice, and reconsideration event. For a campaign baseline choice, explain how each alternative supports later optimization without implying that the baseline itself must be the strongest eventual solution. For a design choice, explain the user-visible cost, lock-in, reversibility, maintenance, operational, interface, migration, and risk differences that actually vary; leave local reversible implementation details with the design's bounded executor choices. For `authorization`, present the exact object, identity, scope, review state, known limits, next action, and consequences of authorize, decline, or attach conditions; do not reopen the technical choice unless the user asks.
-4. Ask one question. Record the user's exact answer, decision root, its conditions, affected work, consequence, reconsideration trigger, readiness-review identity, target identity, and any superseded V identifier in the assigned result packet. Do not ask another question in the same run. Do not claim that a conditional answer changed the reviewed object; the Coordinator classifies it as exact, declined, or review-required.
+- `decision_kind: tradeoff | permission`;
+- the exact unresolved decision and why the user owns it;
+- applicable evidence and technically eligible options, or one protected Consequence with its scope and cumulative limit;
+- the reserved V path or section;
+- affected work, reconsideration event and completion condition; and
+- the exclusive answer path.
 
-The assignment is complete only when the answer is clear enough for the Coordinator to check and record as one V record.
+Return `BLOCKED` without asking when the assignment delegates technical eligibility, route ordering, implementation repair, local resource allocation, measurement mode, B identity or Review readiness. Do not require a packet, snapshot, execution-start, target identity, authority node, receipt or workflow provenance.
+
+This step is complete when the question and allowed answer surface are reproducible from current project records.
+
+## Ask once
+
+For a tradeoff, present the technically eligible alternatives, material value differences, recommendation when supported, uncertainty and reconsideration event. For Permission, present the protected Consequence, scope, cumulative limit, known cost or risk, and the effect of permit, decline or conditions.
+
+Ask one plain-language question. Preserve the user's exact answer and conditions in the assigned answer path. Do not ask another question, rewrite the technical plan or adopt campaign state.
+
+This step is complete when the Coordinator can record one V without interpreting an ambiguous answer.
 
 ## Authority
 
-The user can choose among technically eligible tradeoffs and can authorize, decline, condition, delegate, or withdraw work within their authority. A user answer cannot legalize invalid work, waive measurement, prove an assumption, or strengthen a claim. The answer changes campaign state only after the Coordinator writes the V record. Only the Coordinator may change allocation or other campaign records.
+The user may choose, permit, decline, condition, delegate or withdraw matters within their authority. The answer cannot legalize invalid work, prove readiness, waive measurement validity or strengthen a claim. The Coordinator records V and resumes internal work; only a newly uncovered user boundary requires another question.

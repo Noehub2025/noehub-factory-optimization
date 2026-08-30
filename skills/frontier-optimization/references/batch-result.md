@@ -1,5 +1,7 @@
 # Batch result format
 
+> Historical compatibility reference. New work stores results in the single record described by [Current Frontier Batch](batch-current.md). Load this file only when an actual retained result contains legacy result-packet or dispatch identity fields.
+
 Read when preparing, validating, or adopting a result. Apply only fields belonging to the packet's work kind and reached phase; a research or human-input result does not need candidate or engineering evidence.
 
 ## Batch result

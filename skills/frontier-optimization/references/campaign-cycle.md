@@ -8,21 +8,20 @@ Load after `frontier-core.md` selects a planned or running campaign with one sel
 - one professional `module` or `system` design draft or revision under a current W with no B or spend;
 - one evidence-producing design checkpoint or code slice under a current W; or
 - one human-input B with its request and validation contract in B or W;
-- one code-bearing or other mixed B with an explicit working-observation target inside Batch Interface's existing scope;
-- one diagnostic-only experiment B under the exact candidate-lifecycle exception;
-- one routine-local experiment B admitted through the exact single-use slot reviewed with its materialization B;
-- one separate Slot H evaluation B for an unchanged `IMPLEMENTATION_READY` candidate; and
+- one executable or mixed B with an explicit working-observation target inside the current Batch scope;
+- one diagnostic-only measurement inside its current B, or the retained historical-candidate exception when it actually applies;
+- one routine-local measurement through the current Batch-owned Measurement Definition;
+- one separate formal Slot H evaluation B for an unchanged `IMPLEMENTATION_READY` candidate; and
 - result adoption, one resolver run, and the next Selection after every terminal B.
 
-External action, mixed work without an applicable Batch Interface target, campaign closeout, and completion of the claim-review branch remain unavailable. An explicit working-observation target does not authorize an external, paid, human, physical, sensitive, or other consequential operation beyond its existing grant. Parallel B records are executable only when their shared W revision is identical, mutable paths do not overlap, one integration owner and join check are named, and neither result configures or permits the other. Record `BLOCKED` with `stage implementation pending: <exact later profile>` and finalize the return when no listed profile owns the action.
+An explicit working-observation target does not authorize an external, paid, human, physical, sensitive, or other Consequence beyond its existing V. Parallel B records are executable only when mutable paths do not overlap, shared technical obligations remain compatible, one integration owner and join check are named, and neither result configures or permits the other. Record `BLOCKED` with the exact missing owner or condition when no listed profile owns the action.
 
 ## Contents
 
 - [Load only the current action](#load-only-the-current-action)
 - [Recover the selected B](#recover-the-selected-b)
-- [Authorization-readiness gate](#authorization-readiness-gate)
-- [Common pre-dispatch gate](#common-pre-dispatch-gate)
-- [Dispatch acceptance scenarios](#dispatch-acceptance-scenarios)
+- [Current readiness and consequence gate](#current-readiness-and-consequence-gate)
+- [Current action acceptance scenarios](#current-action-acceptance-scenarios)
 - [Resolve direction before Selection](#resolve-direction-before-selection)
 - [Route the current action](#route-the-current-action)
 - [Slice 5 acceptance scenarios](#slice-5-acceptance-scenarios)
@@ -30,8 +29,8 @@ External action, mixed work without an applicable Batch Interface target, campai
 ## Load only the current action
 
 - Load [Campaign state](campaign-state.md) and [Planning records](planning-records.md) to resolve the selected B, baseline, Budget, and authority.
-- Load [Batch interface](batch-interface.md) to create, acknowledge, dispatch, or reconcile the exact packet.
-- Load [Candidate lifecycle](candidate-lifecycle.md), [Review snapshots](review-snapshots.md), and [Implementation review](implementation-review.md) only for code-bearing work, a diagnostic-only experiment, or an implementation-review reuse check. Load [Evaluation protocol reuse](evaluation-protocol.md) only for protocol calibration, a composite Entry slot, or a routine-local experiment.
+- Load [Current Batch](batch-current.md) to open, revise, perform, continue or reconcile a new B. Load [Historical Batch interface](batch-interface.md) only when the retained B actually contains those fields.
+- Load [Executable work](batch-code-execution.md) for current executable material. Load [Candidate lifecycle](candidate-lifecycle.md), [Review snapshots](review-snapshots.md), and historical implementation-review material only when an actual retained record or external publication seam uses them. Load [Evaluation protocol reuse](evaluation-protocol.md) only when the current Measurement Definition reuses calibration or shared protocol meaning.
 - Load [Result adoption](result-adoption.md) only after a worker result exists, when freezing a materialized candidate review, adopting diagnostic evidence, or validating and adopting E.
 - Load [Work plan](work-plan.md) when B cites W. Load only W frontmatter, Current state, the obligations named by the B's `delivery_scope`, applicable Validation and Definition-of-done terms, Recovery, and Design-map rows whose `Read when` condition matches the action.
 - Load [Technical design](technical-design.md) only while proving direct eligibility, preparing a design assignment, or mechanically adopting or reviewing a `module` or `system` design. `design-implementation` authors and repairs the professional content. Load [Design review](design-review.md) only when freezing, reviewing, or adopting that design.
@@ -41,56 +40,48 @@ External action, mixed work without an applicable Batch Interface target, campai
 
 Do not reload `technical-design.md` to execute a `ready` design. Follow W's matching `Read when` pointers and load only the exact concern contracts required by the selected B. Do not load learning-loop, evidence, or claim references before their triggers occur.
 
+For a current `frontier-batch/1` record, use [Current Batch](batch-current.md) for lifecycle and result ownership. Existing Entry Review, Permission, Budget, resolver, adoption and claim rules remain in force at their actual Consequences. References below to packet, acknowledgment, execution-start, snapshots, self-identities or typed execution and outcome roots apply only when an actual historical B already contains them; they are not current writer requirements.
+
 ## Recover the selected B
 
 Apply [Change impact](frontier-core.md#change-impact-and-retained-results) before treating a parent difference as a blocker. Continue unaffected work in this generation and reuse applicable saved reviews; update only the next affected decision.
 
-Read current parent reviews, `FRONTIER.md`, the exact project decision root, selected B, latest Budget and Selection, first-spend Entry review or later spend authority, current plan and applicable compatibility records, acknowledgment, result, B terminal outcome, accounting evidence, related E, join disposition, replan review, and stable project artifacts that already exist. Use recorded project identities, never conversation history or any workflow, validator, worker-interface, deployment, or release identity.
+Read current parent reviews, `FRONTIER.md`, selected B, latest Budget and Selection, applicable V, current plan, Batch result, accounting evidence, related E, join disposition, replan review, and stable project artifacts that already exist. Use the owning records, never conversation history or any workflow, validator, worker-interface, deployment, or release identity. Read a historical decision root, acknowledgment, execution-start, packet, or result identity only when recovering a B that already contains it.
 
-For W-backed work, resolve the exact W path, current `plan_revision`, design-contract identity, Design-map concern identities, applicable `Read when` rows, the B's `delivery_scope`, its current Entry realization, design review, development authorization, worker progress and discoveries, and recovery state. Treat the worker's mutable work breakdown as progress, not authority. For code, resolve only the artifacts already produced or required by the next reached stage: execution source and start before work, working bytes and engineering evidence before prepublication review, official inventory and manifest after publication, and result validation, result, and adoption records after result production. Recovery without the original branch or worktree is valid when the bytes already produced plus the prerequisites of the next permitted step remain retrievable by stable Git or artifact reference. It does not require downstream result, manifest, publication, terminal-outcome, or review bytes before their stages. A hash without the bytes needed by the next step is insufficient.
+For W-backed work, resolve the exact W path, current `plan_revision`, applicable design sections, the B's delivery obligations, design Review, current Permission, worker progress, discoveries, and recovery state. Treat the worker's mutable work breakdown as progress, not authority. For executable work, recover the latest working or selected Git Candidate Revision, retained checks, Attempts, consumption, Consequences, result, and next affected action. Recovery without the original branch or worktree is valid when the required Git or external artifact references remain available. It does not require a package, snapshot, manifest, execution-start, or result identity that the current B never created.
 
 For human input, recover the request, schema, provenance requirements, quality checks, confidentiality limits, response identity, validation state, and resume event. Do not infer a missing answer or validation from conversation history.
 
-Resume at the first missing durable step for the current B: working continuation and closing checks; applicable prepublication candidate review; publication, official inventory, and manifest; worker result and Coordinator validation; B terminal outcome; E adoption when this B is a separate valid evaluation; applicable research or V; replan review; join; and next-investment Selection. Skip stages that do not apply. Never repeat spend whose outcome is unknown merely because the live workspace is missing.
+Resume at the first missing durable step for the current B: working continuation and affected checks; an applicable Review; `Batch.perform` for a measurement or Consequence; result reconciliation; B conclusion; E adoption when valid; applicable research or V; replan review; join; and next-investment Selection. Skip stages that do not apply. Never repeat an Attempt whose result or Consequence is unknown merely because the live workspace is missing.
 
-## Authorization-readiness gate
+## Current readiness and consequence gate
 
-Apply [Entry review](entry-review.md) as the sole readiness and adoption interface, selecting authorization-readiness only for a new user decision and spend-readiness for an applicable continuing grant under [User decisions](user-decisions.md). Build the complete B through [Batch Interface](batch-interface.md), clear deterministic packet, result-contract, Entry, snapshot, and current-state checks before allocating a review snapshot, then freeze the exact proposed target and state transition for fresh semantic review. A deterministic draft failure stays inside the same unspent, unauthorized B when every semantic and consequence boundary remains unchanged. `AUTHORIZATION_READY` permits only a genuinely needed question and its existing post-answer adoption path. A finding-free spend-readiness review may return `ENTRY_READY` directly under the original user grant.
+Use [Entry review](entry-review.md) only when a fresh technical or value decision is actually required. A current B begins routine preparation under the selected objective, applicable R and V, and Batch limits. Planning, editing, debugging, harmless checks, design-slice revision, and repair do not require a packet, acknowledgment, snapshot, execution-start, result identity, or repeated Entry.
 
-Bind execution authority to the packet, source base, scope, spend, stop boundary, review and applicable user grant; for `module` or `system`, include the design and `delivery_scope`. Keep the answer outside W. Apply [Boundary-preserving continuation](batch-interface.md#boundary-preserving-continuation) to subsequent repairs, observations, and explicitly delegated design revisions. That section owns whether a new execution snapshot, Design review, Entry, or user decision is required. Do not create a competing rule that reauthorizes every changed design identity.
+Before a measurement or Consequence, call `Batch.perform`. It reads the Batch-owned Measurement Definition when applicable, verifies the selected Git revision, required checks, R applicability, protected-Consequence V coverage, Batch resources, V-owned resource limits and prior Attempts. Ask the user only when the action crosses an uncovered boundary in [User decisions](user-decisions.md). A changed internal method, local limit or Candidate Revision does not itself require another question.
 
-This gate is complete only when the unchanged target has durable `ENTRY_READY` adoption, or the decline, review requirement, or blocker is recorded with no Selection, reservation, acknowledgment, work, or spend.
+If the operation can be repeated safely and has no measurement or Consequence, use `Batch.apply` and continue. If repetition could duplicate an effect, `Batch.perform` creates a local Attempt before invoking the adapter. A blocked precheck creates no Attempt. An operation failure after start leaves the Attempt `uncertain` and blocks only repetition of the affected action until reconciled.
 
-## Common pre-dispatch gate
+Historical B records continue through their recorded packet and dispatch contracts. Do not convert them or make those contracts requirements for a current B.
 
-Before dispatch, verify the typed project provenance chain, current parents, scope, claims limits, persisted Selection, Budget, reservation, protected reserve, adopted terminal outcomes and E dispositions, joins, V records, adopted Q records, its one direction-resolver result, and every applicable positive review. Require the Selection's cited evidence-state identity, affected scope, surviving authority, and every cited project fact to remain unchanged; then apply its persisted row, exact next action, and later-spend gates without running the resolver again. The selected B must lie inside the surviving authority. Reproduce rather than repair the frozen structural, W traceability, and Entry-adoption identities. When current rules remove an obsolete procedural blocker or an adopted parent change affects the selected B's actual next decision, first use Campaign State's bounded current-decision update; that update grants no new authority or effect. Otherwise a workflow update, source diff, or release PASS does not enter the selected B or its authority.
-
-Then apply the [Batch Interface state machine](batch-interface.md#dispatch-state-machine) in order: acknowledgment, the exact reviewed Coordinator post-state transition, content-addressed execution-baseline freeze, execution-start, and the second worker invocation. Authorization is recomputed from the immutable Entry snapshot; the exact reviewed live post-state is verified separately, with every other snapshot-copy input unchanged. The worker begins only after live verification of a record with `worker_may_start: yes`.
-
-A malformed, stale, underfunded, unauthorized, contradictory, or path-conflicting packet returns `BLOCKED`. Preserve every durable artifact already written. This gate is complete only when execution has a valid start record or the attempt is durably waiting or blocked with zero unreported work or spend.
-
-## Dispatch acceptance scenarios
+## Current action acceptance scenarios
 
 | Scenario | Required durable outcome |
 |---|---|
-| Draft repeats the B006 acknowledgment/execution-start ownership conflict | Current preparation fails before a sealed decision or readiness review, user V, Selection, reservation, acknowledgment, work, or spend. |
-| A `delivery_scope` obligation is absent, unknown, missing a prerequisite, or uncovered by B outputs | Structural preparation fails before authorization-readiness review. |
-| Entry generation is greater than 1 but recovery lineage is absent | Entry draft schema fails before snapshot creation or user V. |
-| Packet passes structure but its W, Budget, Selection, or target is semantically inconsistent | Fresh authorization-readiness review is nonpositive before the user question. |
-| User adds a condition that changes scope, path, spend, or stop boundary | Adoption returns `REVIEW_REQUIRED`; no Selection, reservation, acknowledgment, work, or spend follows. |
-| Draft passes, then any packet byte changes | Preserve the old sealed decision, prepare the corrected complete version, and review only the correction and affected conclusions. |
-| First B changes campaign status after acknowledgment, including across UTC midnight | Acknowledgment returns before spend; one captured UTC instant supplies `generated.at` and the derived `updated` date under the structured `planned -> running` rule; the Coordinator copies and validates the complete post-transition baseline, execution-start binds its receipt and snapshot, then the worker starts. |
-| Worker-forbidden campaign record changes without being execution-frozen | Block only when the worker made the edit or another authority gate changed; do not treat actor-specific write protection as global drift. |
-| Execution-frozen input changes after execution start | Immediate forced halt with the changed identity and truthful spend; no silent rebaseline. |
-| A packet freezes a directory containing `FRONTIER.md`, its execution-start path, or a worker output | Reject before acknowledgment as path-conflicting. |
-| A post-transition baseline identity has no recoverable snapshot byte | Do not write execution-start or invoke the execution phase; record `BLOCKED` with zero work and spend, then finalize the return. |
-| Authorization adoption is valid, but only part of its reviewed state transition is live or another snapshotted input changed | Do not rerun the pre-transition validator against the changed live targets and do not ignore the drift. Recompute adoption from the immutable Entry snapshot, reject the partial or extra change in the separate post-adoption check, and write no execution-start. |
-| A normal terminal adoption later changes `FRONTIER.md`, ledger, or log | Preserve the live update and reconstruct start-time authority from the immutable execution-baseline snapshot. |
-| A materialization result draft contains candidate text in `results` | Result validation fails before the immutable result path or accepted terminal outcome exists. |
+| Routine preparation, editing, or a harmless check fails | Keep the same B open, repair the affected work, and rerun only affected checks; create no Attempt or new B. |
+| The selected Git revision or required passing check does not match the action | Block the affected action before the adapter starts; select or check the correct revision. |
+| R no longer applies or V does not cover a protected Consequence | Block the affected action before an Attempt; obtain only the missing Review or user decision. |
+| Requested resources exceed Batch limits or a V-owned resource exceeds its limit | Block before the adapter starts; record no consumption. |
+| An adapter fails after an Attempt starts | Mark that Attempt `uncertain`, preserve known effects, and prohibit blind repetition until reconciled. |
+| An operation reports more use or a different Consequence than declared | Preserve actual facts, flag the contract violation, and block dependent use; do not rewrite the record to match the plan. |
+| Unrelated files, workflow deployment, caches, or working notes change | Continue unless they are selected inputs or change an owning decision. |
+| A historical B already has packet and execution identities | Validate that B with its historical compatibility reader; do not generate those identities for current work. |
 
 ## Resolve direction before Selection
 
 Use only [Integrated direction resolver](learning-loop.md#integrated-direction-resolver). This file adds no direction table, fallback priority, research-first exception, or post-resolver R8 override.
+
+For an unchanged evidence and Selection state, apply its persisted row, exact next action, and later-spend gates without running the resolver again.
 
 After the terminal outcome and any eligible E are adopted, the resolver receives persisted B, E, Q, X, T, W, D, V, R8, Budget, parent, validity, join, and gate facts directly. Apply its single total order and [Budget precheck](learning-loop.md#resolver-inputs-and-budget-precheck), including the next observation, unavoidable commitments, and safe stopping or recovery. [Opportunity-led reconsideration](learning-loop.md#opportunity-led-reconsideration) uses that same order; it creates no parallel selector, analysis stage, or authority.
 
@@ -98,7 +89,7 @@ At a formal direction choice, another evidence round is permitted only when reso
 
 For a strategic change, prepare the proposal without dependent spend. Until an unchanged review is adopted as `REPLAN_READY`, the current route allocation remains authoritative and no dependent B, reservation, implementation, evaluation, integration, promotion, or claim consequence may proceed. A later specialized gate remains separate but cannot select a different direction from the resolver.
 
-A candidate- or route-scope disposition does not enter full closeout. Preserve the exact rejected candidate or closed route and every surviving authority named by the persisted resolver result. After a candidate has been formally published, a candidate-scope repair inside the unchanged reviewed route returns to normal B planning and Entry with a new candidate identity, development authorization, and the proposal charge defined by the parent. Pre-publication fidelity repair is not a resolver disposition; the authorized B may perform it only under [Boundary-preserving continuation](batch-interface.md#boundary-preserving-continuation). A route-scope disposition follows the resolver's unique surviving action or exact blocker. Only a campaign-scope stop or halt enters full closeout, and only completed closeout plus a valid recovery opening increments the generation; the opening may be covered by an existing continuing grant.
+A Candidate Revision or route-scope disposition does not enter full closeout. Preserve the rejected revision or closed route and every surviving Permission named by the persisted resolver result. A repair inside the same independently judged result returns to the same B under [Boundary-preserving continuation](batch-current.md#boundary-preserving-continuation), even when an earlier revision was retained or externally published. Record a new Candidate Revision and apply only the Review, Permission, cost, or external-publication consequence that the changed use actually requires. A route-scope disposition follows the resolver's unique surviving action or exact blocker. Only a campaign-scope stop or halt enters full closeout, and only completed closeout plus a valid recovery opening increments the generation.
 
 ## Route the current action
 
@@ -106,17 +97,17 @@ After direction resolution, choose one row below only to load the files that own
 
 | Current action | Load | Completion criterion |
 |---|---|---|
-| Execute one simple non-code B | [Batch interface](batch-interface.md) and [Planning records](planning-records.md) | One bounded W-free result is durably waiting or reported; worker evidence has no adopted campaign meaning |
+| Execute one simple non-executable B | [Current Batch](batch-current.md) and [Planning records](planning-records.md) | One bounded result or recovery condition is recorded; worker observations have no adopted campaign meaning |
 | Author or repair a module or system design | [Work plan](work-plan.md) and [Technical design](technical-design.md), then `design-implementation` in a fresh context | Designer writes only the assigned Design brief and concern bodies; the Coordinator mechanically binds exact pointers, or records the returned owner or blocker; no B, reservation, or spend is created |
 | Execute complex non-code, shared W, design-evidence, or human-input work | [Work plan](work-plan.md); add [Technical design](technical-design.md) only when the evidence changes a contract | Exact W revision, stable Delivery slice, and Entry realization govern the B; only assigned progress or discoveries change worker-side |
-| Materialize, recover, review, or measure an executable candidate | [Candidate lifecycle](candidate-lifecycle.md), then [Result adoption](result-adoption.md) when a result exists | Candidate stops at the correct review gate; implementation and measurement remain separate B records |
+| Develop, recover, review, or measure executable material | [Executable work](batch-code-execution.md), then [Result adoption](result-adoption.md) when a result exists | Working revisions and checks remain in one B; measurement uses an Attempt and its result receives only supported meaning |
 | Validate a result, reconcile spend, freeze implementation review, or append E | [Result adoption](result-adoption.md) | Result meaning, spend, recovery, candidate review, and E eligibility are durably dispositioned |
 | Diagnose, research, replan, join, or select the next B | [Learning loop](learning-loop.md); add [Campaign state](campaign-state.md) or [Evidence records](evidence-records.md) only for the record being written | Every selected terminal B is adopted, every eligible E is dispositioned, and the same state yields the same next action or blocker |
 | Open an exact external wording request | [Claim records](claim-records.md) | C and `CLAIM_REVIEW_REQUIRED` are durable; the claim branch stops before review or A |
 
 For simple non-code work, require `changes_executable_candidate: false`, no W, no executable or public-interface change, one bounded checkpoint and recovery point, and no unavailable input. If execution reveals a W, code, human-input, shared-contract, or multi-checkpoint prerequisite, stop and report the scope change. A result may be `completed`, `interrupted`, `failed`, `blocked`, or `waiting_for_input`; `actual_spend: unknown` remains truthful evidence and blocks new spend until reconciled.
 
-A candidate without adopted unchanged `IMPLEMENTATION_READY` cannot be selected for Slot H evaluation. Unpublished working material may receive an explicit bounded observation inside its existing B under Batch Interface. A separate B for an already published historical candidate uses only the exact diagnostic-only exception in `candidate-lifecycle.md`. Both remain B evidence. Materialization, engineering validation, diagnostic evidence, Slot H measurement, integration, incumbent use, and claims remain separate consequences.
+When a separate implementation Review is required for a later measurement or integration Consequence, it must apply to the exact selected Git Candidate Revision. Working material may receive an explicit bounded observation inside its existing B when its current V and resources cover the action. A separately funded or independently judged evaluation uses another B; a one-off measurement inside the current judged result uses a local Attempt. Neither raw observation automatically creates E, promotion, integration, incumbent use, or a claim.
 
 Routing is complete only when exactly one row owns the action and its completion criterion is satisfied. A row may point to several files because one action can cross several existing modules; it must not load another row merely because that work could follow later.
 
@@ -151,4 +142,4 @@ Return the recorded routing outcome to the Coordinator.
 | Current work cites E interpreted by a legacy OR | Preserve the old OR bytes and original limits; current Selection uses compatible adopted evidence without migrating OR coverage. |
 | Mid-campaign external wording request | C plus `CLAIM_REVIEW_REQUIRED`; no claim-review completion or A in this slice. |
 
-At terminal completion, this slice is complete when a fresh Coordinator can recover the packet, acknowledgment, content-addressed execution-baseline snapshot, execution-start record and post-transition baseline, finding-free result validation, exact W revision when used, terminal result or human-input wait, artifacts, spend, applicable candidate review, diagnostic-only disposition when used, separate Slot H evaluation and E lineage, diagnostic comparison, resolver row, adopted research, classification work, replan review, parallel join, and latest Selection. Before terminal completion, apply the stage-relative recovery rule above. For code, terminal recovery must also reconstruct the reviewed design and authorization lineage plus immutable candidate, and show either adopted unchanged `IMPLEMENTATION_READY` or a hard prohibition on Slot H evaluation, integration, and incumbent use. Historical replay preserves its stored resolver result. A real next-decision change caused by an adopted parent change or removal of an obsolete procedural blocker uses the existing X/Selection path and one new evidence-state resolution under current rules. No later spend is permitted without every applicable Q, V, join, persisted resolver result, and review.
+At terminal completion, a fresh Coordinator must be able to recover the current Batch definition, selected Git Candidate Revision when used, applicable R and V references, checks, Attempts, actual consumption and Consequences, terminal result or human-input wait, artifacts, spend, E disposition, resolver result, adopted research, replan review, parallel join, and latest Selection. Historical B records additionally retain their original packet, acknowledgment, snapshot, execution-start, identity, and validation chain; do not recreate it for current work. A real next-decision change uses the existing X and Selection path. No later Consequence is permitted without every applicable Q, V, join, persisted resolver result, Review, and remaining resource limit.
