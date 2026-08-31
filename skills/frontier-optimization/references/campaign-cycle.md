@@ -1,6 +1,6 @@
 # Frontier Campaign Cycle: Result Adoption, Evidence Learning, and Next-Batch Selection
 
-Load after `frontier-core.md` selects a planned or running campaign with one selected B or a proven-safe parallel set and current spend authority, or selects a recorded `drafting` or `repair-required` W design action under planning authority. This stage handles:
+Load when `frontier-core.md` selects active campaign work, result adoption, or a pending next decision, including when no B is currently selected. Also load for a recorded `drafting` or `repair-required` W design action under planning authority. Execution still needs the gates for its actual Consequence. This stage handles:
 
 - one simple non-code B with no W; or
 - one `direct` code B with no W, ending at the materialized-candidate checkpoint;
@@ -28,13 +28,13 @@ An explicit working-observation target does not authorize an external, paid, hum
 
 ## Load only the current action
 
-- Load [Campaign state](campaign-state.md) and [Planning records](planning-records.md) to resolve the selected B, baseline, Budget, and authority.
+- Load [Campaign state](campaign-state.md) and [Planning records](planning-records.md) for current allocation, adopted results, baseline and Budget; resolve the selected B only when one exists.
 - Load [Current Batch](batch-current.md) to open, revise, perform, continue or reconcile a new B. Load [Historical Batch interface](batch-interface.md) only when the retained B actually contains those fields.
 - Load [Executable work](batch-code-execution.md) for current executable material. Load [Candidate lifecycle](candidate-lifecycle.md), [Review snapshots](review-snapshots.md), and historical implementation-review material only when an actual retained record or external publication seam uses them. Load [Evaluation protocol reuse](evaluation-protocol.md) only when the current Measurement Definition reuses calibration or shared protocol meaning.
 - Load [Result adoption](result-adoption.md) only after a worker result exists, when freezing a materialized candidate review, adopting diagnostic evidence, or validating and adopting E.
 - Load [Work plan](work-plan.md) when B cites W. Load only W frontmatter, Current state, the obligations named by the B's `delivery_scope`, applicable Validation and Definition-of-done terms, Recovery, and Design-map rows whose `Read when` condition matches the action.
 - Load [Technical design](technical-design.md) only while proving direct eligibility, preparing a design assignment, or mechanically adopting or reviewing a `module` or `system` design. `design-implementation` authors and repairs the professional content. Load [Design review](design-review.md) only when freezing, reviewing, or adopting that design.
-- Load [Learning loop](learning-loop.md) after terminal result adoption or for a pending strategic replan. Load [Evidence records](evidence-records.md) only for a controlling D or X action.
+- Load [Learning loop](learning-loop.md) after terminal result adoption or when a pending direction decision or strategic replan requires it. Load [Evidence records](evidence-records.md) only for a controlling D or X action.
 - Load [Claim records](claim-records.md) only when exact external wording or a claim-review request appears. Do not load [Claim review](claim-review.md) in this slice.
 - Load [Worker interfaces](worker-interfaces.md) before invoking `design-implementation`, `run-frontier-batch`, or `review-frontier`.
 
@@ -46,13 +46,13 @@ For a current `frontier-batch/1` record, use [Current Batch](batch-current.md) f
 
 Apply [Change impact](frontier-core.md#change-impact-and-retained-results) before treating a parent difference as a blocker. Continue unaffected work in this generation and reuse applicable saved reviews; update only the next affected decision.
 
-Read current parent reviews, `FRONTIER.md`, selected B, latest Budget and Selection, applicable V, current plan, Batch result, accounting evidence, related E, join disposition, replan review, and stable project artifacts that already exist. Use the owning records, never conversation history or any workflow, validator, worker-interface, deployment, or release identity. Read a historical decision root, acknowledgment, execution-start, packet, or result identity only when recovering a B that already contains it.
+Read current parent reviews, `FRONTIER.md`, latest Budget and Selection, applicable V, and the records needed by the current action. For result adoption, read the producing B, result, accounting and related E or join disposition even if that B is no longer Primary. When no B is selected and adoption is complete, skip B and W execution recovery and proceed to [Resolve direction before Selection](#resolve-direction-before-selection); create no placeholder B. Owning records establish project facts; user instructions establish requested scope under [User decisions](user-decisions.md). Read historical identities only when recovering a B that already contains them.
 
 For W-backed work, resolve the exact W path, current `plan_revision`, applicable design sections, the B's delivery obligations, design Review, current Permission, worker progress, discoveries, and recovery state. Treat the worker's mutable work breakdown as progress, not authority. For executable work, recover the latest working or selected Git Candidate Revision, retained checks, Attempts, consumption, Consequences, result, and next affected action. Recovery without the original branch or worktree is valid when the required Git or external artifact references remain available. It does not require a package, snapshot, manifest, execution-start, or result identity that the current B never created.
 
 For human input, recover the request, schema, provenance requirements, quality checks, confidentiality limits, response identity, validation state, and resume event. Do not infer a missing answer or validation from conversation history.
 
-Resume at the first missing durable step for the current B: working continuation and affected checks; an applicable Review; `Batch.perform` for a measurement or Consequence; result reconciliation; B conclusion; E adoption when valid; applicable research or V; replan review; join; and next-investment Selection. Skip stages that do not apply. Never repeat an Attempt whose result or Consequence is unknown merely because the live workspace is missing.
+Resume at the first missing applicable step for the current action: working continuation and affected checks; an applicable Review; `Batch.perform` for a measurement or Consequence; result reconciliation; B conclusion; E adoption when valid; applicable research or V; replan review; join; and next-investment Selection. Skip stages that do not apply. Never repeat an Attempt whose result or Consequence is unknown merely because the live workspace is missing.
 
 ## Current readiness and consequence gate
 
@@ -93,7 +93,7 @@ A Candidate Revision or route-scope disposition does not enter full closeout. Pr
 
 ## Route the current action
 
-After direction resolution, choose one row below only to load the files that own the already selected action. This file-loading table is not a second direction resolver and cannot alter the recorded row or next action.
+Choose one row below to load the owner of the current action. Adoption, accounting and required joins precede dependent direction resolution; an applicable resolution supplies the next action without recomputation. If that next execution decision needs an Entry, use [Entry and planning](entry-and-planning.md), then resume here. This file-loading table cannot alter the resolver's technical choice.
 
 | Current action | Load | Completion criterion |
 |---|---|---|
@@ -109,9 +109,7 @@ For simple non-code work, require `changes_executable_candidate: false`, no W, n
 
 When a separate implementation Review is required for a later measurement or integration Consequence, it must apply to the exact selected Git Candidate Revision. Working material may receive an explicit bounded observation inside its existing B when its current V and resources cover the action. A separately funded or independently judged evaluation uses another B; a one-off measurement inside the current judged result uses a local Attempt. Neither raw observation automatically creates E, promotion, integration, incumbent use, or a claim.
 
-Routing is complete only when exactly one row owns the action and its completion criterion is satisfied. A row may point to several files because one action can cross several existing modules; it must not load another row merely because that work could follow later.
-
-Return the recorded routing outcome to the Coordinator.
+Finish the current action's completion criterion before loading its successor. Return the recorded outcome to the Coordinator, which adopts it and advances through the core router within [the continuing task](user-decisions.md#continuing-task-and-stage-instructions). Completion of one row is not completion of the overall task.
 
 ## Slice 5 acceptance scenarios
 
@@ -137,7 +135,7 @@ Return the recorded routing outcome to the Coordinator.
 | A factor has only local or proxy evidence | Record a suspected constraint only when it changes the decision; do not call it the bottleneck. |
 | Changing a factor changes the parent objective under the named conditions | A demonstrated constraint is available; after intervention, check whether the limiting constraint shifted. |
 | One-shot, administrative, or implementation-only work has no cross-B performance meaning | Use the applicable `not-applicable` fields and create no extra diagnosis, research, review, metric, E, or trajectory artifact. |
-| A terminal implementation result has positive implementation review but no later resolver result or Selection | Explain the concrete behavior made reachable and the implementation evidence, state that performance and the valid objective gap remain unknown, identify the closest decision-changing comparison or observation from adopted evidence, say that direction is unresolved until one resolver run produces the complete candidate set, and keep identities, permissions, Budget, and repository state in subordinate operational detail. |
+| A terminal implementation result has positive implementation review but no later resolver result or Selection | Complete adoption and accounting, then use the existing resolver and continue its selected action within the request. Implementation evidence does not establish performance. A missing Selection alone is neither a blocker nor a user return. |
 | A comparator-derived score saturates after resolving its addressed decision | Preserve the completed decision; record a future-use measurement implication only if a concrete successor decision would need more discrimination. |
 | Current work cites E interpreted by a legacy OR | Preserve the old OR bytes and original limits; current Selection uses compatible adopted evidence without migrating OR coverage. |
 | Mid-campaign external wording request | C plus `CLAIM_REVIEW_REQUIRED`; no claim-review completion or A in this slice. |

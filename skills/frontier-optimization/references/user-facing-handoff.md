@@ -1,6 +1,6 @@
 # User-facing handoff
 
-Load only when the workflow truly returns control: the user requested a pause or report, a user-owned decision is missing, the requested scope is complete, or no safe and reachable action remains. If the user asked the workflow to continue and a legal internal action exists, perform it before loading this reference.
+Load when [Continuing task and stage instructions](user-decisions.md#continuing-task-and-stage-instructions) selects a user return. Otherwise continue through the existing Coordinator route.
 
 This pass formats accepted persisted state. It does not rerun the router, resolver, Review or adoption.
 
@@ -36,6 +36,10 @@ Offer a copyable instruction only when the user can legally choose or supply som
 | Permit an uncovered protected Consequence | `Permit <paid, external, sensitive, irreversible or user-owned scarce-resource action> within <scope and cumulative limit>.` | Records or updates V; it does not waive Review or measurement validity |
 | Supply a private fact, access grant or artifact | `Provide <input> for <bound decision>.` | Adds the missing input; the Coordinator resumes the affected gate |
 | Pause or stop | `Pause/stop <scope> while preserving <results and accounting>.` | Stops only the named scope unless the user ends the campaign |
-| Resume after an explicit pause or completed closeout | `Use $frontier-optimization. Resume <task> from <retained state> within <existing objective, budget, access and effect limits>.` | Reuses existing boundaries and continues until the next true user boundary or terminal condition |
+| Resume after an explicit pause or completed requested scope, or request a recovery instruction | `Use $frontier-optimization. Resume <task> from <retained state> within <existing objective, budget, access and effect limits>.` | Reuses existing boundaries and continues until the next true user boundary or terminal condition |
+
+A completed Generation follows [post-closeout recovery](frontier-core.md#recorded-state-router) when the continuing request covers further work. Keep that Generation closed and inherit its accounting through the existing recovery route; closeout alone does not require a user resume instruction. Preserve explicit user stops and the original scope of historical permissions.
+
+When drafting a recovery instruction, name the completed decision, check or consumed experiment that must not be repeated and the scope in which that restriction applies. Reuse a still-applicable resolution and unchanged passing checks; new decision-relevant evidence or changed work follows its existing owner. Preserve the user's actual prohibition rather than expanding it into a ban on all future decisions or silently narrowing it. Report the present location separately from the requested stopping condition.
 
 Do not offer “authorize this exact B”, “approve this technical repair”, or “increase this local time limit” when the action remains inside adopted user boundaries. When no legal user action exists, suggest no command; state the external event or evidence that must occur.

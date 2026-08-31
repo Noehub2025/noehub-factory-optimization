@@ -36,9 +36,29 @@ Do not use worker write protection as a global drift rule. `worker_forbidden_pat
 
 Name `target_id`, exact `decision_root`, `research_mode: route_landscape | focused_question`, exact question, parent bindings, applicability, decision the answer can change, materially different findings and their recorded consequences, evidence channels, action window, fixed search stop, assigned evidence section, result-packet path, and completion check.
 
-A route-landscape packet also names comparison dimensions, reviewed scope, repository and retained evidence, applicable prior-generation Reflection opportunities, and any reopened exclusion or shared high-consequence assumption. It asks the worker to map decision-relevant established approach families, representative implementations, known failures, and applicable functional transfer evidence. A post-result focused packet names the triggering adopted evidence and why cheaper local evidence is insufficient.
+A route-landscape packet also names comparison dimensions, reviewed scope, repository and retained evidence, applicable prior-generation Reflection opportunities, and any reopened exclusion or shared high-consequence assumption. Its bounded question may investigate an unknown mechanism or coverage gap; possible findings are prospective decision branches, not known answers or a required winning alternative. Retained evidence carries its scope and limits; prior ranking, exclusion, and stop judgments are assessed under [Scoped evidence reuse](learning-loop.md#scoped-evidence-reuse). The packet asks the worker to map decision-relevant established approach families, representative implementations, known failures, and applicable functional transfer evidence. Inside that one Q invocation, the parent may compile a temporary `role_bundle` from unresolved causal edges:
 
-The result uses Q or D fields, reports `outcome: completed | blocked | evidence_required`, and names missing evidence when incomplete. Research supplies evidence; it does not approve, select, require, or score a route and cannot establish originality or exhaustive coverage.
+```yaml
+role_bundle:
+  role_briefs:
+    - workstream_id: <local handle inside this Q>
+      target_edge: <one unresolved causal or failure edge>
+      lens: <problem-specific professional perspective>
+      decision_question: <question that can change the current allocation>
+      input_delta: <input beyond the inherited Q packet, or none>
+      evidence_channel_delta: <different channel emphasis, or none>
+      independence_mode: isolated_first_pass | evidence_reuse_pass
+      unique_contribution: <decision-relevant contribution owned only here>
+      shared_inputs: <adopted facts or shared retrieval reused across briefs>
+      overlap_rule: <question or route family this brief does not duplicate>
+      stop_condition: <point after which retrieval is unlikely to change the mechanism or sufficient falsifier>
+```
+
+The bundle inherits the Q inputs, fixed evidence protocol, write surface, search stop, completion check, and authority boundary. It is invocation context, not a Q, assignment, file, identity, review object, or Entry input. The parent handles zero or one brief directly and may use parallel return-only specialists only for two or more independently answerable briefs after shared retrieval and duplicate questions are merged. The parent remains the sole evidence and result-packet writer.
+
+A focused-question packet names the triggering adopted evidence and why cheaper local evidence is insufficient. The parent answers it directly without a role bundle, frame challenger, or specialist fan-out.
+
+The result uses Q or D fields, reports `outcome: completed | blocked | evidence_required`, and names missing evidence when incomplete. The parent normalizes material specialist provenance, conflicts, transfer limits, negative searches, and reopening conditions into this one result. Raw specialist or challenger returns create no project state and are never resolver inputs. Research supplies evidence; it does not approve, select, require, or score a route and cannot establish originality or exhaustive coverage.
 
 ## User-decision packet
 

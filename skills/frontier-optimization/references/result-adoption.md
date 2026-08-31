@@ -24,7 +24,7 @@ Do not call a historical packet, execution-start, snapshot or result validator f
 
 `diagnostic-only` and `routine-local` results remain B evidence. Record the observation, validity, decision it can change and maximum supported conclusion. They create no E and cannot establish formal comparison validity, general strength, integration, incumbent use, promotion, submission or a broader claim.
 
-After the result is reconciled, run the integrated resolver once on the changed evidence state. The result itself does not select the next action.
+After reconciliation, same-B working observations follow [Boundary-preserving continuation](batch-current.md#boundary-preserving-continuation), without a resolver run after each observation. Terminal result adoption or another decision trigger in [Learning loop](learning-loop.md#active-learning-chain) enters the existing resolver; reuse a still-applicable resolution otherwise. The result itself does not select the next action.
 
 ## Adopt formal measurement as E
 

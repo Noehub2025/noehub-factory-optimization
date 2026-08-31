@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""Development-only exact fixtures for the documented direction resolver.
+"""Development-only structural fixtures for the documented direction resolver.
 
 This test does not parse campaign Markdown or ship a runtime resolver. It applies
-the documented total order to explicit persisted facts and checks exact actions,
-priority overlaps, recovery determinism, and Section 18 coverage traceability.
+the documented total order to synthetic facts and declared comparison outcomes.
+It checks routing, priority, reuse, and fixture coverage, not agent judgment or
+actual invocation counts. Behavioral descriptions are unexecuted test inputs;
+passing this module does not close the proposal's behavioral audit findings.
 """
 
 from __future__ import annotations
 
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -72,15 +75,16 @@ def resolve_persisted_facts(scenario: dict) -> tuple[int, str, str]:
             raise ValueError("a technical ordering requires its recorded investment rationale")
         return 6, "local diagnostic", "selected-validity-diagnostic"
 
-    route_set = facts.get("route_set")
-    if route_set:
+    # A coverage label is an assessment, not a selected commitment. This input
+    # models the comparison's output; it does not calculate an investment order.
+    landscape_work = facts.get("selected_landscape_work")
+    if landscape_work:
         outcomes = {
-            "incomplete": ("route-landscape Q", "route-landscape-Q"),
-            "reopened-route-landscape": ("route-landscape Q", "route-landscape-Q"),
+            "route-landscape-Q": ("route-landscape Q", "route-landscape-Q"),
             "prerequisite-check": ("local diagnostic", "prerequisite-first-check"),
             "assumption-check": ("local diagnostic", "shared-assumption-check"),
         }
-        direction, action = outcomes[route_set]
+        direction, action = outcomes[landscape_work]
         return 7, direction, action
 
     if focused := facts.get("focused_fact"):
@@ -128,6 +132,72 @@ def resolve_persisted_facts(scenario: dict) -> tuple[int, str, str]:
     raise ValueError("fixture has no applicable resolver condition")
 
 
+def record_resolution(registry: dict, scenario: dict) -> tuple[int, str, str]:
+    """Persist one resolution per immutable evidence-state identity."""
+
+    identity = scenario["evidence_state"]
+    if identity in registry:
+        raise ValueError(f"evidence state already resolved: {identity}")
+    resolution = resolve_persisted_facts(scenario)
+    registry[identity] = resolution
+    return resolution
+
+
+def research_dispatch(case: dict) -> str:
+    """Return the documented research branch without creating project state."""
+
+    row = case["row"]
+    if row == 8:
+        return "focused-parent-direct"
+    if row != 7:
+        return "bypass"
+    if case["independent_briefs"] < 2:
+        return "landscape-parent-direct"
+    return "landscape-parallel"
+
+
+def adopted_resolver_input(q_result: dict) -> dict:
+    """Expose only the adopted normalized Q packet to the resolver."""
+
+    if q_result.get("adopted") is not True or q_result.get("normalized") is not True:
+        raise ValueError("resolver input requires an adopted normalized Q result")
+    return deepcopy(q_result["normalized_packet"])
+
+
+def determined_action(entry: dict) -> str | None:
+    """Model reuse of an adopted rule, not a Coordinator's fresh preference."""
+
+    rule = entry.get("adopted_rule")
+    if rule and set(rule["requires"]) <= set(entry.get("adopted_facts", [])):
+        return rule["action"]
+    decision = entry.get("adopted_resolution")
+    if decision and decision["applicable"]:
+        return decision["action"]
+    return None
+
+
+def comparison_required(entry: dict) -> bool:
+    """Model invocation after earlier prechecks; this makes no actual calls."""
+
+    return bool(
+        entry.get("grounded_challenge")
+        or entry.get("unresolved_allocation")
+    )
+
+
+def action_is_ready(action: dict, established: list[str]) -> bool:
+    """Model the shared Entry/diagnostic prerequisite rule for one action.
+
+    An unknown being tested is distinct from truth required to execute the test.
+    An unrelated landscape label has no role in this dependency check.
+    """
+
+    return all(
+        action.get(field) is True
+        for field in ("sufficient", "authorized", "affordable", "reachable")
+    ) and set(action.get("requires", [])) <= set(established)
+
+
 def test_same_persisted_state_yields_same_exact_resolution() -> None:
     for scenario in load_contract()["scenarios"]:
         expected = scenario["expected"]
@@ -135,6 +205,100 @@ def test_same_persisted_state_yields_same_exact_resolution() -> None:
         first = resolve_persisted_facts(scenario)
         second = resolve_persisted_facts(scenario)
         assert first == second == exact, scenario["id"]
+
+
+def test_research_dispatch_preserves_fast_and_focused_paths() -> None:
+    for case in load_contract()["research_dispatch_scenarios"]:
+        assert research_dispatch(case) == case["expected_dispatch"], case["id"]
+
+    by_id = {
+        item["id"]: item for item in load_contract()["research_dispatch_scenarios"]
+    }
+    focused = by_id["focused-row-8-bypasses-role-machinery"]
+    assert focused["independent_briefs"] > 1
+    assert focused["frame_challenge_requested"] is True
+    assert research_dispatch(focused) == "focused-parent-direct"
+
+
+def test_selected_q_creates_one_new_resolver_run_for_e1() -> None:
+    contract = load_contract()
+    scenarios = {item["id"]: item for item in contract["scenarios"]}
+
+    for sequence in contract["evidence_state_sequences"]:
+        registry: dict = {}
+        e0 = scenarios[sequence["e0_scenario"]]
+        assert record_resolution(registry, e0) == (
+            e0["expected"]["row"],
+            e0["expected"]["direction"],
+            e0["expected"]["action"],
+        )
+        with pytest.raises(ValueError, match="already resolved"):
+            record_resolution(registry, e0)
+
+        q_result = sequence["q_result"]
+        assert adopted_resolver_input(q_result) == q_result["normalized_packet"]
+        e1 = sequence["e1"]
+        assert e1["evidence_state"] != e0["evidence_state"]
+        assert record_resolution(registry, e1) == (
+            e1["expected"]["row"],
+            e1["expected"]["direction"],
+            e1["expected"]["action"],
+        )
+        assert set(registry) == {e0["evidence_state"], e1["evidence_state"]}
+
+
+def test_raw_worker_returns_cannot_change_resolver_input() -> None:
+    for sequence in load_contract()["evidence_state_sequences"]:
+        original = sequence["q_result"]
+        changed_raw = deepcopy(original)
+        changed_raw["raw_worker_returns"] = ["different", "unadopted", "content"]
+        assert adopted_resolver_input(changed_raw) == adopted_resolver_input(original)
+
+    with pytest.raises(ValueError, match="adopted normalized"):
+        adopted_resolver_input(
+            {"adopted": False, "normalized": True, "normalized_packet": {}}
+        )
+
+
+def test_route_investment_fixtures_resist_conservative_and_aggressive_bias() -> None:
+    """Check declared examples, not whether a real resolver avoids bias."""
+    cases = {
+        item["id"]: item for item in load_contract()["route_investment_scenarios"]
+    }
+
+    sufficient = cases["larger-sufficient-test-beats-cheap-underpowered-probe"]
+    selected = sufficient["commitments"][sufficient["expected"]["selected"]]
+    cheap = sufficient["commitments"]["cheap-probe"]
+    assert selected["sufficient"] is True
+    assert cheap["cost_rank"] < selected["cost_rank"]
+    assert cheap["sufficient"] is False
+
+    breakthrough = cases["admission-route-beats-incumbent-with-no-marginal-value"]
+    selected = breakthrough["commitments"][breakthrough["expected"]["selected"]]
+    incumbent = breakthrough["commitments"]["mature-incumbent"]
+    assert selected["maturity"] == "admission"
+    assert selected["final_performance_evidence"] is False
+    assert selected["credible_mechanism"] is True
+    assert incumbent["marginal_value"] is False
+
+    unsupported = cases["novelty-alone-does-not-win"]
+    novel = unsupported["commitments"]["unsupported-novel-route"]
+    assert unsupported["expected"]["selected"] != "unsupported-novel-route"
+    assert novel["credible_mechanism"] is False
+    assert unsupported["expected"]["preserved_routes"][0]["status"] == "conditional"
+
+    transition = cases["transition-maturity-maps-to-existing-owner"]
+    assert transition["commitments"][transition["expected"]["selected"]][
+        "maturity"
+    ] == "transition"
+    assert transition["expected"]["next_action"] != "transition"
+    assert transition["expected"]["existing_surface"]
+    assert transition["expected"]["owner"]
+
+    parallel = cases["parallel-screen-remains-one-selected-allocation"]
+    assert len(parallel["commitments"]["parallel-screen-set"]["routes"]) == 2
+    assert parallel["expected"]["selected"] == "parallel-screen-set"
+    assert parallel["expected"]["next_action"] == "screen"
 
 
 def test_exact_fixtures_cover_every_row_and_material_branches() -> None:
@@ -255,3 +419,246 @@ def test_scenario_specific_trajectory_validity_and_budget_facts_are_preserved() 
     ]
     assert resolve_persisted_facts(drift)[:2] == (6, "local diagnostic")
     assert resolve_persisted_facts(floor)[:2] == (6, "local diagnostic")
+
+
+REPAIR_CASES = load_contract()["route_research_entry_repair"]
+
+
+def test_missing_prior_order_does_not_make_local_work_a_route_comparison() -> None:
+    """Only a route-investment choice or grounded challenge invokes the agent."""
+
+    assert determined_action({}) is None
+    assert comparison_required({}) is False
+    assert comparison_required({"local_diagnostic": "recorded-order"}) is False
+    assert comparison_required({"unresolved_allocation": True}) is True
+    assert comparison_required({"grounded_challenge": True}) is True
+
+
+@pytest.mark.parametrize(
+    "pair,variant",
+    [
+        pytest.param(pair, variant, id=f"{pair['id']}-{variant['name']}")
+        for pair in REPAIR_CASES["pairs"]
+        for variant in pair["variants"]
+    ],
+)
+def test_revision2_paired_structural_contract(pair: dict, variant: dict) -> None:
+    """Exercise declared premises, never grade a real investment decision."""
+
+    entry = {**pair.get("entry", {}), **variant.get("entry", {})}
+    facts = {**pair.get("facts", {}), **variant.get("facts", {})}
+    assert comparison_required(entry) is variant["expected_comparison"]
+
+    if "action" in variant:
+        ready = action_is_ready(variant["action"], variant["established"])
+        assert ready is variant["expected_ready"]
+        if not ready:
+            assert variant["expected_resolution"] is None
+            return  # Only this dependent action is ineligible.
+
+    if "q_result" in variant:
+        result = variant["q_result"]
+        if not result["adopted"] or not result["normalized"]:
+            with pytest.raises(ValueError, match="adopted normalized"):
+                adopted_resolver_input(result)
+            assert variant["expected_resolution"] is None
+            return  # No E1 input exists yet.
+        assert adopted_resolver_input(result) == result["normalized_packet"]
+
+    resolved = resolve_persisted_facts({"facts": facts})
+    assert resolved == tuple(variant["expected_resolution"])
+    if not comparison_required(entry):
+        assert resolved[2] == determined_action(entry)
+
+
+def test_revision2_inventory_separates_behavioral_prompts_from_observations() -> None:
+    protocol = REPAIR_CASES["behavioral_protocol"]
+    pairs = REPAIR_CASES["pairs"]
+    assert REPAIR_CASES["evidence_kind"] == "development-only"
+    assert protocol["start"] == "normal-coordinator-entry"
+    assert protocol["observations"] == []
+    assert [pair["id"] for pair in pairs] == [f"S{i}" for i in range(1, 16)]
+    settings = REPAIR_CASES["settings"]
+    assert {pair["setting"] for pair in pairs} == set(settings)
+    assert len({setting["controlled_object"] for setting in settings.values()}) >= 2
+    assert len({setting["evidence_medium"] for setting in settings.values()}) >= 2
+    for pair in pairs:
+        assert pair["behavioral_input"]
+        assert len(pair["variants"]) == 2
+        assert len({variant["name"] for variant in pair["variants"]}) == 2
+        for variant in pair["variants"]:
+            assert variant["input_change"]
+            assert variant["decision_class"] in protocol["decision_classes"]
+    audit = protocol["audit_coverage"]
+    assert {"S13"} <= set(audit["AUD-01"])
+    assert {"S10", "S15"} <= set(audit["AUD-02"])
+    assert {"S1", "S14"} <= set(audit["AUD-03"])
+    assert {"S1", "S8", "S11", "S14"} <= set(audit["AUD-04"])
+
+
+@pytest.mark.parametrize(
+    "label", [None, "incomplete", "complete-for-decision", "reopened-route-landscape"]
+)
+@pytest.mark.parametrize(
+    "action_facts,expected",
+    [
+        ({"routine_r8": "continue-current"}, (13, "local R8", "continue-current")),
+        (
+            {"local_diagnostic": "unique"},
+            (9, "local diagnostic", "selected-local-diagnostic"),
+        ),
+        (
+            {"focused_fact": "deciding-fact"},
+            (8, "focused Q", "focused-Q:deciding-fact"),
+        ),
+        (
+            {"selected_landscape_work": "route-landscape-Q"},
+            (7, "route-landscape Q", "route-landscape-Q"),
+        ),
+    ],
+)
+def test_coverage_label_cannot_select_or_veto_work(
+    label: str | None, action_facts: dict, expected: tuple
+) -> None:
+    assert resolve_persisted_facts(
+        {"facts": {**action_facts, "route_set": label}}
+    ) == expected
+    with pytest.raises(ValueError, match="no applicable resolver condition"):
+        resolve_persisted_facts({"facts": {"route_set": label}})
+
+
+def test_all_row_overlaps_preserve_first_applicable_precedence() -> None:
+    representatives = {}
+    for scenario in load_contract()["scenarios"]:
+        representatives.setdefault(scenario["expected"]["row"], scenario)
+    assert set(representatives) == set(range(1, 14))
+    for earlier in range(1, 13):
+        for later in range(earlier + 1, 14):
+            high = representatives[earlier]
+            low = representatives[later]
+            overlap = {"facts": {**low["facts"], **high["facts"]}}
+            assert resolve_persisted_facts(overlap) == resolve_persisted_facts(high), (
+                earlier, later
+            )
+
+
+def test_precommitted_switch_exempts_comparison_but_keeps_existing_gates() -> None:
+    pair = next(pair for pair in REPAIR_CASES["pairs"] if pair["id"] == "S14")
+    satisfied, unsatisfied = pair["variants"]
+    entry = {**pair["entry"], **satisfied["entry"]}
+    assert determined_action(entry) != entry["previous_action"]
+    assert comparison_required(entry) is False
+    assert resolve_persisted_facts({"facts": pair["facts"]}) == (
+        11, "strategic replan", "require-REPLAN_READY"
+    )
+    assert determined_action({**entry, **unsatisfied["entry"]}) is None
+    # Applicability or allocation uncertainty defeats reuse even after a switch.
+    for challenge in ("grounded_challenge", "unresolved_allocation"):
+        assert comparison_required({**entry, challenge: True}) is True
+    for extra in ({"hard_block": "authority"}, {"budget_block": "exact-blocker"}):
+        facts = {**pair["facts"], **extra}
+        assert resolve_persisted_facts({"facts": facts})[0] in {2, 5}
+
+
+def test_comparison_can_exit_at_row13_and_be_consumed_without_rerunning() -> None:
+    pair = next(pair for pair in REPAIR_CASES["pairs"] if pair["id"] == "S13")
+    scenario = {
+        "evidence_state": "synthetic:comparison-keeps-action",
+        "facts": pair["facts"],
+    }
+    assert comparison_required(pair["entry"]) is True
+    registry: dict = {}
+    result = record_resolution(registry, scenario)
+    assert result == (13, "local R8", "continue-current")
+    # Model the adopted answer after the concern was considered and resolved.
+    # This is a state-transition assertion, not an observed agent call count.
+    adopted = {"adopted_resolution": {"applicable": True, "action": result[2]}}
+    assert comparison_required(adopted) is False
+    with pytest.raises(ValueError, match="already resolved"):
+        record_resolution(registry, scenario)
+    assert len(registry) == 1
+
+
+@pytest.mark.parametrize("consumer", ["Entry", "row-9-diagnostic"])
+def test_independent_action_and_real_dependencies_share_one_rule(consumer: str) -> None:
+    pair = next(pair for pair in REPAIR_CASES["pairs"] if pair["id"] == "S15")
+    variant = next(item for item in pair["variants"] if item["consumer"] == consumer)
+    action = variant["action"]
+    established = variant["established"]
+    assert pair["facts"]["route_set"] == "incomplete"
+    assert action_is_ready(action, established)
+    dependent = {
+        **action, "requires": [*action["requires"], "untested-staffing-assumption"]
+    }
+    assert not action_is_ready(dependent, established)
+    assert action_is_ready(dependent, [*established, "untested-staffing-assumption"])
+    # Changing the subject of a test cannot waive the test's own prerequisites.
+    assert action_is_ready(
+        {**action, "tests": ["untested-staffing-assumption"]}, established
+    )
+    for condition in ("sufficient", "authorized", "affordable", "reachable"):
+        assert not action_is_ready({**action, condition: False}, established)
+    assert not action_is_ready(action, [])
+
+
+@pytest.mark.parametrize(
+    "adopted,normalized", [(False, False), (False, True), (True, False), (True, True)]
+)
+def test_no_expansion_q_requires_adoption_before_e1_continuation(
+    adopted: bool, normalized: bool
+) -> None:
+    contract = load_contract()
+    e0 = next(
+        item for item in contract["scenarios"]
+        if item["id"] == "incomplete-route-landscape"
+    )
+    result = {
+        "adopted": adopted,
+        "normalized": normalized,
+        "normalized_packet": {
+            "finding": "no-decision-changing-expansion", "limit": "wider-question-open"
+        },
+        "raw_worker_returns": ["unadopted-winner"],
+    }
+    registry: dict = {}
+    assert record_resolution(registry, e0)[0] == 7
+    if not (adopted and normalized):
+        with pytest.raises(ValueError, match="adopted normalized"):
+            adopted_resolver_input(result)
+        assert len(registry) == 1
+        return
+    normalized_input = adopted_resolver_input(result)
+    changed_raw = deepcopy(result)
+    changed_raw["raw_worker_returns"] = ["different-unadopted-winner"]
+    assert adopted_resolver_input(changed_raw) == normalized_input
+    # Copy isolation prevents a consumer from modifying the retained packet.
+    normalized_input["finding"] = "consumer-mutated-copy"
+    assert result["normalized_packet"]["finding"] == "no-decision-changing-expansion"
+    e1 = {
+        "evidence_state": "synthetic:no-expansion-adopted",
+        "facts": {"route_set": "incomplete", "routine_r8": "continue-current"},
+    }
+    assert record_resolution(registry, e1) == (13, "local R8", "continue-current")
+    with pytest.raises(ValueError, match="already resolved"):
+        record_resolution(registry, e1)
+    assert len(registry) == 2
+
+
+def test_equal_metered_cost_and_rationale_quality_are_behavioral_obligations() -> None:
+    """Retain the counterexamples without pretending to implement their judge."""
+
+    pairs = {pair["id"]: pair for pair in REPAIR_CASES["pairs"]}
+    design, inquiry = (pairs["S8"]["commitments"][name] for name in ("design", "inquiry"))
+    assert design["metered_proposals"] == inquiry["metered_proposals"] == 0
+    assert design["effort"] != inquiry["effort"]
+    assert design["decision_value"] != inquiry["decision_value"]
+    assert {v["decision_class"] for v in pairs["S8"]["variants"]} == {
+        "decisive-research", "ambiguous-investment"
+    }
+    supported, invalid = pairs["S12"]["variants"]
+    assert supported["expected_resolution"] == invalid["expected_resolution"]
+    assert supported["rationale_review"] != invalid["rationale_review"]
+    assert set(invalid["invalid_reason_examples"]) == {
+        "expired-stop", "novelty-alone", "incumbent-must-fail"
+    }
+    assert REPAIR_CASES["behavioral_protocol"]["observations"] == []

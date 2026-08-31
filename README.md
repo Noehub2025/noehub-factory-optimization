@@ -65,11 +65,19 @@ First ask the agent to define and review the task:
 Use frame-optimization to define inference-cost-reduction and continue through representation readiness.
 ```
 
-After an independent review approves exactly what may be searched, explicitly start the improvement campaign for the same task:
+This example requests framing only. After an independent review approves exactly what may be searched, explicitly start the improvement campaign for the same task:
 
 ```text
 Use frontier-optimization to start the campaign for docs/skills/optimization/inference-cost-reduction/.
 ```
+
+For an end-to-end optimization request, ask for both stages at the outset:
+
+```text
+Use frame-optimization to define and review inference-cost-reduction, then continue with frontier-optimization within the adopted objective, budget, access, and effect limits.
+```
+
+When the existing request includes subsequent optimization, a ready framing handoff or completed worker assignment does not end the task. The coordinator continues through the next permitted action. A framing-only, review-only, or planning-only request ends at its requested deliverable; an explicit pause or scope change remains binding.
 
 The agent stores the task under `docs/skills/optimization/<task-name>/` and resumes from those files on later runs.
 
@@ -101,6 +109,9 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 - Project evidence and workflow releases remain separate. Updating an installed Skill does not rewrite or invalidate an existing project decision, Review, Permission, result, or handoff.
 - Budget, stopping rules, known limits, and permitted claims remain visible in the main campaign document.
 - One ordered direction resolver selects the first applicable next action or blocker, so research, diagnosis, direct attempts, budget limits, and parent escalation do not compete through separate decision paths.
+- An unresolved route allocation or an evidence-grounded challenge triggers one independent, fresh-context comparison inside that resolver. The coordinator checks the factual inputs and applicable limits, preserves the technical ordering, and adopts the result. An already determined action or still-applicable resolution needs no repeat comparison unless a grounded challenge remains.
+- Route comparison considers the minimum sufficient commitment, its full cost and opportunity cost, and what its outcome can change. An inexpensive but underpowered probe is not automatically preferable, and sunk cost does not favor the incumbent route.
+- A focused research question is investigated directly. A route-landscape assignment can investigate a bounded mechanism or coverage gap before a replacement route is known; distinct independent questions may use temporary specialists, but one parent returns one normalized result for adoption. Research stops when further retrieval is unlikely to change the current allocation and records when its conclusions should be reconsidered.
 - If valid execution, measurement, and local-mechanism explanations are exhausted, the workflow can return an exact semantic challenge to the parent task contract instead of repeating in-scope work that can no longer reach the objective.
 - Independent reviews use one saved Git commit, explicit subject paths, and an agent that has not seen the drafting conversation. If that independent review is unavailable, the workflow reports a blocker instead of readiness.
 - Entry repair reviews inspect the corrected saved version, its changes, and affected conclusions. They reuse earlier conclusions only where their assumptions still apply; a reviewer’s suggested repair does not become an extra acceptance requirement.
@@ -128,7 +139,7 @@ Each Skill entry point routes the agent to the references needed for its current
 
 - **[frontier-optimization](./skills/frontier-optimization/SKILL.md)** — Coordinates campaign entry, planning, budget, batch selection, accepted results, closeout, and recovery.
 - **[design-implementation](./skills/design-implementation/SKILL.md)** — Authors or repairs consequential implementation architecture in a fresh context without taking over campaign routing, Review, Permission, or execution.
-- **[research-frontier](./skills/research-frontier/SKILL.md)** — Researches one assigned approach landscape or evidence question.
+- **[research-frontier](./skills/research-frontier/SKILL.md)** — Answers one focused question directly or synthesizes a bounded route landscape, with temporary specialist contributions only where they add distinct evidence.
 - **[grill-frontier](./skills/grill-frontier/SKILL.md)** — Collects one unresolved user tradeoff or Permission decision after existing V records and technical evidence have been exhausted.
 - **[run-frontier-batch](./skills/run-frontier-batch/SKILL.md)** — Executes one bounded research, design, implementation, or evaluation batch.
 - **[review-frontier](./skills/review-frontier/SKILL.md)** — Independently reviews one exact Git-backed Entry, replan, design, implementation revision, or proposed claim.

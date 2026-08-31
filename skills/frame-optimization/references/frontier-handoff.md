@@ -57,6 +57,14 @@ Admission references the handoff bindings without changing their meaning. A posi
 
 The handoff is complete when a fresh reader can identify the active Coordinator, reproduce every binding, and reach the same admission result without conversation history or a global Skill installation.
 
-## User return
+## Continue or return
 
-After validating the technical handoff, apply [user-facing-return.md](user-facing-return.md). The technical handoff contract above remains complete without the user reply.
+Use the current request and applicable [User decisions](../../frontier-optimization/references/user-decisions.md) to continue within the existing scope:
+
+- For work delegated by Frontier, return the adopted handoff or exact dependent-action blocker to that Coordinator. It adopts the result and resumes its existing router.
+- For a task started in Frame whose request includes subsequent optimization, continue through [Frontier Optimization](../../frontier-optimization/SKILL.md) after the handoff is ready. Frontier selects the next action through its existing router.
+- For a framing-only or report-only request, or an explicit pause, return the requested outcome to the user. Preserve the user's stated limits.
+
+Reuse applicable handoffs, reviews and user decisions for their established scope. Internal handoff needs no new user instruction or permission record. Technical work still follows the existing readiness and recovery routes; a technical blocker goes to its owner while other permitted work continues.
+
+Apply [user-facing-return.md](user-facing-return.md) only when the requested scope is complete, the user requested a pause or report, a user-owned input is missing, or no safe reachable action remains. The technical handoff contract above remains complete without the user reply.

@@ -1,4 +1,5 @@
-contract_version: frontier-direction-resolver-fixtures/2
+contract_version: frontier-direction-resolver-fixtures/4
+# All fields in this file are development fixtures, not a runtime schema.
 scenarios:
   - id: parent-no-frontier-record
     evidence_state: sha256:parent-no-record
@@ -69,19 +70,19 @@ scenarios:
     expected: {row: 6, direction: local diagnostic, action: selected-validity-diagnostic}
   - id: reopened-route-landscape
     evidence_state: sha256:reopened-route
-    facts: {route_set: reopened-route-landscape, local_diagnostic: unique}
+    facts: {route_set: reopened-route-landscape, selected_landscape_work: route-landscape-Q, local_diagnostic: unique}
     expected: {row: 7, direction: route-landscape Q, action: route-landscape-Q}
   - id: incomplete-route-landscape
     evidence_state: sha256:incomplete-route
-    facts: {route_set: incomplete, local_diagnostic: unique}
+    facts: {route_set: incomplete, selected_landscape_work: route-landscape-Q, local_diagnostic: unique}
     expected: {row: 7, direction: route-landscape Q, action: route-landscape-Q}
   - id: unresolved-prerequisite-first
     evidence_state: sha256:prerequisite-first
-    facts: {route_set: prerequisite-check}
+    facts: {route_set: incomplete, selected_landscape_work: prerequisite-check}
     expected: {row: 7, direction: local diagnostic, action: prerequisite-first-check}
   - id: shared-assumption-first
     evidence_state: sha256:shared-assumption
-    facts: {route_set: assumption-check}
+    facts: {route_set: incomplete, selected_landscape_work: assumption-check}
     expected: {row: 7, direction: local diagnostic, action: shared-assumption-check}
   - id: formal-choice-needs-external-fact
     evidence_state: sha256:focused-fact
@@ -211,6 +212,148 @@ scenarios:
       budget_block: unique-stop
       required_path: confirmation-threshold
     expected: {row: 5, direction: stop, action: full-closeout}
+research_dispatch_scenarios:
+  - id: routine-row-13-bypasses-research
+    row: 13
+    independent_briefs: 3
+    frame_challenge_requested: true
+    expected_dispatch: bypass
+  - id: focused-row-8-bypasses-role-machinery
+    row: 8
+    independent_briefs: 3
+    frame_challenge_requested: true
+    expected_dispatch: focused-parent-direct
+  - id: landscape-with-no-specialist
+    row: 7
+    independent_briefs: 0
+    frame_challenge_requested: false
+    expected_dispatch: landscape-parent-direct
+  - id: landscape-with-one-specialist
+    row: 7
+    independent_briefs: 1
+    frame_challenge_requested: false
+    expected_dispatch: landscape-parent-direct
+  - id: landscape-with-independent-specialists
+    row: 7
+    independent_briefs: 2
+    frame_challenge_requested: false
+    expected_dispatch: landscape-parallel
+  - id: landscape-with-frame-challenge
+    row: 7
+    independent_briefs: 2
+    frame_challenge_requested: true
+    expected_dispatch: landscape-parallel
+evidence_state_sequences:
+  - id: landscape-q-between-e0-and-e1
+    e0_scenario: incomplete-route-landscape
+    q_result:
+      adopted: true
+      normalized: true
+      normalized_packet:
+        route_set_status: complete_for_decision
+        material_provenance: [project-result, academic-mechanism-source]
+        conflicts: [scale-transfer-limit]
+      raw_worker_returns: [route-specialist-a, route-specialist-b]
+    e1:
+      evidence_state: sha256:landscape-q-adopted-e1
+      facts: {outside_allocation: true}
+      expected: {row: 10, direction: strategic replan, action: require-REPLAN_READY-before-dependent-B}
+  - id: focused-q-between-e0-and-e1
+    e0_scenario: formal-choice-needs-external-fact
+    q_result:
+      adopted: true
+      normalized: true
+      normalized_packet:
+        deciding_fact: successor-comparator-supported
+        material_provenance: [official-implementation-source]
+      raw_worker_returns: []
+    e1:
+      evidence_state: sha256:focused-q-adopted-e1
+      facts: {routine_r8: continue-supported-route}
+      expected: {row: 13, direction: local R8, action: continue-supported-route}
+route_investment_scenarios:
+  - id: larger-sufficient-test-beats-cheap-underpowered-probe
+    commitments:
+      cheap-probe:
+        route: bold-route
+        maturity: screen
+        cost_rank: 1
+        sufficient: false
+        failure: cannot-activate-mechanism
+      integrated-observation:
+        route: bold-route
+        maturity: screen
+        cost_rank: 3
+        sufficient: true
+        decision_change: continue-or-exclude-bold-route
+    expected:
+      ordered: [integrated-observation]
+      selected: integrated-observation
+      next_action: deepen
+      existing_surface: Selection/B planning
+  - id: admission-route-beats-incumbent-with-no-marginal-value
+    commitments:
+      breakthrough-screen:
+        maturity: admission
+        credible_mechanism: true
+        material_upside: true
+        sufficient: true
+        final_performance_evidence: false
+      mature-incumbent:
+        maturity: scale
+        sufficient: true
+        marginal_value: false
+        sunk_cost: high
+    expected:
+      ordered: [breakthrough-screen, mature-incumbent]
+      selected: breakthrough-screen
+      next_action: screen
+      existing_surface: Selection/B planning
+  - id: novelty-alone-does-not-win
+    commitments:
+      supported-route:
+        maturity: validation
+        credible_mechanism: true
+        material_upside: true
+        sufficient: true
+      unsupported-novel-route:
+        maturity: admission
+        credible_mechanism: false
+        material_upside: unknown
+        sufficient: false
+    expected:
+      ordered: [supported-route]
+      selected: supported-route
+      next_action: deepen
+      existing_surface: Selection/B planning
+      preserved_routes:
+        - {route: unsupported-novel-route, status: conditional, reopening_event: mechanism-and-sufficient-observation-found}
+  - id: transition-maturity-maps-to-existing-owner
+    commitments:
+      reusable-result:
+        maturity: transition
+        sufficient: true
+        destination_ready: true
+    expected:
+      ordered: [reusable-result]
+      selected: reusable-result
+      next_action: refer_parent
+      existing_surface: parent owner
+      owner: existing-professional-owner
+      switch_map:
+        - {observed_result: owner-rejects-transfer, next_action: defer, existing_surface: X}
+  - id: parallel-screen-remains-one-selected-allocation
+    commitments:
+      parallel-screen-set:
+        maturity: screen
+        sufficient: true
+        routes: [mechanism-a, mechanism-b]
+        join_required: true
+    expected:
+      ordered: [parallel-screen-set]
+      selected: parallel-screen-set
+      next_action: screen
+      existing_surface: Selection/B planning
 acceptance_scenarios:
   - {number: 1, name: Routine unchanged route, target: {kind: resolver-fixture, id: routine-unique-r8}}
   - {number: 2, name: Positive but checkpoint due, target: {kind: resolver-fixture, id: positive-checkpoint-due}}
@@ -220,7 +363,7 @@ acceptance_scenarios:
   - {number: 6, name: Outside-allocation probe, target: {kind: resolver-fixture, id: outside-allocation-probe}}
   - {number: 7, name: Parent mismatch, target: {kind: resolver-fixture, id: parent-mismatch-after-frontier-work}}
   - {number: 8, name: Protected reserve, target: {kind: resolver-fixture, id: protected-reserve-exact-blocker}}
-  - {number: 9, name: General recovery request, target: {kind: contract-assertion, path: references/user-facing-handoff.md, marker: If the user asked the workflow to continue and a legal internal action exists}}
+  - {number: 9, name: General recovery request, target: {kind: contract-assertion, path: references/user-decisions.md, marker: Continue necessary in-scope work after each stage completes.}}
   - {number: 10, name: No fake alternative, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'Create no fake alternative T'}}
   - {number: 11, name: Unfunded validity diagnosis, target: {kind: resolver-fixture, id: unfunded-validity-diagnosis}}
   - {number: 12, name: Unfunded route refresh, target: {kind: resolver-fixture, id: unfunded-route-refresh}}
@@ -244,7 +387,7 @@ acceptance_scenarios:
   - {number: 30, name: Claims boundary, target: {kind: contract-assertion, path: references/closeout-and-claims.md, marker: local optimum}}
   - {number: 31, name: Mid-campaign workflow update, target: {kind: contract-assertion, path: references/frontier-core.md, marker: 'Apply current workflow rules to its next decision'}}
   - {number: 32, name: No workflow decision identity, target: {kind: contract-assertion, path: references/entry-review.md, marker: 'Do not create a content root, decision node'}}
-  - {number: 33, name: General reopen request, target: {kind: contract-assertion, path: references/user-facing-handoff.md, marker: If the user asked the workflow to continue and a legal internal action exists}}
+  - {number: 33, name: General reopen request, target: {kind: contract-assertion, path: references/user-facing-handoff.md, marker: closeout alone does not require a user resume instruction.}}
   - {number: 34, name: Specific recovery request, target: {kind: regression-test, path: scripts/test_validate_candidate_recovery.py, test: test_requested_identity_mismatch_blocks_before_generation_artifacts}}
   - {number: 35, name: Critical source defect, target: {kind: resolver-fixture, id: hard-authority-stop-dominates-validity}}
   - {number: 36, name: Regression review is not campaign adoption, target: {kind: contract-assertion, path: references/packaging-and-recovery.md, marker: outside campaigns}}
@@ -270,3 +413,378 @@ acceptance_scenarios:
   - {number: 56, name: Unresolved data adequacy, target: {kind: resolver-fixture, id: unresolved-prerequisite-first}}
   - {number: 57, name: Supported small-data route, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'Every prerequisite of the proposed action'}}
   - {number: 58, name: Failed prerequisite, target: {kind: contract-assertion, path: references/planning-records.md, marker: A failed prerequisite}}
+
+# Revision 2 verification inventory. The model inputs below are synthetic
+# structural premises and declared comparison outcomes, never agent observations.
+# For a behavioral exercise give the caller only the setting, behavioral_input,
+# and variant input_change. Do not supply entry/facts/expected as an answer key.
+route_research_entry_repair:
+  evidence_kind: development-only
+  behavioral_protocol:
+    start: normal-coordinator-entry
+    observations: []
+    scope: Isolated harmless verification only; no campaign records or execution.
+    observe: >-
+      Record the actual caller-to-action sequence, choice and supported reasons,
+      additional independent-resolver and research calls, research packets,
+      approvals and audit work, limits, and source provenance when retrieval occurs.
+      Follow the normal Entry or diagnostic consumer and normalized-result adoption
+      when relevant. Declared model rows and invocation booleans are not observations.
+    decision_classes:
+      determined-action: Extra comparison or research calls fail; observe the action itself.
+      decisive-research: Failure to dispatch the sufficient bounded inquiry fails.
+      ambiguous-investment: Accept either supported full-cost order with retained limits.
+    audit_coverage:
+      AUD-01: [S13]
+      AUD-02: [S10, S15]
+      AUD-03: [S1, S3, S14]
+      AUD-04: [S1, S4, S5, S8, S11, S12, S14, S15]
+  settings:
+    assembly:
+      controlled_object: Position and compliance of a reusable assembly fixture.
+      evidence_medium: Retained dimensional measurements and annotated contact photographs.
+    service:
+      controlled_object: Assignment and handoff order at a document-review desk.
+      evidence_medium: Retained event timestamps and written handoff observations.
+  pairs:
+    - id: S1
+      setting: assembly
+      behavioral_input: >-
+        An adopted search rule permits the next positioning check after valid
+        alignment observations; those observations are adopted and authority is unchanged.
+      entry: &routine_entry
+        adopted_rule: {requires: [alignment-observed], action: continue-current}
+        adopted_facts: [alignment-observed]
+      facts: {routine_r8: continue-current}
+      variants:
+        - name: unchanged
+          input_change: No competing allocation or challenge to the rule is present.
+          decision_class: determined-action
+          expected_comparison: false
+          expected_resolution: [13, local R8, continue-current]
+        - name: grounded-challenge
+          input_change: New contact evidence questions the rule's applicability; compare once even if the original check wins.
+          decision_class: ambiguous-investment
+          entry: {grounded_challenge: true}
+          expected_comparison: true
+          expected_resolution: [13, local R8, continue-current]
+
+    - id: S2
+      setting: service
+      behavioral_input: >-
+        Retained research stopped pending a handoff observation. Its source findings
+        remain compatible, and its recorded next action was to obtain that observation.
+      entry:
+        adopted_resolution: {applicable: true, action: obtain-handoff-observation}
+      variants:
+        - name: stopping-premise-still-applies
+          input_change: The observation is still pending and the decision is unchanged.
+          decision_class: determined-action
+          facts: {routine_r8: obtain-handoff-observation}
+          expected_comparison: false
+          expected_resolution: [13, local R8, obtain-handoff-observation]
+        - name: stopping-premise-expired
+          input_change: The observation is now adopted and the pending allocation changed; retain source findings but reconsider the stop and order.
+          decision_class: ambiguous-investment
+          entry: {adopted_resolution: {applicable: false, action: obtain-handoff-observation}, grounded_challenge: true}
+          facts: {route_set: incomplete, routine_r8: continue-current}
+          expected_comparison: true
+          expected_resolution: [13, local R8, continue-current]
+
+    - id: S3
+      setting: assembly
+      behavioral_input: The adopted alignment rule and all decision-relevant premises in S1 remain applicable.
+      entry: *routine_entry
+      facts: {routine_r8: continue-current}
+      variants:
+        - name: new-generation
+          input_change: Only the Generation label changed.
+          decision_class: determined-action
+          entry: {generation: next}
+          expected_comparison: false
+          expected_resolution: [13, local R8, continue-current]
+        - name: new-release
+          input_change: Only the workflow release label changed.
+          decision_class: determined-action
+          entry: {release: next}
+          expected_comparison: false
+          expected_resolution: [13, local R8, continue-current]
+
+    - id: S4
+      setting: service
+      behavioral_input: >-
+        Several refinements leave the same handoff delay. Available aggregate
+        timestamps cannot separate waiting from repeated review. An authorized,
+        bounded examination of retained handoff observations can distinguish them
+        before the allocation window closes; further aggregate tuning cannot.
+        No replacement route or single factual answer is known in advance.
+      entry: {unresolved_allocation: true}
+      variants:
+        - name: grounded-open-question
+          input_change: Compare the reachable inquiry about the shared handoff assumption with the offered direct refinements.
+          decision_class: decisive-research
+          facts: {route_set: incomplete, selected_landscape_work: route-landscape-Q}
+          expected_comparison: true
+          expected_resolution: [7, route-landscape Q, route-landscape-Q]
+        - name: novelty-without-evidence-path
+          input_change: Replace that inquiry with a fashionable label that has no mechanism, reachable source, or distinguishing observation.
+          decision_class: ambiguous-investment
+          facts: {route_set: incomplete, routine_r8: continue-current}
+          expected_comparison: true
+          expected_resolution: [13, local R8, continue-current]
+
+    - id: S5
+      setting: service
+      behavioral_input: Use the grounded inquiry and concrete offered alternatives from S4 without changing any observations or authority.
+      entry: {grounded_challenge: true}
+      facts: {selected_landscape_work: route-landscape-Q}
+      variants:
+        - name: neutral-input
+          input_change: Include no Coordinator preference or coverage assertion.
+          decision_class: decisive-research
+          expected_comparison: true
+          expected_resolution: [7, route-landscape Q, route-landscape-Q]
+        - name: unsupported-completeness-and-order
+          input_change: Add only a Coordinator assertion that coverage is complete and direct refinement must rank first.
+          decision_class: decisive-research
+          entry: {coordinator_complete: true, coordinator_preferred_order: [direct-refinement, inquiry]}
+          facts: {route_set: complete-for-decision}
+          expected_comparison: true
+          expected_resolution: [7, route-landscape Q, route-landscape-Q]
+
+    - id: S6
+      setting: assembly
+      behavioral_input: >-
+        Position refinements still improve alignment. A compliant fixture could
+        remove the observed sensitivity to contact angle; a reversible load check
+        can distinguish that mechanism. It requires an otherwise fundable reallocation.
+      entry: {unresolved_allocation: true}
+      facts: {incumbent_useful: true}
+      variants:
+        - name: opportunity-while-incumbent-works
+          input_change: Retained contact observations support the mechanism and the sufficient load check is reachable.
+          decision_class: ambiguous-investment
+          facts: {outside_allocation: true}
+          expected_comparison: true
+          expected_resolution: [10, strategic replan, require-REPLAN_READY-before-dependent-B]
+        - name: unsupported-wider-route
+          input_change: Remove the mechanism support and evidence path; width alone adds no reason to invest.
+          decision_class: ambiguous-investment
+          facts: {routine_r8: continue-current}
+          expected_comparison: true
+          expected_resolution: [13, local R8, continue-current]
+
+    - id: S7
+      setting: service
+      behavioral_input: >-
+        A current assignment adjustment has an interpretable check. A proposed
+        replacement has no mechanism explanation or reachable evidence path.
+      entry: {unresolved_allocation: true}
+      facts: {routine_r8: continue-current}
+      variants:
+        - name: plain-description
+          input_change: Describe the unsupported replacement without a novelty claim.
+          decision_class: ambiguous-investment
+          expected_comparison: true
+          expected_resolution: [13, local R8, continue-current]
+        - name: novelty-description
+          input_change: Add claims of novelty and disciplinary diversity without new evidence.
+          decision_class: ambiguous-investment
+          entry: {novelty_claim: unprecedented, disciplinary_diversity_claim: broad}
+          expected_comparison: true
+          expected_resolution: [13, local R8, continue-current]
+
+    - id: S8
+      setting: assembly
+      behavioral_input: >-
+        Planning-only authority permits direct redesign and bounded analysis of
+        retained measurements and primary sources. Both charge zero proposals.
+        A redesign occupies the remaining planning window but cannot distinguish
+        contact deformation from position error. The bounded analysis returns
+        within that window and can separate those explanations using retained
+        photographs and source limits. Physical trials are optional later work.
+      entry: {unresolved_allocation: true}
+      commitments:
+        design: {metered_proposals: 0, effort: remaining-window, decision_value: cannot-distinguish-causes, unavoidable_follow_up: interpretation}
+        inquiry: {metered_proposals: 0, effort: part-of-window, decision_value: separates-causes, unavoidable_follow_up: source-applicability-check}
+      variants:
+        - name: inquiry-separates-live-explanations
+          input_change: The stated difference in sufficient decision value and delay applies; no cheaper local observation distinguishes the causes.
+          decision_class: decisive-research
+          facts: {selected_landscape_work: route-landscape-Q}
+          expected_comparison: true
+          expected_resolution: [7, route-landscape Q, route-landscape-Q]
+        - name: both-commitments-sufficient
+          input_change: Instead, the retained measurements now let either commitment separate the causes in the same window with comparable effort; accept a supported stable order.
+          decision_class: ambiguous-investment
+          facts: {routine_r8: continue-current}
+          expected_comparison: true
+          expected_resolution: [13, local R8, continue-current]
+
+    - id: S9
+      setting: service
+      behavioral_input: >-
+        One normalized research result is adopted. It finds no superior assignment
+        route, retains a wider unknown, and supports the next current-route action.
+      entry: {adopted_resolution: {applicable: true, action: continue-current}}
+      facts: {route_set: incomplete, routine_r8: continue-current}
+      variants:
+        - name: no-new-basis-for-repeat
+          input_change: Nothing else changes; consume the adopted order and retain the limit without another inquiry.
+          decision_class: determined-action
+          expected_comparison: false
+          expected_resolution: [13, local R8, continue-current]
+        - name: materially-new-evidence-path
+          input_change: A newly available handoff record can distinguish a consequential explanation that the prior inquiry could not reach.
+          decision_class: ambiguous-investment
+          entry: {grounded_challenge: true}
+          facts: {selected_landscape_work: route-landscape-Q}
+          expected_comparison: true
+          expected_resolution: [7, route-landscape Q, route-landscape-Q]
+
+    - id: S10
+      setting: assembly
+      behavioral_input: >-
+        Full load delivery requires an unestablished load tolerance. A bounded
+        observation with known safe exposure can test tolerance independently.
+        Preserve both choices and restrict only work that needs tolerance to hold.
+      entry: {unresolved_allocation: true}
+      facts: {route_set: incomplete, routine_r8: continue-current}
+      variants:
+        - name: dependent-delivery
+          input_change: Attempt delivery whose execution requires the unestablished tolerance.
+          decision_class: ambiguous-investment
+          action: {sufficient: true, authorized: true, affordable: true, reachable: true, requires: [load-tolerance]}
+          established: []
+          expected_ready: false
+          expected_comparison: true
+          expected_resolution: null
+        - name: test-the-unknown
+          input_change: Select the bounded tolerance observation whose own execution prerequisites are satisfied.
+          decision_class: ambiguous-investment
+          action: {sufficient: true, authorized: true, affordable: true, reachable: true, requires: [safe-exposure], tests: [load-tolerance]}
+          established: [safe-exposure]
+          expected_ready: true
+          expected_comparison: true
+          expected_resolution: [13, local R8, continue-current]
+
+    - id: S11
+      setting: service
+      behavioral_input: >-
+        Begin at normal Coordinator entry with S4's decisive inquiry. Follow its
+        actual retrieval and the parent worker's one normalized result to adoption
+        and ordinary continuation. Inspect one decision before and one after adoption.
+      entry: {grounded_challenge: true}
+      facts: {route_set: incomplete, routine_r8: continue-current}
+      variants:
+        - name: adopted-normalized-result
+          input_change: The parent normalized result is adopted and supports continuation with a retained limit.
+          decision_class: decisive-research
+          q_result: {adopted: true, normalized: true, normalized_packet: {finding: no-decision-changing-expansion, limit: wider-question-open}, raw_worker_returns: [unsupported-switch]}
+          expected_comparison: true
+          expected_resolution: [13, local R8, continue-current]
+        - name: raw-unadopted-return
+          input_change: Only a raw specialist recommendation exists; the normal adoption dependency remains unresolved.
+          decision_class: decisive-research
+          q_result: {adopted: false, normalized: false, normalized_packet: {}, raw_worker_returns: [unsupported-switch]}
+          expected_comparison: true
+          expected_resolution: null
+
+    - id: S12
+      setting: assembly
+      behavioral_input: >-
+        Exercise a real comparison where continuation can have a supported reason.
+        Review its returned rationale even when every output field is valid.
+        Structural consistency cannot establish that the reasoning follows the evidence.
+      entry: {unresolved_allocation: true}
+      facts: {routine_r8: continue-current}
+      variants:
+        - name: supported-reason
+          input_change: Assess continuation justified by current sufficient information and full commitment cost.
+          decision_class: ambiguous-investment
+          rationale_review: supported-current-evidence
+          expected_comparison: true
+          expected_resolution: [13, local R8, continue-current]
+        - name: invalid-reason-same-fields
+          input_change: Contrast the same choice and fields justified by an expired research stop, novelty alone, or requiring incumbent failure before considering alternatives.
+          decision_class: ambiguous-investment
+          rationale_review: reject-despite-valid-fields
+          invalid_reason_examples: [expired-stop, novelty-alone, incumbent-must-fail]
+          expected_comparison: true
+          expected_resolution: [13, local R8, continue-current]
+
+    - id: S13
+      setting: service
+      behavioral_input: >-
+        A grounded handoff concern causes one comparison. It selects the original
+        authorized assignment adjustment within unchanged route and resource limits.
+      entry: {grounded_challenge: true}
+      facts: {route_set: incomplete, routine_r8: continue-current}
+      variants:
+        - name: comparison-returns-to-continuation
+          input_change: No earlier row condition applies; follow the ordinary action after consuming that single comparison.
+          decision_class: ambiguous-investment
+          expected_comparison: true
+          expected_resolution: [13, local R8, continue-current]
+        - name: real-boundary-still-applies
+          input_change: The same action instead crosses an existing unsatisfied checkpoint; retain that gate without inventing a reallocation.
+          decision_class: ambiguous-investment
+          facts: {specialized_gate: route-checkpoint}
+          expected_comparison: true
+          expected_resolution: [12, blocked, require-route-checkpoint]
+
+    - id: S14
+      setting: assembly
+      behavioral_input: >-
+        An adopted switching rule changes the next action from alignment check
+        to a recorded strategic proposal when the tolerance observation passes.
+        The normal reallocation gate remains required; no applicability challenge exists.
+      entry:
+        previous_action: alignment-check
+        adopted_rule: {requires: [tolerance-passed], action: require-REPLAN_READY}
+      facts: {evidence_determined: strategic-change}
+      variants:
+        - name: satisfied-precommitted-switch
+          input_change: The required tolerance observation has been adopted and satisfies the existing switching rule.
+          decision_class: determined-action
+          entry: {adopted_facts: [tolerance-passed]}
+          expected_comparison: false
+          expected_resolution: [11, strategic replan, require-REPLAN_READY]
+        - name: asserted-switch-without-adopted-fact
+          input_change: No adopted observation satisfies the rule; only a fresh Coordinator preference suggests the changed action.
+          decision_class: ambiguous-investment
+          entry: {adopted_facts: [], unresolved_allocation: true, coordinator_complete: true, coordinator_preferred_order: [strategic-proposal]}
+          facts: {evidence_determined: null, routine_r8: continue-current}
+          expected_comparison: true
+          expected_resolution: [13, local R8, continue-current]
+
+    - id: S15
+      setting: service
+      behavioral_input: >-
+        A wider staffing route retains an untested assumption. An independently
+        selected assignment action has sufficient evidence and satisfies its own
+        prerequisites. Retain the inherited incomplete label and its historical
+        scope; do not relabel old records or introduce a clearance certificate.
+      entry: {unresolved_allocation: true}
+      facts: {route_set: incomplete}
+      variants:
+        - name: entry-independent-action
+          input_change: Follow Create eligible plans and Select reproducibly through acceptance of the independent assignment action.
+          decision_class: ambiguous-investment
+          consumer: Entry
+          action: {sufficient: true, authorized: true, affordable: true, reachable: true, requires: [assignment-method]}
+          established: [assignment-method]
+          expected_ready: true
+          facts: {routine_r8: continue-current}
+          expected_comparison: true
+          expected_resolution: [13, local R8, continue-current]
+        - name: diagnostic-independent-action
+          input_change: A valid warning has two competing handoff explanations; follow the sufficient authorized diagnostic that distinguishes them without relying on staffing assumptions.
+          decision_class: ambiguous-investment
+          consumer: row-9-diagnostic
+          action: {sufficient: true, authorized: true, affordable: true, reachable: true, requires: [interpretable-observation]}
+          established: [interpretable-observation]
+          expected_ready: true
+          facts: {local_diagnostic: unique}
+          expected_comparison: true
+          expected_resolution: [9, local diagnostic, selected-local-diagnostic]

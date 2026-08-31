@@ -6,6 +6,12 @@ import unittest
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 
 
+def markdown_targets(source: Path) -> set[Path]:
+    text = source.read_text(encoding="utf-8")
+    targets = re.findall(r"\[[^\]]+\]\(([^)\s]+\.md)(?:#[^)]*)?\)", text)
+    return {(source.parent / target).resolve() for target in targets}
+
+
 class FrameSkillBundleTests(unittest.TestCase):
     def test_measurement_design_has_one_author_and_one_adopter(self) -> None:
         coordinator = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
@@ -120,6 +126,27 @@ class FrameSkillBundleTests(unittest.TestCase):
         self.assertNotIn("Use the first applicable row", contract)
         self.assertNotIn("## Return gate", contract)
 
+    def test_stage_handoff_links_both_coordinators(self) -> None:
+        handoff = SKILL_ROOT / "references/frontier-handoff.md"
+        frontier = SKILL_ROOT.parent / "frontier-optimization/SKILL.md"
+
+        self.assertIn(frontier.resolve(), markdown_targets(handoff))
+        self.assertIn(handoff.resolve(), markdown_targets(frontier))
+
+    def test_user_return_routes_reuse_one_permission_contract(self) -> None:
+        frontier = SKILL_ROOT.parent / "frontier-optimization"
+        owner = (frontier / "references/user-decisions.md").resolve()
+        sources = (
+            SKILL_ROOT / "SKILL.md",
+            SKILL_ROOT / "references/frontier-handoff.md",
+            SKILL_ROOT / "references/user-facing-return.md",
+            frontier / "SKILL.md",
+            frontier / "references/user-facing-handoff.md",
+        )
+        for source in sources:
+            with self.subTest(source=source):
+                self.assertIn(owner, markdown_targets(source))
+
     def test_staged_authority_is_owned_by_the_coordinator(self) -> None:
         contract = (
             SKILL_ROOT / "references/user-facing-return.md"
@@ -227,16 +254,15 @@ class FrameSkillBundleTests(unittest.TestCase):
             SKILL_ROOT / "references/task-documents.md",
             SKILL_ROOT / "references/representation-documents.md",
             SKILL_ROOT / "references/frontier-handoff.md",
+            SKILL_ROOT.parent / "frontier-optimization/SKILL.md",
+            SKILL_ROOT.parent / "frontier-optimization/references/user-facing-handoff.md",
             SKILL_ROOT.parent / "design-measurement/SKILL.md",
             SKILL_ROOT.parent / "review-optimization/SKILL.md",
         )
-        pattern = re.compile(r"\[[^\]]+\]\(([^)]+\.md)\)")
 
         for source in checked_files:
-            text = source.read_text(encoding="utf-8")
-            for target in pattern.findall(text):
-                resolved = (source.parent / target).resolve()
-                self.assertTrue(resolved.is_file(), f"missing {target} from {source}")
+            for target in markdown_targets(source):
+                self.assertTrue(target.is_file(), f"missing {target} from {source}")
 
 
 if __name__ == "__main__":

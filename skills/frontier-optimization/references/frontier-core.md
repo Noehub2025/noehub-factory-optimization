@@ -85,7 +85,7 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 - Write task documents in English with concrete task nouns.
 - Give each main document a plain Brief that is understandable without its Contract table or detail files.
 - Write one complete decision sentence per Contract cell. Put only links in Detail.
-- Recover from the recorded decisions and their retained Git versions and artifact references; conversation is not a substitute for those records.
+- Recover project facts from recorded decisions, retained Git versions and artifact references; apply user instructions to task scope under [User decisions](user-decisions.md).
 - Keep record meaning immutable. Append a replacement or X disposition.
 - Never reuse an identifier.
 - Load by default only the parents, `FRONTIER.md`, latest controlling ledger blocks, and current W brief. Follow a W pointer only when its `Read when` condition matches the action.
@@ -101,8 +101,8 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 - **Incumbent:** evaluated campaign result currently retained for development comparison.
 - **Selected B:** complete planned B named by F3 and the latest Selection as Primary or Parallel.
 - **Safe parallel set:** selected B records with separate reservations and mutable paths, no current-result dependency, compatible resources and measurement, failure isolation, and one join point.
-- **Stop:** a precommitted ordinary F7 rule triggered; safely finish or interrupt affected work and route to closeout.
-- **Halt:** a demonstrated safety, legality, authority, access or accounting boundary pauses its dependent action. Full closeout follows only a campaign-wide ending condition or explicit user stop. A parent revision, unresolved local question or refuted hypothesis alone does not end the campaign.
+- **Stop:** a precommitted ordinary F7 rule triggered; safely finish or interrupt its named work. Only a campaign-wide stop routes to full closeout.
+- **Halt:** a demonstrated safety, legality, authority, access or accounting boundary pauses its dependent action. Full closeout follows only a campaign-wide ending condition or a user instruction to end the campaign. A parent revision, unresolved local question or refuted hypothesis alone does not end the campaign.
 - **Parent revision:** a versioned change adopted by the existing parent owner. Its actual effect, not prior spend or the revision number, determines which future decisions need updating.
 - **Semantic parent challenge:** parent identities remain unchanged, but current adopted evidence with resolved implementation, measurement, and comparison validity establishes that a parent-owned objective, Representation, Slot H measurement meaning, R8 rule, permitted scope, or claim ceiling is no longer suitable or reachable after disposing every execution-level measurement, implementation, and local-mechanism explanation. Refer the affected rule to its parent owner and pause only dependent work under Change impact.
 - **Project provenance:** the applicable parent and campaign records plus full Git commits and repository-relative paths for exact project bytes, and stable external references only at real external seams. Workflow source, release, Skill, validator, worker interface, test and deployment location are not campaign identities.
@@ -121,22 +121,23 @@ Use [Finding effects](finding-effects.md) when a validator or reviewer reports a
 
 ## Recorded-state router
 
-Resolve known parent changes through Change impact, then evaluate top to bottom. A different version alone does not invalidate an unaffected decision.
+Apply requested scope under [User decisions](user-decisions.md), resolve known parent changes through Change impact, then evaluate top to bottom. A different version alone does not invalidate an unaffected decision. A local stop, halt or worker return selects its affected recovery work, not full closeout; use the rows below for independent permitted work. A missing next Selection is a decision task, not a user question.
 
 | Recorded state | Action |
 |---|---|
-| An actual campaign-wide ending condition or explicit user stop requires closeout | Load `closeout-and-claims.md`; preserve unaffected historical results |
+| An actual campaign-wide ending condition or user instruction to end the campaign requires closeout, including an applicable `CLOSEOUT_REQUIRED` | Load `closeout-and-claims.md`; preserve unaffected historical results |
 | A parent requirement needed by the next action is unresolved | Refer the affected repair to Framing within the grant; return `PARENT_REVIEW_REQUIRED` only for that action when the owner cannot resolve it; continue independent permitted work |
 | An open campaign has an adopted parent revision affecting its next decision | Load `entry-and-planning.md` in parent-revision mode; retain this generation and unaffected work |
 | Adopted `CLOSEOUT_COMPLETE` cites a complete final handoff; current user explicitly requests packaging | Load `packaging-and-recovery.md`; preserve the closed generation and create no authority |
 | Adopted `CLOSEOUT_COMPLETE` cites a complete final handoff; an applicable continuing grant or current explicit request covers a new campaign or recovery | Load `entry-and-planning.md` in post-closeout recovery mode under the current applicable parents |
-| No closeout or claim trigger; no `FRONTIER.md`, incomplete F1-F4/F7/F8, no planned B, or no current adopted Entry review | Load `entry-and-planning.md` |
 | Adopted `CLOSEOUT_COMPLETE` cites complete final handoff and no unresolved authority or claim branch | Use the recorded closeout handoff as return input and load no stage |
-| `CLOSEOUT_REQUIRED`, stopped, halted, or unresolved stop/halt | Load `closeout-and-claims.md` full closeout |
-| Current `CLAIM_REVIEW_REQUIRED` names C with neither an adopted A nor a withdrawing X, and no stop or halt applies | Load `closeout-and-claims.md` claim-only branch |
+| Current `CLAIM_REVIEW_REQUIRED` names C with neither an adopted A nor a withdrawing X, and no campaign-wide stop or halt applies | Load `closeout-and-claims.md` claim-only branch |
+| An open campaign has a returned action awaiting result reconciliation, accounting, adoption or a required parallel join | Load `campaign-cycle.md` at result adoption; finish the applicable prerequisites before dependent allocation |
+| An open campaign has adopted terminal results or completed prerequisite work and its next action needs decision or continuation | Load `campaign-cycle.md` at direction and continuation; reuse an applicable resolution or make the required decision; a selected B is not an entry prerequisite |
+| Initial campaign planning lacks `FRONTIER.md`, required F1-F4/F7/F8, its first planned B or applicable Entry review; or the selected next execution decision needs an Entry that is not yet adopted | Load `entry-and-planning.md`; after its outcome, return here under the continuing request |
 | Planned or running campaign with selected B and every Entry, Review, V and Selection fact required by its next actual Consequence | Load `campaign-cycle.md` |
 
-If no row matches, record `BLOCKED` with the conflicting fields and return.
+If no row matches, identify the actual conflicting or missing fact and resolve it through its existing owner when possible. Otherwise record the affected blocker; return to the user only at the completion boundary in User decisions. This router loads action owners; it neither chooses technical priorities nor waives their gates.
 
 A finished claim review always ends with an A disposition, including `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED`, and `BLOCKED`; only exact supported or reviewer-supplied downgraded wording receives external-use permission. If the request is withdrawn before review finishes, append X with `Disposition: withdrawn`. Either record resolves that C for routing, but neither a nonauthorizing A nor X authorizes wording. Record `CLAIM_REVIEW_COMPLETE`, preserve claim-only `campaign_status`, and return to Cycle when no other stop, halt, parent conflict, or unresolved C applies. Do not leave a completed or withdrawn claim branch without one of these terminal dispositions.
 

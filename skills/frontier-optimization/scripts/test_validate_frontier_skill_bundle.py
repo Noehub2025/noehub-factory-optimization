@@ -259,13 +259,13 @@ RESOLVER_ROW_MARKERS = {
     4: "parent-owned objective, Representation, Slot H measurement meaning, R8 rule, permitted scope, or claim ceiling",
     5: "without consuming protected reserve",
     6: "Implementation, measurement, or comparison validity",
-    7: "plausible route set is incomplete",
-    8: "one named external or repository fact",
+    7: "selected next commitment under the ordering above",
+    8: "one deciding external or repository fact",
     9: "more than one live causal explanation",
     10: "spend outside the unchanged reviewed route allocation",
     11: "Existing valid evidence and R8",
     12: "crosses another recorded B, T replacement boundary, checkpoint, integration, promotion",
-    13: "No route, progress, Budget, parent, context, or decision-window condition above applies",
+    13: "No row from 1 through 12 governs",
 }
 
 
@@ -302,7 +302,9 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "The same diagnostic class cannot repeat from the same evidence-state identity",
             "Make no trajectory, route, or parent inference",
             "one additional evidence-completion round only through row 7 or row 8",
-            "further retrieval is unlikely to change the current allocation",
+            "further retrieval is unlikely to change that allocation",
+            "Unrelated landscape gaps do not veto it",
+            "an exempt determined action needs no comparative pass",
             "Entry adoption fixes the producing project decision root and historical chain",
             "Selected, authorized, acknowledged, or execution-started B records preserve their exact authority and execution inputs",
         ),

@@ -1086,7 +1086,8 @@ class Slice7ContractTests(unittest.TestCase):
     def test_recovery_uses_retained_git_and_artifacts_not_conversation(self) -> None:
         self.assert_contract_contains(
             "frontier-core.md",
-            "retained Git versions and artifact references; conversation is not a substitute",
+            "Recover project facts from recorded decisions, retained Git versions and artifact references",
+            "Conversation is not recorded state",
             "Check the content needed for that use at its existing gate",
             "Missing bytes pause their dependent use",
         )
@@ -1110,7 +1111,9 @@ class Slice7ContractTests(unittest.TestCase):
     def test_user_facing_handoff_is_manager_readable_and_exposes_each_real_decision(self) -> None:
         self.assert_contract_contains(
             "user-facing-handoff.md",
-            "Load only when the workflow truly returns control",
+            "Load when [Continuing task and stage instructions]",
+            "selects a user return. Otherwise continue through the existing Coordinator route",
+            "It does not rerun the router, resolver, Review or adoption",
             "what materially changed and why it matters to the objective",
             "the strongest supported conclusion and its important limit",
             "the remaining objective gap or the observation needed to determine it",
@@ -1126,9 +1129,15 @@ class Slice7ContractTests(unittest.TestCase):
         )
         coordinator = (SCRIPT_ROOT.parent / "SKILL.md").read_text()
         self.assertIn("references/user-facing-handoff.md", coordinator)
-        self.assertIn("Continue through legal internal actions", coordinator)
-        self.assertIn("only for a requested pause or report", coordinator)
-        self.assertIn("This return step does not rerun the resolver", coordinator)
+        self.assertIn("use the core router for the next in-scope action", coordinator)
+        self.assertIn("Reuse an applicable direction resolution", coordinator)
+        self.assertIn("A worker's return ends its assignment, not the Coordinator's task", coordinator)
+        self.assert_contract_contains(
+            "user-decisions.md",
+            "Continue necessary in-scope work after each stage completes",
+            "the user requests a pause or a report-only response",
+            "A standalone analysis, review or planning request ends at its requested deliverable and grants no implementation authority",
+        )
         for reference in (
             "entry-and-planning.md",
             "campaign-cycle.md",
@@ -1149,10 +1158,9 @@ class Slice7ContractTests(unittest.TestCase):
         cycle = (SCRIPT_ROOT.parent / "references" / "campaign-cycle.md").read_text()
         for behavior in (
             "A terminal implementation result has positive implementation review but no later resolver result or Selection",
-            "concrete behavior made reachable",
-            "performance and the valid objective gap remain unknown",
-            "direction is unresolved until one resolver run produces the complete candidate set",
-            "subordinate operational detail",
+            "Complete adoption and accounting, then use the existing resolver and continue its selected action within the request",
+            "Implementation evidence does not establish performance",
+            "A missing Selection alone is neither a blocker nor a user return",
         ):
             with self.subTest(behavior=behavior):
                 self.assertIn(behavior, cycle)

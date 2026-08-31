@@ -1,6 +1,16 @@
 # User decisions and delegated work
 
-Load this reference only when deciding whether the workflow needs a user answer or whether an existing V already covers the next Consequence. It is the single current owner of that boundary.
+Load this reference when interpreting an initial or later request, recovering task scope, or deciding whether an existing user decision covers the next Consequence. It owns requested scope and user-decision boundaries for Framing and Frontier.
+
+## Continuing task and stage instructions
+
+Interpret the current message within the still-active user task. In a continuing optimization task, an instruction such as "prepare the Entry" or "finish this comparison" directs the current step; it does not by itself withdraw the remaining delegated work. Apply a later explicit scope change, replacement, withdrawal or pause to the scope the user names. A standalone analysis, review or planning request ends at its requested deliverable and grants no implementation authority.
+
+Use user instructions to determine requested scope and owning project records to establish readiness, resources and effects. An agent-authored action window, turn plan or progress summary locates work; it cannot grant permission or narrow the user's task. Resolve ambiguity only when it changes the next action. A stage instruction alone needs no new V or routine scope audit.
+
+Continue necessary in-scope work after each stage completes. Return control when the requested deliverable is complete, the user requests a pause or a report-only response, a missing user-owned decision prevents further progress, or no safe, reachable and worthwhile action remains within the grant. A progress update need not end the task or close the campaign. Establish the next worthwhile commitment, not an exhaustive proof that no better work exists.
+
+An exhausted resource limit blocks the work it governs. Other work still needs sufficient resources and applicable permission; zero proposal cost is not zero total cost.
 
 ## Ask only for a user-owned decision
 

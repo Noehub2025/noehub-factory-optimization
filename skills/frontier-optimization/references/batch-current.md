@@ -14,6 +14,8 @@ Batch.perform(Action)
 
 A Batch is one stable allocation of work toward one independently judged result. It is not a candidate identity, dispatch instance, command, process, immutable packet, or proposal hash. Its design, implementation, checks, paths, Review and Permission references, resource limits, and Candidate Revisions may evolve while it still pursues that result.
 
+Write `acceptance` as the result and evidence required to judge this B, and `scope` as its work boundary. Keep a temporary turn limit in current progress, not in acceptance as an inferred user stop. Real user limits come from [User decisions](user-decisions.md). Finishing an implementation-only B can lead to a separate measurement B within the continuing task; it does not enlarge this B's independently judged result.
+
 The current state machine is deliberately small:
 
 ```text

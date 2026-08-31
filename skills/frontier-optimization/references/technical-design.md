@@ -114,7 +114,7 @@ For each such choice:
 3. Adopt the answer in V, then invoke `design-implementation` to update the owning concern and W brief under a new revision when the answer changes contract-bearing meaning.
 4. Give local reversible executor choices explicit bounds instead of asking the user.
 
-Prepare design review only after every user choice needed by the planned slice resolves. After adopted `DESIGN_READY`, apply the current Entry checks needed by the next actual Consequence. Reuse an applicable V; `DESIGN_READY` neither grants Permission nor creates a reason to ask again.
+Prepare design review only after every user choice needed by the planned slice resolves. After adopting `DESIGN_READY`, return to the work that required the design: continue [Entry planning](entry-and-planning.md) when a first B still needs it, or [same-B continuation](batch-current.md#boundary-preserving-continuation) for a design revision within an existing B. A design-only request may finish here; apply the [Coordinator's scope and completion rule](../SKILL.md#recover-and-choose-the-current-action). Reuse an applicable V and obtain only checks required by the next actual Consequence. `DESIGN_READY` neither grants Permission nor blocks work already permitted by its owner.
 
 ## Concern contracts
 

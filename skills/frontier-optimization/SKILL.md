@@ -1,24 +1,24 @@
 ---
 name: frontier-optimization
-description: Coordinate Optimization Frontier campaigns from a positive Representation handoff through Entry, repeated batches, closeout, post-closeout recovery, and Git-backed handoff. Use only when the user explicitly asks to start, resume, recover, open a new campaign after closeout, close, package a completed campaign, or review claims for one canonical Frontier task.
+description: Coordinate Optimization Frontier campaigns. Use when the user requests campaign work, closeout, recovery, packaging or claim review, or when an existing optimization task reaches a Framing handoff or internal continuation within its requested scope.
 ---
 
 # Frontier Optimization
 
 Coordinate one canonical optimization task. The Coordinator owns direction, allocation and adoption; specialist workers own their assigned research, design, execution or review.
 
-Read [User decisions](references/user-decisions.md) when determining permission or deciding whether to ask the user.
+Read [User decisions](references/user-decisions.md) when interpreting the request, recovering its continuing scope, or determining permission.
 
 ## Recover and choose the current action
 
-1. Read [Frontier core](references/frontier-core.md), then the current parent handoff, FRONTIER brief and latest controlling records. Use retained project evidence rather than conversation to reconstruct state.
+1. Read [Frontier core](references/frontier-core.md), then the current parent handoff, FRONTIER brief and latest controlling records. Reconstruct project facts, adopted results and execution state from their owners. Apply the requested scope from User decisions; correct a conflicting progress description at the current affected record under [Change impact](references/frontier-core.md#change-impact-and-retained-results), preserving real limits and historical evidence.
 2. Select one stage using the core router:
    - initial planning or recovery planning: [Entry and planning](references/entry-and-planning.md);
    - active campaign: [Campaign cycle](references/campaign-cycle.md);
-   - stop, halt or claim review: [Closeout and claims](references/closeout-and-claims.md);
+   - campaign-wide ending or claim review: [Closeout and claims](references/closeout-and-claims.md);
    - packaging a closed campaign: [Packaging](references/packaging-and-recovery.md).
 3. Load action references only at their trigger below. Keep unrelated stage procedures and historical formats unloaded.
-4. Continue through legal internal actions while the current request, objective, Budget, access and Permission boundaries allow it. Read [User-facing handoff](references/user-facing-handoff.md) only for a requested pause or report, a true user-owned decision, completed requested scope, or a terminal state with no safe reachable action. This return step does not rerun the resolver.
+4. Complete necessary adoption and accounting, then use the core router for the next in-scope action. Reuse an applicable direction resolution; enter the existing decision path when the adopted state needs a new one. A worker's return ends its assignment, not the Coordinator's task. Read [User-facing handoff](references/user-facing-handoff.md) when the completion boundary in User decisions requires a user return.
 
 For a changed parent or retained result, apply [Change impact](references/frontier-core.md#change-impact-and-retained-results). Report only the exact unresolved dependency; a version difference alone does not end the campaign.
 
@@ -66,4 +66,4 @@ Adopt a worker result only after its assignment and evidence match. Preserve the
 
 Use the [current Batch continuation rule](references/batch-current.md#boundary-preserving-continuation) for working changes and repairs. Use the [single resolver](references/learning-loop.md#integrated-direction-resolver) for direction directly from adopted current evidence. Generation Reflection improves the next generation's search after closeout; it does not choose a route or grant permission. Neither worker output nor a technical review chooses another route or grants a new user permission.
 
-Completion means the requested outcome is reached, a true user boundary is exposed, or no safe reachable action remains, and persisted state supports the report. A technical checkpoint, local resource adjustment, Review finding or internal result adoption is not completion while legal work remains. The task's objective, Budget, access and actual Consequences determine continuation, not the number of artifacts produced.
+Complete the Coordinator task against [Continuing task and stage instructions](references/user-decisions.md#continuing-task-and-stage-instructions), with persisted state supporting any final report.

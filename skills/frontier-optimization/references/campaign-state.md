@@ -57,11 +57,11 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 |---|---|---|---|---|
 | F1 | Scope and bindings | <St> | Use problem epoch <n> and representation revision <n>; permit only <exact reviewed scope> with <required global checks>. | <detail link or blank> |
 | F2 | Spend | <St> | Authorize <total>; <prior and Entry cost> plus <B actual> is used, <reservations> is reserved, <required reserve> is protected, and <balance> remains. | [frontier/ledger.md](frontier/ledger.md) |
-| F3 | Baseline and next batch | <St> | Under <Selection and current user boundaries>, use <design and applicable V> for <baseline and B>; reach <check> within <limit>; reflect, protect <reserve>, then apply <R8>. | [frontier/ledger.md](frontier/ledger.md) |
+| F3 | Baseline and next batch | <St> | Under <Selection and current user boundaries>, use <design and applicable V> for <baseline and B>; reach <check> within <limit>; adopt the result, protect <reserve>, then apply <R8>. | [frontier/ledger.md](frontier/ledger.md) |
 | F4 | Retained results | <St> | Retain <E identities and parent-defined roles> under the current epoch; start with E001 as the reference baseline and name an incumbent only after valid measurement and retention. | [frontier/ledger.md](frontier/ledger.md) |
 | F5 | References and bounds | <St> | Use <D records and authority> for <allowed use>, or state that no usable reference exists. | <detail link or blank> |
 | F6 | Gap | <St> | Report <gap> from <compatible records>, or state why no valid gap exists. | <detail link or blank> |
-| F7 | Stop | <St> | Stop or halt when <observable rules>; these rules support only <exact conclusion>. | [frontier/ledger.md](frontier/ledger.md) |
+| F7 | Stop | <St> | Stop or halt <affected scope> when <observable rules and their source>; these rules support only <exact conclusion>. | [frontier/ledger.md](frontier/ledger.md) |
 | F8 | Claims | <St> | Allow <exact wording and use> while preserving <coverage, reachability, composition, non-discovery, and claim limits>. | <detail link or blank> |
 
 ## Open decisions
@@ -81,7 +81,9 @@ Historical `current_state` fields such as `decision_id`, `authorization_state`, 
 
 When a composite Entry has a routine follow-up, the governing B records the slot as `available`, `consumed: B/<Attempt>`, or `invalid: <exact reason>`. Selection names the governing B but does not duplicate the slot state. A consumed or invalid slot cannot reappear as available without a recorded correction of the owning Batch fact.
 
-Generate the Brief and F-table status wording from Campaign and Selection state plus the cited Batch, R, V, Budget, and E owners before presentation. When the owners agree, stale explanatory wording is `NARRATIVE_STATE_STALE` advisory under [Finding effects](finding-effects.md), not a new B, V, snapshot, or review. A disagreement among owners, or wording that is itself the user-facing permission scope, spend, stop, or consequence, remains blocking.
+Generate the Brief and F-table status wording from Campaign and Selection state plus the cited Batch, R, V, Budget, and E owners before presentation. F7 names adopted stopping rules and their affected scope; a temporary pause or agent-inferred turn limit belongs in current progress, not in F7. Apply [User decisions](user-decisions.md) to distinguish the user's instruction from an agent's explanation.
+
+When the owners agree, stale explanatory wording is `NARRATIVE_STATE_STALE` advisory under [Finding effects](finding-effects.md). Correct only the current description relied on, preserving history and actual limits; this creates no new B, V or review of unchanged technical content. A real disagreement among owners or an actual change to permission, spend, stopping or Consequences still blocks its dependent use and follows the existing owner. An old review does not certify changed bytes.
 
 Change `campaign_status` from `planned` to `running` when the first selected B begins meaningful work. This is a Campaign fact, not a Batch execution credential. Update only Campaign and Selection state plus their explanatory wording; do not create an acknowledgment, snapshot, execution-start, transition receipt, or another identity. Historical records that used the old first-B lifecycle contract retain their original transition bytes.
 
