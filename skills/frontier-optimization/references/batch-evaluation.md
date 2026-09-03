@@ -19,13 +19,13 @@ An Action cannot supply another definition. `Batch.perform` reads the current on
 
 ## Run the selected mode
 
-| Mode | Use | Maximum current consequence |
+| Mode | Use | Maximum evidence produced by the Batch |
 |---|---|---|
 | `diagnostic-only` | A bounded observation that can change route, repair or measurement decisions | B evidence only |
 | `routine-local` | A local screen of the current reviewed material under a reusable protocol | B evidence only |
 | `formal-slot-h` | The parent-defined independent comparison | E only after comparison validity passes during Result Adoption |
 
-The worker runs only the fixed method and records raw observations, actual use, actual Consequences, external references and recovery state in the Attempt. It does not create E, retain or promote a candidate, choose another B, or broaden the interpretation limit.
+The worker runs only the fixed method and records raw observations, actual use, actual Consequences, external references and recovery state in the Attempt. These limits describe evidence ownership, not investment permission: R8 and the integrated resolver decide how adopted evidence may affect later work. The worker does not create E, retain or promote a candidate, choose another B, or broaden the interpretation limit.
 
 ## Protect the actual non-repeatable unit
 

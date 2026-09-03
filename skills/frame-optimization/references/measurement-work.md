@@ -2,9 +2,11 @@
 
 Read only for new or changed measurement meaning, or newly created or repaired measurement support. Use [measurement-design.md](measurement-design.md) for professional design. Execution under an unchanged protocol does not load this route.
 
+A one-off, low-cost observation inside an adopted Slot H `diagnostic-only` category stays in the current Batch. Its Measurement Definition may define local inputs, initialization, update events, observation window and within-window calculation. It does not change reusable target linkage, cross-instance inference, comparison meaning or an investment ceiling, so it creates no measurement-design task or readiness review.
+
 ## Shared measurement-design route
 
-Use this route only for a new protocol, a material change to the target or evaluation meaning, a current fitness challenge, or a `measurement-design` readiness finding. Do not invoke it for harness implementation, execution under an unchanged protocol, routine result recording, editorial change, or a new candidate under a still-valid protocol.
+Use this route only for a new reusable protocol; a material change to the target, elementary outcome, cross-instance aggregation, lifecycle meaning, required interpretation context, source-supported target relationship, comparison meaning or evidence ceiling; a current fitness challenge; or a `measurement-design` readiness finding. Do not invoke it for a one-off local calculation inside an adopted diagnostic category, harness implementation, execution under unchanged meaning, routine result recording, editorial change, or a new candidate under a still-valid protocol.
 
 Create or select the exact Slot H detail and its permitted nonnormative sections. Use `new` only when no current protocol exists, `revision` for any material change to an existing protocol, and `repair` for current findings. Give `design-measurement` the fixed real objective, intended consequence, resources, operating conditions, allowed evidence paths, selected mode, and the complete finding set for repair.
 

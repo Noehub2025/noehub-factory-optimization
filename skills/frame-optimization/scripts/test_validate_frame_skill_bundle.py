@@ -78,7 +78,7 @@ class FrameSkillBundleTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
         self.assertIn("An unknown proxy can remain compact", contract)
-        self.assertIn("when a proxy controls selection or investment", contract)
+        self.assertIn("when reusable measurement meaning changes, a proxy controls selection or material investment", contract)
         self.assertIn("Repetition alone is not adaptive reuse", (
             SKILL_ROOT.parent / "design-measurement/SKILL.md"
         ).read_text(encoding="utf-8"))

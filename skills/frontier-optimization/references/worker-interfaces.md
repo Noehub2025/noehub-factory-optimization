@@ -22,7 +22,7 @@ When required work falls outside the assignment, return proposed content and the
 
 Within its assigned write surface, `run-frontier-batch` applies [Boundary-preserving continuation](batch-current.md#boundary-preserving-continuation). Same-B continuation never expands paths, meaning, Permission, Consequences or cumulative limits.
 
-Only the Coordinator revises Batch resource limits. It first reserves any increase in Campaign Budget, lowers a Batch limit before releasing a reservation, and writes completed Attempt consumption back to Budget before another dependent allocation. The Batch worker reports requested and actual resources in the existing keys and units; it does not edit Budget or protected reserve.
+Only the Coordinator revises Batch operational limits. An in-allocation revision needs no Campaign reservation or user decision. Reserve only governed capacity that must remain unavailable to another allocation before Attempt writeback; lower the affected Batch limit before releasing such a reservation. Write only Budget-governed Attempt use to Campaign Budget before another dependent allocation. The Batch worker reports requested and actual resources in the existing keys and units; it does not edit Budget or protected reserve.
 
 For executable work, keep check names and results under the exact Git Candidate Revision in the current Batch. Use a separate Git-backed engineering plan only when several B records or another system genuinely reuse it. The relevant reviewer judges whether the checks support the proposed later Consequence; it does not prescribe harmless internal commands. Working feedback remains routine Batch work. Engineering-only fixtures grant no measurement or strength conclusion.
 

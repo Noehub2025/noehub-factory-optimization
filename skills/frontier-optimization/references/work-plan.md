@@ -43,7 +43,7 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 
 ## Current state
 
-<Coordinator: state the adopted checkpoint, next action, blockers, stable artifacts, design-review state, candidate-code lifecycle state, first performance check, preparation budget limit, and required follow-up reserve. Keep current authorization in external lifecycle records.>
+<Coordinator: state the adopted checkpoint, next action, blockers, stable artifacts, design-review state, candidate-code lifecycle state, first performance check, preparation cost estimate, and required follow-up reserve. A preparation estimate is non-binding and does not create allocation, authority, consumption, or a hard limit. Keep current authorization in external lifecycle records.>
 
 ## Design brief
 

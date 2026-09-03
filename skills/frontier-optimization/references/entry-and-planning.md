@@ -97,7 +97,7 @@ Create the first B from its sole template. Create W only when the work is comple
 - expected observation;
 - decision rule for continue, diagnose, research, revise, promote, stop, or halt;
 - exact first checkpoint and first performance check;
-- preparation budget limit and protected follow-up reserve;
+- preparation cost estimate, governing campaign limit and protected follow-up reserve;
 - legality, engineering, measurement, and comparison-validity checks;
 - recovery point, stop conditions, and prohibited actions.
 
@@ -107,7 +107,7 @@ Also record `Trajectory contribution` before execution. For prerequisite-first w
 
 The plan separates worker write surfaces from exact project bytes selected later for checks or Consequences. It does not assign execution snapshots, execution-start paths or result identities. For W-backed work, cite the reviewed design and stable delivery obligations; do not freeze the whole W or mutable work breakdown. Apply [Batch continuation](batch-current.md#boundary-preserving-continuation) to distinguish working methods from the independently judged result.
 
-Use [Entry review](entry-review.md) only after ordinary structural checks pass and the complete subject is saved in Git. A failed draft stays mutable within the same B and creates no R, packet, snapshot, identity, or successor B. The reviewed decision must cover the objective, scope, applicable R and V, resource limits, delivery obligations, earliest useful check, result meaning, and recovery needed by the next Consequence.
+Use [Entry review](entry-review.md) only after ordinary structural checks pass and the complete subject is saved in Git. A failed draft stays mutable within the same B and creates no R, packet, snapshot, identity, or successor B. The reviewed decision must cover the objective, scope, applicable R and V, governing campaign limits, protected reserve, strategic allocation, any interpretation-bearing Measurement Definition ceiling, delivery obligations, earliest useful check, result meaning, and recovery needed by the next Consequence. A planning estimate and exact Batch operational cap do not become frozen review semantics.
 
 Preparation must end at the earliest check that can discriminate the chosen mechanism. A baseline-establishment slice may be simple, but it cannot become open-ended infrastructure work.
 
@@ -125,7 +125,7 @@ Include the proposed Selection and F2-F4 patch in the reviewed target. Record th
 
 ## 8. Record the Entry decision
 
-Write a plain-language Brief in `FRONTIER.md` that a fresh reader can use without following identifiers. It must name the reference baseline, replaceable campaign baseline, exact allowed work, remaining budget, selected B and W, first checkpoint, first performance check, preparation limit, protected reserve, comparison and promotion rules, stop and halt rules, and claim limits.
+Write a plain-language Brief in `FRONTIER.md` that a fresh reader can use without following identifiers. It must name the reference baseline, replaceable campaign baseline, exact allowed work, remaining governing budget, selected B and W, first checkpoint, first performance check, preparation cost estimate, protected reserve, comparison and promotion rules, stop and halt rules, and claim limits.
 
 Pin F1-F4, F7, and F8. F5 and F6 may remain provisional or not relevant when the parents provide no usable bound; missing bounds never widen F7 or F8. Confirm new-generation B spend is zero, inherited spend is exact, and every charged Entry cost is already accounted.
 

@@ -12,7 +12,7 @@ Batch.apply(RoutineChange)
 Batch.perform(Action)
 ```
 
-A Batch is one stable allocation of work toward one independently judged result. It is not a candidate identity, dispatch instance, command, process, immutable packet, or proposal hash. Its design, implementation, checks, paths, Review and Permission references, resource limits, and Candidate Revisions may evolve while it still pursues that result.
+A Batch is one stable allocation of work toward one independently judged result. It is not a candidate identity, dispatch instance, command, process, immutable packet, or proposal hash. Its design, implementation, checks, paths, Review and Permission references, operational limits, and Candidate Revisions may evolve while it still pursues that result.
 
 Write `acceptance` as the result and evidence required to judge this B, and `scope` as its work boundary. Keep a temporary turn limit in current progress, not in acceptance as an inferred user stop. Real user limits come from [User decisions](user-decisions.md). Finishing an implementation-only B can lead to a separate measurement B within the continuing task; it does not enlarge this B's independently judged result.
 
@@ -32,13 +32,13 @@ The module stores one current `frontier-batch/1` record. Git retains ordinary hi
 
 | Owner | Owns | Batch use |
 |---|---|---|
-| Coordinator | Selection, reservations, protected reserve and allocation changes | Derive the Batch's local limits from the latest available allocation |
+| Coordinator | Selection, reservations, protected reserve and allocation changes | Set and revise the Batch's operational limits from current evidence inside governing boundaries |
 | Budget | Campaign-wide authorized total, reservations, actual and unknown consumption, and balance | Supplies allocation facts; Batch does not parse or copy the balance |
 | R | Review subject, verdict, findings, reviewer and assumptions | Cite the applicable R; do not copy its meaning or create a review credential |
 | V | User Permission, scope, conditions, value limits and withdrawal state | Cite the applicable V and check it immediately before its Consequence |
 | Git | Retained project bytes and ordinary change history | Use a full commit and repository-relative paths |
 | B | Current work state, Candidate Revision, checks, observations, Attempts, actual consumption, Consequences and result | The only current lifecycle owner |
-| E | Adopted measurement meaning and claim limits | Adopt after B returns observations; B does not write E |
+| E | One adopted formal evaluated result and its comparison validity | Create only after a valid `formal-slot-h` result; B does not write E |
 | External system | Its job, operation, submission, lease, object or idempotency reference | Preserve only when work crosses that real seam |
 
 Review readiness does not grant Permission. Permission does not prove execution. Execution does not establish Evidence. Preserve those distinctions as fields and owner lookups rather than parallel identity chains.
@@ -55,9 +55,9 @@ Review readiness does not grant Permission. Permission does not prove execution.
 - reconcile one `running` or `uncertain` Attempt from observed facts; or
 - conclude the Batch.
 
-A revision may change design slices, implementation choices, commands, paths, checks, R or V references, resource limits, the current Candidate Revision, and one Batch-owned Measurement Definition. Record why it remains the same independently judged result. Do not create a new B merely because one field, file, design revision, tool, or workflow version changed.
+A revision may change design slices, implementation choices, commands, paths, checks, R or V references, Batch operational limits, the current Candidate Revision, and one Batch-owned Measurement Definition. Record why it remains the same independently judged result. Do not create a new B merely because one field, file, design revision, tool, or workflow version changed.
 
-Only the Coordinator may revise `resource_limits`. To increase a limit, first confirm or increase the matching Budget reservation, then revise the Batch. To decrease it, revise the Batch before releasing the reservation. `Batch.perform` records Attempt consumption before the Coordinator writes it back to Budget; do not make another dependent allocation until that writeback finishes. Protected reserve never becomes a Batch limit directly. Budget, reservation, Batch limit and actual use share the same resource keys and units.
+Only the Coordinator may revise `resource_limits`. These are Batch operational limits, not Campaign Budget or proof of consumption. The Coordinator may raise or lower them in the same B without user input, another Selection, or Replan when the independently judged result, strategic allocation, protected reserve, Measurement Definition meaning and all governing boundaries remain unchanged. Create or increase a Campaign reservation only when governed capacity must stay unavailable to another allocation before Attempt writeback. `Batch.perform` records Attempt use first; write only Budget-governed keys back to Campaign Budget and disposition any matching reservation before another dependent allocation. A protected reserve never becomes a Batch limit directly.
 
 A Candidate Revision is a full Git commit plus explicit repository-relative paths. One Batch may use several revisions. Changing bytes, repairing a failed check, or selecting another revision creates no candidate ID, inventory ID, package hash, Attempt, proposal, charge, Review, or Permission by itself.
 
@@ -65,7 +65,7 @@ Ordinary checks and observations bind the Candidate Revision they examined. A fa
 
 ## Boundary-preserving continuation
 
-Continue the same B while it pursues the same independently judged result and remains inside the user's objective, permitted scope, applicable Permissions, actual cumulative limits, and known effects. A changed implementation plan, W slice allocation, internal work breakdown, local command order, Review revision, Permission update, resource ceiling, or Candidate Revision does not by itself create another B.
+Continue the same B while it pursues the same independently judged result and remains inside the user's objective, permitted scope, applicable Permissions, governing campaign limits, protected reserve, Measurement Definition and known effects. A changed implementation plan, W slice allocation, internal work breakdown, local command order, Review revision, Permission update, Batch operational limit, planning estimate, or Candidate Revision does not by itself create another B.
 
 Working material stays mutable until exact bytes are selected for a check or action. Use Git to retain that selection. Do not copy the repository into execution snapshots or treat unrelated dirty paths, caches, workflow deployments, progress notes, or harmless local commands as input drift.
 
@@ -77,19 +77,23 @@ An unresolved actual effect, exhausted limit, unavailable required input, or rep
 
 `Batch.perform` is the only current entry point that may start work capable of producing a measurement result or Consequence. A Consequence is actual spend, external submission, sensitive access, irreversible change, or single-use consumption whose repetition matters.
 
-The Batch record is the sole current Measurement Definition owner. A measurement Action cannot carry or replace another definition. The current definition states the mode, question, comparator, metric, scope, resource ceiling, non-repeatable unit, resource owner, consumption control, execution owner, evidence and interpretation limits, and result owner. Existing definitions with equivalent meaning remain usable; do not create a schema-migration gate merely to rename fields.
+The Batch record is the sole current Measurement Definition owner. A measurement Action cannot carry or replace another definition. The current definition states the mode, question, comparator, metric, scope, resource ceiling, non-repeatable unit, resource owner, consumption control, execution owner, evidence and interpretation limits, and result owner. Its resource ceiling bounds exposure or use that affects interpretation and is enforced independently of the Batch operational limit. A change to that ceiling follows the existing measurement-design and review gate only when it changes measurement meaning or a later allowed inference; it does not automatically require user input, Campaign Budget, or strategic Replan. The definition references the applicable parent H measurement and R8 rule rather than copying their reusable meaning. Existing definitions with equivalent meaning remain usable; do not create a schema-migration gate merely to rename fields.
+
+Inside an adopted H `diagnostic-only` category, the definition may specify this observation's local inputs, initialization, update events, observation window and within-window calculation. It does not establish or change target linkage, cross-instance inference, formal comparison meaning or an investment consequence. A new local calculation alone does not invoke measurement design or review.
+
+When lifecycle context changes interpretation, set `required_context_keys` to unique nonempty keys. The operation result keeps the raw `decision_value`, parent-defined `lifecycle_state` and observed `context` in its existing result mapping. The Batch module preserves these facts. Missing context limits later adoption; it is not an execution failure, uncertain effect or reason to discard the observation.
 
 Before the operation adapter starts, the Batch implementation:
 
 1. resolves the current Batch;
 2. verifies the selected Git commit and paths when bytes affect the result;
 3. verifies required checks against that Candidate Revision;
-4. reads applicable R and V from their owners;
-5. checks every requested resource against Batch limits and only V-owned cost or resource keys against Permission limits;
+4. checks every requested resource against Batch operational limits and measurement resources against the current Measurement Definition ceiling;
+5. reads applicable R and V from their owners and checks only V-owned cost or resource keys against Permission limits;
 6. rejects an unresolved or prohibited repeat; and
 7. creates the next local Attempt only when measurement or possible Consequences make repetition matter.
 
-After the adapter returns, record the Attempt, actual observations, actual consumption, actual Consequences, external references when present, result, and exact recovery condition. Never trust a declared zero after an operation may have begun. Unexpected adapter failure leaves the affected Attempt `uncertain` and forbids blind repetition; unrelated routine work remains legal.
+After the adapter returns, record the Attempt, actual observations, actual consumption, actual Consequences, external references when present, raw result, and exact recovery condition. Never trust a declared zero after an operation may have begun. Unexpected adapter failure leaves the affected Attempt `uncertain` and forbids blind repetition; unrelated routine work remains legal. The Attempt records what happened; it does not classify target improvement or choose an action.
 
 When later facts resolve an uncertain operation, use `Batch.apply(ReconcileAttempt)` once to record the actual status, use, Consequences, result, and rationale. Reconciliation updates the existing Attempt; it does not create another Attempt, identity, Review, Permission, charge, or result packet. If an operation unexpectedly reports resource use or a Consequence without a planned Attempt, the module retains it as an Attempt and flags the adapter contract violation rather than dropping the effect.
 
@@ -124,7 +128,7 @@ For an action that needed an Attempt, store its bounded action, exact Candidate 
 - A failed check or failed Attempt does not create a new B or close the current B automatically.
 - A result does not create E, select another route, promote a candidate, expand Permission, or establish a claim.
 
-The Coordinator applies [Result adoption](result-adoption.md). E owns adopted measurement meaning and its claim limits. Concluding a Batch records `completed` or `stopped`, the strongest supported result and the remaining objective gap. An unresolved Attempt prevents conclusion. The same B may reopen only for explicit continuation of the same independently judged result; prior Attempts, consumption and Consequences remain unchanged.
+The Coordinator applies [Result adoption](result-adoption.md). H retains reusable measurement meaning and factual limits; E records only a valid formal evaluated result. Concluding a Batch records `completed` or `stopped`, the strongest supported result and the remaining objective gap. An unresolved Attempt prevents conclusion. The same B may reopen only for explicit continuation of the same independently judged result; prior Attempts, consumption and Consequences remain unchanged.
 
 ## Historical compatibility
 

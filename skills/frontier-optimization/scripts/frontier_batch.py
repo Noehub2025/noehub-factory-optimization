@@ -403,12 +403,18 @@ class Batch:
                 action,
                 operation.protected_consequences,
             )
+            _verify_resources(state, action.requested_resources)
+            if measurement_definition is not None:
+                _verify_measurement_resources(
+                    state,
+                    measurement_definition,
+                    action.requested_resources,
+                )
             self._verify_governance(
                 state,
                 action,
                 operation.protected_consequences,
             )
-            _verify_resources(state, action.requested_resources)
             _verify_repeat(state, action)
 
             needs_attempt = bool(
@@ -811,6 +817,17 @@ def _apply_change(
                     )
             updated["resource_limits"] = limits
         if change.measurement_definition is not None:
+            _validate_measurement_definition(
+                change.measurement_definition,
+                require_resource_ceiling=True,
+            )
+            ceiling = _measurement_resource_ceiling(change.measurement_definition)
+            for key, consumed in _measurement_capacity_consumption(updated).items():
+                if key in ceiling and ceiling[key] < consumed:
+                    raise ChangeRejected(
+                        f"measurement resource ceiling {key!r} cannot fall below "
+                        "recorded measurement capacity use"
+                    )
             updated["current"]["measurement_definition"] = copy.deepcopy(
                 dict(change.measurement_definition)
             )
@@ -987,6 +1004,7 @@ def _validate_state(state: Mapping[str, Any], expected_batch: str) -> None:
         raise BatchFormatError("Batch current state contains unknown fields")
     if current["status"] not in {"draft", "open", *FINAL_STATUSES}:
         raise BatchFormatError("Batch status is invalid")
+    _validate_measurement_definition(current["measurement_definition"])
     if not isinstance(current["checks"], dict) or not isinstance(current["observations"], dict):
         raise BatchFormatError("Batch checks and observations must be mappings")
     resource_limits = _resource_mapping(state["resource_limits"], "resource_limits")
@@ -1114,6 +1132,26 @@ def _verify_resources(state: Mapping[str, Any], requested: Mapping[str, float | 
         limits=state["resource_limits"],
         source="Batch",
     )
+
+
+def _verify_measurement_resources(
+    state: Mapping[str, Any],
+    definition: Mapping[str, Any],
+    requested: Mapping[str, float | int],
+) -> None:
+    try:
+        ceiling = _measurement_resource_ceiling(definition)
+    except BatchFormatError as exc:
+        raise ConsequenceBlocked(
+            "the current Measurement Definition must define a valid resource_ceiling"
+        ) from exc
+    actual = _measurement_capacity_consumption(state)
+    normalized_requested = _resource_mapping(requested, "requested_resources")
+    for key, limit in ceiling.items():
+        if actual.get(key, 0) + normalized_requested.get(key, 0) > limit:
+            raise ConsequenceBlocked(
+                f"Measurement Definition resource ceiling {key!r} would be exceeded"
+            )
 
 
 def _verify_requested_within_limits(
@@ -1487,6 +1525,21 @@ def _capacity_consumption(state: Mapping[str, Any]) -> dict[str, float | int]:
     return total
 
 
+def _measurement_capacity_consumption(
+    state: Mapping[str, Any],
+) -> dict[str, float | int]:
+    """Return retained capacity use from measurement Attempts only."""
+
+    measurement_state = {
+        "attempts": [
+            attempt
+            for attempt in state["attempts"]
+            if isinstance(attempt.get("measurement_definition"), Mapping)
+        ]
+    }
+    return _capacity_consumption(measurement_state)
+
+
 def _number(value: Any, name: str) -> float | int:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise BatchFormatError(f"{name} must be a nonnegative number")
@@ -1522,6 +1575,41 @@ def _require_text_tuple(value: Any, name: str, *, allow_empty: bool = False) -> 
         raise BatchFormatError(f"{name} values must be nonempty strings")
     if len(set(value)) != len(value):
         raise BatchFormatError(f"{name} values must be unique")
+
+
+def _measurement_resource_ceiling(
+    value: Mapping[str, Any],
+) -> dict[str, float | int]:
+    if "resource_ceiling" not in value:
+        raise BatchFormatError("measurement_definition.resource_ceiling is required")
+    return _resource_mapping(
+        value["resource_ceiling"],
+        "measurement_definition.resource_ceiling",
+    )
+
+
+def _validate_measurement_definition(
+    value: Any,
+    *,
+    require_resource_ceiling: bool = False,
+) -> None:
+    """Validate the current measurement structure without interpreting its meaning."""
+
+    if value is None:
+        return
+    if not isinstance(value, Mapping) or not value:
+        raise BatchFormatError("measurement_definition must be a nonempty mapping")
+    if require_resource_ceiling or "resource_ceiling" in value:
+        _measurement_resource_ceiling(value)
+    required = value.get("required_context_keys")
+    if required is None:
+        return
+    if not isinstance(required, (list, tuple)):
+        raise BatchFormatError("required_context_keys must be a list of nonempty strings")
+    if not all(isinstance(item, str) and item.strip() for item in required):
+        raise BatchFormatError("required_context_keys must contain nonempty strings")
+    if len(set(required)) != len(required):
+        raise BatchFormatError("required_context_keys must be unique")
 
 
 def _validate_consequence_kinds(values: tuple[str, ...]) -> None:

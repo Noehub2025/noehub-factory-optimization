@@ -84,7 +84,7 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 ## How the workflow protects the result
 
 - One coordinator owns the task definition and search design; another owns the later campaign. Worker Skills cannot silently change either contract.
-- A fresh-context measurement designer can create or repair the complete decision-relevant protocol. The framing coordinator must adopt that projection as a whole before it becomes part of the task contract.
+- A fresh-context measurement designer can create or repair the complete decision-relevant protocol. It reconstructs how values are initialized, updated, aggregated, and related to the real objective; unsupported proxy relationships remain explicit. The framing coordinator must adopt that projection as a whole before it becomes part of the task contract.
 - A fresh-context implementation designer owns architecture and interface meaning when work changes a consequential technical seam. A separate reviewer checks the exact Git-backed design before affected implementation proceeds.
 - A consequential implementation design must positively ground every decisive feasibility claim under the relevant conditions. Missing final implementation, novelty, or ordinary implementation risk alone does not justify another evidence gate.
 - One Batch is a stable allocation toward one independently judged result, not an immutable packet, command, proposal hash, or candidate identity. Its implementation, checks, Reviews, Permissions, limits, paths, and Candidate Revisions may evolve while that result remains the same.
@@ -93,13 +93,13 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 - Git owns retained project bytes. A Candidate Revision is one full commit plus explicit repository-relative paths, so a Review, check, or action can name exact bytes without copying the repository into workflow snapshots.
 - R records own independent Review meaning. V records own user tradeoffs and Permission for uncovered paid, external, sensitive, irreversible, or user-controlled scarce-resource work. Review readiness does not create Permission, and Permission does not prove execution or improvement.
 - The agent reuses an applicable V instead of asking again. Ordinary technical choices, local implementation changes, Batch identities, and internal resource allocation do not become user questions.
-- Budget owns campaign-wide authorization, reservations, actual and unknown consumption, and remaining balance. A Batch receives local limits but cannot raise them or treat protected reserve as routine capacity.
+- Budget owns governing campaign-wide capacity, reservations, actual and unknown governed consumption, and remaining balance. Batch operational limits are separate: the coordinator may revise them within the same independently judged result and existing boundaries, but cannot turn protected reserve into routine capacity or expand the campaign ceiling.
 - Candidate creation and performance evaluation are separate steps. Passing engineering checks does not prove improvement.
-- Each Batch owns one Measurement Definition. `Batch.perform` verifies the selected Git bytes, required Reviews, applicable Permissions, checks, and resource limits immediately before invoking an operation adapter.
+- Each Batch owns one Measurement Definition. It records the question, comparator, scope, resource ceiling, lifecycle state, required context, evidence limits, and result owner. `Batch.perform` verifies the selected Git bytes, required Reviews, applicable Permissions, checks, operational limits, and measurement ceiling immediately before invoking an operation adapter.
 - Attempts exist only when a measurement or possible Consequence makes repetition important. The workflow records actual use and effects, preserves an uncertain partial operation instead of blindly repeating it, and reconciles later facts into the same Attempt.
 - Operation bindings protect the real seam involved—such as a paid call, external submission, sensitive access, irreversible change, remote job, or single-use sample—without activating unrelated controls.
 - A technical or fidelity finding returns to its existing owner and remains in the same Batch when the independently judged result is unchanged. Only dependent work pauses; unaffected legal work continues.
-- Result adoption establishes measurement and comparison validity under the Batch-owned definition. Diagnostic and routine-local observations remain bounded Batch evidence; only a valid formal comparison may create adopted Evidence or support stronger claims.
+- Result adoption separates validity from applicability. A correctly produced initialization value, intermediate state, or unknown proxy may be valid evidence while remaining ineligible for stronger performance or investment conclusions. Diagnostic and routine-local observations remain bounded Batch evidence; only a valid formal comparison may create adopted Evidence or support stronger claims.
 - After each terminal result is adopted, the coordinator establishes implementation, measurement, and comparison validity, connects the result to its pre-work hypothesis and exact technical lineage, and applies one ordered direction resolver directly to the adopted evidence. This creates no intermediate per-batch reflection gate or narrative artifact.
 - At a campaign-wide closeout, a fresh-context `reflect-frontier` pass turns the generation's adopted successes, failures, costs, retained assets, and remaining gap into search advantage and a small set of worthwhile opportunities for the next generation. It does not select work, allocate budget, or grant authority.
 - If closing evidence may challenge durable problem or representation meaning, Reflection carries the cited adopted evidence—not its own verdict—into the next ordinary Entry. The existing direction resolver may refer only the affected rule back to Framing; this creates no second resolver, extra diagnosis, or new reflection gate.
@@ -129,10 +129,10 @@ Each Skill entry point routes the agent to the references needed for its current
 ### Define the task and search
 
 - **[frame-optimization](./skills/frame-optimization/SKILL.md)** — Coordinates the problem definition, search representation, repair loops, reviews, and final handoff.
-- **[design-measurement](./skills/design-measurement/SKILL.md)** — Designs or repairs the decision-relevant measurement protocol in a fresh context without adopting it or choosing campaign actions.
+- **[design-measurement](./skills/design-measurement/SKILL.md)** — Designs or repairs reusable measurement meaning in a fresh context, including lifecycle, source coverage, target relationship, and evidence ceilings, without adopting it or choosing campaign actions.
 - **[research-optimization](./skills/research-optimization/SKILL.md)** — Investigates one assigned question without changing the task contract.
 - **[grill-optimization](./skills/grill-optimization/SKILL.md)** — Collects one decision that only the user can make.
-- **[review-optimization](./skills/review-optimization/SKILL.md)** — Independently checks problem readiness, fixed measurement-support implementations, or whether old and new results remain comparable.
+- **[review-optimization](./skills/review-optimization/SKILL.md)** — Independently checks problem readiness, measurement-design readiness in proportion to its intended consequence, fixed measurement-support implementations, or retained-result comparability.
 - **[review-representation](./skills/review-representation/SKILL.md)** — Independently checks the proposed search space and the exact scope that later work may use.
 
 ### Run the improvement campaign

@@ -39,7 +39,9 @@ This step is complete when the design starts from the target decision rather tha
 
 Write one Measurement Design using the five-part interface in the shared reference. Cover only methods that can change the design or its permitted use.
 
-Keep the analysis compact for a direct or bounded diagnostic measurement that cannot select a survivor, close a route, allocate material resources, act as formal confirmation, or support a broad claim. An unknown proxy relationship may remain on this path when the result only informs another low-cost probe.
+Reconstruct the evaluation chain before accepting a displayed value: final evaluated entity and objective from D; elementary outcome and cross-instance aggregation from E; initialization, update events, decision-ready state, required context, source coverage and target relationship in H. Mark a fact unresolved when its source establishes only availability, execution or initialization. Do not copy D or E into H or add a second relationship-evidence field.
+
+Keep the analysis compact for a direct or bounded diagnostic measurement that cannot select a survivor, close a route, allocate material resources, act as formal confirmation, or support a broad claim. A one-off local calculation inside an existing H diagnostic category belongs to the Batch Measurement Definition rather than a new design. An unknown proxy relationship may remain on this path when one bounded observation can change the next decision or show that a stronger design is worthwhile.
 
 Expand only the relevant parts when a proxy controls a stronger consequence, evidence guides later generation or selection, the schedule is costly, the minimum useful change approaches measurement resolution, or the result is expected to transfer beyond the observed conditions. Repetition alone is not adaptive reuse.
 
@@ -54,7 +56,7 @@ Write only these sections in the selected Slot H detail:
 - `Contract projection — not adopted`; and
 - `Finding dispositions` for `repair`.
 
-Keep exactly one current projection. It contains complete proposed text for `slot_d`, `slot_e`, `slot_h`, `r8_measurement_constraints`, `known_limits`, and `invalidation_and_recalibration`. It defines evidence meaning and maximum supported consequences. It does not select survivors, routes, budgets, stopping policy, or authority.
+Keep exactly one current projection. It contains complete proposed text for `slot_d`, `slot_e`, `slot_h`, `r8_measurement_constraints`, `known_limits`, and `invalidation_and_recalibration`. D owns the objective and material threshold; E owns the elementary outcome and cross-instance inference; H owns reusable lifecycle, context, source coverage, target relationship and factual limits; R8 owns result-to-investment ceilings. The projection does not select survivors, routes, budgets, stopping policy, or authority.
 
 For each finding, record `accepted`, `adapted`, `rejected-with-evidence`, or `blocked`. Preserve the finding itself. A rejection requires applicable evidence; an unchanged disagreement narrows the supported consequence or returns an exact blocker.
 

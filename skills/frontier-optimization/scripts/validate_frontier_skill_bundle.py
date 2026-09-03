@@ -92,6 +92,9 @@ CURRENT_BATCH_REQUIREMENTS = {
         "Batch.apply(RoutineChange)",
         "Batch.perform(Action)",
         "frontier-batch/1",
+        "required_context_keys",
+        "H retains reusable measurement meaning",
+        "valid `formal-slot-h` result",
         "Historical compatibility",
     ),
     "frontier-optimization/scripts/frontier_batch.py": (
@@ -99,6 +102,7 @@ CURRENT_BATCH_REQUIREMENTS = {
         "class OperationBinding:",
         "PERMISSION_REQUIRED_CONSEQUENCES",
         "_measurement_definition_for_action",
+        "_validate_measurement_definition",
         "class Batch:",
         "def open(",
         "def apply(",

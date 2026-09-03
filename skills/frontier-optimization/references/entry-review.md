@@ -13,9 +13,10 @@ Keep the proposed decision mutable until ordinary deterministic checks pass. Sav
 - `review_kind: entry`;
 - the next actual Consequence and affected scope;
 - applicable parents, adopted evidence, Campaign, Selection and Budget;
-- the Batch definition, expected Consequences and local resource limits;
+- the Batch definition and expected Consequences;
+- applicable governing campaign limits, protected reserve and strategic allocation;
 - applicable R and V references;
-- the current W or Measurement Definition only when the action needs it; and
+- the current W or Measurement Definition, including any interpretation-bearing resource ceiling, only when the action needs it; and
 - one exclusive review path and completion check.
 
 Do not create a content root, decision node, attestation root, authority node, packet, snapshot, adoption identity or validation identity. Workflow source, validator versions, deployment locations and historical identity fields are not project inputs.
@@ -28,11 +29,12 @@ Judge only whether the proposed decision is technically coherent and reachable u
 - that protected reserve is not assigned to routine work;
 - that prerequisites are evidence-backed or explicitly tested before dependent work;
 - that the Batch independently judged result, scope and expected Consequences are coherent;
+- that the next action fits the governing campaign limits, protected reserve and strategic allocation;
 - that the next action has the required technical Review and Measurement Definition;
 - that existing V covers every protected Consequence, or that the exact missing user boundary is identified; and
 - that result branches, claim limits and recovery conditions match the evidence the action can produce.
 
-A positive Review establishes Entry readiness only. It does not create Permission, execute work, allocate another B, create E or strengthen a claim. When an existing V applies, the Coordinator continues without asking the user. When a genuine user boundary is missing, apply [User decisions](user-decisions.md) and ask only for that boundary.
+A positive Review establishes Entry readiness only. It does not create Permission, execute work, allocate another B, create E or strengthen a claim. Exact Batch operational caps are runtime controls and may be revised without repeating Entry while the reviewed decision, governing limits, protected reserve, strategic allocation, Measurement Definition and expected Consequences remain unchanged. When an existing V applies, the Coordinator continues without asking the user. When a genuine user boundary is missing, apply [User decisions](user-decisions.md) and ask only for that boundary.
 
 Use these current outcomes:
 

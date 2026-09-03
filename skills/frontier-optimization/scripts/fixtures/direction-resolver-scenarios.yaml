@@ -1,4 +1,4 @@
-contract_version: frontier-direction-resolver-fixtures/4
+contract_version: frontier-direction-resolver-fixtures/5
 # All fields in this file are development fixtures, not a runtime schema.
 scenarios:
   - id: parent-no-frontier-record
@@ -788,3 +788,26 @@ route_research_entry_repair:
           facts: {local_diagnostic: unique}
           expected_comparison: true
           expected_resolution: [9, local diagnostic, selected-local-diagnostic]
+
+resource_boundary_scenarios:
+  - id: corrected-planning-estimate
+    source: planning-estimate
+    expected: {owner: Coordinator, continuation: same-B, resolver_row: null, user_decision: false}
+  - id: revised-batch-operational-cap
+    source: batch-operational-limit
+    expected: {owner: Coordinator, continuation: same-B, resolver_row: null, user_decision: false}
+  - id: ungoverned-internal-use
+    source: ungoverned-internal-use
+    expected: {owner: Batch, continuation: same-B, resolver_row: null, user_decision: false}
+  - id: changed-measurement-exposure
+    source: measurement-resource-ceiling
+    expected: {owner: Measurement-Definition, continuation: measurement-revision, resolver_row: null, user_decision: false}
+  - id: exhausted-governing-capacity
+    source: governing-campaign-limit
+    expected: {owner: Campaign-Budget, continuation: resolver, resolver_row: 5, user_decision: false}
+  - id: changed-route-allocation
+    source: strategic-allocation
+    expected: {owner: Selection, continuation: resolver, resolver_row: 10, user_decision: false}
+  - id: uncovered-user-boundary
+    source: user-boundary
+    expected: {owner: User, continuation: ask-for-changed-boundary, resolver_row: null, user_decision: true}

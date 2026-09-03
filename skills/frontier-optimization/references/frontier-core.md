@@ -174,6 +174,19 @@ Historical producing parents, execution inputs, failures, reviews and charges re
 
 A parent revision leaves already-frozen execution inputs unchanged. An unrelated revision does not interrupt that execution. A relevant revision pauses only dependent work; update the next action's existing decision/execution bindings under applicable permission. An old attestation never signs new bytes. Use scoped Entry repair only when its reviewed decision changes, not to certify that unrelated work is still compatible.
 
-Parent documents own goals, acceptance, resource ceilings and charging/feedback/stop rules. Current consumption, reservations, generation, allocation and next action belong to the existing ledger and campaign state; any parent summary is nonauthoritative. An update to a summary does not change the rules.
+### Resource meanings
+
+Keep these resource concepts separate:
+
+- A **planning estimate** forecasts likely effort or use. It is not authority, allocation, consumption, or a hard limit and may be corrected from current evidence.
+- A **Batch operational limit** bounds one B's current execution. The Coordinator may revise it inside an unchanged investment when the change stays within every governing campaign limit, protected reserve, Measurement Definition and user boundary.
+- A **Measurement Definition resource ceiling** limits named exposure or use that affects what a measurement means. `Batch.perform` enforces those keys independently of the Batch operational limit; requested keys it does not name remain subject to the operational limit. Changing the ceiling changes the measurement contract, not automatically the campaign allocation or user authority.
+- A **governing campaign limit** is a cumulative limit established by the current Problem or Frame, an applicable user decision, or verified external capacity. Only its resource keys enter Campaign Budget accounting.
+- A **strategic allocation** assigns governing campaign capacity among routes or investments. Changing it follows the integrated resolver and, when applicable, strategic Replan.
+- A **protected reserve** is governing capacity withheld for its stated purpose. Routine work cannot consume it.
+
+Do not promote an agent estimate or local operational limit into Campaign Budget, a protected reserve, strategic allocation, actual consumption, or a user decision. A stricter owning contract still governs its own consequence: for example, a Measurement Definition ceiling may block another measurement without becoming campaign Budget.
+
+Parent documents own goals, acceptance, governing campaign limits and charging, feedback, and stop rules. Current consumption of governed keys, reservations, generation, strategic allocation and next action belong to the existing ledger and campaign state; any parent summary is nonauthoritative. An update to a summary does not change the rules.
 
 Completion: the next affected action has an applicable parent, evidence and permission, or an exact unresolved dependency; unaffected work and valid historical conclusions remain usable. No change-review type, migration packet or additional resolver is introduced.

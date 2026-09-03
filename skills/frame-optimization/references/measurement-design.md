@@ -26,7 +26,11 @@ If the revision Agent already read, wrote, or helped design the current protocol
 
 ### 1. Target and claim
 
-State the real objective supplied by the project, the measured object, inferential target, comparison, and observed conditions. Classify each output as the real objective, a proxy, or a diagnostic. State which live explanations the result can distinguish, which alternatives remain, and the maximum attribution and transfer claim.
+Reconstruct the actual evaluation chain rather than relying on a metric label or displayed value. Use Slot D for the final evaluated entity, objective and material threshold, and Slot E for the elementary outcome, cross-instance aggregation and inferential target. Establish how an observable value is initialized, which events update it, when it is intermediate, and which state or aggregation is decision-ready. State the context needed to interpret each materially different state.
+
+For every decision-critical fact in that chain, record one lightweight source-coverage entry that names the supporting source and the D, E, or H facts it supports. Keep unsupported facts explicit as unresolved. A source that establishes execution, initialization or availability cannot establish later performance, aggregation or target linkage unless it actually covers those facts.
+
+Classify each reusable measured value's target relationship as `real-objective`, `established-proxy`, or `unknown-proxy`; record diagnostic use separately. State which live explanations the result can distinguish, which alternatives remain, and the maximum factual attribution and transfer claim. Do not add a second relationship-evidence field outside source coverage.
 
 ### 2. Conditions and design
 
@@ -50,7 +54,7 @@ Record when prior results influence later hypothesis generation, parameter choic
 
 ### 5. Consequence and lifecycle
 
-Map each material result class to its maximum supported inference and maximum investment consequence. State stronger forbidden conclusions, required confirmation, and the conditions that leave the protocol valid, require recalibration, require replacement, or invalidate retained comparisons.
+Map each material result class to its maximum supported factual inference and the evidence ceiling within which R8 may define an investment consequence. State stronger forbidden conclusions, required confirmation, and the conditions that leave the protocol valid, require recalibration, require replacement, or invalidate retained comparisons.
 
 The Designer supplies an evidence ceiling, not authority. R8 may choose a smaller action within that ceiling. The user and existing workflow remain responsible for value choices, resources, route selection, stopping, and authorization.
 
@@ -58,19 +62,19 @@ The Designer supplies an evidence ceiling, not authority. R8 may choose a smalle
 
 Depth follows consequence, not novelty or uncertainty.
 
-A direct or bounded diagnostic design stays compact when it has low cost, narrow use, no adaptive selection, and no power to promote a candidate, close a route, allocate material resources, serve as formal confirmation, or support a broad claim. An unknown proxy can remain compact when its only result is another bounded probe or an exact claim limit.
+A direct or bounded diagnostic design stays compact when it has low cost, narrow use, no adaptive selection, and no power to promote a candidate, close a route, allocate material resources, serve as formal confirmation, or support a broad claim. A one-off probe inside an already adopted H diagnostic category is defined by the Batch Measurement Definition and does not invoke this professional route merely because its local calculation is new. An unknown proxy can remain compact when one bounded observation can change the next decision or establish whether a stronger design is worthwhile.
 
-Expand only the portions implicated by the intended consequence. Stronger analysis is required when a proxy controls selection or investment, evidence is adaptively reused, a costly schedule needs justification, the minimum useful change approaches resolution, confirmation is claimed, or results are expected to transfer beyond observed conditions. This is not a persistent `light` or `enhanced` mode and does not create another gate.
+Expand only the portions implicated by the intended consequence. Stronger analysis is required when reusable measurement meaning changes, a proxy controls selection or material investment, evidence is adaptively reused, a costly schedule needs justification, the minimum useful change approaches resolution, confirmation is claimed, or results are expected to transfer beyond observed conditions. This is not a persistent `light` or `enhanced` mode and does not create another gate.
 
 ## Contract projection
 
 The Designer returns complete proposed content for:
 
 ```yaml
-slot_d: <objective, comparison, threshold, and maximum consequence>
-slot_e: <inferential target, analysis unit, aggregation, variation, and uncertainty>
-slot_h: <protocol, conditions, schedule roles, decision rule, controls, and calibration>
-r8_measurement_constraints: <evidence meaning, consequence ceilings, confirmation, exposure, reuse, and forbidden conclusions>
+slot_d: <final evaluated entity, objective, comparison, and material threshold>
+slot_e: <elementary outcome, inferential target, analysis unit, cross-instance aggregation, variation, and uncertainty>
+slot_h: <D/E references, reusable protocol, lifecycle meaning, required context keys, source coverage, target relationship, factual interpretation limit, schedule roles, controls, and calibration>
+r8_measurement_constraints: <result-to-use ceilings, confirmation, exposure, reuse, and forbidden investment consequences>
 known_limits: <current restrictions that remain after adoption>
 invalidation_and_recalibration: <preserve, recalibrate, replace, and comparability triggers>
 ```

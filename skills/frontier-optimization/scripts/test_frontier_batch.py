@@ -301,6 +301,7 @@ class BatchModuleTests(unittest.TestCase):
             definition = self._measurement(
                 mode,
                 result_owner="E" if mode == "formal-slot-h" else "B",
+                resource_ceiling={"runs": 3},
             )
             batch.apply(
                 ReviseBatch(
@@ -325,6 +326,187 @@ class BatchModuleTests(unittest.TestCase):
             observed,
             ["diagnostic-only", "routine-local", "formal-slot-h"],
         )
+
+    def test_operational_limit_can_be_revised_before_any_attempt(self) -> None:
+        calls: list[str] = []
+
+        def inspect(action: Action, context: dict) -> OperationResult:
+            calls.append(action.key)
+            return OperationResult(status="completed", resource_use={"runs": 2})
+
+        batch = self._defined_batch(
+            operations={"inspect": self._operation(inspect)},
+            resource_limits={"runs": 1},
+        )
+        action = Action(
+            key="bounded-inspection",
+            operation="inspect",
+            kind="diagnostic",
+            requested_resources={"runs": 2},
+        )
+
+        with self.assertRaisesRegex(ConsequenceBlocked, "Batch resource limit"):
+            batch.perform(action)
+
+        self.assertEqual(calls, [])
+        self.assertEqual(batch.view.data["attempts"], [])
+
+        batch.apply(
+            ReviseBatch(
+                rationale="Correct the operational cap for the same inspection.",
+                resource_limits={"runs": 2},
+            )
+        )
+        outcome = batch.perform(action)
+
+        self.assertEqual(calls, ["bounded-inspection"])
+        self.assertEqual(outcome.view.data["consumption"], {"runs": 2})
+
+    def test_measurement_ceiling_is_independent_and_counts_prior_measurements(self) -> None:
+        calls: list[str] = []
+
+        def measure(action: Action, context: dict) -> OperationResult:
+            calls.append(action.key)
+            return OperationResult(status="completed", resource_use={"runs": 1})
+
+        batch = self._defined_batch(
+            operations={"measure": self._operation(measure)},
+            resource_limits={"runs": 3},
+        )
+        batch.apply(
+            ReviseBatch(
+                rationale="Start with one decision-relevant exposure.",
+                measurement_definition=self._measurement(
+                    resource_ceiling={"runs": 1}
+                ),
+            )
+        )
+        batch.perform(
+            Action(
+                key="first-measurement",
+                operation="measure",
+                kind="measurement",
+                requested_resources={"runs": 1},
+            )
+        )
+
+        second = Action(
+            key="second-measurement",
+            operation="measure",
+            kind="measurement",
+            requested_resources={"runs": 1},
+        )
+        with self.assertRaisesRegex(
+            ConsequenceBlocked,
+            "Measurement Definition resource ceiling",
+        ):
+            batch.perform(second)
+
+        self.assertEqual(calls, ["first-measurement"])
+        self.assertEqual(len(batch.view.data["attempts"]), 1)
+
+        with self.assertRaisesRegex(
+            ChangeRejected,
+            "recorded measurement capacity use",
+        ):
+            batch.apply(
+                ReviseBatch(
+                    rationale="Do not erase an exposure that already occurred.",
+                    measurement_definition=self._measurement(
+                        resource_ceiling={"runs": 0}
+                    ),
+                )
+            )
+
+        batch.apply(
+            ReviseBatch(
+                rationale="Current evidence justifies one additional exposure.",
+                measurement_definition=self._measurement(
+                    resource_ceiling={"runs": 2}
+                ),
+            )
+        )
+        outcome = batch.perform(second)
+
+        self.assertEqual(calls, ["first-measurement", "second-measurement"])
+        self.assertEqual(outcome.view.data["consumption"], {"runs": 2})
+
+    def test_new_measurement_definition_requires_a_valid_resource_ceiling(self) -> None:
+        batch = self._defined_batch()
+        missing = self._measurement()
+        del missing["resource_ceiling"]
+
+        for invalid in (missing, self._measurement(resource_ceiling={"runs": -1})):
+            with self.subTest(invalid=invalid):
+                with self.assertRaisesRegex(BatchFormatError, "resource_ceiling"):
+                    batch.apply(
+                        ReviseBatch(
+                            rationale="Reject a missing or invalid semantic ceiling.",
+                            measurement_definition=invalid,
+                        )
+                    )
+
+    def test_measurement_context_contract_round_trips_without_reclassifying_execution(self) -> None:
+        def measure(action: Action, context: dict) -> OperationResult:
+            return OperationResult(
+                status="completed",
+                observations=({"reachable": True},),
+                resource_use={"runs": 1},
+                result={
+                    "decision_value": 600,
+                    "lifecycle_state": "initialization",
+                    "context": {"exposure_count": 0},
+                },
+            )
+
+        batch = self._defined_batch(
+            operations={"measure": self._operation(measure)},
+            resource_limits={"runs": 1},
+        )
+        definition = self._measurement(
+            required_context_keys=["exposure_count", "comparison_population"],
+        )
+        batch.apply(
+            ReviseBatch(
+                rationale="Record the interpretation context expected at adoption.",
+                measurement_definition=definition,
+            )
+        )
+
+        outcome = batch.perform(
+            Action(
+                key="initialization-observation",
+                operation="measure",
+                kind="measurement",
+                requested_resources={"runs": 1},
+            )
+        )
+
+        attempt = outcome.view.data["attempts"][0]
+        self.assertEqual(attempt["status"], "completed")
+        self.assertEqual(attempt["measurement_definition"], definition)
+        self.assertEqual(attempt["result"]["decision_value"], 600)
+        self.assertEqual(attempt["result"]["lifecycle_state"], "initialization")
+        self.assertNotIn("contract_violations", attempt)
+
+    def test_required_context_keys_are_structural_and_unique(self) -> None:
+        batch = self._defined_batch()
+
+        for invalid in (
+            "exposure_count",
+            ["exposure_count", "exposure_count"],
+            ["exposure_count", ""],
+        ):
+            with self.subTest(invalid=invalid):
+                with self.assertRaisesRegex(BatchFormatError, "required_context_keys"):
+                    batch.apply(
+                        ReviseBatch(
+                            rationale="Reject a malformed context-key declaration.",
+                            measurement_definition=self._measurement(
+                                required_context_keys=invalid,
+                            ),
+                        )
+                    )
 
     def test_measurement_without_batch_definition_never_calls_adapter(self) -> None:
         calls: list[str] = []

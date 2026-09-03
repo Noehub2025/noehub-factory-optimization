@@ -100,7 +100,7 @@ Budget update:
 - Recorded at: <ISO-8601 datetime>
 - Campaign generation: <positive integer>
 - Update kind: <interim | final closeout>
-- Total authorized: <amount and unit>
+- Governing campaign limit: <amount, unit, and Problem, Frame, V, or verified external-capacity source; or None>
 - Prior setup spend: <amount and cited record>
 - Inherited closed-generation spend: <amount and cited final Budgets, or zero for generation 1>
 - Entry planning and research spend: <amount and cited records, or zero under the governing accounting rule>
@@ -108,14 +108,13 @@ Budget update:
 - Actual campaign spend: <amount and cited records>
 - Required follow-up reserve: <amount, unit, and mandatory confirmation or recovery purpose; Pending before campaign-baseline selection; or None with the governing rule>
 - Unreserved balance: <amount and calculation>
-- Per-batch limit: <amount and rule>
 - Accounting source: <stable path or system>
 - Candidate operating cost: <separate value and unit or not applicable>
 ```
 
-Before Selection, replace `Pending` with a concrete reserve or `None` under R8. Account for Entry evidence work under the governing budget rule; it is not B spend, but it is never free when the authority charges it. In a recovery generation, carry earlier-generation spend forward exactly once and never reset the parent ceiling. Subtract prior setup spend, inherited closed-generation spend, charged current-generation Entry spend, current-generation campaign spend, active reservations, and the reserve exactly once. When the reserved purpose becomes a selected B, move that amount from required reserve to active reservation in one update.
+Include only resource keys governed by a cumulative Problem, Frame, V, or verified external-capacity limit. Keep planning estimates, Batch operational limits, Measurement Definition ceilings, and ungoverned internal use in their owning records; do not manufacture a Budget ceiling for them. Before Selection, replace `Pending` with a concrete reserve or `None` under R8. Account for Entry evidence work only when the governing accounting rule charges it. In a recovery generation, carry earlier-generation spend forward exactly once and never reset the governing limit. Subtract prior setup spend, inherited closed-generation spend, charged current-generation Entry spend, current-generation campaign spend, active reservations, and the reserve exactly once. When the reserved purpose becomes a selected B, move that amount from required reserve to active reservation in one update.
 
-The Coordinator is the only owner that changes a Batch allocation. Increase or confirm the matching reservation before raising the Batch limit. Lower the Batch limit before releasing a reservation. After `Batch.perform`, retain the Attempt and actual `resource_use` first, then append the Budget update and disposition the reservation before making another dependent allocation. Use identical resource keys and units across Budget, reservation, Batch limit and actual use. A protected reserve is not an available Batch limit until Selection assigns its stated purpose.
+The Coordinator is the only owner that changes a strategic allocation or Batch operational limit. A Batch limit revision inside the same investment needs no Budget reservation when it stays within the current strategic allocation and governing balance. Create or increase a reservation only when governed capacity must remain unavailable to another allocation before Attempt use is written back; lower the affected operational limit before releasing such a reservation. After `Batch.perform`, retain the Attempt and actual `resource_use` first, then write only governed keys to Budget and disposition any matching reservation before making another dependent allocation. Use identical keys and units wherever the same governed resource appears. A protected reserve is not available until Selection assigns its stated purpose.
 
 A final-closeout update releases or dispositions every reservation, reports unknown spend explicitly, and leaves no active spend authority. Claim-only processing never writes a final-closeout Budget update.
 
@@ -163,7 +162,7 @@ Selection:
 - Join point: <one W-owned interface, integration, or comparison check after all members terminate, or None>
 - Baseline-establishment checkpoint: <usable artifact and completion check>
 - First performance check: <parent-approved comparison or decision result>
-- Preparation budget limit: <maximum cumulative allocation before that check>
+- Preparation cost estimate: <current non-binding estimate through that check, its basis, and uncertainty; not allocation, authority, consumption, or a hard limit>
 - Required follow-up reserve: <amount and mandatory confirmation or recovery purpose, or None with governing rule>
 - Deferred: <identifiers, reasons, unresolved or unavailable prerequisite consequences, and observable reconsideration events>
 ```

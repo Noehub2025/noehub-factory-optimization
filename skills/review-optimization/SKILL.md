@@ -62,10 +62,10 @@ Using only `PROBLEM.md`, answer:
 1. Which task cases, sizes, and operating conditions are covered?
 2. Which options are allowed, what makes one invalid, and when do two options count as the same?
 3. Which rules must hold, and what happens after a violation or failed run?
-4. How does one run produce a raw result, and how do cases, repetitions, randomness, or opponents become one comparison score?
+4. What is the elementary outcome, how is an observable value initialized and updated, which states are intermediate, and how do cases, repetitions, randomness, or opponents become the decision-ready comparison?
 5. What is the baseline, what counts as success for the current work, how does that differ from the real goal, and what exact consequence may that success authorize?
 6. Which data, feedback, time, money, hardware, and other resources may the work use?
-7. Which measurement code and important inputs produce each real-objective, proxy, or diagnostic value; what decision may it inform; and when can results be compared or reused?
+7. Which measurement code and important inputs produce each real-objective, proxy, or diagnostic value; which context is required to interpret its lifecycle state; which sources support that meaning and target relationship; what decision may it inform; and when can results be compared or reused?
 8. What remains undecided, and what action or conclusion does each known limit prevent?
 
 An answer fails when it requires a detail or external file to choose an ordinary development action, fixed evaluation code or input, acceptance outcome, resource limit, reuse outcome, or supported claim. Do not fail because a named executable or fixed file keeps its complete seed list, formula derivation, serialization, command syntax, or validation order in a detail. Record a `reframe` finding when a choice or its limits exist only in a detail or are absent. Preserve these answers before opening more context; later evidence cannot turn a failed main-document decision check into a pass.
@@ -136,10 +136,12 @@ Cross-check the complete contract. Pay special attention to:
 - F resource currencies against D's objective;
 - G information access against E's opponent and quantifier model;
 - H proxy behavior against D's real objective;
-- D's allowed decision consequence against H's real-objective, proxy, or diagnostic classification and claim limit;
+- D's objective and material threshold against H's target relationship and factual limit, and R8's allowed consequence against both;
 - E's inferential target against H's uncertainty wording and any wider-scope claim.
 
-Review measurement design in proportion to its intended consequence. Check whether the target, comparison conditions, analysis unit, resolution, competing explanations, schedule information, calibration meaning, adaptive evidence use, and result-to-consequence map are sufficient for the action the contract permits. A low-cost diagnostic may remain compact and may investigate an unknown proxy relationship. Require stronger design only when the result controls selection, route closure, material allocation, formal confirmation, or a wider claim.
+Confirm the ownership boundary: D defines the final objective and material threshold; E defines the elementary outcome and cross-instance inference; H references those clauses and defines reusable lifecycle, required context, source coverage, target relationship and factual limits; R8 stays within that ceiling. A source supports only the D, E, or H facts named by its coverage. Treat initialization, execution success and context-incomplete intermediate values as their direct operational facts, not performance. Require `established-proxy` to have source coverage for the relationship; otherwise preserve `unknown-proxy`.
+
+Review measurement design in proportion to its intended consequence. Check whether the target, comparison conditions, analysis unit, resolution, competing explanations, schedule information, calibration meaning, adaptive evidence use, and result-to-consequence map are sufficient for the action the contract permits. A low-cost diagnostic may remain compact and may investigate an unknown proxy relationship. A one-off local calculation inside an adopted H diagnostic category is a Batch definition, not a new reusable protocol and not a reason for this review. Require stronger design only when reusable measurement meaning changes or the result controls selection, route closure, material allocation, formal confirmation, or a wider claim.
 
 When the current Slot H detail contains a complete `Contract projection — not adopted`, compare every `slot_d`, `slot_e`, `slot_h`, `r8_measurement_constraints`, `known_limits`, and `invalidation_and_recalibration` block with its adopted location. Require complete adoption without changed meaning. A missing, partial, or rewritten block is a mechanical adoption error with work type `reframe`; return it to `frame-optimization`. Do not use `measurement-design` unless the professional design itself must change.
 

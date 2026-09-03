@@ -207,6 +207,34 @@ def test_same_persisted_state_yields_same_exact_resolution() -> None:
         assert first == second == exact, scenario["id"]
 
 
+def test_resource_boundaries_do_not_promote_internal_limits_into_budget() -> None:
+    expected = {
+        "planning-estimate": ("Coordinator", "same-B", None, False),
+        "batch-operational-limit": ("Coordinator", "same-B", None, False),
+        "ungoverned-internal-use": ("Batch", "same-B", None, False),
+        "measurement-resource-ceiling": (
+            "Measurement-Definition",
+            "measurement-revision",
+            None,
+            False,
+        ),
+        "governing-campaign-limit": ("Campaign-Budget", "resolver", 5, False),
+        "strategic-allocation": ("Selection", "resolver", 10, False),
+        "user-boundary": ("User", "ask-for-changed-boundary", None, True),
+    }
+
+    cases = load_contract()["resource_boundary_scenarios"]
+    assert {case["source"] for case in cases} == set(expected)
+    for case in cases:
+        actual = case["expected"]
+        assert (
+            actual["owner"],
+            actual["continuation"],
+            actual["resolver_row"],
+            actual["user_decision"],
+        ) == expected[case["source"]], case["id"]
+
+
 def test_research_dispatch_preserves_fast_and_focused_paths() -> None:
     for case in load_contract()["research_dispatch_scenarios"]:
         assert research_dispatch(case) == case["expected_dispatch"], case["id"]
