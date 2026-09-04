@@ -1112,7 +1112,8 @@ class Slice7ContractTests(unittest.TestCase):
         self.assert_contract_contains(
             "user-facing-handoff.md",
             "Load when [Continuing task and stage instructions]",
-            "selects a user return. Otherwise continue through the existing Coordinator route",
+            "selects a user return:",
+            "Otherwise continue through the existing Coordinator route",
             "It does not rerun the router, resolver, Review or adoption",
             "what materially changed and why it matters to the objective",
             "the strongest supported conclusion and its important limit",

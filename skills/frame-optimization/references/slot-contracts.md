@@ -4,6 +4,12 @@ Read this reference completely when creating a new A-H contract or materially re
 
 When D, E, or H requires a new or materially revised measurement design, use `design-measurement` and [measurement-design.md](measurement-design.md). The Primary Framing Agent adopts its complete projection without rewriting the professional meaning. Existing-protocol execution and implementation-only repair do not invoke measurement design.
 
+## Implementation-form boundaries
+
+Apply this rule when Slot B would exclude a solution because of its implementation medium or Slot C would make a language, runtime, toolchain, device, material, representation method, or execution medium a hard constraint. The restriction is valid only when required by the problem's semantics or correctness, an applicable safety, legal, physical, or theoretical boundary, a verified external environment, a stable interface that must be preserved, or an adopted user boundary. The current repository, an incumbent or historical implementation, team familiarity, convenient inspection, or an unverified environment assumption does not narrow the legal solution space or create a hard constraint. A W or B may choose one medium for its current realization without redefining the full solution space.
+
+Completion test: A reader can distinguish a legal implementation boundary from the method chosen for one realization.
+
 ## A. Object and instance space
 
 Identify the optimized system, algorithm, structure, or process. Define the task, input space, scale variables, and operating conditions.

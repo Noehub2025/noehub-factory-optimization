@@ -57,13 +57,15 @@ In `verification.md`, make each delivery slice a stable, verifiable obligation w
 
 For any implementation-form restriction that materially affects a slice, apply [Technical design: Constrain effects, not convenient forms](../frontier-optimization/references/technical-design.md#constrain-effects-not-convenient-forms). State the current protection rationale and causal relation; do not optimize the design for an easy syntactic check.
 
+For any condition that can reject the implementation or produce a broader disposition, apply [Frontier Core: Decision-bearing thresholds](../frontier-optimization/references/frontier-core.md#decision-bearing-thresholds). Cite the current owner when the condition belongs to a parent, Measurement Definition, direct B, or execution control. Write a normative threshold in W only when W owns implementation acceptance, and then include its current basis, applicable conditions and statistic, allowed consequence, and reconsideration trigger. Treat the same value under a different workload, aggregation, scope, or consequence as changed meaning. Do not create a second threshold source or ask for routine freshness evidence when the complete meaning is unchanged.
+
 Use schemas, examples, state tables, or sequence descriptions when prose would allow incompatible implementations. State the necessary technical constraints and leave ordinary work methods to the executor.
 
 Apply [Technical design's assignment ownership rule](../frontier-optimization/references/technical-design.md#assign-the-professional-author). Treat incidental workflow wording as context, not professional content. When an unpublished assignment misplaces workflow requirements in Purpose or Scope, coordinate correction with the Coordinator on the same scaffold and continue the authoring task. Preserve explicit constraints with their existing owner. This is ordinary coordination on a discovered conflict, not a routine gate or a formal design failure; it creates no new W, revision, review, Permission, identity or repair artifact. Use the existing return paths only for genuinely unresolved technical or user decisions. Keep Batch continuation with [Boundary-preserving continuation](../frontier-optimization/references/batch-current.md#boundary-preserving-continuation).
 
 Do not write Design map rows, Delivery map rows, `traceability.yaml`, design identities, lifecycle fields, V, B, Selection, Budget, review artifacts, candidate code, or campaign records. The Coordinator generates stable concern and slice bindings without changing professional meaning; it does not assign a future B or internal execution path into Design.
 
-This step is complete when the assigned design files contain one coherent design and no other actor must fill a professional section.
+This step is complete when the assigned design files contain one coherent design, every decision-bearing threshold is either cited from its current owner or owned and grounded once in W, and no other actor must fill a professional section.
 
 ## Finish at cold-read implementability
 

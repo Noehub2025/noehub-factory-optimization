@@ -1,4 +1,4 @@
-contract_version: frontier-direction-resolver-fixtures/5
+contract_version: frontier-direction-resolver-fixtures/7
 # All fields in this file are development fixtures, not a runtime schema.
 scenarios:
   - id: parent-no-frontier-record
@@ -114,12 +114,36 @@ scenarios:
     expected: {row: 11, direction: stop, action: full-closeout}
   - id: candidate-repair-preserves-campaign
     evidence_state: sha256:candidate-repair
-    facts: {evidence_determined: candidate-stop, stop_scope: candidate, repair_within_allocation: true, specialized_gate: execution-V}
-    expected: {row: 11, direction: local R8, action: close-candidate-and-plan-in-generation-repair}
+    facts: {evidence_determined: candidate-stop, stop_scope: candidate, same_independently_judged_result: true, repair_within_allocation: true}
+    expected: {row: 11, direction: local R8, action: retire-revision-and-continue-same-B}
+  - id: candidate-stop-without-same-result
+    evidence_state: sha256:candidate-stop-only
+    facts: {evidence_determined: candidate-stop, stop_scope: candidate}
+    expected: {row: 11, direction: local R8, action: retire-candidate-revision-only}
+  - id: exact-failure-direct-alternative
+    evidence_state: sha256:exact-failure-direct-alternative
+    facts: {prior_failure_scope: exact-realization, routine_r8: continue-same-B-with-alternative-realization}
+    expected: {row: 13, direction: local R8, action: continue-same-B-with-alternative-realization}
+  - id: current-methods-deferred-with-reopening
+    evidence_state: sha256:current-methods-deferred
+    facts: {current_reachable_methods_exhausted: true, reopening_condition: new-method-or-boundary-evidence, routine_r8: defer-route-until-reopening-condition}
+    expected: {row: 13, direction: local R8, action: defer-route-until-reopening-condition}
+  - id: repaired-revision-keeps-external-gate
+    evidence_state: sha256:repaired-revision-external-gate
+    facts: {new_candidate_revision: true, specialized_gate: external-publication-permission}
+    expected: {row: 12, direction: blocked, action: require-external-publication-permission}
   - id: route-stop-preserves-campaign
     evidence_state: sha256:route-stop
     facts: {evidence_determined: route-stop, stop_scope: route, surviving_route: T-next}
     expected: {row: 11, direction: local R8, action: close-route-and-select-surviving-action}
+  - id: route-stop-grounded-concern
+    evidence_state: sha256:route-stop-grounded-concern
+    facts: {evidence_determined: route-stop, stop_scope: route, selected_landscape_work: route-landscape-Q, grounded_concern: decision-changing-mechanism-gap}
+    expected: {row: 7, direction: route-landscape Q, action: route-landscape-Q}
+  - id: route-stop-no-worthwhile-action
+    evidence_state: sha256:route-stop-no-worthwhile-action
+    facts: {evidence_determined: route-stop, stop_scope: route, no_worthwhile_action: true}
+    expected: {row: 11, direction: stop, action: full-closeout}
   - id: specialized-implementation-gate
     evidence_state: sha256:specialized-implementation
     facts: {specialized_gate: implementation-review}

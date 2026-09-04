@@ -71,6 +71,10 @@ Working material stays mutable until exact bytes are selected for a check or act
 
 When practice disproves a load-bearing technical assumption, pause only dependent work and return the finding to the existing design owner. A revised design and applicable Review may continue in the same B when the independently judged result remains unchanged. When a local defect or support defect is repairable, repair and rerun only affected checks. Do not turn the defect into a new B, Generation, Permission, charge, or full review chain.
 
+Apply [Decision-bearing thresholds](frontier-core.md#decision-bearing-thresholds) before a threshold changes the Batch's disposition. When the current normative owner and complete threshold meaning are unchanged but Entry, execution, or a check bound them incorrectly, fix the derived binding in the same B and rerun only affected checks. Repeat Entry only if its reviewed decision meaning changed; do not revise W. When the normative threshold or its meaning must change, revise its existing owner in scope; a W-owned change receives one applicable Design Review and continues in the same B. Repeat Entry only when the next actual decision changes, and ask the user only when the change crosses a user-owned boundary.
+
+A cheap diagnostic may skip later work only when its current owner explicitly gives it that consequence under the observed conditions. Otherwise retain the observation, repair or calibrate the affected threshold if needed, and continue every unaffected action. Apply [Finding effects](finding-effects.md#finding-effects); do not turn a diagnostic failure or stale copied constant into route failure or `technical no-path`.
+
 An unresolved actual effect, exhausted limit, unavailable required input, or repeated unchanged deterministic failure blocks only the affected action. State the observed fact and recovery condition. A finding, tool error, or process interruption does not close the B automatically.
 
 ## Perform an action

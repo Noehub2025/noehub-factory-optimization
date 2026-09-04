@@ -834,7 +834,7 @@ class FrontierSkillBundleTests(unittest.TestCase):
                 "`IMPLEMENTATION_READY` applies only to the reviewed Git bytes",
             ),
             "learning": (
-                "A pre-publication engineering-check failure has not entered this resolver path",
+                "A pre-publication engineering-check failure remains ordinary same-B work",
             ),
         }
         for role, markers in required.items():

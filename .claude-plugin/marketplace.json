@@ -12,7 +12,7 @@
     {
       "name": "noehub-factory-optimization",
       "source": "./",
-      "version": "0.25.0",
+      "version": "0.26.0",
       "description": "Frame optimization problems, iterate within explicit limits, and turn closed generations into search advantage.",
       "category": "engineering",
       "keywords": [

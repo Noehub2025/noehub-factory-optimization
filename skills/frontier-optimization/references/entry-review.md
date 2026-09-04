@@ -34,6 +34,8 @@ Judge only whether the proposed decision is technically coherent and reachable u
 - that existing V covers every protected Consequence, or that the exact missing user boundary is identified; and
 - that result branches, claim limits and recovery conditions match the evidence the action can produce.
 
+Apply [Decision-bearing thresholds](frontier-core.md#decision-bearing-thresholds) only when the next actual Consequence depends on one and Entry changes or transcribes its predicate. Reuse an exact current-owner reference without a freshness review when its complete meaning is unchanged. If Entry changes the meaning, return it to the existing owner; if Entry merely copied or bound it incorrectly, repair that derived check without treating the work, route, or owner as invalid.
+
 A positive Review establishes Entry readiness only. It does not create Permission, execute work, allocate another B, create E or strengthen a claim. Exact Batch operational caps are runtime controls and may be revised without repeating Entry while the reviewed decision, governing limits, protected reserve, strategic allocation, Measurement Definition and expected Consequences remain unchanged. When an existing V applies, the Coordinator continues without asking the user. When a genuine user boundary is missing, apply [User decisions](user-decisions.md) and ask only for that boundary.
 
 Use these current outcomes:

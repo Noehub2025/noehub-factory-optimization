@@ -94,7 +94,7 @@ class FrameSkillBundleTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
         self.assertIn("the smallest affected scope (`candidate`, `route`, or `campaign`)", contract)
-        self.assertIn("the exact identities and authority that survive", contract)
+        self.assertIn("the exact material and authority that survive", contract)
         self.assertIn("stop scope, surviving authority", documents)
 
     def test_single_user_return_contract_is_referenced_from_core_paths(self) -> None:

@@ -107,18 +107,25 @@ def resolve_persisted_facts(scenario: dict) -> tuple[int, str, str]:
     if evidence:
         if evidence.endswith("-stop"):
             stop_scope = facts.get("stop_scope")
-            outcomes = {
-                "candidate": (
-                    "local R8",
-                    "close-candidate-and-plan-in-generation-repair",
-                ),
-                "route": ("local R8", "close-route-and-select-surviving-action"),
-                "campaign": ("stop", "full-closeout"),
-            }
-            if stop_scope not in outcomes:
+            if stop_scope == "candidate":
+                if facts.get("same_independently_judged_result") is True:
+                    return (
+                        11,
+                        "local R8",
+                        "retire-revision-and-continue-same-B",
+                    )
+                return 11, "local R8", "retire-candidate-revision-only"
+            if stop_scope == "route":
+                if facts.get("surviving_route") or facts.get("surviving_action"):
+                    return 11, "local R8", "close-route-and-select-surviving-action"
+                if facts.get("no_worthwhile_action") is True:
+                    return 11, "stop", "full-closeout"
+                raise ValueError(
+                    "route stop requires a surviving action, selected concern, or campaign closeout"
+                )
+            if stop_scope != "campaign":
                 raise ValueError("evidence-determined stop requires exact stop_scope")
-            direction, action = outcomes[stop_scope]
-            return 11, direction, action
+            return 11, "stop", "full-closeout"
         return 11, "strategic replan", "require-REPLAN_READY"
 
     gate = facts.get("specialized_gate")
@@ -168,6 +175,8 @@ def determined_action(entry: dict) -> str | None:
     """Model reuse of an adopted rule, not a Coordinator's fresh preference."""
 
     rule = entry.get("adopted_rule")
+    if rule and rule.get("condition_kind") == "absence-fallback":
+        return None
     if rule and set(rule["requires"]) <= set(entry.get("adopted_facts", [])):
         return rule["action"]
     decision = entry.get("adopted_resolution")
@@ -336,7 +345,11 @@ def test_exact_fixtures_cover_every_row_and_material_branches() -> None:
     assert by_id["protected-reserve-zero-spend-replan"]["expected"]["action"] == "prepare-replan-no-spend"
     assert by_id["unresolved-prerequisite-first"]["expected"]["action"] == "prerequisite-first-check"
     assert by_id["evidence-determines-stop"]["expected"]["action"] == "full-closeout"
-    assert by_id["candidate-repair-preserves-campaign"]["expected"]["action"] == "close-candidate-and-plan-in-generation-repair"
+    assert by_id["candidate-repair-preserves-campaign"]["expected"]["action"] == "retire-revision-and-continue-same-B"
+    assert by_id["candidate-stop-without-same-result"]["expected"]["action"] == "retire-candidate-revision-only"
+    assert by_id["exact-failure-direct-alternative"]["expected"]["row"] == 13
+    assert by_id["current-methods-deferred-with-reopening"]["expected"]["row"] == 13
+    assert by_id["repaired-revision-keeps-external-gate"]["expected"]["row"] == 12
     assert by_id["route-stop-preserves-campaign"]["expected"]["action"] == "close-route-and-select-surviving-action"
     assert by_id["specialized-user-authorization"]["expected"]["action"] == "require-execution-V"
     assert by_id["routine-unique-r8"]["expected"]["direction"] == "local R8"
@@ -586,6 +599,56 @@ def test_precommitted_switch_exempts_comparison_but_keeps_existing_gates() -> No
     for extra in ({"hard_block": "authority"}, {"budget_block": "exact-blocker"}):
         facts = {**pair["facts"], **extra}
         assert resolve_persisted_facts({"facts": facts})[0] in {2, 5}
+
+
+def test_absence_fallback_cannot_self_establish_determined_action() -> None:
+    entry = {
+        "adopted_rule": {
+            "requires": [],
+            "action": "preserve-frontier",
+            "condition_kind": "absence-fallback",
+        },
+        "unresolved_allocation": True,
+    }
+    assert determined_action(entry) is None
+    assert comparison_required(entry) is True
+
+
+def test_route_stop_requires_continuation_or_campaign_closeout() -> None:
+    by_id = {item["id"]: item for item in load_contract()["scenarios"]}
+    assert resolve_persisted_facts(by_id["route-stop-preserves-campaign"]) == (
+        11,
+        "local R8",
+        "close-route-and-select-surviving-action",
+    )
+    assert resolve_persisted_facts(by_id["route-stop-grounded-concern"]) == (
+        7,
+        "route-landscape Q",
+        "route-landscape-Q",
+    )
+    assert resolve_persisted_facts(by_id["route-stop-no-worthwhile-action"]) == (
+        11,
+        "stop",
+        "full-closeout",
+    )
+    with pytest.raises(ValueError, match="surviving action, selected concern"):
+        resolve_persisted_facts(
+            {"facts": {"evidence_determined": "route-stop", "stop_scope": "route"}}
+        )
+
+
+def test_running_return_and_no_action_recovery_contracts_are_closed() -> None:
+    skill_root = Path(__file__).parent.parent
+    skill = (skill_root / "SKILL.md").read_text()
+    state = (skill_root / "references/campaign-state.md").read_text()
+    handoff = (skill_root / "references/user-facing-handoff.md").read_text()
+    core = (skill_root / "references/frontier-core.md").read_text()
+
+    assert "A route-scoped result does not complete a continuing task." in skill
+    assert "it is not a durable completion state for a continuing task" in state
+    assert "A running campaign with no selected next action is transitional" in handoff
+    assert "A boundary affecting only one action does not end independent permitted work" in handoff
+    assert "An ordinary `continue` is not that event" in core
 
 
 def test_comparison_can_exit_at_row13_and_be_consumed_without_rerunning() -> None:

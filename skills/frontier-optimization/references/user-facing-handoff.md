@@ -1,8 +1,10 @@
 # User-facing handoff
 
-Load when [Continuing task and stage instructions](user-decisions.md#continuing-task-and-stage-instructions) selects a user return. Otherwise continue through the existing Coordinator route.
+Load when [Continuing task and stage instructions](user-decisions.md#continuing-task-and-stage-instructions) selects a user return: the requested bounded deliverable is complete; the user explicitly pauses or requests reporting; a user-owned decision blocks every remaining worthwhile action; or no safe, reachable and worthwhile action remains and the campaign has entered closeout. A boundary affecting only one action does not end independent permitted work. Otherwise continue through the existing Coordinator route.
 
 This pass formats accepted persisted state. It does not rerun the router, resolver, Review or adoption.
+
+A running campaign with no selected next action is transitional, not a return boundary. Continue direction resolution or close the campaign; do not present `preserve_frontier` as its investment or wait for the user to supply a technical target.
 
 ## Completion check
 
