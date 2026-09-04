@@ -131,21 +131,23 @@ Pin F1-F4, F7, and F8. F5 and F6 may remain provisional or not relevant when the
 
 ## 9. Review the Entry decision
 
-Load [Entry review](entry-review.md). Keep planning edits mutable until the complete version is ready, run ordinary deterministic checks, then save the exact subject in Git. Invoke `review-frontier` in a fresh context and record one R against that commit and path set. For a corrected Entry, supply the prior finding and saved version plus a short change explanation, and assign [Entry repair review](entry-review.md#entry-repair-review), not a restart of unaffected work. Supply no expected verdict or mandatory repair method.
+Use [Entry review](entry-review.md) to decide whether the next actual Consequence needs independent Entry judgment. If it applies, keep planning edits mutable until the complete version is ready, run ordinary deterministic checks, save the exact subject in Git, and invoke `review-frontier` once in a fresh context. For a corrected Entry, supply the prior finding and saved version plus a short change explanation, and assign [Entry repair review](entry-review.md#entry-repair-review), not a restart of unaffected work. Supply no expected verdict or mandatory repair method.
+
+If Entry Review does not apply, record that fact in the existing Entry decision and create no R or substitute verdict. A first B, measurement label, new candidate, or repeatable public local observation does not by itself require independent Entry judgment.
 
 Preserve every R at its saved Git version. Repair an `ENTRY_REPAIR_REQUIRED` draft, including deterministic defects, before submitting its corrected complete version for the scoped review above. A deterministic defect alone does not require a workflow-development task or another repair artifact. Obtain named evidence for an evidence-backed blocker and return parent conflicts upstream. When the Review identifies one missing user boundary, apply [User decisions](user-decisions.md), ask that question once and record V. An affirmative V permits only its stated Consequences and limits; a decline grants none. When an existing V applies, `ENTRY_READY` proceeds directly. Apply the reviewed Selection and Budget transition without creating an adoption artifact or authority identity.
 
-Append `FIRST_BATCH_PLANNED` only after direct `ENTRY_READY` or exact post-answer adoption. Include campaign generation, applicable Review and V when needed, parents, selected B records, inherited and Entry-cost accounting, and zero-B-spend consequence. Do not execute the B. Historical Entries retain their original readiness snapshot and adoption chain; a current Entry does not create that chain.
+Append `FIRST_BATCH_PLANNED` after applicable `ENTRY_READY` or after recording that no Entry Review applies. Include campaign generation, applicable Review and V when needed, parents, selected B records, inherited and Entry-cost accounting, and zero-B-spend consequence. Do not execute the B inside this planning stage. Historical Entries retain their original readiness snapshot and adoption chain; a current Entry does not create that chain.
 
 ## Record one outcome, then finalize the return
 
 Record exactly one stage outcome:
 
-- `FIRST_BATCH_PLANNED`: complete Entry, unchanged readiness authority and `ENTRY_READY` adoption, zero new-generation B spend, and reconciled inherited and Entry cost;
+- `FIRST_BATCH_PLANNED`: complete Entry, applicable `ENTRY_READY` adoption or no applicable Entry Review, zero new-generation B spend, and reconciled inherited and Entry cost;
 - `CLOSEOUT_REQUIRED`: a valid pre-spend stop or halt applies;
 - `PARENT_REVIEW_REQUIRED`: parent authority or meaning is missing, stale, or ambiguous;
 - `BLOCKED`: required authority, private facts, tools, data, or access are unavailable.
 
 Return the recorded stage outcome to the Coordinator, which applies the requested completion boundary and existing router. This stage's no-execution boundary does not end a broader request; a planning-only request still stops before execution.
 
-Entry is complete only when project records reconstruct campaign generation, Coordinator-derived objective when applicable, retained-result references, route generation, decision completeness, prerequisite dispositions, baseline choice, replacement boundary, inherited Budget, applicable Entry Review and V, selected work, earliest discriminating check, code gates and zero-B-spend boundary. Technical work proceeds without a separate exact-execution authorization when those owners already cover it.
+Entry is complete only when project records reconstruct campaign generation, Coordinator-derived objective when applicable, retained-result references, route generation, decision completeness, prerequisite dispositions, baseline choice, replacement boundary, inherited Budget, applicable Entry Review or its non-applicability, applicable V, selected work, earliest discriminating check, code gates and zero-B-spend boundary. Technical work proceeds without a separate exact-execution authorization when those owners already cover it.

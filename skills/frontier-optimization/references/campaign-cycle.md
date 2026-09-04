@@ -60,7 +60,7 @@ Use [Entry review](entry-review.md) only when a fresh technical or value decisio
 
 Before a measurement or Consequence, call `Batch.perform`. It reads the Batch-owned Measurement Definition when applicable, verifies the selected Git revision, required checks, R applicability, protected-Consequence V coverage, Batch operational limits, the Measurement Definition resource ceiling, V-owned resource limits and prior Attempts. Ask the user only when the action crosses an uncovered boundary in [User decisions](user-decisions.md). A changed internal method, local limit or Candidate Revision does not itself require another question.
 
-If the operation can be repeated safely and has no measurement or Consequence, use `Batch.apply` and continue. If repetition could duplicate an effect, `Batch.perform` creates a local Attempt before invoking the adapter. A blocked precheck creates no Attempt. An operation failure after start leaves the Attempt `uncertain` and blocks only repetition of the affected action until reconciled.
+If the operation can be repeated safely and has no measurement or Consequence, use `Batch.apply` and continue. If repetition could duplicate an effect, `Batch.perform` creates a local Attempt before invoking the adapter. A blocked precheck creates no Attempt. An operation failure after start leaves the Attempt `uncertain`. Until reconciliation, it blocks another `Batch.perform` in that B; ordinary `Batch.apply` work and other B records continue. For single-use work, [Current Batch measurement](batch-evaluation.md) protects the actual unit across Action-key changes.
 
 Historical B records continue through their recorded packet and dispatch contracts. Do not convert them or make those contracts requirements for a current B.
 
@@ -75,7 +75,7 @@ Historical B records continue through their recorded packet and dispatch contrac
 | A measurement request exceeds its Measurement Definition resource ceiling | Block before the adapter starts and record no Attempt. Revise the existing measurement contract through its applicable owner only if the evidence justifies different exposure or meaning; do not treat the ceiling as Campaign Budget or user authority. |
 | A V-owned resource exceeds its applicable user boundary | Block before the adapter starts; reuse current V when it covers the action, otherwise ask only for the boundary that must change. |
 | Governing campaign capacity or protected reserve cannot fund the next sufficient commitment | Enter resolver row 5. A strategic reallocation of available capacity enters row 10; neither case is caused by an agent estimate or Batch operational cap alone. |
-| An adapter fails after an Attempt starts | Mark that Attempt `uncertain`, preserve known effects, and prohibit blind repetition until reconciled. |
+| An adapter fails after an Attempt starts | Mark that Attempt `uncertain`, preserve known effects, and block another `Batch.perform` in that B until reconciled; continue routine changes and other B records. |
 | An operation reports more use or a different Consequence than declared | Preserve actual facts, flag the contract violation, and block dependent use; do not rewrite the record to match the plan. |
 | Unrelated files, workflow deployment, caches, or working notes change | Continue unless they are selected inputs or change an owning decision. |
 | A historical B already has packet and execution identities | Validate that B with its historical compatibility reader; do not generate those identities for current work. |

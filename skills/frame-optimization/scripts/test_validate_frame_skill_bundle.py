@@ -78,7 +78,9 @@ class FrameSkillBundleTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
         self.assertIn("An unknown proxy can remain compact", contract)
-        self.assertIn("when reusable measurement meaning changes, a proxy controls selection or material investment", contract)
+        self.assertIn("when reusable measurement meaning changes, a proxy controls material investment", contract)
+        self.assertIn("Adaptive reuse by itself does not expand the design", contract)
+        self.assertIn("It may use prior development evidence", contract)
         self.assertIn("Repetition alone is not adaptive reuse", (
             SKILL_ROOT.parent / "design-measurement/SKILL.md"
         ).read_text(encoding="utf-8"))
@@ -156,7 +158,9 @@ class FrameSkillBundleTests(unittest.TestCase):
         self.assertNotIn("sequencing gate", contract)
         self.assertNotIn("conditional authority", contract)
         self.assertNotIn("Git commit", contract)
-        self.assertIn("make implementation review the sequencing gate", coordinator)
+        self.assertIn("When the trigger above applies", coordinator)
+        self.assertIn("Both conditions are required", coordinator)
+        self.assertIn("uses focused checks inside the current B without independent support review", coordinator)
         self.assertIn("retain their separate readiness checks", coordinator)
         self.assertIn("request another authorization only when the run falls outside the grant", coordinator)
         self.assertIn("allowed file set, required behavior", coordinator)

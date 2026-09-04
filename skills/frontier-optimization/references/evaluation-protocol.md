@@ -14,7 +14,7 @@ Calibrate once per protocol version when calibration can change whether results 
 - `routine-local` applies a reusable local screen to the current material and produces B evidence.
 - `formal-slot-h` applies the parent-defined comparison and may produce E only after Result Adoption establishes comparison validity.
 
-All three modes use the Batch-owned Measurement Definition, Attempt and actual resource accounting. A protocol reference may identify shared method meaning, but it does not own execution, Permission, candidate bytes, results or a single-use slot.
+All three modes use the Batch-owned Measurement Definition, Attempt and actual resource accounting. Mode determines evidence use only; it does not make an action repeatable or single-use, trigger Review, or create Permission. A protocol reference may identify shared method meaning, but it does not own execution, Permission, candidate bytes, results or a single-use slot.
 
 ## Structured evidence ceiling
 
@@ -28,8 +28,8 @@ The Measurement Definition states the exact evidence and interpretation limits. 
 
 A routine or diagnostic result cannot satisfy formal comparison validity, establish general improvement, support promotion or authorize another action. A formal result cannot exceed its parent measurement and claim limits.
 
-## Non-repeatable units
+## Single-use units
 
-The Measurement Definition names the unit, owner and consumption control. `Batch.perform` binds the unit to the consuming Attempt before the effect. Workflow-owned units need no V merely because they are single-use. User-owned private, scarce or unrecoverable units require applicable V coverage.
+Only when the Action or adapter declares `single_use_consumption`, the Measurement Definition names `nonrepeatable_unit`, its `resource_owner`, and `consumption_control`; otherwise those fields are absent. `Batch.perform` binds the actual unit to the consuming Attempt before the effect and rejects reuse across Action-key changes. Workflow-owned units need no V merely because they are single-use. User-owned private, scarce or unrecoverable units require applicable V coverage.
 
 Historical `evaluation_target`, `freeze_execution`, live-receipt and slot-index contracts remain read-only compatibility data. Do not use them to admit a current measurement.

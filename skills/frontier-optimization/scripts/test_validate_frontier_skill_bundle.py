@@ -299,7 +299,7 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "Every stop consequence has one exact scope",
             "Unknown cost of this stage or its unavoidable commitments is not affordable",
             "Do not ask the user to choose a technical diagnostic",
-            "same H measurement for the same unresolved target relationship and pending investment question",
+            "Public repeatable development evidence may guide hypothesis generation",
             "Make no trajectory, route, or parent inference that depends on the unresolved validity",
             "one additional evidence-completion round only through row 7 or row 8",
             "further retrieval is unlikely to change that allocation",
@@ -893,6 +893,63 @@ class FrontierSkillBundleTests(unittest.TestCase):
         ):
             with self.subTest(prohibited_consequence=prohibited_consequence):
                 self.assertIn(prohibited_consequence, lifecycle)
+
+    def test_measurement_assurance_follows_actual_consequence(self) -> None:
+        skills_root = SCRIPT.parents[2]
+        current = (
+            skills_root / "frontier-optimization/references/batch-current.md"
+        ).read_text()
+        evaluation = (
+            skills_root / "frontier-optimization/references/batch-evaluation.md"
+        ).read_text()
+        protocol = (
+            skills_root / "frontier-optimization/references/evaluation-protocol.md"
+        ).read_text()
+        worker = (
+            skills_root / "frontier-optimization/references/worker-interfaces.md"
+        ).read_text()
+        support = (
+            skills_root / "frame-optimization/references/measurement-work.md"
+        ).read_text()
+        representation = (
+            skills_root / "frame-optimization/references/representation-contracts.md"
+        ).read_text()
+        learning = (
+            skills_root / "frontier-optimization/references/learning-loop.md"
+        ).read_text()
+
+        for document in (current, evaluation, protocol, worker):
+            with self.subTest(document=document[:80]):
+                self.assertIn("only", document.lower())
+                self.assertIn("single_use_consumption", document)
+        self.assertIn("The mode controls evidence use only", current)
+        self.assertIn("Omit those fields when there is no real single-use unit", evaluation)
+        self.assertIn("Both conditions are required", support)
+        self.assertIn("without independent support review", support)
+        self.assertIn("public repeatable development evidence", representation.lower())
+        self.assertIn("Prefer the cheapest interpretable observation", learning)
+        self.assertIn("when they overwhelm the observation's decision value", learning)
+        self.assertNotIn(
+            "same H measurement for the same unresolved target relationship",
+            learning,
+        )
+
+    def test_first_batch_planning_does_not_invent_entry_review(self) -> None:
+        planning = (
+            SCRIPT.parents[2]
+            / "frontier-optimization/references/entry-and-planning.md"
+        ).read_text()
+
+        self.assertIn("If Entry Review does not apply", planning)
+        self.assertIn("create no R or substitute verdict", planning)
+        self.assertIn(
+            "applicable `ENTRY_READY` adoption or no applicable Entry Review",
+            planning,
+        )
+        self.assertIn(
+            "This stage's no-execution boundary does not end a broader request",
+            planning,
+        )
 
 
 if __name__ == "__main__":

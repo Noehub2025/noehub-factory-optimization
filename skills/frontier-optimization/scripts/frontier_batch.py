@@ -403,6 +403,11 @@ class Batch:
                 action,
                 operation.protected_consequences,
             )
+            _validate_single_use_contract(
+                measurement_definition,
+                action,
+                operation.protected_consequences,
+            )
             _verify_resources(state, action.requested_resources)
             if measurement_definition is not None:
                 _verify_measurement_resources(
@@ -415,7 +420,12 @@ class Batch:
                 action,
                 operation.protected_consequences,
             )
-            _verify_repeat(state, action)
+            _verify_repeat(
+                state,
+                action,
+                measurement_definition,
+                operation.protected_consequences,
+            )
 
             needs_attempt = bool(
                 measurement_definition
@@ -817,11 +827,14 @@ def _apply_change(
                     )
             updated["resource_limits"] = limits
         if change.measurement_definition is not None:
+            normalized_definition = _normalize_measurement_definition(
+                change.measurement_definition
+            )
             _validate_measurement_definition(
-                change.measurement_definition,
+                normalized_definition,
                 require_resource_ceiling=True,
             )
-            ceiling = _measurement_resource_ceiling(change.measurement_definition)
+            ceiling = _measurement_resource_ceiling(normalized_definition)
             for key, consumed in _measurement_capacity_consumption(updated).items():
                 if key in ceiling and ceiling[key] < consumed:
                     raise ChangeRejected(
@@ -829,7 +842,7 @@ def _apply_change(
                         "recorded measurement capacity use"
                     )
             updated["current"]["measurement_definition"] = copy.deepcopy(
-                dict(change.measurement_definition)
+                normalized_definition
             )
         if change.reopen:
             updated["current"]["status"] = "open"
@@ -1184,7 +1197,39 @@ def _verify_requested_within_permission_limits(
             )
 
 
-def _verify_repeat(state: Mapping[str, Any], action: Action) -> None:
+def _verify_repeat(
+    state: Mapping[str, Any],
+    action: Action,
+    measurement_definition: Mapping[str, Any] | None,
+    adapter_consequences: tuple[str, ...],
+) -> None:
+    single_use_declared = "single_use_consumption" in (
+        set(action.possible_consequences) | set(adapter_consequences)
+    )
+    current_unit = (
+        _measurement_nonrepeatable_unit(measurement_definition)
+        if single_use_declared
+        else None
+    )
+    if current_unit is not None:
+        for attempt in state["attempts"]:
+            prior_definition = attempt.get("measurement_definition")
+            if not isinstance(prior_definition, Mapping):
+                continue
+            if _measurement_nonrepeatable_unit(prior_definition) != current_unit:
+                continue
+            if attempt.get("status") in {"running", "uncertain"}:
+                raise ConsequenceUncertain(
+                    f"single-use unit {current_unit!r} has an unresolved prior Attempt"
+                )
+            if any(
+                consequence.get("kind") == "single_use_consumption"
+                for consequence in attempt.get("actual_consequences", ())
+                if isinstance(consequence, Mapping)
+            ):
+                raise ConsequenceBlocked(
+                    f"single-use unit {current_unit!r} was already consumed"
+                )
     if action.repeatable:
         return
     for attempt in state["attempts"]:
@@ -1588,6 +1633,85 @@ def _measurement_resource_ceiling(
     )
 
 
+def _measurement_nonrepeatable_unit(
+    value: Mapping[str, Any] | None,
+) -> str | None:
+    """Read the current key and its historical alias without changing history."""
+
+    if value is None:
+        return None
+    canonical_present = "nonrepeatable_unit" in value
+    alias_present = "non_repeatable_unit" in value
+    if not canonical_present and not alias_present:
+        return None
+    canonical = value.get("nonrepeatable_unit") if canonical_present else None
+    alias = value.get("non_repeatable_unit") if alias_present else None
+    if canonical_present:
+        _require_text(canonical, "measurement_definition.nonrepeatable_unit")
+    if alias_present:
+        _require_text(alias, "measurement_definition.non_repeatable_unit")
+    if canonical_present and alias_present and canonical != alias:
+        raise BatchFormatError(
+            "measurement_definition nonrepeatable_unit aliases disagree"
+        )
+    unit = str(canonical if canonical_present else alias)
+    if unit.strip().lower() in {"none", "not applicable", "n/a"}:
+        raise BatchFormatError(
+            "omit the nonrepeatable unit when no real single-use unit exists"
+        )
+    return unit
+
+
+def _normalize_measurement_definition(value: Mapping[str, Any]) -> dict[str, Any]:
+    """Write the canonical unit key while accepting the historical alias."""
+
+    if not isinstance(value, Mapping):
+        raise BatchFormatError("measurement_definition must be a nonempty mapping")
+    normalized = copy.deepcopy(dict(value))
+    unit = _measurement_nonrepeatable_unit(normalized)
+    normalized.pop("non_repeatable_unit", None)
+    if unit is not None:
+        normalized["nonrepeatable_unit"] = unit
+    return normalized
+
+
+def _validate_single_use_contract(
+    measurement_definition: Mapping[str, Any] | None,
+    action: Action,
+    adapter_consequences: tuple[str, ...],
+) -> None:
+    """Require single-use controls only when the action can consume such a unit."""
+
+    consequences = set(action.possible_consequences) | set(adapter_consequences)
+    if "single_use_consumption" not in consequences:
+        return
+    if measurement_definition is None:
+        raise ConsequenceBlocked(
+            "single-use consumption requires a measurement Action and Measurement Definition"
+        )
+    try:
+        if _measurement_nonrepeatable_unit(measurement_definition) is None:
+            raise BatchFormatError(
+                "measurement_definition.nonrepeatable_unit is required"
+            )
+        owner = measurement_definition.get("resource_owner")
+        _require_text(owner, "measurement_definition.resource_owner")
+        if owner not in {"workflow", "user"}:
+            raise BatchFormatError(
+                "measurement_definition.resource_owner must be workflow or user"
+            )
+        _require_text(
+            measurement_definition.get("consumption_control"),
+            "measurement_definition.consumption_control",
+        )
+    except BatchFormatError as exc:
+        raise ConsequenceBlocked(str(exc)) from exc
+    if action.repeatable:
+        raise ConsequenceBlocked(
+            "an Action that may consume a single-use unit must not be repeatable"
+        )
+
+
 def _validate_measurement_definition(
     value: Any,
     *,
@@ -1599,6 +1723,7 @@ def _validate_measurement_definition(
         return
     if not isinstance(value, Mapping) or not value:
         raise BatchFormatError("measurement_definition must be a nonempty mapping")
+    _measurement_nonrepeatable_unit(value)
     if require_resource_ceiling or "resource_ceiling" in value:
         _measurement_resource_ceiling(value)
     required = value.get("required_context_keys")

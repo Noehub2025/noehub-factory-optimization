@@ -27,6 +27,7 @@ from frontier_batch import (
     OperationContractViolation,
     PermissionAssessment,
     RecordCheck,
+    RecordObservation,
     ReconcileAttempt,
     ReviseBatch,
     ReviewAssessment,
@@ -142,9 +143,6 @@ class BatchModuleTests(unittest.TestCase):
             "metric": "score",
             "scope": "local",
             "resource_ceiling": {"runs": 2},
-            "nonrepeatable_unit": "one scheduled run",
-            "resource_owner": "workflow",
-            "consumption_control": "Attempt",
             "execution_owner": "test adapter",
             "evidence_limit": "Batch evidence only",
             "interpretation_limit": "No broader performance claim",
@@ -152,6 +150,15 @@ class BatchModuleTests(unittest.TestCase):
         }
         definition.update(overrides)
         return definition
+
+    def _single_use_measurement(self, **overrides) -> dict:
+        fields = {
+            "nonrepeatable_unit": "one scheduled run",
+            "resource_owner": "workflow",
+            "consumption_control": "Attempt",
+        }
+        fields.update(overrides)
+        return self._measurement(**fields)
 
     def test_routine_revisions_and_candidate_changes_stay_in_one_batch(self) -> None:
         batch = self._defined_batch()
@@ -326,6 +333,50 @@ class BatchModuleTests(unittest.TestCase):
             observed,
             ["diagnostic-only", "routine-local", "formal-slot-h"],
         )
+
+    def test_repeatable_public_measurement_needs_no_single_use_fields_or_governance(self) -> None:
+        calls: list[str] = []
+
+        def measure(action: Action, context: dict) -> OperationResult:
+            calls.append(action.key)
+            return OperationResult(status="completed", resource_use={"runs": 1})
+
+        batch = self._defined_batch(
+            operations={"measure": self._operation(measure)},
+            resource_limits={"runs": 2},
+            expected_consequences=(),
+        )
+        definition = self._measurement(
+            mode="routine-local",
+            resource_ceiling={"runs": 2},
+        )
+        batch.apply(
+            ReviseBatch(
+                rationale="Use a repeatable public screen.",
+                measurement_definition=definition,
+            )
+        )
+        action = Action(
+            key="public-screen",
+            operation="measure",
+            kind="measurement",
+            requested_resources={"runs": 1},
+            repeatable=True,
+        )
+
+        batch.perform(action)
+        outcome = batch.perform(action)
+
+        self.assertEqual(calls, ["public-screen", "public-screen"])
+        self.assertEqual(len(outcome.view.data["attempts"]), 2)
+        self.assertEqual(outcome.view.data["consumption"], {"runs": 2})
+        for field in (
+            "nonrepeatable_unit",
+            "non_repeatable_unit",
+            "resource_owner",
+            "consumption_control",
+        ):
+            self.assertNotIn(field, definition)
 
     def test_operational_limit_can_be_revised_before_any_attempt(self) -> None:
         calls: list[str] = []
@@ -621,7 +672,10 @@ class BatchModuleTests(unittest.TestCase):
         batch.apply(
             ReviseBatch(
                 rationale="Use workflow-owned development evidence.",
-                measurement_definition=self._measurement(resource_owner="workflow"),
+                measurement_definition=self._single_use_measurement(
+                    nonrepeatable_unit="workflow sample",
+                    resource_owner="workflow",
+                ),
             )
         )
         batch.perform(
@@ -637,7 +691,10 @@ class BatchModuleTests(unittest.TestCase):
         batch.apply(
             ReviseBatch(
                 rationale="Use a user-controlled scarce sample.",
-                measurement_definition=self._measurement(resource_owner="user"),
+                measurement_definition=self._single_use_measurement(
+                    nonrepeatable_unit="user sample",
+                    resource_owner="user",
+                ),
             )
         )
         with self.assertRaisesRegex(
@@ -666,6 +723,231 @@ class BatchModuleTests(unittest.TestCase):
 
         self.assertEqual(calls, ["workflow-sample", "user-sample"])
 
+    def test_single_use_contract_is_required_only_at_a_single_use_action(self) -> None:
+        calls: list[str] = []
+
+        def consume(action: Action, context: dict) -> OperationResult:
+            calls.append(action.key)
+            return OperationResult(
+                status="completed",
+                consequences=(Consequence("single_use_consumption"),),
+            )
+
+        batch = self._defined_batch(
+            governance=Governance(
+                permitted_consequences=("single_use_consumption",),
+            ),
+            operations={
+                "consume": self._operation(consume, ("single_use_consumption",))
+            },
+            expected_consequences=("single_use_consumption",),
+        )
+        action = Action(
+            key="consume",
+            operation="consume",
+            kind="measurement",
+            possible_consequences=("single_use_consumption",),
+        )
+
+        invalid_definitions = (
+            self._measurement(),
+            self._measurement(nonrepeatable_unit="sample"),
+            self._measurement(
+                nonrepeatable_unit="sample",
+                resource_owner="workflow",
+            ),
+        )
+        for definition in invalid_definitions:
+            with self.subTest(definition=definition):
+                batch.apply(
+                    ReviseBatch(
+                        rationale="Check one incomplete single-use definition.",
+                        measurement_definition=definition,
+                    )
+                )
+                with self.assertRaises(ConsequenceBlocked):
+                    batch.perform(action)
+
+        batch.apply(
+            ReviseBatch(
+                rationale="Complete the single-use definition.",
+                measurement_definition=self._single_use_measurement(),
+            )
+        )
+        with self.assertRaisesRegex(ConsequenceBlocked, "must not be repeatable"):
+            batch.perform(
+                Action(
+                    key="consume",
+                    operation="consume",
+                    kind="measurement",
+                    possible_consequences=("single_use_consumption",),
+                    repeatable=True,
+                )
+            )
+
+        batch.apply(
+            ReviseBatch(
+                rationale="Use a user-owned single-use unit.",
+                measurement_definition=self._single_use_measurement(
+                    resource_owner="user"
+                ),
+            )
+        )
+        with self.assertRaisesRegex(
+            ConsequenceBlocked,
+            "require an applicable Permission",
+        ):
+            batch.perform(action)
+
+        self.assertEqual(calls, [])
+        self.assertEqual(batch.view.data["attempts"], [])
+
+    def test_single_use_unit_cannot_be_bypassed_by_changing_action_key(self) -> None:
+        calls: list[str] = []
+
+        def consume(action: Action, context: dict) -> OperationResult:
+            calls.append(action.key)
+            return OperationResult(
+                status="completed",
+                consequences=(Consequence("single_use_consumption"),),
+            )
+
+        batch = self._defined_batch(
+            operations={
+                "consume": self._operation(consume, ("single_use_consumption",))
+            },
+            expected_consequences=("single_use_consumption",),
+        )
+        batch.apply(
+            ReviseBatch(
+                rationale="Name the actual single-use unit.",
+                measurement_definition=self._single_use_measurement(
+                    nonrepeatable_unit="fixed public schedule"
+                ),
+            )
+        )
+        first = Action(
+            key="schedule-a",
+            operation="consume",
+            kind="measurement",
+            possible_consequences=("single_use_consumption",),
+        )
+        batch.perform(first)
+
+        with self.assertRaisesRegex(ConsequenceBlocked, "already consumed"):
+            batch.perform(
+                Action(
+                    key="renamed-schedule-a",
+                    operation="consume",
+                    kind="measurement",
+                    possible_consequences=("single_use_consumption",),
+                )
+            )
+
+        self.assertEqual(calls, ["schedule-a"])
+
+    def test_reconciled_zero_effect_single_use_attempt_can_retry_under_a_new_key(self) -> None:
+        calls: list[str] = []
+
+        def consume(action: Action, context: dict) -> OperationResult:
+            calls.append(action.key)
+            if len(calls) == 1:
+                raise RuntimeError("lost before the unit was consumed")
+            return OperationResult(status="completed")
+
+        batch = self._defined_batch(
+            operations={
+                "consume": self._operation(consume, ("single_use_consumption",))
+            },
+            expected_consequences=("single_use_consumption",),
+        )
+        batch.apply(
+            ReviseBatch(
+                rationale="Name the retry-controlled single-use unit.",
+                measurement_definition=self._single_use_measurement(
+                    nonrepeatable_unit="recoverable slot"
+                ),
+            )
+        )
+        first = Action(
+            key="first-key",
+            operation="consume",
+            kind="measurement",
+            possible_consequences=("single_use_consumption",),
+        )
+        with self.assertRaises(ConsequenceUncertain):
+            batch.perform(first)
+
+        with self.assertRaisesRegex(ConsequenceUncertain, "single-use unit"):
+            batch.perform(
+                Action(
+                    key="second-key",
+                    operation="consume",
+                    kind="measurement",
+                    possible_consequences=("single_use_consumption",),
+                )
+            )
+
+        batch.apply(
+            ReconcileAttempt(
+                attempt=1,
+                status="failed",
+                rationale="Observed facts prove that the unit was not consumed.",
+            )
+        )
+        outcome = batch.perform(
+            Action(
+                key="second-key",
+                operation="consume",
+                kind="measurement",
+                possible_consequences=("single_use_consumption",),
+            )
+        )
+
+        self.assertEqual(calls, ["first-key", "second-key"])
+        self.assertEqual(outcome.view.data["attempts"][1]["status"], "completed")
+
+    def test_historical_single_use_alias_is_read_and_current_writes_are_canonical(self) -> None:
+        batch = self._defined_batch()
+        alias_definition = self._single_use_measurement()
+        alias_definition["non_repeatable_unit"] = alias_definition.pop(
+            "nonrepeatable_unit"
+        )
+        view = batch.apply(
+            ReviseBatch(
+                rationale="Read the historical alias and write the current key.",
+                measurement_definition=alias_definition,
+            )
+        )
+        stored = view.data["current"]["measurement_definition"]
+        self.assertEqual(stored["nonrepeatable_unit"], "one scheduled run")
+        self.assertNotIn("non_repeatable_unit", stored)
+
+        historical = yaml.safe_load(self.state_path.read_text())
+        historical_definition = historical["current"]["measurement_definition"]
+        historical_definition["non_repeatable_unit"] = historical_definition.pop(
+            "nonrepeatable_unit"
+        )
+        self.state_path.write_text(yaml.safe_dump(historical, sort_keys=False))
+        reopened = Batch.open(self.repo, "B001", state_path=self.state_path)
+        self.assertEqual(
+            reopened.view.data["current"]["measurement_definition"][
+                "non_repeatable_unit"
+            ],
+            "one scheduled run",
+        )
+
+        conflicting = self._single_use_measurement(
+            non_repeatable_unit="another scheduled run"
+        )
+        with self.assertRaisesRegex(BatchFormatError, "aliases disagree"):
+            reopened.apply(
+                ReviseBatch(
+                    rationale="Reject conflicting unit aliases.",
+                    measurement_definition=conflicting,
+                )
+            )
+
     def test_adapter_failure_leaves_one_uncertain_attempt_and_blocks_repeat(self) -> None:
         def operation(action: Action, context: dict) -> OperationResult:
             raise RuntimeError("connection lost")
@@ -681,6 +963,13 @@ class BatchModuleTests(unittest.TestCase):
             batch.perform(action)
 
         self.assertEqual(batch.view.data["attempts"][0]["status"], "uncertain")
+        batch.apply(
+            RecordObservation(
+                key="unrelated-note",
+                observation={"status": "routine work may continue"},
+            )
+        )
+        self.assertIn("unrelated-note", batch.view.data["current"]["observations"])
         with self.assertRaises(ConsequenceUncertain):
             batch.perform(action)
         self.assertEqual(len(batch.view.data["attempts"]), 1)

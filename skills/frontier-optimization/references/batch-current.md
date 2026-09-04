@@ -81,7 +81,9 @@ An unresolved actual effect, exhausted limit, unavailable required input, or rep
 
 `Batch.perform` is the only current entry point that may start work capable of producing a measurement result or Consequence. A Consequence is actual spend, external submission, sensitive access, irreversible change, or single-use consumption whose repetition matters.
 
-The Batch record is the sole current Measurement Definition owner. A measurement Action cannot carry or replace another definition. The current definition states the mode, question, comparator, metric, scope, resource ceiling, non-repeatable unit, resource owner, consumption control, execution owner, evidence and interpretation limits, and result owner. Its resource ceiling bounds exposure or use that affects interpretation and is enforced independently of the Batch operational limit. A change to that ceiling follows the existing measurement-design and review gate only when it changes measurement meaning or a later allowed inference; it does not automatically require user input, Campaign Budget, or strategic Replan. The definition references the applicable parent H measurement and R8 rule rather than copying their reusable meaning. Existing definitions with equivalent meaning remain usable; do not create a schema-migration gate merely to rename fields.
+The Batch record is the sole current Measurement Definition owner. A measurement Action cannot carry or replace another definition. Every definition states the mode, question, comparator, metric, scope, resource ceiling, execution owner, evidence and interpretation limits, and result owner. Only an Action or installed adapter that declares `single_use_consumption` also requires `nonrepeatable_unit`, `resource_owner: workflow | user`, and `consumption_control`; omit those fields when no real single-use unit exists. Current writes use `nonrepeatable_unit`; the historical alias `non_repeatable_unit` remains readable, and conflicting aliases fail before execution. The mode controls evidence use only. It does not decide repeatability, Review, Permission, or resource ownership.
+
+The resource ceiling bounds exposure or use that affects interpretation and is enforced independently of the Batch operational limit. A change to that ceiling follows the existing measurement-design and review gate only when it changes measurement meaning or a later allowed inference; it does not automatically require user input, Campaign Budget, or strategic Replan. The definition references the applicable parent H measurement and R8 rule rather than copying their reusable meaning. Existing definitions with equivalent meaning remain usable; do not create a schema-migration gate merely to rename fields.
 
 Inside an adopted H `diagnostic-only` category, the definition may specify this observation's local inputs, initialization, update events, observation window and within-window calculation. It does not establish or change target linkage, cross-instance inference, formal comparison meaning or an investment consequence. A new local calculation alone does not invoke measurement design or review.
 
@@ -94,12 +96,14 @@ Before the operation adapter starts, the Batch implementation:
 3. verifies required checks against that Candidate Revision;
 4. checks every requested resource against Batch operational limits and measurement resources against the current Measurement Definition ceiling;
 5. reads applicable R and V from their owners and checks only V-owned cost or resource keys against Permission limits;
-6. rejects an unresolved or prohibited repeat; and
+6. rejects an unresolved Attempt or a repeat of the same actual single-use unit, even when the Action key changes; and
 7. creates the next local Attempt only when measurement or possible Consequences make repetition matter.
 
 After the adapter returns, record the Attempt, actual observations, actual consumption, actual Consequences, external references when present, raw result, and exact recovery condition. Never trust a declared zero after an operation may have begun. Unexpected adapter failure leaves the affected Attempt `uncertain` and forbids blind repetition; unrelated routine work remains legal. The Attempt records what happened; it does not classify target improvement or choose an action.
 
 When later facts resolve an uncertain operation, use `Batch.apply(ReconcileAttempt)` once to record the actual status, use, Consequences, result, and rationale. Reconciliation updates the existing Attempt; it does not create another Attempt, identity, Review, Permission, charge, or result packet. If an operation unexpectedly reports resource use or a Consequence without a planned Attempt, the module retains it as an Attempt and flags the adapter contract violation rather than dropping the effect.
+
+For a declared single-use unit, a `running` or `uncertain` prior Attempt blocks that same unit across Action-key changes. A reconciled failed Attempt with no actual `single_use_consumption` may retry when capacity remains. Once that Consequence is recorded, renaming the Action cannot make the unit available again.
 
 A harmless synchronous operation may complete without an Attempt. A local serial operation normally uses `B/1`. A remote or asynchronous worker may use the provider's job or run reference inside the Attempt. Do not add local acknowledgment, start, execution or outcome IDs around that external reference.
 
@@ -128,7 +132,7 @@ For an action that needed an Attempt, store its bounded action, exact Candidate 
 - Record only evidence possible at the reached phase.
 - Record actual consumption and Consequences even when the action failed or publication did not occur.
 - Use `unknown` or `uncertain` when an effect cannot be established; never infer zero.
-- Do not repeat an unresolved action until its recovery condition is satisfied.
+- Do not start another `Batch.perform` in the same B while one Attempt is unresolved. Continue ordinary `Batch.apply` work and unrelated B records.
 - A failed check or failed Attempt does not create a new B or close the current B automatically.
 - A result does not create E, select another route, promote a candidate, expand Permission, or establish a claim.
 
