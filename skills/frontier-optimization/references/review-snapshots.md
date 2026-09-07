@@ -8,7 +8,7 @@ large artifacts, and historical continuation are owned by
 
 ## Prepare a complete subject
 
-Use `prepare_review` or `frontier_review_cli.py` for new reviews. Supply the
+Only when continuing an actual retained historical review chain, use `prepare_review` or `frontier_review_cli.py`. Supply the
 review kind, complete required project files, closed collections, and Entry
 stage when applicable. Validate and repair the mutable draft before allocating
 a review. Save the selected version in normal Git history when it is ready to

@@ -21,18 +21,24 @@ Keep the proposed decision mutable until ordinary deterministic checks pass. Sav
 
 Do not create a content root, decision node, attestation root, authority node, packet, snapshot, adoption identity or validation identity. Workflow source, validator versions, deployment locations and historical identity fields are not project inputs.
 
+For a current W-backed subject, resolve [Work Plan's saved reference](work-plan.md#saved-design-references) and stable `delivery_scope` with the current design preparation tool. Read that version's obligations and applicable R. Historical packet validators are used only for a retained historical packet, not as the acceptance path for this Git subject.
+
+When adopting this Review or preparing its execution adapter, apply [Review applicability and adoption](batch-current.md#review-applicability-and-adoption) to distinguish the saved subject from current Batch state.
+
 ## Review method
 
 Judge only whether the proposed decision is technically coherent and reachable under its cited parents, evidence, Selection, Budget, Reviews and existing user boundaries. Check:
 
 - that the resolver result and Selection support the proposed allocation;
 - that protected reserve is not assigned to routine work;
-- that prerequisites are evidence-backed or explicitly tested before dependent work;
+- that prerequisites needed to execute and interpret the next action are evidence-backed or tested before dependent work, without requiring the experiment's own hypothesis to be established first; use [Evidence at real boundaries](implementation-review.md#evidence-at-real-boundaries), not the number of prior passing checks;
 - that the Batch independently judged result, scope and expected Consequences are coherent;
 - that the next action fits the governing campaign limits, protected reserve and strategic allocation;
-- that the next action has the required technical Review and Measurement Definition;
+- that the next action has its applicable Measurement Definition and any technical Review required by [Assurance by consequence](batch-evaluation.md#assurance-by-consequence);
 - that existing V covers every protected Consequence, or that the exact missing user boundary is identified; and
 - that result branches, claim limits and recovery conditions match the evidence the action can produce.
+
+For an inherited restriction that prevents a needed observation, apply [Constrain effects, not convenient forms](technical-design.md#constrain-effects-not-convenient-forms). Consistency with an unsupported internal prohibition is not evidence of readiness; return only the affected choice to its owner.
 
 Apply [Decision-bearing thresholds](frontier-core.md#decision-bearing-thresholds) only when the next actual Consequence depends on one and Entry changes or transcribes its predicate. Reuse an exact current-owner reference without a freshness review when its complete meaning is unchanged. If Entry changes the meaning, return it to the existing owner; if Entry merely copied or bound it incorrectly, repair that derived check without treating the work, route, or owner as invalid.
 

@@ -132,7 +132,7 @@ Selection:
 - Campaign generation: <positive integer>
 - Recovery lineage: <prior CLOSEOUT_COMPLETE, recovery V and X identities, reused objects and limits; or None for generation 1>
 - Project provenance: <full Git commit and affected repository-relative paths; no workflow identity>
-- Evidence-state identity: <immutable identity of current parents, adopted terminal outcomes, E dispositions, Q, V, D, X, Budget, W, and reviews>
+- Evidence source and resolution: <tool-produced saved input reference and applicable saved resolution; read the internal evidence-state key from that result>
 - Route-set state: <complete for this decision | incomplete | reopened, with Q, T, peer-source basis, shared assumptions, exclusions, deferrals, prerequisites, and reopening evidence>
 - Direction resolution: <local R8 | local diagnostic | focused Q | route-landscape Q | strategic replan | stop | halt | blocked, with the first applicable row from learning-loop.md, its persisted condition, and exact next action>
 - Affected scope: <candidate | route | campaign, with exact affected identities and evidence; or not applicable>
@@ -146,8 +146,8 @@ Selection:
 - Campaign-baseline choice: <chosen T, recommendation, V identifier, and decisive tradeoff; or sole eligible T and evidence>
 - Repository structure: <existing structure and integration recommendation; or absent structure, user-approved V, and approved layout>
 - Candidate interface and code integration: <existing or user-approved seam, source, tests, configuration, artifact convention, and stable shared paths; or not applicable>
-- Design profile and map: <direct with evidence; or current W revision, immutable design contract identity, indexed concerns, stable Delivery slices, design-review repository evidence, and any exact source identity required by design meaning; never future B assignments or internal realization paths; or not applicable>
-- Design review: <adopted DESIGN_READY identity, pending design B, or not applicable under direct profile>
+- Design profile and map: <direct with evidence; or saved W reference, indexed concerns, stable slice keys and required source references under Work Plan; or not applicable>
+- Design review: <applicable DESIGN_READY R reference, pending design work, or not applicable under direct profile>
 - Development authorization: <applicable user grant, current Entry readiness and execution authority; cite a new V only when User decisions requires one; not applicable when no execution is proposed>
 - Implementation review gate: <required review before first measurement, integration, or incumbent use; reusable prior review and exact unchanged identity; or not applicable>
 - User values applied: <V identifiers and effective conditions or None>

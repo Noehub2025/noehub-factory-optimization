@@ -41,6 +41,25 @@ tag, or new hosting service is not a prerequisite. Git retention is not an
 off-machine backup. Retain old branches or tags before removing the last
 reference to history still needed by the campaign.
 
+## Current reference tools
+
+Use `scripts/frontier_references.py` for current W consumers and resolver assignments. It reads an existing Git version and writes only into the existing assignment or result when `--output` is supplied; it does not commit, create a registry or choose a direction. Preparation merges generated fields into an existing assignment while preserving its purpose, limits and completion condition. Without `--output`, pass the structured output directly to the next tool. A printed digest is never a field for the model to transcribe.
+
+```sh
+# Prepare a current design subject; repeat --scope for each selected slice.
+python frontier_references.py design --repo PROJECT --revision SAVED_REF --path W_PATH --scope SLICE --output EXISTING_ASSIGNMENT
+# Prepare saved JSON evidence; repeat --prior for applicable prior resolutions.
+python frontier_references.py resolver --repo PROJECT --revision SAVED_REF --path EVIDENCE_PATH --prior PRIOR_RESULT_PATH --output EXISTING_ASSIGNMENT
+# Attach generated input fields to the resolver's existing professional result.
+python frontier_references.py bind-resolution --repo PROJECT --path EXISTING_ASSIGNMENT --result RESULT_DRAFT --output RESULT_DRAFT
+```
+
+Run the installed script by its actual path. Input paths and design pointers are repository-relative; output and result paths are filesystem paths. `SAVED_REF` is an existing branch, tag or commit, resolved by the tool once. The resulting full commit is carried as data. `--prior` reads paths at that saved version; use the existing Selection/history to supply all applicable known results, including a saved but not yet adopted result. Omit it only when no prior result applies. A retained historical resolution without the current source field may use its original `evidence_state_identity`; an unfamiliar historical shape requires reading its existing binding, not guessing or migrating all history.
+
+Design preparation resolves the Design map's pointer column and `design/traceability.yaml` at the chosen version. Pointers use `repository/path.md#section-anchor`; anchors are lowercased headings with punctuation removed and whitespace replaced by hyphens. Selected prerequisites must remain in scope, even when satisfied by retained evidence. Semantic completeness and review applicability remain professional judgments in the existing review.
+
+Resolver preparation derives the canonical JSON key with sorted object keys, compact separators, UTF-8 and no trailing newline. It preserves every supplied decision fact. Formatting and location are outside that key; metadata that changes no decision fact should remain outside the evidence object. Reuse and preparation-failure behavior are owned by [Learning Loop](learning-loop.md#resolver-input-preparation). This helper checks saved references and propagates bindings; it does not schedule or record worker invocations.
+
 ## Selected input references
 
 The current writer is `GitReferenceStore` in

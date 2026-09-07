@@ -1033,7 +1033,7 @@ class Slice7ContractTests(unittest.TestCase):
         for fragment in (
             "may touch multiple files and remain `direct`",
             "Write only the assigned W `Design brief` and triggered concern files",
-            "Do not write Design map rows, Delivery map rows, `traceability.yaml`",
+            "The Coordinator owns Design map rows, Delivery map rows, `traceability.yaml`",
             "creates no B, proposal identity, reservation, or spend",
             "RESULT: DRAFT_READY | DIRECT_ELIGIBLE",
         ):
@@ -1044,7 +1044,7 @@ class Slice7ContractTests(unittest.TestCase):
             "it may touch multiple files",
             "does not routinely call the designer to confirm a direct case",
             "The designer writes only W's Design brief and triggered concern files",
-            "The Coordinator then generates Design map rows, stable Delivery map rows, `traceability.yaml`",
+            "The Coordinator derives Design map rows, Delivery map rows and `traceability.yaml`",
         )
         self.assert_contract_contains(
             "worker-interfaces.md",

@@ -24,13 +24,15 @@ The Coordinator decides research, routes, technical design, local implementation
 
 Before asking, inspect the current request and applicable V. Reuse an answer that already settles the same objective, resource, access and Consequence boundary. Ask once for a missing boundary and its intended continuing scope, not for each dependent action. Continue other permitted work while the affected action waits.
 
+An uncovered action may be worth seeking permission for; it is not executable yet. When the resolver selects that path on objective value and full opportunity cost, prepare the existing user question with its purpose, scope, cost, expected decision-changing observation, and exact missing grant. Do not ask for every possible option. Explicitly denied or withdrawn actions remain excluded unless the user reopens them; a potentially valuable action does not override that decision.
+
 ## Record one current V
 
 A current V is one human decision record. It states the decision, applicable scope, controlled resources or costs, permitted Consequences, conditions, withdrawal state, cumulative limits and reconsideration event. It is not an execution token, technical readiness verdict or cryptographic credential.
 
 The Coordinator records or cites V once and gives the Batch its Git reference. A later applicable action reuses that V directly. If Framing already recorded the controlling user decision, Frontier may create this operational V reference without asking again; the Frame decision remains the semantic source and V may not reinterpret or widen it.
 
-Technical readiness remains with Review. Campaign allocation remains with Budget and Selection. `Batch.perform` checks the cited V immediately before a protected Consequence. The actual adapter enforces the external system's cost, access, idempotency or irreversibility seam.
+Technical readiness remains with the applicable checks and any required Review under [Assurance by consequence](batch-evaluation.md#assurance-by-consequence). Campaign allocation remains with Budget and Selection. `Batch.perform` checks the cited V immediately before a protected Consequence. The actual adapter enforces the external system's cost, access, idempotency or irreversibility seam.
 
 Internal campaign spend within the adopted total budget does not require another V. Workflow-owned single-use consumption is protected by the Measurement Definition, Attempt and adapter. User-controlled private, scarce or unrecoverable consumption requires an applicable V.
 

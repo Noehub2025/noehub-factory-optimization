@@ -18,9 +18,11 @@ This route creates no separate review. Request the existing readiness review onc
 
 ## Shared measurement-support gate
 
-Apply this gate only when materially changed shared support affects the interpretation of the next actual consequence and that consequence is one of: formal Slot H confirmation or E; promotion, publication, or integration; paid, external, sensitive, irreversible, or user-controlled single-use work; or an independent support gate explicitly required by an adopted parent. Both conditions are required. A routine local screen, B evidence, new candidate, ordinary route ordering, or repair whose result stays below those consequences uses focused checks inside the current B without independent support review. This route is reachable before problem readiness and after representation begins.
+Apply this gate only when materially changed shared support affects the interpretation of the next actual consequence and [Assurance by consequence](../../frontier-optimization/references/batch-evaluation.md#assurance-by-consequence) requires independent technical judgment. Both conditions are required. Otherwise use focused checks inside the current B. Paid or external execution alone does not trigger this gate, and Permission does not replace a required technical judgment. This route is reachable before problem readiness and after representation begins.
 
 Create one exact review target under the task's `eval/` directory. Record the support purpose, allowed file set, required behavior, fail-closed cases, authorized focused checks, excluded consequential actions, and completion condition. Give the canonical task path, target path, and one new review-record path to the `measurement-support` branch of `review-optimization`.
+
+Exclusions bound the reviewer's actions, not the implementation owner's evidence channels. Apply [Evidence at real boundaries](../../frontier-optimization/references/implementation-review.md#evidence-at-real-boundaries) to dependencies needed for the next use; include relevant retained evidence in the allowed review inputs rather than requiring a new live run.
 
 Accept only a fresh `IMPLEMENTATION_READY` result from `review-optimization/1` whose reviewed file hashes and checks still match. Preserve a result from any other reviewer as history and continue to require the current-owner review. `IMPLEMENTATION_READY` permits later framing work only; durable containment, baseline execution, candidate work, and other consequences retain their existing authority requirements.
 

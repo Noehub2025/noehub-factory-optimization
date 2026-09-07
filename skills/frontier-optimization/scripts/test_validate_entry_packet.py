@@ -1313,6 +1313,7 @@ class EntryPacketSchemaTests(unittest.TestCase):
             "scripts/evaluation_target_contract.py",
             "scripts/engineering_check_plan.py",
             "scripts/frontier_provenance_cli.py",
+            "scripts/frontier_references.py",
             "scripts/frontier_review_cli.py",
             "scripts/frontier_batch.py",
             "scripts/run_workflow_checks.py",

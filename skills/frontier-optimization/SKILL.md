@@ -60,7 +60,7 @@ Create the assignment with fixed purpose, project parents, allowed writes, limit
 - `run-frontier-batch`: the selected B.
 - `review-frontier`: the selected independent review.
 
-The designer writes professional concerns, not lifecycle records or executable output. The Coordinator creates W's scaffold and derives maps and identities from the designer's exact content. A ready W does not trigger another design assignment: load only the concern pointers needed by the current action. Executable evidence requested during design uses the existing bounded research, prototype or B route.
+The designer writes professional concerns, not lifecycle records or executable output. The Coordinator creates W's scaffold and derives maps and stable slice references from that content. Use Work Plan's saved-reference preparation for design consumers and Learning Loop's input preparation for resolver dispatch; pass tool-produced bindings directly. A ready W does not trigger another design assignment: load only the concerns needed by the current action. Executable evidence requested during design uses the existing bounded research, prototype or B route.
 
 Adopt a worker result only after its assignment and evidence match. Preserve the specialist's professional meaning; send an actual defect to its owner rather than silently rewriting it. A draft preparation failure remains editable work, not a new review or recovery chain.
 

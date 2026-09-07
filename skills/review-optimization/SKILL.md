@@ -206,6 +206,8 @@ The readiness branch is complete only when one verdict is returned and its requi
 
 Use this branch only for implementation that makes Slot H or R8 executable before a separately consequential baseline, evaluation, experiment, or search run.
 
+Apply [Constrain effects, not convenient forms](../frontier-optimization/references/technical-design.md#constrain-effects-not-convenient-forms) when an internal restriction excludes evidence needed by this verdict. Return the affected restriction to its owner rather than treating synthetic-only compliance as sufficient readiness.
+
 Require the caller to supply one existing review-target path and one new review-record path under the selected task's `eval/` directory. The target belongs to `frame-optimization`; the review record belongs to `review-optimization`. The target must state:
 
 - the framing rule or open finding that needs the support;
@@ -217,9 +219,9 @@ Require the caller to supply one existing review-target path and one new review-
 
 Return `BLOCKED` when either path escapes the selected task, the target is incomplete, the review path already exists, or the current authority does not cover an allowed check required for the verdict.
 
-Read the current Slot H, R8 when present, the controlling finding, the target, every allowed implementation file, and each directly affected test or schema. Use Git only to inspect the named files and their containment; do not stage, commit, switch, reset, or rewrite project files.
+Read the current Slot H, R8 when present, the controlling finding, the target, every allowed implementation file, and each directly affected test or schema. Include relevant retained real evidence and dependency specifications needed for [Evidence at real boundaries](../frontier-optimization/references/implementation-review.md#evidence-at-real-boundaries); synthetic agreement alone does not establish an external premise. Use Git only to inspect the named files and their containment; do not stage, commit, switch, reset, or rewrite project files.
 
-Run only the target's authorized focused checks. A check that starts the baseline, evaluator, game, experiment, search, sealed-input access, remote action, paid action, or production action is consequential and remains outside this branch.
+Run only the target's authorized focused checks. Formal measurement, new protected-input exposure, paid execution, external submission, or other protected effects belong to the execution owner, not this review. Reading retained outputs or inspecting a dependency is not a new experiment merely because it concerns a real system. A missing real observation returns to the existing implementation or measurement owner through the normal permitted path; the reviewer's exclusions do not forbid that owner from obtaining it. Do not turn every dependency into a mandatory live check.
 
 Inspect every allowed project file and reject any required implementation byte outside the allowed set. Exclude Skill files, workflow source or release data, and transient user replies from the target and reviewed-byte manifest. Confirm that the implementation satisfies the required behavior, rejects each named fail-closed case, preserves the parent measurement meaning, and creates no candidate, search, result, or claim authority. Record the SHA-256 of every reviewed implementation and test file.
 

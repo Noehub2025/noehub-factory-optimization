@@ -36,6 +36,7 @@ ENTRY_TESTS = (
     FRONTIER_SCRIPTS / "test_freeze_execution_baseline.py",
 )
 CURRENT_BATCH_TESTS = (FRONTIER_SCRIPTS / "test_frontier_batch.py",)
+REFERENCE_TESTS = (FRONTIER_SCRIPTS / "test_frontier_references.py",)
 LEGACY_BATCH_TESTS = (
     FRONTIER_SCRIPTS / "test_validate_batch_packet.py",
     FRONTIER_SCRIPTS / "test_validate_batch_result.py",
@@ -52,6 +53,7 @@ CURRENT_RELEASE_TESTS = (
     SELECTOR_TEST,
     *DIRECTION_TESTS,
     *CURRENT_BATCH_TESTS,
+    *REFERENCE_TESTS,
 )
 FRAME_SKILLS = {
     "frame-optimization",
@@ -106,6 +108,7 @@ CROSS_CUTTING_REFERENCES = {
 }
 
 SCRIPT_TESTS = {
+    "frontier_references.py": REFERENCE_TESTS,
     "authorization_target_contract.py": ENTRY_TESTS,
     "freeze_execution_baseline.py": ENTRY_TESTS,
     "frontier_batch.py": (FRONTIER_SCRIPTS / "test_frontier_batch.py",),

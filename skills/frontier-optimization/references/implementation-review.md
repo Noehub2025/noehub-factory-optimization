@@ -16,6 +16,14 @@ The assigned subject contains one full Git commit and explicit Candidate Revisio
 
 Write one R through `review-frontier`. Preserve earlier R records at their Git versions. A corrected revision receives a new R only when the later Consequence still needs independent judgment; review the changed dependencies and affected conclusions rather than restarting unaffected work.
 
+## Evidence at real boundaries
+
+The implementation owner supplies evidence for the complete deliverable and the actual dependencies needed by its next use. Start with relevant retained outputs, applicable external specifications, or direct dependency inspection. A synthetic fixture derived from the tested implementation's own expectations does not independently establish those expectations about a real dependency. Passing counts cannot resolve contrary real evidence.
+
+Fill only a gap that can affect the next action or interpretation, using the smallest sufficient observation through the existing permitted work path. Reuse sufficient evidence; require neither a live-environment run for every Batch nor a complete end-to-end campaign test. An unknown that the selected experiment is meant to test need not be resolved in advance. The distinction is whether that unknown is the question or an unsupported prerequisite for obtaining an interpretable answer.
+
+The reviewer states what the evidence establishes and any missing prerequisite within the assigned scope. At normal adoption, the Coordinator uses those conclusions for the next action without inflating several local passes into whole-system readiness. Return a material gap to its existing implementation or measurement owner; do not add a coverage report, certification stage, or routine second review.
+
 ## Historical implementation review
 
 The sections below are compatibility rules for retained review packets and candidate-package lifecycles that already use those fields. Do not generate them for a current Git-backed Batch.

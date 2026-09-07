@@ -876,7 +876,10 @@ class FrontierSkillBundleTests(unittest.TestCase):
             with self.subTest(document=document[:80]):
                 self.assertIn(canonical_rule, document)
 
-        self.assertIn("required technical Review and Measurement Definition", entry_review)
+        self.assertIn(
+            "its applicable Measurement Definition and any technical Review required",
+            entry_review,
+        )
         self.assertIn("result branches, claim limits and recovery conditions", entry_review)
 
         self.assertIn("canonical R8 vacuity definition", representation_review)
@@ -925,7 +928,8 @@ class FrontierSkillBundleTests(unittest.TestCase):
         self.assertIn("The mode controls evidence use only", current)
         self.assertIn("Omit those fields when there is no real single-use unit", evaluation)
         self.assertIn("Both conditions are required", support)
-        self.assertIn("without independent support review", support)
+        self.assertIn("Otherwise use focused checks inside the current B", support)
+        self.assertIn("Paid or external execution alone does not trigger this gate", support)
         self.assertIn("public repeatable development evidence", representation.lower())
         self.assertIn("Prefer the cheapest interpretable observation", learning)
         self.assertIn("when they overwhelm the observation's decision value", learning)

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 import subprocess
 import tempfile
 import unittest
@@ -159,6 +160,174 @@ class BatchModuleTests(unittest.TestCase):
         }
         fields.update(overrides)
         return self._measurement(**fields)
+
+    def _saved_entry_case(self, *, uncertain: bool = False):
+        """Exercise the existing owner seam with a real Git-backed subject."""
+        case = self
+        calls = []
+
+        class SavedReviewOwner(Governance):
+            def review(self, reference, action):
+                report = yaml.safe_load(case._git("show", f"{reference.commit}:{reference.path}"))
+                saved = yaml.safe_load(case._git(
+                    "show", f"{report['subject_commit']}:{report['subject_path']}"
+                ))
+                current = Batch.open(case.repo, "B001", state_path=case.state_path).view.data
+                # This fixture reviews its objective, measurement and chosen revision.
+                # It is not a universal projection or field list for project adapters.
+                if current["definition"]["objective"] != saved["definition"]["objective"]:
+                    return ReviewAssessment(False, "reviewed objective changed")
+                if current["current"]["measurement_definition"] != saved["current"]["measurement_definition"]:
+                    return ReviewAssessment(False, "reviewed measurement changed")
+                candidate = saved["current"]["candidate_revision"]
+                if action.candidate != CandidateRevision(candidate["commit"], tuple(candidate["paths"])):
+                    return ReviewAssessment(False, "reviewed implementation changed")
+                return ReviewAssessment(True)
+
+        def observe(action, context):
+            calls.append(action.key)
+            return OperationResult(
+                status="uncertain" if uncertain else "completed",
+                resource_use={"runs": 1},
+                recovery_condition="Resolve the observation." if uncertain else None,
+            )
+
+        owner = SavedReviewOwner()
+        batch = self._defined_batch(
+            governance=owner,
+            operations={"observe": self._operation(observe)},
+            resource_limits={"runs": 3},
+        )
+        batch.apply(ReviseBatch(
+            rationale="Prepare the subject before Entry review exists.",
+            reviews=(),
+            measurement_definition=self._measurement(resource_ceiling={"runs": 3}),
+        ))
+        batch.apply(SelectCandidate(self._candidate(), "review this revision"))
+        batch.apply(RecordCheck("focused", self._candidate(), "passed"))
+        subject_path = self.state_path.relative_to(self.repo).as_posix()
+        self._git("add", subject_path)
+        self._git("commit", "-qm", "save review subject")
+        subject_commit = self._git("rev-parse", "HEAD")
+        (self.repo / "records/R002.yaml").write_text(yaml.safe_dump({
+            "subject_commit": subject_commit, "subject_path": subject_path,
+        }))
+        self._git("add", "records/R002.yaml")
+        self._git("commit", "-qm", "save Entry review")
+        review = GitReference("R002", self._git("rev-parse", "HEAD"), "records/R002.yaml")
+        action = Action(
+            key="observe-reviewed", operation="observe", kind="measurement",
+            candidate=self._candidate(), required_reviews=("R002",),
+            required_checks=("focused",), requested_resources={"runs": 1},
+        )
+        return batch, owner, review, action, calls
+
+    def test_saved_review_adoption_and_progress_allow_execution(self) -> None:
+        batch, owner, review, action, calls = self._saved_entry_case()
+        reviewed_bytes = self.state_path.read_bytes()
+        batch.apply(ReviseBatch(rationale="Adopt Entry.", reviews=(review,)))
+        self.assertNotEqual(self.state_path.read_bytes(), reviewed_bytes)
+        first = batch.perform(action)
+        batch.apply(RecordObservation("progress", {"completed": "first observation"}))
+        batch.apply(ReviseBatch(rationale="Allocate remaining local work.", resource_limits={"runs": 2}))
+        self.assertTrue(owner.review(review, action).applies)
+        second = batch.perform(replace(action, key="another-observation"))
+        self.assertEqual((first.attempt, second.attempt), (1, 2))
+        self.assertEqual(calls, ["observe-reviewed", "another-observation"])
+        batch.apply(ReviseBatch(rationale="Restore available allocation.", resource_limits={"runs": 3}))
+        with self.assertRaisesRegex(ConsequenceBlocked, "already completed"):
+            batch.perform(action)
+        self.assertEqual(batch.view.data["consumption"], {"runs": 2})
+
+    def test_saved_review_rejects_changed_decision_meaning(self) -> None:
+        batch, owner, review, action, calls = self._saved_entry_case()
+        batch.apply(ReviseBatch(rationale="Adopt Entry.", reviews=(review,)))
+        original = batch.view.data
+        changes = (
+            (ReviseBatch(rationale="Change target.", objective="A different objective."), "objective"),
+            (ReviseBatch(rationale="Change measurement.", measurement_definition=self._measurement(
+                metric="different metric", resource_ceiling={"runs": 3}
+            )), "measurement"),
+        )
+        for change, reason in changes:
+            with self.subTest(reason=reason):
+                batch.apply(change)
+                with self.assertRaisesRegex(ConsequenceBlocked, f"reviewed {reason} changed"):
+                    batch.perform(action)
+                batch.apply(ReviseBatch(
+                    rationale="Restore the reviewed decision.",
+                    objective=original["definition"]["objective"],
+                    measurement_definition=original["current"]["measurement_definition"],
+                ))
+        self.assertEqual(calls, [])
+        self.assertEqual(batch.view.data["attempts"], [])
+
+    def test_saved_review_does_not_cover_new_implementation(self) -> None:
+        batch, owner, review, action, calls = self._saved_entry_case()
+        batch.apply(ReviseBatch(rationale="Adopt Entry.", reviews=(review,)))
+        (self.repo / "src/candidate.txt").write_text("changed implementation\n")
+        self._git("add", "src/candidate.txt")
+        self._git("commit", "-qm", "change implementation")
+        candidate = self._candidate(self._git("rev-parse", "HEAD"))
+        batch.apply(SelectCandidate(candidate, "new working revision"))
+        with self.assertRaises(ConsequenceBlocked):
+            batch.perform(action)
+        batch.apply(RecordCheck("focused", candidate, "passed"))
+        with self.assertRaisesRegex(ConsequenceBlocked, "reviewed implementation changed"):
+            batch.perform(replace(action, candidate=candidate))
+        self.assertEqual(calls, [])
+        self.assertEqual(batch.view.data["attempts"], [])
+
+    def test_saved_review_adoption_keeps_current_runtime_guards(self) -> None:
+        batch, owner, review, action, calls = self._saved_entry_case(uncertain=True)
+        self.assertTrue(owner.review(review, action).applies)
+        with self.assertRaisesRegex(ConsequenceBlocked, "not referenced"):
+            batch.perform(action)
+        batch.apply(ReviseBatch(rationale="Adopt Entry.", reviews=(review,)))
+        batch.apply(ReviseBatch(rationale="Withdraw the adopted reference.", reviews=()))
+        with self.assertRaisesRegex(ConsequenceBlocked, "not referenced"):
+            batch.perform(action)
+        batch.apply(ReviseBatch(rationale="Restore the applicable reference.", reviews=(review,)))
+        owner.permission_ready = False
+        with self.assertRaisesRegex(ConsequenceBlocked, "Permission does not allow"):
+            batch.perform(replace(action, required_permissions=("V001",)))
+        owner.permission_ready = True
+        batch.apply(ReviseBatch(rationale="No capacity allocated.", resource_limits={"runs": 0}))
+        with self.assertRaises(ConsequenceBlocked):
+            batch.perform(action)
+        batch.apply(ReviseBatch(rationale="Restore allocation.", resource_limits={"runs": 3}))
+        batch.apply(RecordCheck("focused", action.candidate, "failed"))
+        with self.assertRaisesRegex(ConsequenceBlocked, "has not passed"):
+            batch.perform(action)
+        batch.apply(RecordCheck("focused", action.candidate, "passed"))
+        self.assertEqual(calls, [])
+        self.assertEqual(batch.view.data["attempts"], [])
+        with self.assertRaises(ConsequenceUncertain):
+            batch.perform(action)
+        batch.apply(RecordObservation("progress", {"next": "resolve uncertainty"}))
+        with self.assertRaises(ConsequenceUncertain):
+            batch.perform(replace(action, key="renamed-observation"))
+        self.assertEqual(calls, [action.key])
+        self.assertEqual(len(batch.view.data["attempts"]), 1)
+
+    def test_saved_review_readiness_before_adoption_is_read_only(self) -> None:
+        batch, owner, review, action, calls = self._saved_entry_case()
+        # Reading the saved Review does not require a matching working copy.
+        (self.repo / review.path).write_text("unrelated working draft\n")
+
+        def files():
+            return {p.relative_to(self.repo): p.read_bytes() for p in self.repo.rglob("*")
+                    if p.is_file() and ".git" not in p.relative_to(self.repo).parts}
+
+        before = files()
+        self.assertTrue(owner.review(review, action).applies)
+        self.assertEqual(files(), before)
+        self.assertEqual(batch.view.data["references"]["reviews"], [])
+        self.assertEqual(batch.view.data["attempts"], [])
+        self.assertEqual(batch.view.data["consumption"], {})
+        self.assertEqual(calls, [])
+        batch.apply(ReviseBatch(rationale="Adopt the saved Review.", reviews=(review,)))
+        self.assertEqual(batch.perform(action).attempt, 1)
 
     def test_routine_revisions_and_candidate_changes_stay_in_one_batch(self) -> None:
         batch = self._defined_batch()

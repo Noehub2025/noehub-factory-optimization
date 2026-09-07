@@ -11,6 +11,8 @@ modules:
       - frontier-optimization/references/provenance-rollout.yaml
       - frontier-optimization/references/source-modules.yaml
       - frontier-optimization/scripts/finding_effects.py
+      - frontier-optimization/scripts/frontier_references.py
+      - frontier-optimization/scripts/identity_bindings.py
   batch-runtime:
     depends_on: []
     files:
@@ -81,7 +83,6 @@ modules:
       - frontier-optimization/references/review-snapshots.md
       - frontier-optimization/scripts/engineering_check_plan.py
       - frontier-optimization/scripts/evaluation_target_contract.py
-      - frontier-optimization/scripts/identity_bindings.py
       - frontier-optimization/scripts/frontier_provenance/compatibility.py
       - frontier-optimization/scripts/frontier_provenance/execution_inputs.py
       - frontier-optimization/scripts/frontier_provenance/facade.py

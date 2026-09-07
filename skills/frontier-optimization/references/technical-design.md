@@ -13,11 +13,11 @@
 
 Load only when proving a direct profile; preparing, reviewing, or repairing a `module` or `system` design assignment; changing a shared interface, state owner, lifecycle, or schema; running an evidence-producing design batch; or responding to evidence that requires a contract-bearing design change. This reference is the single source for profile triggers and concern coverage. Do not load it merely to execute a `ready` design; follow W's `Read when` pointers to the required concern contracts. Load `work-plan.md` only when W is required and `design-review.md` only when freezing or reviewing a `module` or `system` design.
 
-Treat a legacy code-bearing W without the current profile, map, identities, and review as `repair-required` only when the next changed work relies on the missing technical meaning. Preserve useful content and update the affected design. Permission is owned by V, not by W completeness.
+Treat a legacy W as `repair-required` only when the next changed work relies on missing technical meaning. Preserve useful content and update the affected design. Permission is owned by V, not by W completeness.
 
 ## W is the map
 
-`WORK.md` holds the human-readable brief, current lifecycle, concern index, delivery slices, validation pointers, and recovery. `design-implementation` owns the professional Design brief and exact design contracts in indexed concern files. The Coordinator owns W lifecycle plus the mechanically derived Design map, Delivery map, traceability, and identities:
+`WORK.md` holds the human-readable brief, current lifecycle, concern index, delivery slices, validation pointers, and recovery. `design-implementation` owns the professional Design brief and design contracts in indexed concern files. The Coordinator owns W lifecycle and the derived Design map, Delivery map and traceability:
 
 ```text
 frontier/work/W001/design/
@@ -30,7 +30,7 @@ frontier/work/W001/design/
 └── traceability.yaml
 ```
 
-Create only triggered concerns, plus Coordinator-generated `traceability.yaml` for every `module` or `system`. Every W pointer states path, section, immutable identity, trigger, `Read when`, and readiness. A file absent from the current Design map or traceability binding is outside the design contract.
+Create only triggered concerns, plus Coordinator-generated `traceability.yaml` for every `module` or `system`. Every W pointer states path, section, trigger, `Read when` and readiness. Use [W saved references](work-plan.md#saved-design-references) for version binding. A file absent from the Design map is outside the design contract.
 
 ## Choose the profile
 
@@ -79,7 +79,7 @@ Apply [Decision-bearing thresholds](frontier-core.md#decision-bearing-thresholds
 
 A method or sequence belongs in the relevant professional contract when it determines deliverable behavior, a necessary interface, evidence meaning, or an irreversible consequence. When a workflow, measurement facility, or publication system is itself the deliverable, design that system normally. Decide from the deliverable and consequences, not the task label or technology. Apply this distinction during ordinary authoring, without a classification record or additional gate.
 
-The designer writes only W's Design brief and triggered concern files. The Coordinator then generates Design map rows, stable Delivery map rows, `traceability.yaml`, design identities, and review lifecycle from the exact professional pointers. This mechanical adoption may add stable concern or slice identities but may not assign a future B, attempt namespace, internal evidence destination, or runtime status to Design, and may not rewrite architecture, domain meaning, interface behavior, flows, technical slices, or verification.
+The designer writes only W's Design brief and triggered concern files. The Coordinator derives Design map rows, Delivery map rows and `traceability.yaml` from those pointers and stable slice keys, then prepares the saved reference for review. Preserve professional meaning and leave future B assignments, attempt namespaces, internal evidence destinations and runtime status with their execution owners.
 
 Design authoring is planning and creates no B, proposal identity, reservation, or spend. If a conclusion requires a lower-consequence observation from code execution, a prototype, an experiment, controlled input, an external effect, or protected resources, the designer returns `EVIDENCE_REQUIRED`; the Coordinator obtains that evidence through the existing Q or B path. Do not relabel a runnable, tested, chargeable, irreversible, or protected-resource realization as free design evidence.
 
@@ -103,7 +103,11 @@ Address every decisive claim before design review, starting with the weakest. Do
 
 ## Constrain effects, not convenient forms
 
-When an implementation-form restriction materially affects a planned slice, name the behavior, interface, invariant, risk, or verification property it protects and explain the causal relation. A reviewer may require repair when that current protection basis is absent or contradicted, or may cite one concrete Design-compatible realization showing that the restriction makes the slice infeasible or materially more complex without a current protection rationale. The reviewer need not prove that the restriction has no value in every setting; the Design owns the current rationale. A theoretically narrower rule, an unenumerated alternative, unfamiliarity, novelty, complexity, or ordinary implementation risk is not a finding by itself. If the restriction does not materially affect the current slice, treat it at most as an advisory.
+When a restriction on implementation form, evidence access, or verification method materially affects the current work, identify its owner and protection basis: an actual user or external constraint, a sampling or irreversible-effect requirement, or an internal technical choice. Explain what it protects and how. A planner's precaution does not become a user prohibition or an external rule because later documents repeat it.
+
+A reviewer may require repair when that current basis is absent or contradicted, or cite a concrete compatible alternative showing that the restriction prevents a useful observation or makes delivery infeasible or materially more costly without a protection rationale. The reviewer need not prove the narrowest possible rule or examine every restriction. Novelty, unfamiliarity, and ordinary implementation risk are not findings. A restriction that does not affect the current work is at most advisory.
+
+The existing owner may revise an internal choice within the real user, resource, and evidence boundaries before affected work proceeds. Apply the existing scoped revision and review rules only to conclusions that actually change; do not automatically create a new B, V, or full review. Preserve historical evidence and actual consumption. A reviewer-only execution exclusion does not prohibit the implementation owner from obtaining relevant evidence through the normal permitted path.
 
 ## Resolve user-owned design choices
 
@@ -120,7 +124,7 @@ Prepare design review only after every user choice needed by the planned slice r
 
 ## Concern contracts
 
-`design-implementation` owns the professional content of every triggered concern. Each concern document starts with frontmatter that binds `work_id`, `plan_revision`, `design_contract_identity`, parent versions, status, and generation identity. The Coordinator fills only mechanical binding fields after the professional draft is complete. To avoid a self-referential identity, compute each concern's contract hash from its canonical bytes with the `design_contract_identity` field omitted; the review snapshot separately records the whole-file hash. Give each contract-bearing section an immutable content identity.
+`design-implementation` owns each triggered concern's professional content. Identify sections with stable headings. Inherit the W and saved version from [W saved references](work-plan.md#saved-design-references); concern files need no repeated design identity, revision, status or parent frontmatter. State a separately versioned input only where its version affects technical meaning.
 
 ### Architecture
 
@@ -158,6 +162,8 @@ Trigger for every `module` or `system` design.
 
 Map each requirement and failure behavior to an observable test oracle. State unit, interface, integration, compatibility, migration, rollback, performance, security, global, and comparison-integrity checks as applicable; fixtures; evidence meaning and format; producer and consumer roles; and any stable external-interface path.
 
+Apply [Evidence at real boundaries](implementation-review.md#evidence-at-real-boundaries) to assumptions about actual dependencies that the next use relies on. The implementation owner covers the complete deliverable, including its relevant dependency seams; splitting implementation work or review scope does not transfer that responsibility to an unassigned future reviewer.
+
 Make each delivery slice's observable behavior, stable prerequisites, exact design inputs, distinguishing oracle, failure checks, and safe recovery point authoritative here. A delivery slice is a stable obligation, not the executor's mutable work breakdown. Entry later binds the exact obligations one B must satisfy to its execution source, worker paths, and internal output destinations without changing their meaning.
 
 Use examples, schemas, state tables, or sequence descriptions whenever prose permits incompatible implementations. A design is not ready while a developer must invent entity meaning, responsibility, interface contract, state owner, runtime transition, failure response, user decision, oracle, or slice boundary.
@@ -168,20 +174,20 @@ Use examples, schemas, state tables, or sequence descriptions whenever prose per
 
 Execution owns its mutable work breakdown and may add, remove, merge, replace, or reorder internal steps while the B envelope and delivery obligations remain satisfied. Evidence that an obligation, seam, ownership, acceptance meaning, or load-bearing design assumption must change returns to `design-implementation` as a scoped revision. A local defect, failed check, or inconvenient implementation shape remains implementation feedback.
 
-A design, research, or non-code prototype B may resolve one open question. Its worker may only report evidence and proposed wording. It changes no design contract until the Coordinator adopts a new W revision and concern identity.
+A design, research, or non-code prototype B may resolve one open question. Its worker reports evidence and proposed wording; a changed contract takes effect through an adopted W revision.
 
 ## Review and revision
 
-The design contract identity binds W Purpose, semantic Scope, Design brief, Design map, User design decisions, stable Delivery map, applicable Human input contracts, Validation, Definition of done, every indexed concern identity, the exact repository-evidence snapshot used for review, and normalized `traceability.yaml`. It excludes future execution assignment, attempt namespace, internal review or recovery paths, internal evidence destinations, runtime status, lifecycle input state, progress, discoveries, recovery, outcome, and current development authorization.
+Review the technical meaning of W Purpose, Scope, Design brief, Design map, User design decisions, Delivery map, applicable Human input contracts, Validation, Definition of done, indexed concerns and traceability at the saved Git reference. Progress, discoveries, recovery, outcome and current lifecycle records remain outside technical obligations. Their later changes do not require renewed Design Review.
 
-The review evidence snapshot proves which repository facts supported the Design. Entry separately binds the exact execution `source_base_identity`. A later execution source may differ only under compatibility conditions already stated by Design. When an exact source identity is itself design meaning—for example a required fixed ancestor, preserved bytes, or pre-migration state—Design must state that constraint and Entry must satisfy it; Entry may not invent a compatibility rule.
+The review's source references establish which repository facts supported Design. Entry separately selects the execution source. A required fixed ancestor, preserved artifact or pre-migration state remains an explicit design constraint; later execution must satisfy its stated compatibility conditions.
 
-For new design identities, `traceability.yaml` indexes stable technical slices rather than B realizations. A design identity that already had an adopted, valid `DESIGN_READY` before this authoring rule keeps its exact historical `batches` form for audit under its original authority. Every later design identity, including a new revision of that W, uses the stable-slice form; a new design review must not return `DESIGN_READY` for the historical B-keyed form. This is a prospective change to the existing traceability contract shape, not a new contract family, version field, or identity algorithm.
+Use the current stable-slice traceability shape from Work Plan for new or materially revised designs. Retained designs keep their original representation and review; updating the workflow does not require their conversion.
 
-Keep review-attempt identifiers, packet paths, snapshot paths, pending-review state, and adopted-review identity only in W frontmatter and other lifecycle records outside those contract-bearing sections. A contract-bearing section may require an independent versioned review and state its checks, but it must not name the review attempt that will review that same contract. Otherwise each replacement review changes the object being reviewed and creates an identity cycle.
+Keep the current R and pending-review state in lifecycle fields. Technical obligations may specify required review checks but do not name their own future reviewer record. The consuming review stores its subject commit; W never backfills its own commit.
 
 A contract-bearing change needs a new W revision and fresh technical review. The executor preserves the discovery; the Coordinator scopes the revision; `design-implementation` updates professional meaning; the Coordinator updates mechanical bindings. Follow [Boundary-preserving continuation](batch-current.md#boundary-preserving-continuation) for same-B work. Do not require a new user answer solely because a delegated technical concern changed. Lifecycle evidence alone does not change Design. A change to parent legality, permitted operations, acceptance, measurement meaning, or promotion returns to its owning stage.
 
-Apply assignment ownership prospectively. Preserve historical snapshots, verdicts, and explicit constraints; do not reopen them to tidy wording or as a prerequisite for unaffected work. When a frozen mandatory workflow clause actually obstructs current work, address the related conflicting obligations together in the next necessary scoped revision through the existing complete-review and authority path. Reuse unchanged work and evidence, not an old review or authorization for a changed identity. Nonbinding guidance needs no replacement identity.
+Apply assignment ownership prospectively. Preserve historical verdicts and explicit constraints. Repair conflicting obligations in the next necessary scoped revision and reuse unaffected evidence and review conclusions. A corrected reference or guidance change creates no new design revision by itself.
 
-Design planning is complete when the designer has returned `DRAFT_READY`, the Coordinator's mechanical map and traceability cover every triggered concern and exact technical-slice pointer without semantic drift, every user choice resolves, and the frozen snapshot is ready for `design-review.md`. The invocation result is not a W lifecycle state or readiness verdict; only `review-frontier` may return `DESIGN_READY`.
+Design planning is complete when the designer has returned `DRAFT_READY`, the maps and traceability cover every triggered concern and selected obligation without semantic drift, needed user choices resolve, and the saved Git subject is ready for `design-review.md`. Only `review-frontier` may return `DESIGN_READY`.

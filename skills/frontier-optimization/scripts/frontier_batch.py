@@ -238,6 +238,13 @@ class GovernanceResolver(Protocol):
     """Resolve facts owned by Review and Permission without copying them."""
 
     def review(self, reference: GitReference, action: Action) -> ReviewAssessment:
+        """Read saved R coverage for this action without writing or adopting it.
+
+        Judge relevant inputs and assumptions, not whole-Batch byte equality.
+        A caller may supply an unadopted R for an optional readiness check;
+        perform separately requires its actual current Batch membership.
+        See batch-current.md#review-applicability-and-adoption.
+        """
         ...
 
     def permission(

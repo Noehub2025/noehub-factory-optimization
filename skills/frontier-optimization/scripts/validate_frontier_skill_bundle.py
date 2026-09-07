@@ -41,6 +41,7 @@ EXPECTED_SKILLS = {
     "review-frontier": True,
 }
 REQUIRED_CURRENT_SCRIPTS = {
+    "frontier_references.py",
     "frontier_batch.py",
     "finding_effects.py",
     "validate_frontier_skill_bundle.py",

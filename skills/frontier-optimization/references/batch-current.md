@@ -63,6 +63,16 @@ A Candidate Revision is a full Git commit plus explicit repository-relative path
 
 Ordinary checks and observations bind the Candidate Revision they examined. A failed check returns to routine work. Checks whose execution would spend governed resources, access sensitive material, submit externally, make an irreversible change, consume a single-use sample, or create an independently retained measurement use `Batch.perform` instead.
 
+## Review applicability and adoption
+
+An R and its subject remain the versions saved in Git. The current Batch records subsequent adoption and progress. `GovernanceResolver.review(reference, action)` reads the saved R and judges whether its conclusions and assumptions cover the proposed action; it is a read-only lookup, not a review writer. Compare relevant decision meaning and selected inputs, not the whole current `batch.yaml` against either the reviewed file or a reconstructed post-adoption file.
+
+Adopting an R, updating a rationale, or recording progress does not invalidate that R. Revised operational caps follow the existing rule above. A change to behavior, acceptance, measurement meaning, or reviewed implementation requires reconsidering only the affected conclusions. Keep this judgment in the existing owner resolver; do not introduce a generic field whitelist or another review-validity registry.
+
+Fixed action inputs retain their existing version checks. Runtime facts remain current: `Batch.perform` reloads the Batch and checks required R membership and applicability, V coverage, selected inputs and checks, available resources, unresolved Attempts, and repetition limits before invoking the operation. A removed Review, withdrawn Permission, or prior consumption cannot be ignored as bookkeeping. A selected input set must not include the live Batch merely to preserve its review-time bytes; the module already owns its current execution state.
+
+If an adapter offers a read-only preflight, pass the saved R reference and proposed Action directly, including before R adoption. Read current state without applying a revision, creating an Attempt, or invoking the operation. Report only the readiness facts actually checked. Preflight is optional and grants no execution credential. For execution, the Coordinator adopts applicable R references through `Batch.apply(ReviseBatch)`, then `Batch.perform` checks the actual current state. Neither a successful preflight nor a simulated adoption replaces those checks.
+
 ## Boundary-preserving continuation
 
 Continue the same B while it pursues the same independently judged result and remains inside the user's objective, permitted scope, applicable Permissions, governing campaign limits, protected reserve, Measurement Definition and known effects. A changed implementation plan, W slice allocation, internal work breakdown, local command order, Review revision, Permission update, Batch operational limit, planning estimate, or Candidate Revision does not by itself create another B.
