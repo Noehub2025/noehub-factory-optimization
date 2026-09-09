@@ -2,7 +2,7 @@
 
 Load only for an actual strategic change under the [single direction resolver](learning-loop.md#evidence-consequence-levels). Internal revision allowances, development stopping conditions and support repair inside the same investment use [Batch continuation](batch-current.md#repair-an-existing-execution-restriction), including when an earlier X called them strategic. The Coordinator corrects that routing before assigning Replan review; the document containing a limit does not determine its ownership. This file adds no resolver, interpretation stage, or user authorization.
 
-Apply [Change impact and retained results](frontier-core.md#change-impact-and-retained-results) when parent rules or retained conclusions are involved. A parent version difference alone does not require Replan; an actual strategic allocation change still requires `REPLAN_READY` before dependent spend. Review the change and affected dependencies, reusing unaffected conclusions.
+Apply [Change impact and retained results](frontier-core.md#change-impact-and-retained-results) when parent rules or retained conclusions are involved. Before treating a retained ranking or switch as a strategic constraint, apply the actual-object-and-consequence test in [Evidence consequence levels](learning-loop.md#evidence-consequence-levels). A parent version difference or a different future technical priority alone does not require Replan; an actual strategic allocation change still requires `REPLAN_READY` before dependent spend. Review the change and affected dependencies, reusing unaffected conclusions.
 
 ## Saved review subject
 

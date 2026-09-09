@@ -102,7 +102,7 @@ REFLECTION_REQUIRED_MARKERS = {
     ),
     "campaign-state.md": (
         "Selection applies the reviewed Entry evidence or latest controlling reflection; it does not reinterpret validity, technical learning, route eligibility",
-        "exactly one persisted first applicable resolver row and deterministic resolution",
+        "exactly one finalized first applicable resolver row and deterministic resolution",
         "Routine row 13 adds no research, diagnosis, or review",
         "routine work cannot consume protected reserve",
     ),
@@ -159,7 +159,7 @@ def generation_reflection_contract_findings(skills_root: Path) -> list[str]:
         ),
         "frontier-optimization/references/campaign-state.md": (
             "Selection applies reviewed Entry evidence or current adopted project evidence through the sole resolver",
-            "exactly one persisted first applicable resolver row and deterministic resolution",
+            "exactly one finalized first applicable resolver row and deterministic resolution",
         ),
         "frontier-optimization/references/closeout-and-claims.md": (
             "Create the Generation Reflection",
@@ -262,7 +262,7 @@ RESOLVER_ROW_MARKERS = {
     7: "selected next commitment under the ordering above",
     8: "one deciding external or repository fact",
     9: "more than one live causal explanation",
-    10: "governed spend outside the unchanged reviewed strategic allocation",
+    10: "crossing an actual reviewed strategic boundary",
     11: "Existing valid evidence and R8",
     12: "crosses another recorded B, T replacement boundary, checkpoint, integration, promotion",
     13: "No row from 1 through 12 governs",

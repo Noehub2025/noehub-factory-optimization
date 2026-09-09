@@ -84,7 +84,7 @@ Historical B records continue through their recorded packet and dispatch contrac
 
 Use only [Integrated direction resolver](learning-loop.md#integrated-direction-resolver). This file adds no direction table, fallback priority, research-first exception, or post-resolver R8 override.
 
-For an unchanged evidence and Selection state, apply its persisted row, exact next action, and later-spend gates without running the resolver again.
+For an unchanged evidence and Selection state, apply its persisted row, exact next action, and later-spend gates without running the resolver again. Determine whether that decision covers the pending work under [Route-investment ordering](learning-loop.md#route-investment-ordering), which also owns the positive-switch exemption.
 
 After the terminal outcome and any eligible E are adopted, the resolver receives persisted B, E, Q, X, T, W, D, V, R8, Budget, parent, validity, join, and gate facts directly. Apply its single total order and [Budget precheck](learning-loop.md#resolver-inputs-and-budget-precheck), including the next observation, unavoidable commitments, and safe stopping or recovery. [Opportunity-led reconsideration](learning-loop.md#opportunity-led-reconsideration) uses that same order; it creates no parallel selector, analysis stage, or authority.
 
@@ -122,7 +122,7 @@ Finish the current action's completion criterion before loading its successor. R
 | Surprising result that may be an implementation or measurement problem | The resolver compares decision-relevant next observations and Selection records its ordering. Unresolved validity cannot support route failure. |
 | Formal direction choice has an experiment-bound evidence gap | Resolver row 7 or 8 selects one bounded Q that reconciles current experiment results with applicable industrial, academic, community, repository, and retained evidence, then reruns the same resolver after adoption. |
 | Formal direction choice is already supported by complete evidence and a determined R8 action or technical ordering | Do not add another Q merely because a direction is being selected; apply the determined row and next gate. |
-| Result retains or changes a reference, comparator, incumbent, route, or allocation | Apply the role and actual consequence: use normal retention under an unchanged rule, the owning measurement gate for changed comparison meaning, or Replan for a route or material-allocation change. |
+| Result retains or changes a reference, comparator, incumbent, route, or allocation | Apply the role and actual consequence: use normal retention under an unchanged rule, the owning measurement gate for changed comparison meaning, or Replan only when the change crosses an actual governing strategic boundary under [Evidence consequence levels](learning-loop.md#evidence-consequence-levels). Historical technical ordering alone does not establish that boundary. |
 | Two funded diagnostic paths remain non-dominated | Apply the single Learning Loop resolver's technical ordering; ask the user only for a genuine unresolved user-owned choice. |
 | A sufficient check would consume protected reserve | Resolver row 5 selects no B or spend-bearing Q and returns the exact Budget, stop, or zero-spend Replan consequence. |
 | Code implementation followed by performance evaluation | Separate implementation B and Slot H evaluation B; evaluation is blocked before unchanged `IMPLEMENTATION_READY`. |

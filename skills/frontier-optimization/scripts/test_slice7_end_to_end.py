@@ -1131,7 +1131,10 @@ class Slice7ContractTests(unittest.TestCase):
         coordinator = (SCRIPT_ROOT.parent / "SKILL.md").read_text()
         self.assertIn("references/user-facing-handoff.md", coordinator)
         self.assertIn("use the core router for the next in-scope action", coordinator)
-        self.assertIn("Reuse an applicable direction resolution", coordinator)
+        self.assertIn(
+            "distinguish continuation of selected work from a new investment choice",
+            coordinator,
+        )
         self.assertIn("A worker's return ends its assignment, not the Coordinator's task", coordinator)
         self.assert_contract_contains(
             "user-decisions.md",
