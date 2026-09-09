@@ -57,9 +57,13 @@ def _git(root: Path, *args: str) -> bytes:
         raise ReferenceError(exc.stderr.decode(errors="replace").strip()) from exc
 
 
+def resolve_revision(root: Path, revision: str) -> str:
+    return _git(root, "rev-parse", "--verify", "--end-of-options", revision + "^{commit}").decode().strip()
+
+
 def reference(root: Path, revision: str, path: str) -> dict[str, str]:
     """Resolve a revision once; consumers retain the returned full commit."""
-    commit = _git(root, "rev-parse", "--verify", "--end-of-options", revision + "^{commit}").decode().strip()
+    commit = resolve_revision(root, revision)
     ref = {"commit": commit, "path": normalize_repo_path(path, "path")}
     read_reference(root, ref)
     return ref
@@ -75,6 +79,27 @@ def read_reference(root: Path, ref: dict[str, str]) -> bytes:
     if not row.startswith(("100644 blob ", "100755 blob ")):
         raise ReferenceError(f"required regular file is absent at saved version: {path}")
     return _git(root, "show", f"{commit}:{path}")
+
+
+def prepare_review_reference(root: Path, revision: str, path: str, handle: str | None = None) -> dict:
+    """Read a selected R; adoption and professional applicability are separate."""
+    ref = reference(root, revision, path)
+    text = read_reference(root, ref).decode("utf-8")
+    header = re.match(r"\A---\s*\n(.*?)\n---(?:\s*\n|\Z)", text, re.S)
+    if header:
+        metadata = _document(header.group(1).encode())
+    else:
+        try:
+            metadata = _document(text.encode())
+        except (ValueError, yaml.YAMLError):
+            metadata = {}
+    recorded_handle = metadata.get("review_id")
+    if handle is not None and recorded_handle is not None and handle != recorded_handle:
+        raise ReferenceError("chosen handle differs from the saved review_id")
+    handle = recorded_handle if recorded_handle is not None else handle
+    if not isinstance(handle, str) or not re.fullmatch(r"R[0-9]+", handle):
+        raise ReferenceError("supply the chosen R handle when the saved record has no review_id")
+    return {"reference": {"handle": handle, **ref}, "review_text": text}
 
 
 def _evidence(root: Path, ref: dict[str, str]) -> tuple[dict, str]:
@@ -208,20 +233,58 @@ def _write(path: Path, value: dict, *, merge: bool = False) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("kind", choices=("design", "resolver", "bind-resolution"))
+    parser.add_argument("kind", choices=("design", "resolver", "bind-resolution", "batch-review", "batch-update", "batch-view"))
     parser.add_argument("--repo", type=Path, default=Path.cwd())
-    parser.add_argument("--revision", default="HEAD")
-    parser.add_argument("--path", required=True, help="W, evidence, or existing prepared assignment path")
+    parser.add_argument("--revision", help="chosen saved revision; defaults to HEAD for reference preparation")
+    parser.add_argument("--path", help="W, evidence, review, or existing prepared assignment path")
     parser.add_argument("--scope", action="append", default=[])
     parser.add_argument("--prior", action="append", default=[], help="known resolution path at revision; repeat as needed")
     parser.add_argument("--result", type=Path, help="existing result draft for binding")
     parser.add_argument("--output", type=Path, help="write into the existing assignment or result location")
+    parser.add_argument("--batch", help="target Batch for batch-review, batch-update or batch-view")
+    parser.add_argument("--handle", help="chosen R handle only when absent from the saved review")
+    parser.add_argument("--reason", help="Coordinator's adoption or same-result revision rationale")
+    parser.add_argument("--candidate-path", action="append", default=[], help="selected candidate path; repeat as needed")
+    parser.add_argument("--limit", action="append", default=[], help="changed operational limit as key=number")
+    parser.add_argument("--measurement-updates", type=Path, help="only changed Measurement Definition fields, as YAML or JSON")
     args = parser.parse_args()
+    from frontier_batch import AdoptReview, Batch, BatchError, UpdateWorkingState, batch_facts
+
     try:
-        if args.kind == "design":
-            value = prepare_design(args.repo, args.revision, args.path, args.scope)
+        if args.kind.startswith("batch-"):
+            if not args.batch:
+                raise ReferenceError("Batch operations require --batch")
+            if args.output:
+                raise ReferenceError("Batch operations return stdout; their only write is the existing Batch record")
+            batch = Batch.open(args.repo, args.batch)
+            if args.kind == "batch-review":
+                if not args.path or not args.revision or not args.reason:
+                    raise ReferenceError("batch-review requires --path, --revision and --reason")
+                view = batch.apply(AdoptReview(args.revision, args.path, args.reason, args.handle))
+            elif args.kind == "batch-update":
+                if not args.reason:
+                    raise ReferenceError("batch-update requires --reason")
+                limits = {}
+                for item in args.limit:
+                    key, separator, number = item.partition("=")
+                    if not separator or key in limits:
+                        raise ReferenceError("each --limit must be a distinct key=number")
+                    limits[key] = json.loads(number)
+                view = batch.apply(UpdateWorkingState(
+                    rationale=args.reason, revision=args.revision,
+                    paths=tuple(args.candidate_path) if args.candidate_path else None,
+                    resource_limits=limits or None,
+                    measurement_updates=_document(args.measurement_updates.read_bytes()) if args.measurement_updates else None,
+                ))
+            else:
+                view = batch.view
+            value = batch_facts(view)
+        elif not args.path:
+            raise ReferenceError("reference preparation requires --path")
+        elif args.kind == "design":
+            value = prepare_design(args.repo, args.revision or "HEAD", args.path, args.scope)
         elif args.kind == "resolver":
-            value = prepare_resolver(args.repo, args.revision, args.path, args.prior)
+            value = prepare_resolver(args.repo, args.revision or "HEAD", args.path, args.prior)
         else:
             if args.result is None:
                 raise ReferenceError("bind-resolution requires --result")
@@ -232,7 +295,7 @@ def main() -> int:
         else:
             print(json.dumps(value, ensure_ascii=False, indent=2))
         return 0
-    except (ValueError, KeyError, TypeError, OSError, yaml.YAMLError) as exc:
+    except (BatchError, ValueError, KeyError, TypeError, OSError, yaml.YAMLError) as exc:
         print(json.dumps({"status": "NOT_READY", "error": str(exc)}))
         return 2
 

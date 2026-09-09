@@ -19,6 +19,16 @@ An initialization or default value, execution success, and a context-incomplete 
 
 Do not call a historical packet, execution-start, snapshot or result validator for a current Batch. An unresolved Attempt blocks only its dependent adoption and repetition. Preserve failed, invalid and valid-but-limited observations with their actual limits.
 
+Limit a support defect to the conclusions that depend on it. Retain raw facts, the support failure and the remaining inference limit separately in the existing result; a parser failure leaves its derived count unknown, not zero. Missing auxiliary diagnostics leave independently supported facts usable within their existing scope; defects in input attribution, core outcomes or scoring limit the affected comparison. Preserve partial facts as partial facts, not a complete comparison or a selected favorable sample. Use retained evidence to recover a conclusion where sufficient, and identify the specific missing observation otherwise.
+
+## Preserve meaning through the use path
+
+Follow the affected meaning through Measurement Definition → adapter → Attempt → Result Adoption → resolver/Selection → user report. Use the Attempt's recorded definition and raw facts for what happened; apply the current supported meaning to the proposed use and explain any correction in the existing adoption record. Reuse `decision_value`, `lifecycle_state`, `context`, `required_context_keys` and existing text or references where applicable. Missing context limits its dependent use; do not manufacture values or create a second schema.
+
+At adoption, verify that interpretation retains the decision-relevant timing, exposure, comparison conditions and actual stopping process. A worker's `positive` or `adverse` label is shorthand for its supported observation, not an independent performance conclusion. Narrow an overstatement and refer any proposed extension of meaning to its owner. Selection and the user report retain the conditions on which their decision relies rather than consuming or displaying the label alone. Complete this check in the existing work, without an extra artifact or review.
+
+For later observations or a corrected interpretation, preserve earlier facts at their original versions and revise only current judgments affected by the new evidence. Identify any still-used decision that relies on the corrected premise. If its next action changes, use the existing evidence-state and resolver path; otherwise record the observation or correction without a new decision event. Historical retention does not make a disproved interpretation current, and a changed value alone requires no unrelated review or rerun.
+
 ## Reconcile resources
 
 `Batch.perform` records Attempt use first. The Coordinator writes only resource keys governed by a cumulative Problem, Frame, V, or verified external-capacity limit to Campaign Budget. Ungoverned internal use remains in the Batch record. If a matching reservation exists, replace it with actual or conservatively bounded use in the same update; do not double count it. Until governed use is written back, do not make another dependent allocation. Unknown use remains unknown; it is never converted to zero.
@@ -37,7 +47,7 @@ An invalid, failed, interrupted, ambiguous or noncomparable formal result remain
 
 ## Reuse completed evidence
 
-A derived result may reuse completed raw evidence without another measurement Attempt only when the raw evidence is unchanged, the measurement semantics and interpretation limit are unchanged, no new sampling or governed effect occurs, and the source remains recoverable. Record the source B, Attempt and raw artifacts. Any changed comparator, method, scope, interpretation or sampling uses a new current Measurement Definition and `Batch.perform`.
+Apply [Reuse completed evidence](batch-evaluation.md#reuse-completed-evidence) to distinguish mechanical implementation repair from changed measurement meaning. For an eligible derivation, record the source B, Attempt, raw artifacts, correction and supported conclusion in the existing adoption record, using `RecordObservation` for the current B observation when needed. Preserve prior Git versions and terminal Attempt facts; a corrected conclusion does not rewrite the earlier failure or claim that validation had already passed. Continue through the existing adoption and decision-trigger rules without another measurement Attempt or a separate repair approval.
 
 ## Historical compatibility
 

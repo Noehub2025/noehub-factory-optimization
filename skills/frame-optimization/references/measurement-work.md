@@ -4,6 +4,8 @@ Read only for new or changed measurement meaning, or newly created or repaired m
 
 A one-off, low-cost observation inside an adopted Slot H `diagnostic-only` category stays in the current Batch. Its Measurement Definition may define local inputs, initialization, update events, observation window and within-window calculation. It does not change reusable target linkage, cross-instance inference, comparison meaning or an investment ceiling, so it creates no measurement-design task or readiness review.
 
+Apply [Evidence sufficient for the decision](measurement-design.md#evidence-sufficient-for-the-decision) to that actual use. Merely informing the next action does not trigger the Designer. A new reusable interpretation, a proposed use beyond the adopted ceiling, or concrete evidence that the current fitness judgment is unsound returns only the affected question to the design route below. Ordinary queries and parser repairs remain implementation work; naming a new investment rule inside a Batch or Replan does not make it an implementation detail.
+
 ## Shared measurement-design route
 
 Use this route only for a new reusable protocol; a material change to the target, elementary outcome, cross-instance aggregation, lifecycle meaning, required interpretation context, source-supported target relationship, comparison meaning or evidence ceiling; a current fitness challenge; or a `measurement-design` readiness finding. Do not invoke it for a one-off local calculation inside an adopted diagnostic category, harness implementation, execution under unchanged meaning, routine result recording, editorial change, or a new candidate under a still-valid protocol.
@@ -22,7 +24,7 @@ Apply this gate only when materially changed shared support affects the interpre
 
 Create one exact review target under the task's `eval/` directory. Record the support purpose, allowed file set, required behavior, fail-closed cases, authorized focused checks, excluded consequential actions, and completion condition. Give the canonical task path, target path, and one new review-record path to the `measurement-support` branch of `review-optimization`.
 
-Exclusions bound the reviewer's actions, not the implementation owner's evidence channels. Apply [Evidence at real boundaries](../../frontier-optimization/references/implementation-review.md#evidence-at-real-boundaries) to dependencies needed for the next use; include relevant retained evidence in the allowed review inputs rather than requiring a new live run.
+Exclusions bound the reviewer's actions, not the implementation owner's evidence channels. During support implementation or repair, apply [Reuse working knowledge](../../frontier-optimization/references/batch-current.md#reuse-working-knowledge) and [Evidence at real boundaries](../../frontier-optimization/references/implementation-review.md#evidence-at-real-boundaries) to the affected use path; include relevant retained evidence in the allowed review inputs rather than requiring a new live run.
 
 Accept only a fresh `IMPLEMENTATION_READY` result from `review-optimization/1` whose reviewed file hashes and checks still match. Preserve a result from any other reviewer as history and continue to require the current-owner review. `IMPLEMENTATION_READY` permits later framing work only; durable containment, baseline execution, candidate work, and other consequences retain their existing authority requirements.
 

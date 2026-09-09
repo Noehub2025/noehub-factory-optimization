@@ -4,15 +4,20 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import json
+import runpy
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 
 from frontier_batch import (
     Action,
+    AdoptReview,
     Batch,
     BatchFormatError,
     CandidateRevision,
@@ -33,6 +38,9 @@ from frontier_batch import (
     ReviseBatch,
     ReviewAssessment,
     SelectCandidate,
+    StorageConflict,
+    UpdateWorkingState,
+    batch_facts,
 )
 
 
@@ -101,6 +109,141 @@ class BatchModuleTests(unittest.TestCase):
     def _candidate(self, commit: str | None = None) -> CandidateRevision:
         return CandidateRevision(commit or self.first_commit, ("src/candidate.txt",))
 
+    def test_candidate_git_checks_are_batched_and_preserve_path_boundaries(self):
+        paths = tuple(f"src/item {index}.txt" for index in range(28)) + ("src/line\nbreak.txt",)
+        for path in paths:
+            (self.repo / path).write_text("retained input\n")
+        self._git("add", "src")
+        self._git("commit", "-qm", "many input paths")
+        commit = self._git("rev-parse", "HEAD")
+        batch = self._defined_batch()
+        for selected in (paths[:1], paths):
+            with self.subTest(paths=len(selected)):
+                with patch("frontier_batch.subprocess.run", wraps=subprocess.run) as git:
+                    batch.apply(SelectCandidate(CandidateRevision(commit, selected), "Select inputs."))
+                self.assertEqual(git.call_count, 2)
+                self.assertIn("--batch-check=%(objectname)", git.call_args.args[0])
+                self.assertEqual(git.call_args.kwargs["input"].count(b"\0"), len(selected))
+        # Existence at a saved commit remains distinct from current working bytes.
+        (self.repo / paths[0]).write_text("uncommitted edit\n")
+        batch.apply(RecordCheck("saved-object-only", CandidateRevision(commit, paths), "passed"))
+        self.assertEqual(batch.view.data["attempts"], [])
+
+    def test_batched_candidate_rejects_bad_inputs_without_writing(self):
+        batch = self._defined_batch()
+        original = self.state_path.read_bytes()
+        invalid = (
+            CandidateRevision("0" * 40, ("src/candidate.txt",)),
+            CandidateRevision("HEAD", ("src/candidate.txt",)),
+            CandidateRevision(self.first_commit, ("src/candidate.txt", "src/missing.txt")),
+            CandidateRevision(self.first_commit, ("../outside",)),
+            CandidateRevision(self.first_commit, ("src/candidate.txt", "src/candidate.txt")),
+            CandidateRevision(self.first_commit, ()),
+        )
+        for candidate in invalid:
+            with self.subTest(candidate=candidate):
+                with self.assertRaises(BatchFormatError):
+                    batch.apply(SelectCandidate(candidate, "Invalid selection."))
+                self.assertEqual(self.state_path.read_bytes(), original)
+
+    def test_candidate_batching_does_not_cache_current_governance(self):
+        calls = []
+        owner = Governance()
+
+        def observe(action, context):
+            calls.append(action.key)
+            return OperationResult(status="completed", resource_use={"runs": 1})
+
+        batch = self._defined_batch(
+            governance=owner, operations={"observe": self._operation(observe, ("spend",))},
+        )
+        candidate = self._candidate()
+        batch.apply(SelectCandidate(candidate, "Select inputs."))
+        batch.apply(RecordCheck("ready", candidate, "passed"))
+        action = Action(
+            key="observe", operation="observe", kind="local", candidate=candidate,
+            required_checks=("ready",), required_reviews=("R001",),
+            required_permissions=("V001",), requested_resources={"runs": 1},
+            possible_consequences=("spend",), repeatable=True,
+        )
+        batch.perform(action)
+        owner.review_ready = False
+        with self.assertRaisesRegex(ConsequenceBlocked, "Review does not apply"):
+            batch.perform(action)
+        owner.review_ready = True
+        owner.permission_ready = False
+        with self.assertRaisesRegex(ConsequenceBlocked, "Permission does not allow"):
+            batch.perform(action)
+        owner.permission_ready = True
+        batch.apply(ReviseBatch(rationale="No remaining allocation.", resource_limits={"runs": 1}))
+        with self.assertRaisesRegex(ConsequenceBlocked, "resource limit"):
+            batch.perform(action)
+        self.assertEqual(calls, ["observe"])
+        self.assertEqual(len(batch.view.data["attempts"]), 1)
+
+    def test_peak_constraints_leave_cumulative_accounting_without_rewriting_history(self):
+        observed = []
+
+        def observe(action, context):
+            definition = context["measurement_definition"]
+            peak_limit = definition.get("run_spec", {}).get("parallel_limit")
+            if peak_limit is not None:
+                self.assertEqual(peak_limit, 2)
+                self.assertNotIn("parallel_peak", action.requested_resources)
+            observed.append(context["attempt"])
+            # This serial fixture needs one worker, below its runtime limit.
+            return OperationResult(
+                status="completed",
+                resource_use={"runs": 1, **({"parallel_peak": 2} if peak_limit is None else {})},
+                observations=({"observed_parallel_peak": 1, "estimated_helper_starts_upper": 8},),
+            )
+
+        batch = self._defined_batch(
+            operations={"observe": self._operation(observe)},
+            resource_limits={"runs": 4, "parallel_peak": 2}, expected_consequences=(),
+        )
+        batch.apply(ReviseBatch(
+            rationale="Retained historical accounting.",
+            measurement_definition=self._measurement(resource_ceiling={"runs": 4, "parallel_peak": 2}),
+        ))
+        candidate = self._candidate()
+        batch.apply(SelectCandidate(candidate, "Select working material."))
+        batch.apply(RecordCheck("ready", candidate, "passed"))
+        action = Action(
+            key="observe", operation="observe", kind="measurement", candidate=candidate,
+            required_checks=("ready",), requested_resources={"runs": 1, "parallel_peak": 2},
+            repeatable=True,
+        )
+        batch.perform(action)
+        history = batch.view.data["attempts"][0]
+        checks = batch.view.data["current"]["checks"]
+        references = batch.view.data["references"]
+        with self.assertRaisesRegex(ConsequenceBlocked, "resource limit"):
+            batch.perform(action)
+        # Replace both current limit maps; old Attempt facts remain untouched.
+        batch.apply(ReviseBatch(
+            rationale="Keep the peak as an operating constraint, not cumulative use.",
+            resource_limits={"runs": 4},
+            measurement_definition=self._measurement(
+                resource_ceiling={"runs": 4}, run_spec={"parallel_limit": 2},
+            ),
+        ))
+        action = replace(action, requested_resources={"runs": 1})
+        for _ in range(2):
+            batch.apply(RecordCheck("release", candidate, "passed", {"state": "ready"}))
+            batch.perform(action)
+        saved = Batch.open(self.repo, "B001", state_path=self.state_path).view
+        self.assertEqual(observed, [1, 2, 3])
+        self.assertEqual(saved.data["attempts"][0], history)
+        self.assertEqual(saved.data["consumption"], {"runs": 3, "parallel_peak": 2})
+        self.assertEqual(batch_facts(saved)["remaining_capacity"], {"runs": 1})
+        self.assertEqual(saved.data["references"], references)
+        self.assertEqual(saved.data["current"]["checks"]["ready"], checks["ready"])
+        for attempt in saved.data["attempts"][1:]:
+            self.assertEqual(attempt["resource_use"], {"runs": 1})
+            self.assertEqual(attempt["observations"][0]["observed_parallel_peak"], 1)
+            self.assertEqual(attempt["actual_consequences"], [])
+
     def _defined_batch(
         self,
         *,
@@ -135,6 +278,157 @@ class BatchModuleTests(unittest.TestCase):
         protected_consequences: tuple[str, ...] = (),
     ) -> OperationBinding:
         return OperationBinding(run, protected_consequences)
+
+    def _save_review(self, handle="R002", result="IMPLEMENTATION_READY"):
+        path = f"records/{handle}.md"
+        (self.repo / path).write_text(
+            f"---\nreview_id: {handle}\nreview_result: {result}\n---\nOriginal professional conclusion.\n",
+            encoding="utf-8",
+        )
+        self._git("add", path)
+        self._git("commit", "-qm", "saved review")
+        return path
+
+    def _reference_cli(self, *arguments, success=True):
+        script = Path(__file__).with_name("frontier_references.py")
+        result = subprocess.run(
+            [sys.executable, "-B", str(script), *arguments, "--repo", str(self.repo), "--batch", "B001"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0 if success else 2, result.stderr + result.stdout)
+        return json.loads(result.stdout)
+
+    def test_saved_review_adoption_reads_source_without_copying_verdict(self):
+        batch = self._defined_batch()
+        path = self._save_review(result="IMPLEMENTATION_REPAIR_REQUIRED")
+        saved = self._git("rev-parse", "HEAD")
+        (self.repo / path).write_text("unreviewed working edits\n", encoding="utf-8")
+        result = batch.apply(AdoptReview(saved, path, "Retain the scoped finding."))
+        self.assertEqual(result.data["references"]["reviews"][-1], {
+            "handle": "R002", "commit": saved, "path": path,
+        })
+        self.assertEqual(result.data["current"]["observations"], {})
+        self.assertEqual(result.data["consumption"], {})
+        self.assertEqual(result.data["attempts"], [])
+        before = self.state_path.read_bytes()
+        batch.apply(AdoptReview(saved, path, "A repeated request."))
+        self.assertEqual(before, self.state_path.read_bytes())
+        with self.assertRaisesRegex(ValueError, "differs"):
+            batch.apply(AdoptReview(saved, path, "Wrong selected handle.", "R003"))
+        self.assertEqual(before, self.state_path.read_bytes())
+
+    def test_working_delta_reads_latest_state_and_repeated_selection_preserves_checks(self):
+        stale = self._defined_batch()
+        stale.apply(SelectCandidate(self._candidate(), "Select working bytes."))
+        stale.apply(RecordCheck("ready", self._candidate(), "passed"))
+        path = self._save_review()
+        other = Batch.open(self.repo, "B001")
+        other.apply(AdoptReview("HEAD", path, "Adopt another applicable review."))
+        other.apply(UpdateWorkingState("Add an internal resource.", resource_limits={"calls": 8}))
+        stale.apply(UpdateWorkingState(
+            "Revise one internal allowance.", revision=self.first_commit,
+            paths=("src/candidate.txt",), resource_limits={"runs": 4},
+        ))
+        data = stale.view.data
+        self.assertEqual(data["resource_limits"], {"runs": 4, "proposal": 2, "calls": 8})
+        self.assertEqual(len(data["references"]["reviews"]), 2)
+        self.assertIn("ready", data["current"]["checks"])
+        before = self.state_path.read_bytes()
+        stale.apply(UpdateWorkingState(
+            "Repeat without resetting checks.", revision=self.first_commit,
+            paths=("src/candidate.txt",), resource_limits={"runs": 4},
+        ))
+        self.assertEqual(before, self.state_path.read_bytes())
+        self.assertEqual(data["consumption"], {})
+
+    def test_working_delta_validates_candidate_and_measurement_before_one_save(self):
+        batch = self._defined_batch()
+        batch.apply(SelectCandidate(self._candidate(), "Initial selection."))
+        batch.apply(RecordCheck("ready", self._candidate(), "passed"))
+        batch.apply(ReviseBatch("Define measurement.", measurement_definition=self._measurement()))
+        (self.repo / "src/candidate.txt").write_text("second\n", encoding="utf-8")
+        self._git("add", "src/candidate.txt")
+        self._git("commit", "-qm", "changed working input")
+        before = self.state_path.read_bytes()
+        with self.assertRaises(BatchFormatError):
+            batch.apply(UpdateWorkingState(
+                "Invalid combined change.", revision="HEAD", paths=("src/candidate.txt",),
+                resource_limits={"runs": 4}, measurement_updates={"resource_ceiling": {"runs": -1}},
+            ))
+        self.assertEqual(before, self.state_path.read_bytes())
+        update = UpdateWorkingState(
+            "Bind working inputs and affected measurement together.", revision="HEAD",
+            paths=("src/candidate.txt",), resource_limits={"runs": 4},
+            measurement_updates={"resource_ceiling": {"runs": 3}},
+        )
+        import frontier_batch
+        with patch.object(frontier_batch, "_write_state", wraps=frontier_batch._write_state) as writer:
+            batch.apply(update)
+            self.assertEqual(writer.call_count, 1)
+        self.assertEqual(batch.view.data["current"]["checks"], {})
+        self.assertEqual(batch.view.data["current"]["measurement_definition"]["question"], self._measurement()["question"])
+        self.assertEqual(batch.view.data["current"]["candidate_revision"]["commit"], self._git("rev-parse", "HEAD"))
+
+    def test_failed_working_save_leaves_original_state_and_can_resume(self):
+        batch = self._defined_batch()
+        before = self.state_path.read_bytes()
+        update = UpdateWorkingState("Adjust local work.", resource_limits={"runs": 5})
+        with patch("frontier_batch.os.replace", side_effect=OSError("write unavailable")):
+            with self.assertRaises(StorageConflict):
+                batch.apply(update)
+        self.assertEqual(before, self.state_path.read_bytes())
+        self.assertEqual(batch.view.data["resource_limits"]["runs"], 2)
+        batch.apply(update)
+        self.assertEqual(batch.view.data["resource_limits"]["runs"], 5)
+
+    def test_batch_facts_use_attempts_not_copied_campaign_totals(self):
+        batch = self._defined_batch(operations={"observe": self._operation(
+            lambda action, context: OperationResult(status="uncertain", recovery_condition="Read retained output."),
+        )})
+        batch.apply(RecordObservation("old-summary", {
+            "proposal_events_after": 900, "remaining": 500, "actual": None,
+        }))
+        batch.apply(ReviseBatch("Define observation.", measurement_definition=self._measurement()))
+        with self.assertRaises(ConsequenceUncertain):
+            batch.perform(Action(key="one", kind="measurement", operation="observe", requested_resources={"runs": 1}))
+        facts = batch_facts(batch.view)
+        self.assertEqual(facts["attempt_consumption"], {})
+        self.assertEqual(facts["unresolved_attempts"], [1])
+        self.assertNotIn("proposal_events_after", facts)
+        self.assertIsNone(batch.view.data["current"]["observations"]["old-summary"]["observation"]["actual"])
+        before = self.state_path.read_bytes()
+        self._reference_cli("batch-view")
+        self._reference_cli("batch-view")
+        self.assertEqual(before, self.state_path.read_bytes())
+
+    def test_standard_entry_replaces_old_gate_without_replan_or_charge(self):
+        batch = self._defined_batch()
+        path = self._save_review()
+        # Retained caller reproduces the old dispatch mistake before replacement.
+        old = self.repo / "old_select.py"
+        old.write_text(
+            "from frontier_batch import Batch\nfrom pathlib import Path\n"
+            "state = Batch.open(Path(__file__).parent, 'B001').view.data\n"
+            "if not any(r['handle'] == 'R999' for r in state['references']['reviews']):\n"
+            "    raise ValueError('strategic replan required')\n",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, "strategic replan"):
+            runpy.run_path(str(old))
+        original = old.read_bytes()
+        self._reference_cli("batch-review", "--path", path, "--revision", "HEAD", "--reason", "Adopt chosen review.")
+        result = self._reference_cli(
+            "batch-update", "--revision", "HEAD", "--candidate-path", "src/candidate.txt",
+            "--limit", "runs=4", "--reason", "Continue the same internal work.",
+        )
+        self.assertEqual(result["resource_limits"]["runs"], 4)
+        self.assertEqual(result["candidate_revision"]["commit"], self._git("rev-parse", "HEAD"))
+        self.assertEqual(result["attempt_consumption"], {})
+        self.assertNotIn("R999", [r["handle"] for r in result["reviews"]])
+        self.assertEqual(original, old.read_bytes())
+        before = self.state_path.read_bytes()
+        self._reference_cli("batch-update", "--limit", "runs=-1", "--reason", "Invalid input.", success=False)
+        self.assertEqual(before, self.state_path.read_bytes())
 
     def _measurement(self, mode: str = "diagnostic-only", **overrides) -> dict:
         definition = {
@@ -346,6 +640,120 @@ class BatchModuleTests(unittest.TestCase):
         self.assertEqual(view.data["attempts"], [])
         self.assertEqual(view.data["current"]["checks"]["focused"]["outcome"], "passed")
         self.assertEqual(view.data["current"]["candidate_revision"]["commit"], second_commit)
+
+    def test_existing_repair_gate_and_proposal_writer_can_be_replaced_in_same_batch(self) -> None:
+        """Test owner-driven repair, not automatic inference of obsolete policy."""
+        writer = self.repo / "support_writer.py"
+        imports = "from frontier_batch import SelectCandidate, RecordObservation\n"
+        legacy = imports + (
+            "def select(batch, candidate):\n"
+            "    state = batch.view.data\n"
+            "    if state['resource_limits']['revision_slots'] <= 1:\n"
+            "        raise ValueError('internal revision allowance exhausted')\n"
+            "    if not any(r['handle'] == 'R002' for r in state['references']['reviews']):\n"
+            "        raise ValueError('exact new Replan required')\n"
+            "    batch.apply(SelectCandidate(candidate, 'legacy selection'))\n"
+            "    batch.apply(RecordObservation('new-proposal', {'proposal_event_delta': 1}))\n"
+        )
+        writer.write_text(legacy, encoding="utf-8")
+        self._git("add", "support_writer.py")
+        self._git("commit", "-qm", "retained restrictive writer")
+        prior = CandidateRevision(
+            self._git("rev-parse", "HEAD"), ("src/candidate.txt", "support_writer.py")
+        )
+        batch = self._defined_batch(
+            resource_limits={"runs": 2, "revision_slots": 1},
+            expected_consequences=(),
+        )
+        batch.apply(SelectCandidate(prior, "retained work"))
+        batch.apply(RecordCheck("candidate", prior, "passed"))
+        batch.apply(RecordObservation("earlier-selection", {"proposal_event_delta": 1}))
+        batch.apply(ReviseBatch(
+            rationale="Retain the public development question.",
+            measurement_definition=self._measurement(),
+        ))
+        before = batch.view.data
+        self._git("add", str(self.state_path.relative_to(self.repo)))
+        self._git("commit", "-qm", "retain the blocked Batch")
+        blocked_commit = self._git("rev-parse", "HEAD")
+        retained_state = self._git("show", f"{blocked_commit}:{self.state_path.relative_to(self.repo)}")
+
+        old_select = runpy.run_path(str(writer))["select"]
+        with self.assertRaisesRegex(ValueError, "allowance exhausted"):
+            old_select(batch, prior)
+        batch.apply(ReviseBatch(
+            rationale="Adjust an internal allowance for the same investment.",
+            resource_limits={"runs": 2, "revision_slots": 2},
+        ))
+        # Updating prose or the cap alone leaves the real writer blocked.
+        with self.assertRaisesRegex(ValueError, "new Replan required"):
+            old_select(batch, prior)
+        self.assertEqual(batch.view.data["attempts"], [])
+
+        repaired = imports + (
+            "def select(batch, candidate):\n"
+            "    batch.apply(SelectCandidate(candidate, 'same-result support repair'))\n"
+            "def inspect(action, context):\n"
+            "    from frontier_batch import OperationResult\n"
+            "    return OperationResult(status='completed', resource_use={'runs': 1},\n"
+            "        result={'observation': 'development only', 'independent_confirmation': False})\n"
+        )
+        writer.write_text(repaired, encoding="utf-8")
+        self._git("add", "support_writer.py")
+        self._git("commit", "-qm", "replace obsolete gate and proposal writeback")
+        current = CandidateRevision(self._git("rev-parse", "HEAD"), prior.paths)
+        adapter = runpy.run_path(str(writer))
+        batch = Batch.open(
+            self.repo, "B001", state_path=self.state_path,
+            operations={"inspect": self._operation(adapter["inspect"])},
+        )
+        adapter["select"](batch, current)
+        self.assertEqual(batch.view.data["current"]["checks"], {})
+        action = Action(
+            key="development", operation="inspect", kind="measurement",
+            candidate=current, required_checks=("candidate", "support"),
+            requested_resources={"runs": 1}, repeatable=True,
+        )
+        with self.assertRaises(ConsequenceBlocked):
+            batch.perform(action)
+        self.assertEqual(batch.view.data["attempts"], [])
+
+        self.assertEqual(self._git("diff", prior.commit, current.commit, "--", "src/candidate.txt"), "")
+        batch.apply(RecordCheck("candidate", current, "passed", {
+            "retained_check": before["current"]["checks"]["candidate"],
+            "unchanged_dependencies": ["src/candidate.txt"],
+        }))
+        batch.apply(RecordCheck("support", current, "passed", {
+            "checked": "repaired selector executed without Replan or charge writeback",
+        }))
+        self.assertEqual(batch.view.data["current"]["observations"], before["current"]["observations"])
+        self.assertEqual(batch.view.data["references"], before["references"])
+        self.assertEqual(batch.view.data["consumption"], {})
+        first = batch.perform(action)
+        second = batch.perform(action)
+        self.assertEqual((first.attempt, second.attempt), (1, 2))
+        self.assertEqual(second.view.data["consumption"], {"runs": 2})
+        self.assertNotIn("new-proposal", second.view.data["current"]["observations"])
+        self.assertFalse(second.view.data["attempts"][-1]["result"]["independent_confirmation"])
+        self.assertEqual(self._git("show", f"{blocked_commit}:{self.state_path.relative_to(self.repo)}"), retained_state)
+
+    def test_retained_derivation_repair_preserves_raw_failure_without_new_attempt(self) -> None:
+        batch = self._defined_batch(expected_consequences=())
+        raw = {"values": [3, 5]}
+        batch.apply(RecordObservation("original", {
+            "raw": raw, "support_failure": "unsupported response shape", "count": None,
+        }))
+        original = batch.view.data["current"]["observations"]["original"]
+        batch.apply(RecordObservation("corrected", {
+            "source_observation": "original", "count": len(raw["values"]),
+            "support": "repaired", "performance_inference": "unresolved",
+        }))
+        state = batch.view.data
+        self.assertEqual(state["current"]["observations"]["original"], original)
+        self.assertIsNone(original["observation"]["count"])
+        self.assertEqual(state["current"]["observations"]["corrected"]["observation"]["count"], 2)
+        self.assertEqual(state["attempts"], [])
+        self.assertEqual(state["consumption"], {})
 
     def test_current_state_has_no_parallel_identity_chain(self) -> None:
         batch = self._defined_batch()

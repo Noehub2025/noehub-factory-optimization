@@ -86,6 +86,22 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
         self.assertEqual(plan.tests, (changed.as_posix(),))
         self.assertFalse(plan.release)
 
+    def test_execution_example_stays_focused_and_tracks_batch_api(self) -> None:
+        example = MODULE.EXECUTION_EXAMPLE_TEST.as_posix()
+        plan = MODULE.select_checks(
+            (".agents/skills/run-frontier-batch/scripts/batch_execution_example.py",),
+            "affected",
+        )
+        self.assertEqual(plan.tests, (example,))
+        self.assertFalse(plan.release)
+        batch_plan = MODULE.select_checks(
+            (".agents/skills/frontier-optimization/scripts/frontier_batch.py",),
+            "affected",
+        )
+        self.assertIn(example, batch_plan.tests)
+        release_plan = MODULE.select_checks((), "release")
+        self.assertIn(example, release_plan.tests)
+
     def test_validator_change_selects_its_group_and_end_to_end_seam(self) -> None:
         plan = MODULE.select_checks(
             (".agents/skills/frontier-optimization/scripts/validate_batch_result.py",),

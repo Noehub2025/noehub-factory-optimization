@@ -18,6 +18,8 @@ Lead with information a manager can act on:
 
 Put identifiers, Reviews, gates, Budget accounting and repository status afterward as audit detail. When the objective gap is unknown, name the missing bound or comparison rather than inventing a percentage. A procedural gate must be paired with the substantive question it protects.
 
+For a measurement-bearing return, apply [Preserve meaning through the use path](result-adoption.md#preserve-meaning-through-the-use-path): keep the time, lifecycle and comparison conditions that matter to the decision beside the value. Separate the observed fact from the reason for the selected action. Report a corrected current interpretation explicitly while preserving the original observation as history; a raw direction label is not a substitute for either explanation.
+
 When Selection exists, reproduce every decision-relevant candidate and its recorded ordering. Label the dominant or best-supported action `Recommended`. Preserve non-dominated alternatives and switching conditions without delegating technical ranking to the user.
 
 When Selection does not yet exist, name the evidence event needed to complete the candidate set. If direction resolution is a legal internal action under the current request, perform it instead of returning a planning instruction.

@@ -2,9 +2,13 @@
 
 Read only when the selected B changes executable project material. The rules are task- and technology-neutral: code, configuration, data transformations, models, prompts, physical procedures, and mixed systems use the same Batch boundary.
 
-Use [Current Batch](batch-current.md). Keep one mutable working implementation inside the same B. Divide complex work by technical dependency and observable integration seams, not by the first failing check. The design owner may add, remove, reorder, or replace delivery slices while the independently judged result remains unchanged. Record the revised design or Review reference only when a load-bearing contract changes.
+Use [Current Batch](batch-current.md). Keep mutable working material inside the same B. Follow [Working assignments](worker-interfaces.md#working-assignments) for the applicable task context, implementation responsibility and the distinction between research unknowns, internal refinements and changes to important agreements.
 
 Edit, build, lint, run focused checks, debug, integrate, and repair before selecting exact bytes. These routine loops create no Attempt, proposal, charge, Permission, snapshot, package, or identity. Record a check only when its result is worth retaining, and bind it to the exact Git Candidate Revision it examined. A failed check returns to ordinary work; rerun only affected checks plus necessary integration checks.
+
+For known behavior, use a short test-driven loop where useful: make one expected behavior executable, implement it, check it, and refactor the duplication exposed by that change. Prefer a reproducing test for a known defect. Develop scenarios as evidence exposes relevant behavior; exhaustive failure branches and test criteria are not starting conditions. Correct unsupported expectations from evidence and apply Working assignments when their meaning changes. Test the implementation needed to obtain an observation, not the unknown optimization benefit the observation is meant to investigate.
+
+For a new or changed connection, get a thin path through the actual entry, smallest useful work, saved result and reader working early; then expand it. Reuse an established path instead of building a skeleton for each B. Apply [Evidence at real boundaries](implementation-review.md#evidence-at-real-boundaries) to test doubles, real dependencies and result closure. These checks belong in ordinary development, not a new readiness stage.
 
 Use `Batch.perform` only when the action can produce a measurement or actual Consequence. Immediately before it starts, verify the selected Git revision, applicable checks, current R and V, remaining resources, and prior Attempts. The operation adapter records actual observations, consumption, Consequences, and recovery. It does not wrap the action in acknowledgment, execution-start, result-packet, inventory, or typed provenance identities.
 

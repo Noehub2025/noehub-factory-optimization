@@ -25,9 +25,11 @@ For a current W-backed subject, resolve [Work Plan's saved reference](work-plan.
 
 When adopting this Review or preparing its execution adapter, apply [Review applicability and adoption](batch-current.md#review-applicability-and-adoption) to distinguish the saved subject from current Batch state.
 
+When routine preflight, accounting or reference updates make the proposed action unreachable or force another code revision, check the affected read/write path against [Runtime records and resource use](batch-current.md#runtime-records-and-resource-use) and the applicability rules above. Resolve only that coupling; an ordinary record refresh does not require repeating Entry or unrelated tests.
+
 ## Review method
 
-Judge only whether the proposed decision is technically coherent and reachable under its cited parents, evidence, Selection, Budget, Reviews and existing user boundaries. Check:
+Judge only whether the proposed decision is technically coherent and reachable under its cited parents, evidence, Selection, Budget, Reviews and existing user boundaries. Reuse applicable implementation conclusions; examine their applicability and Entry-specific conditions instead of repeating the implementation review. Check:
 
 - that the resolver result and Selection support the proposed allocation;
 - that protected reserve is not assigned to routine work;
@@ -38,9 +40,9 @@ Judge only whether the proposed decision is technically coherent and reachable u
 - that existing V covers every protected Consequence, or that the exact missing user boundary is identified; and
 - that result branches, claim limits and recovery conditions match the evidence the action can produce.
 
-For an inherited restriction that prevents a needed observation, apply [Constrain effects, not convenient forms](technical-design.md#constrain-effects-not-convenient-forms). Consistency with an unsupported internal prohibition is not evidence of readiness; return only the affected choice to its owner.
+When a new or inherited restriction in the current plan or execution adapter blocks the next action, excludes a needed observation, or materially increases cost, apply [Constrain effects, not convenient forms](technical-design.md#constrain-effects-not-convenient-forms). Use the existing basis and relevant evidence; consistency with the restriction alone is not evidence of readiness. Return only the affected choice to its owner, without a separate restriction audit.
 
-Apply [Decision-bearing thresholds](frontier-core.md#decision-bearing-thresholds) only when the next actual Consequence depends on one and Entry changes or transcribes its predicate. Reuse an exact current-owner reference without a freshness review when its complete meaning is unchanged. If Entry changes the meaning, return it to the existing owner; if Entry merely copied or bound it incorrectly, repair that derived check without treating the work, route, or owner as invalid.
+When the next actual Consequence depends on a threshold, apply [Decision-bearing thresholds](frontier-core.md#decision-bearing-thresholds) if Entry changes or transcribes its predicate or relevant evidence calls its basis or applicability into question. Otherwise reuse an exact current-owner reference without a freshness review when its complete meaning is unchanged. If the meaning needs to change, return it to the existing owner; if Entry merely copied or bound it incorrectly, repair that derived check without treating the work, route, or owner as invalid.
 
 A positive Review establishes Entry readiness only. It does not create Permission, execute work, allocate another B, create E or strengthen a claim. Exact Batch operational caps are runtime controls and may be revised without repeating Entry while the reviewed decision, governing limits, protected reserve, strategic allocation, Measurement Definition and expected Consequences remain unchanged. When an existing V applies, the Coordinator continues without asking the user. When a genuine user boundary is missing, apply [User decisions](user-decisions.md) and ask only for that boundary.
 

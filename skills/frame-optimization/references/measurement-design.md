@@ -8,7 +8,7 @@ Read this reference when `design-measurement` designs or repairs a protocol, whe
 
 After adoption, `PROBLEM.md`, its adopted Slot details, and `REPRESENTATION.md` are the runtime contract. The Designer record remains design evidence, not a second source of authority. A later semantic change returns to `design-measurement`.
 
-`review-optimization` checks fitness through its existing readiness branch. It reports defects and closure conditions without writing the protocol or requiring one named technique. `review-representation` checks only whether R8 stays within adopted measurement constraints. Measurement-support review checks implementation fidelity only.
+`review-optimization` checks fitness through its existing readiness branch. It reports defects and closure conditions without writing the protocol or requiring one named technique. `review-representation` checks only whether R8 stays within adopted measurement constraints. Measurement-support review checks implementation fidelity and the real dependencies needed to obtain the intended evidence; a material fitness defect returns to the measurement owner rather than becoming a new interpretation in support code.
 
 ## Fresh-context execution
 
@@ -32,6 +32,12 @@ For every decision-critical fact in that chain, record one lightweight source-co
 
 Classify each reusable measured value's target relationship as `real-objective`, `established-proxy`, or `unknown-proxy`; record diagnostic use separately. State which live explanations the result can distinguish, which alternatives remain, and the maximum factual attribution and transfer claim. Do not add a second relationship-evidence field outside source coverage.
 
+#### Evidence sufficient for the decision
+
+Connect the supported metric meaning to the actual proposed use: which alternatives this observation can distinguish, what decision-changing explanations remain, and why the evidence is sufficient for that action given the cost of being wrong. Reuse applicable source coverage in the current definition; resolve only missing facts that can change the decision. Operation completion, an available value, and sufficient decision evidence are distinct. A value may remain provisional yet justify a cheap exploratory action without supporting scale-up, route rejection or confirmation.
+
+For changing or delayed values, use the context that affects this comparison, such as initialization, accumulated exposure, update timing, reference activity or evaluated conditions. Identical read times and exact object identities establish neither equal exposure nor comparability. A first nonempty value or favorable difference is sufficient only for the use its evidence supports. Judge the actual investment consequence of a result, including its downstream switches, rather than relying on a `diagnostic` label or a disclaimer. This reasoning belongs in existing meaning and use sections, not a new form or routine review.
+
 ### 2. Conditions and design
 
 Define the applicable cases, data, scenarios, environments, workload, comparators or references, observation unit, and independent analysis unit. Control material variation with the smallest suitable combination of coverage, sampling, repetition, pairing, blocking, ordering, balancing, or randomization. Define failed, missing, interrupted, and invalid observations before results are seen.
@@ -51,6 +57,8 @@ Calibration establishes the behavior of a measurement system, proxy, or referenc
 For every material schedule part, state the decision-relevant information it adds, the explanation it can eliminate, and what capability disappears if it is removed. Mark execution-only checks, calibration, direct comparison, robustness checks, and confirmation by their actual roles. A costly part with no distinct decision contribution is removed, reduced, or reused.
 
 Record when prior results influence later hypothesis generation, parameter choice, screening, ranking, or selection. Only such feedback creates adaptive exposure; ordinary repetition does not. Define an exposure limit or independent confirmation only when adaptation can bias the intended inference.
+
+Choose observation completion for the intended use: sufficient evidence for the decision, lower marginal value than an alternative, or an actual time, resource, access or failure boundary. Follow the selected sampling and stopping conditions. Exploration may stop flexibly when its interpretation reflects that actual process; a favorable early stop does not satisfy a fixed-sample or independent-confirmation condition. No universal waiting period, sample count, significance threshold or stable-value requirement follows from this rule.
 
 ### 5. Consequence and lifecycle
 

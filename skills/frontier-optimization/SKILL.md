@@ -34,6 +34,7 @@ For a changed parent or retained result, apply [Change impact](references/fronti
 | Update C or A | [Claim records](references/claim-records.md) |
 | Create or maintain W lifecycle and mechanical bindings | [Work plan](references/work-plan.md) |
 | Delegate a worker | [Worker interfaces](references/worker-interfaces.md) |
+| Start or continue implementation, repair or ordinary integration | [Run Frontier Batch](../run-frontier-batch/SKILL.md), from the first working change; use [Working assignments](references/worker-interfaces.md#working-assignments) to choose the implementation owner |
 | Save a current review subject | [Provenance and Git](references/provenance-and-identity.md), then [Review branch](references/review-branches.md) |
 | Read a historical review snapshot | [Review snapshots](references/review-snapshots.md) |
 | Prepare code-bearing Entry work | [Entry code planning](references/entry-code-planning.md) |
@@ -42,6 +43,7 @@ For a changed parent or retained result, apply [Change impact](references/fronti
 | Reuse calibration or a conditional routine screen | [Evaluation protocol](references/evaluation-protocol.md) |
 | Review Entry, design, implementation or claims | [Review branch](references/review-branches.md) |
 | Open, revise, perform or continue a current B | [Current Batch](references/batch-current.md) |
+| Adopt a saved R, update working inputs or operational limits, or read Batch facts | [Maintained Batch operations](references/batch-current.md#maintained-batch-operations) |
 | Read an identity-heavy historical B | [Historical Batch interface](references/batch-interface.md), and [Historical Batch result](references/batch-result.md) when present |
 | Validate or adopt a current result | [Current Batch](references/batch-current.md), [Result adoption](references/result-adoption.md) |
 | Select the next investment from adopted evidence | [Learning loop](references/learning-loop.md) |
@@ -51,19 +53,19 @@ For a changed parent or retained result, apply [Change impact](references/fronti
 
 ## Delegate and adopt
 
-Create the assignment with fixed purpose, project parents, allowed writes, limits and completion condition. Use the existing specialist:
+Create the assignment using [Working assignments](references/worker-interfaces.md#working-assignments): enough context to start the next useful work, not a complete future specification. That section owns implementation responsibility, including simple work performed directly. Use the existing specialist:
 
 - `research-frontier`: one bounded evidence question.
 - `grill-frontier`: one unresolved user-owned decision.
 - `design-implementation`: professional design in a fresh context.
 - `reflect-frontier`: one Generation Reflection after technical closeout reconciliation.
-- `run-frontier-batch`: the selected B.
+- `run-frontier-batch`: implementation, repair, integration and observation within B, not just final execution.
 - `review-frontier`: the selected independent review.
 
 The designer writes professional concerns, not lifecycle records or executable output. The Coordinator creates W's scaffold and derives maps and stable slice references from that content. Use Work Plan's saved-reference preparation for design consumers and Learning Loop's input preparation for resolver dispatch; pass tool-produced bindings directly. A ready W does not trigger another design assignment: load only the concerns needed by the current action. Executable evidence requested during design uses the existing bounded research, prototype or B route.
 
 Adopt a worker result only after its assignment and evidence match. Preserve the specialist's professional meaning; send an actual defect to its owner rather than silently rewriting it. A draft preparation failure remains editable work, not a new review or recovery chain.
 
-Use the [current Batch continuation rule](references/batch-current.md#boundary-preserving-continuation) for working changes and repairs. Use the [single resolver](references/learning-loop.md#integrated-direction-resolver) for direction directly from adopted current evidence. Generation Reflection improves the next generation's search after closeout; it does not choose a route or grant permission. Neither worker output nor a technical review chooses another route or grants a new user permission.
+Route working changes and repairs through [Batch continuation](references/batch-current.md#boundary-preserving-continuation) before considering another investment decision; correct inherited procedural gates through [Repair an existing execution restriction](references/batch-current.md#repair-an-existing-execution-restriction), including their dispatch and writeback. Use the [single resolver](references/learning-loop.md#integrated-direction-resolver) when the next investment actually changes or a B result is terminal. Generation Reflection improves the next generation's search after closeout; it does not choose a route or grant permission. Neither worker output nor a technical review chooses another route or grants a new user permission.
 
 A route-scoped result does not complete a continuing task. A running campaign with no selected next action returns only when the requested bounded deliverable is complete, the user explicitly pauses or requests reporting, or a user-owned boundary blocks every remaining worthwhile action. Otherwise continue direction resolution or close the campaign under [Continuing task and stage instructions](references/user-decisions.md#continuing-task-and-stage-instructions), with persisted state supporting any final report.

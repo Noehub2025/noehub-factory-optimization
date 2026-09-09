@@ -39,9 +39,9 @@ Create only triggered concerns, plus Coordinator-generated `traceability.yaml` f
 Use B without code-design W only when all are true:
 
 - one bounded and reversible behavior change stays within established seams; it may touch multiple files;
-- entities, state ownership, identity, invariants, lifecycle, shared or public interfaces, persisted schemas, dependency direction, migration, and failure behavior remain unchanged;
-- B can state complete behavior, checks, source base, paths, rollback, and recovery;
-- remaining executor choices affect neither another B nor a later technical route; and
+- entities, state ownership, identity, invariants, lifecycle, shared or public interfaces, persisted schemas, dependency direction, migration, and contract-bearing failure behavior remain unchanged;
+- B identifies the next useful behavior or observation, relevant source base, working paths and constraints, including recovery needs that matter to its actual effects;
+- remaining executor choices impose no consequential architecture or interface obligations on another B or later technical route; and
 - no unresolved user-owned design tradeoff remains.
 
 Record the repository evidence and direct-profile reasoning. Apply the current Entry checks needed by the next actual Consequence. Development proceeds under an applicable existing V; ask the user only when [User decisions](user-decisions.md) identifies an uncovered boundary.
@@ -63,15 +63,17 @@ Invoke `design-implementation` when any of these conditions holds:
 - responsibility, ordering, failure propagation, or an integration seam changes across modules;
 - data, configuration, protocol, or deployment needs migration;
 - an architecture or algorithm choice constrains several later slices, materially changes a performance or reliability limit, or is costly to replace; or
-- without a design, the executor must invent entity meaning, interface behavior, a state owner, runtime transition, failure response, test oracle, or slice boundary.
+- the next work requires a consequential decision about entity meaning, interface behavior, state ownership, runtime transitions, failure propagation or acceptance meaning that existing agreements do not settle.
 
-The Coordinator may choose `direct` only from complete recorded evidence. It does not routinely call the designer to confirm a direct case. A misrouted designer may return `DIRECT_ELIGIBLE` without writing.
+Choose the profile from relevant task and repository facts. Unknown research benefit, ordinary internal responses, test methods and work segmentation do not by themselves trigger professional design or require exhaustive checks before development. The Coordinator does not routinely call the designer to confirm a direct case. A misrouted designer may return `DIRECT_ELIGIBLE` without writing.
 
 ## Assign the professional author
 
 For `module` or `system`, the Coordinator creates a W scaffold with fixed Purpose, semantic Scope, parents, source requirements, design-review repository evidence, exclusions, adopted user decisions, and exclusive write sections. Invoke `design-implementation` in a fresh context with mode `new`, `revision`, or `repair`.
 
 Design defines the deliverable's behavior, necessary architecture, interfaces, state ownership, technical dependencies, and acceptance criteria. The executor owns ordinary work breakdown, internal order, temporary material, support operations, and local repair inside the authorized envelope. These choices need no prior enumeration in Design and do not themselves change its contract.
+
+When the design uses or replaces an existing capability, apply [Reuse working knowledge](batch-current.md#reuse-working-knowledge) within the assigned scope before inventing another interface or interpretation.
 
 Publication eligibility, authority, accounting, and result closure stay with their existing workflow or parent owners; reference their rules rather than reproducing their operation in W. Explicit user and parent requirements remain binding with the appropriate owner. Their origin, repetition, or inclusion in an earlier assignment does not make them Design-owned.
 
@@ -103,7 +105,7 @@ Address every decisive claim before design review, starting with the weakest. Do
 
 ## Constrain effects, not convenient forms
 
-When a restriction on implementation form, evidence access, or verification method materially affects the current work, identify its owner and protection basis: an actual user or external constraint, a sampling or irreversible-effect requirement, or an internal technical choice. Explain what it protects and how. A planner's precaution does not become a user prohibition or an external rule because later documents repeat it.
+When a restriction on implementation form, evidence access, or verification method materially affects the current work, identify its owner and protection basis: an actual user or external constraint, a sampling or irreversible-effect requirement, or an internal technical choice. Explain what it protects and how. Prior adoption or an `unchanged` label is not itself a protection basis; a planner's precaution remains an internal choice rather than becoming a user prohibition or external rule.
 
 A reviewer may require repair when that current basis is absent or contradicted, or cite a concrete compatible alternative showing that the restriction prevents a useful observation or makes delivery infeasible or materially more costly without a protection rationale. The reviewer need not prove the narrowest possible rule or examine every restriction. Novelty, unfamiliarity, and ordinary implementation risk are not findings. A restriction that does not affect the current work is at most advisory.
 
@@ -172,7 +174,7 @@ Use examples, schemas, state tables, or sequence descriptions whenever prose per
 
 `design-implementation` defines vertical delivery obligations that each produce one observable result through the real seam and records their exact contracts in `verification.md`. Together they must cover the complete realization and its integration check. The Coordinator summarizes each obligation in W's Delivery map under a stable technical name and immutable verification pointer. Entry, not Design, later assigns an exact B and realization paths. One B may satisfy several obligations before one formal publication; obligations never create their own B, candidate, proposal, review, or charge lifecycle. Do not make an executor read unrelated concerns.
 
-Execution owns its mutable work breakdown and may add, remove, merge, replace, or reorder internal steps while the B envelope and delivery obligations remain satisfied. Evidence that an obligation, seam, ownership, acceptance meaning, or load-bearing design assumption must change returns to `design-implementation` as a scoped revision. A local defect, failed check, or inconvenient implementation shape remains implementation feedback.
+Execution owns its mutable work breakdown and may add, remove, merge, replace, or reorder internal steps while the B envelope and delivery obligations remain satisfied. Stable verification obligations do not freeze every test implementation or require one worker invocation to deliver all slices; use [Working assignments](worker-interfaces.md#working-assignments). Evidence that an obligation, seam, ownership, acceptance meaning, or load-bearing design assumption must change returns to `design-implementation` as a scoped revision. A local defect, failed check, or inconvenient implementation shape remains implementation feedback.
 
 A design, research, or non-code prototype B may resolve one open question. Its worker reports evidence and proposed wording; a changed contract takes effect through an adopted W revision.
 

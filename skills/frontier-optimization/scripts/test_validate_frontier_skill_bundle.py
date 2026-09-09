@@ -146,7 +146,7 @@ def generation_reflection_contract_findings(skills_root: Path) -> list[str]:
         ),
         "frontier-optimization/SKILL.md": (
             "then `reflect-frontier` at its closeout trigger",
-            "directly from adopted current evidence",
+            "Select the next investment from adopted evidence",
         ),
         "frontier-optimization/references/learning-loop.md": (
             "This chain creates no intermediate interpretation stage, Outcome Reflection, coverage record, review, or authority",
@@ -786,7 +786,7 @@ class FrontierSkillBundleTests(unittest.TestCase):
             "does not by itself create another B",
             "Do not copy the repository into execution snapshots",
             "pause only dependent work",
-            "repair and rerun only affected checks",
+            "repair the affected use path and rerun only relevant checks",
             "does not close the B automatically",
         )
         for marker in semantic_markers:

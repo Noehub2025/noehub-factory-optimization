@@ -124,6 +124,27 @@ class SelectCandidate:
 
 
 @dataclass(frozen=True)
+class AdoptReview:
+    """Reference a chosen saved R without copying its verdict or credentials."""
+
+    revision: str
+    path: str
+    rationale: str
+    handle: str | None = None
+
+
+@dataclass(frozen=True)
+class UpdateWorkingState:
+    """Apply a same-result delta against the current state under the Batch lock."""
+
+    rationale: str
+    revision: str | None = None
+    paths: tuple[str, ...] | None = None
+    resource_limits: Mapping[str, float | int] | None = None
+    measurement_updates: Mapping[str, Any] | None = None
+
+
+@dataclass(frozen=True)
 class RecordCheck:
     """Record an ordinary check against one exact Candidate Revision."""
 
@@ -173,6 +194,8 @@ RoutineChange: TypeAlias = (
     DefineBatch
     | ReviseBatch
     | SelectCandidate
+    | AdoptReview
+    | UpdateWorkingState
     | RecordCheck
     | RecordObservation
     | ReconcileAttempt
@@ -380,7 +403,8 @@ class Batch:
             current = self._reload_for_write()
             updated = _apply_change(self._repo_root, current, change)
             _validate_state(updated, self._batch)
-            _write_state(self._state_path, updated)
+            if updated != current or not self._state_path.exists():
+                _write_state(self._state_path, updated)
             self._state = updated
             self._projected_legacy = False
             return self.view
@@ -769,6 +793,53 @@ def _apply_change(
     change: RoutineChange,
 ) -> dict[str, Any]:
     updated = copy.deepcopy(state)
+    if isinstance(change, AdoptReview):
+        from frontier_references import prepare_review_reference
+
+        _require_text(change.rationale, "rationale")
+        saved = prepare_review_reference(repo_root, change.revision, change.path, change.handle)
+        selected = GitReference(**saved["reference"])
+        reviews = _references_by_handle(updated["references"]["reviews"])
+        if reviews.get(selected.handle) == selected:
+            return updated
+        reviews[selected.handle] = selected
+        return _apply_change(repo_root, updated, ReviseBatch(
+            rationale=change.rationale, reviews=tuple(reviews.values()),
+        ))
+
+    if isinstance(change, UpdateWorkingState):
+        from frontier_references import resolve_revision
+
+        _require_text(change.rationale, "rationale")
+        if (change.revision is None) != (change.paths is None):
+            raise BatchFormatError("revision and paths must be supplied together")
+        if change.revision is not None:
+            updated = _apply_change(repo_root, updated, SelectCandidate(
+                CandidateRevision(resolve_revision(repo_root, change.revision), change.paths),
+                change.rationale,
+            ))
+        limits = None
+        if change.resource_limits is not None:
+            limits = dict(updated["resource_limits"])
+            limits.update(_resource_mapping(change.resource_limits, "resource limit updates"))
+        measurement = None
+        if change.measurement_updates is not None:
+            measurement = _merge_working_fields(
+                updated["current"]["measurement_definition"] or {}, change.measurement_updates,
+            )
+        revised = _apply_change(repo_root, updated, ReviseBatch(
+            rationale=change.rationale, resource_limits=limits, measurement_definition=measurement,
+        ))
+        # A replay of an effective delta is a no-op, including its rationale.
+        if "revision_rationale" in state["current"]:
+            revised["current"]["revision_rationale"] = state["current"]["revision_rationale"]
+        else:
+            revised["current"].pop("revision_rationale", None)
+        if revised == state:
+            return copy.deepcopy(state)
+        revised["current"]["revision_rationale"] = change.rationale
+        return revised
+
     if isinstance(change, DefineBatch):
         if updated["definition"]:
             raise ChangeRejected("Batch is already defined; use ReviseBatch")
@@ -860,6 +931,8 @@ def _apply_change(
     if isinstance(change, SelectCandidate):
         _require_text(change.rationale, "rationale")
         _validate_candidate(repo_root, change.candidate)
+        if updated["current"]["candidate_revision"] == _candidate_dict(change.candidate):
+            return updated
         updated["current"]["candidate_revision"] = _candidate_dict(change.candidate)
         updated["current"]["checks"] = {}
         updated["current"]["candidate_rationale"] = change.rationale
@@ -1351,6 +1424,40 @@ def _operation_violations(action: Action, result: OperationResult) -> list[str]:
     return violations
 
 
+def _merge_working_fields(current: Mapping[str, Any], updates: Mapping[str, Any]) -> dict:
+    """Merge supplied fields only; lists and scalar values replace the named field."""
+    if not isinstance(updates, Mapping):
+        raise BatchFormatError("measurement updates must be a mapping")
+    result = copy.deepcopy(dict(current))
+    for key, value in updates.items():
+        if not isinstance(key, str) or not key:
+            raise BatchFormatError("measurement update keys must be nonempty strings")
+        if isinstance(value, Mapping):
+            previous = result.get(key)
+            result[key] = _merge_working_fields(previous if isinstance(previous, Mapping) else {}, value)
+        else:
+            result[key] = copy.deepcopy(value)
+    return result
+
+
+def batch_facts(view: BatchView) -> dict[str, Any]:
+    """Render Batch-owned facts only, never Campaign accounting or inferred charges."""
+    state = view.data
+    return copy.deepcopy({
+        "batch": state["batch"],
+        "status": state["current"]["status"],
+        "candidate_revision": state["current"]["candidate_revision"],
+        "reviews": state["references"]["reviews"],
+        "resource_limits": state["resource_limits"],
+        "attempt_consumption": state["consumption"],
+        "remaining_capacity": _remaining_resources(state),
+        "unresolved_attempts": [
+            item["attempt"] for item in state["attempts"]
+            if item["status"] in {"running", "uncertain"}
+        ],
+    })
+
+
 def _remaining_resources(state: Mapping[str, Any]) -> dict[str, float | int]:
     capacity_consumption = _capacity_consumption(state)
     return {
@@ -1383,21 +1490,31 @@ def _validate_candidate(repo_root: Path, candidate: CandidateRevision) -> None:
     if resolved != candidate.commit:
         raise BatchFormatError("Candidate Revision must use the full Git commit")
     seen: set[str] = set()
+    paths: list[str] = []
     for raw in candidate.paths:
         normalized = _repo_path(raw)
         if normalized in seen:
             raise BatchFormatError("Candidate Revision paths must be unique")
         seen.add(normalized)
-        try:
-            subprocess.run(
-                ["git", "-C", str(repo_root), "cat-file", "-e", f"{resolved}:{normalized}"],
-                check=True,
-                capture_output=True,
-            )
-        except (OSError, subprocess.CalledProcessError) as exc:
+        paths.append(normalized)
+    try:
+        # NUL-delimited input preserves whitespace in paths. Successful output
+        # contains only object IDs; batch mode reports missing objects on stdout.
+        checked = subprocess.run(
+            ["git", "-C", str(repo_root), "cat-file", "--batch-check=%(objectname)", "-z"],
+            input=b"".join(f"{resolved}:{path}\0".encode("utf-8") for path in paths),
+            check=True,
+            capture_output=True,
+        ).stdout.splitlines()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise BatchFormatError("Candidate Revision paths could not be checked") from exc
+    if len(checked) != len(paths):
+        raise BatchFormatError("Candidate Revision paths are unavailable or Git returned incomplete output")
+    for path, object_id in zip(paths, checked):
+        if re.fullmatch(rb"[0-9a-f]{40}|[0-9a-f]{64}", object_id) is None:
             raise BatchFormatError(
-                f"Candidate Revision path is unavailable at its commit: {normalized}"
-            ) from exc
+                f"Candidate Revision path is unavailable at its commit: {path}"
+            )
 
 
 def _validate_reference_list(

@@ -17,11 +17,11 @@ The technical owner chooses layout, tools and local commands. An absent structur
 
 ## Choose the design profile
 
-Load [Technical design](technical-design.md). Use `direct` when the B fully specifies a bounded, reversible behavior change through established ownership, interfaces, schemas, lifecycle, dependency direction, failure semantics and migration. Touching several files alone does not make work architectural.
+Load [Technical design](technical-design.md#choose-the-profile) for the profile criteria. Use `direct` for bounded, reversible work through established agreements; ordinary internal choices do not require a complete specification first. Touching several files alone does not make work architectural.
 
 Use `module` or `system` only when a professional design trigger is present. The Coordinator creates the W scaffold and `design-implementation` authors the relevant technical concerns. Design authoring is planning and creates no B Attempt, proposal identity or spend by itself.
 
-This step is complete when the executor can implement the fixed behavior without inventing architecture, ownership, interface meaning, failure behavior, migration, test oracles or a user value choice.
+This step is complete when the next useful work has an applicable target and constraints, and any consequential technical choice it depends on has reached its existing owner. Research questions and ordinary implementation details may remain open under [Working assignments](worker-interfaces.md#working-assignments); only work dependent on an unresolved important agreement waits.
 
 ## Separate technical readiness from Permission
 
@@ -31,7 +31,7 @@ Entry checks only the decision needed by the next actual Consequence. Same-B imp
 
 ## Plan development and review
 
-The current B records its objective, scope, allowed writes, design references, local resource limits, expected Consequences, current Git Candidate Revision, relevant checks and implementation-review checkpoint. Working material remains mutable. Use Git to select exact bytes for a check or Review; do not copy the repository into a snapshot.
+Use [Working assignments](worker-interfaces.md#working-assignments) to name the implementation owner and current task context, then [Run Frontier Batch](../../run-frontier-batch/SKILL.md) from the first working change. B holds the current objective, scope, applicable references and limits. Select Git bytes and bind checks or Reviews when the work reaches their use; their absence does not prevent ordinary development. Working material remains mutable, without a repository snapshot.
 
 Develop, run focused checks and repair inside the same B until the selected revision satisfies its engineering conditions. A materially changed revision needs fresh implementation review before the first formal Slot H measurement, mainline integration, incumbent use or another consequence that relies on that review. Diagnostic working observations may occur inside the same B when their Measurement Definition limits them to B evidence.
 

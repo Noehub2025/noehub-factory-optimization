@@ -45,7 +45,7 @@ Keep the analysis compact for a direct or bounded diagnostic measurement that ca
 
 Expand only the relevant parts when a proxy controls a stronger consequence, evidence guides later generation or selection, the schedule is costly, the minimum useful change approaches measurement resolution, or the result is expected to transfer beyond the observed conditions. Repetition alone is not adaptive reuse.
 
-This step is complete when the protocol can distinguish the decision-relevant alternatives at a cost justified by its intended consequence, or the exact unresolved design blocker is recorded.
+This step is complete when the protocol explains why its observations and stopping conditions are [sufficient for the intended decision](../frame-optimization/references/measurement-design.md#evidence-sufficient-for-the-decision), including the actual downstream use and cost of error, or identifies the specific unsupported use and a bounded way to resolve it. Preserve worthwhile exploration within the supported ceiling; an unresolved stronger use does not block it.
 
 ## 3. Return one exact projection
 

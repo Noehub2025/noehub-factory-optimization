@@ -36,6 +36,7 @@ ENTRY_TESTS = (
     FRONTIER_SCRIPTS / "test_freeze_execution_baseline.py",
 )
 CURRENT_BATCH_TESTS = (FRONTIER_SCRIPTS / "test_frontier_batch.py",)
+EXECUTION_EXAMPLE_TEST = WORKFLOW_ROOT / "run-frontier-batch/scripts/test_batch_execution_example.py"
 REFERENCE_TESTS = (FRONTIER_SCRIPTS / "test_frontier_references.py",)
 LEGACY_BATCH_TESTS = (
     FRONTIER_SCRIPTS / "test_validate_batch_packet.py",
@@ -53,6 +54,7 @@ CURRENT_RELEASE_TESTS = (
     SELECTOR_TEST,
     *DIRECTION_TESTS,
     *CURRENT_BATCH_TESTS,
+    EXECUTION_EXAMPLE_TEST,
     *REFERENCE_TESTS,
 )
 FRAME_SKILLS = {
@@ -111,7 +113,7 @@ SCRIPT_TESTS = {
     "frontier_references.py": REFERENCE_TESTS,
     "authorization_target_contract.py": ENTRY_TESTS,
     "freeze_execution_baseline.py": ENTRY_TESTS,
-    "frontier_batch.py": (FRONTIER_SCRIPTS / "test_frontier_batch.py",),
+    "frontier_batch.py": (*CURRENT_BATCH_TESTS, EXECUTION_EXAMPLE_TEST),
     "identity_bindings.py": (*PROVENANCE_TESTS, *ENTRY_TESTS),
     "package_frontier_handoff.py": (*PROVENANCE_TESTS, *RECOVERY_TESTS),
     "post_adoption_state.py": ENTRY_TESTS,
@@ -218,7 +220,8 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
             _add_tests(selected, reasons, DIRECTION_TESTS, f"direction worker changed: {skill}")
             continue
         if skill == "run-frontier-batch":
-            _add_tests(selected, reasons, CURRENT_BATCH_TESTS, "execution worker changed")
+            tests = (EXECUTION_EXAMPLE_TEST,) if path.name == "batch_execution_example.py" else (*CURRENT_BATCH_TESTS, EXECUTION_EXAMPLE_TEST)
+            _add_tests(selected, reasons, tests, "execution worker changed")
             continue
         if skill == "review-frontier":
             _add_tests(
