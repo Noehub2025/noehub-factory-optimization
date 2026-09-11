@@ -274,7 +274,7 @@ CURRENT_FINDING_EFFECT_REQUIREMENTS = {
     "frontier-optimization/references/finding-effects.md": (
         "An unknown code defaults to `block`",
         "Apply one decision-impact test",
-        "create no replacement identity, B, V, review, or authorization",
+        "An advisory itself creates no replacement object or approval",
         "Apply this contract prospectively",
         "`finding-free` means zero `block` or `repair` findings",
     ),

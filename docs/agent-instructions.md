@@ -10,6 +10,8 @@ This repository keeps task-neutral optimization behavior in `AGENTS.md`. The thi
 
 The checked-in `CLAUDE.md` in this repository is a regular file rather than a symbolic link. This keeps the adapter portable to Windows and leaves room for Claude Code-specific additions.
 
+Current Claude Code also offers two conversion helpers. With `CLAUDE_CODE_NEW_INIT=1`, `/init` can inspect an existing `AGENTS.md` while proposing `CLAUDE.md`; `/import` can append a one-time copy of another coding agent's configuration in Claude Code 2.1.213 or later. Prefer the checked-in `@AGENTS.md` import when the shared instructions should stay synchronized. Use `/import` only when a one-time conversion is intentional, then remove duplicated rules before committing.
+
 ## New repository
 
 1. Copy `AGENTS.md` to the repository root.
@@ -21,6 +23,7 @@ The checked-in `CLAUDE.md` in this repository is a regular file rather than a sy
 
 3. Put any Claude Code-specific instructions below the import.
 4. Keep personal project preferences in `CLAUDE.local.md` and exclude that file from version control.
+5. Start a new Claude Code session and use `/context` to confirm that `CLAUDE.md` and its imported `AGENTS.md` are loaded.
 
 ## Repository that already has AGENTS.md
 

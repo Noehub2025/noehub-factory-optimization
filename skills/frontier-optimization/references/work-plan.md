@@ -40,11 +40,11 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 
 ## Purpose
 
-<Coordinator: state the change, why the work exists, its campaign baseline role, and the usable artifact it must produce.>
+<Coordinator: state the research problem, intended progress and required observable result, including the campaign baseline role when relevant.>
 
 ## Scope
 
-<Coordinator: name routes, semantic repository areas, source requirements and compatibility conditions, true interfaces, callers, dependencies, and excluded work. Leave Batch assignments and frozen execution bindings to Entry; ordinary working methods and temporary paths remain with the executor.>
+<Coordinator: state the selected investment, actual constraints and exclusions, necessary interfaces and compatibility conditions, and relevant source starting points. Keep tentative combinations, scale and methods in the professional Design brief or concerns under Technical design's assignment ownership rule. Leave Batch assignments and frozen execution bindings to Entry; ordinary working methods and temporary paths remain with the executor.>
 
 ## Current state
 
@@ -52,7 +52,7 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 
 ## Design brief
 
-<Design implementation author: in plain language, state the design profile and reason, selected architecture shape, stable external seam, decisive user choices, open blockers, and replacement boundary. Keep detail in the indexed concern that owns it.>
+<Design implementation author: state the profile, proposed realization and why it is worth trying under Technical design's consequential-choice rule, stable external seam, decisive user choices and open assumptions. Distinguish tentative choices from adopted obligations. Keep detail in the indexed concern that owns it.>
 
 ## Design map
 
@@ -116,7 +116,7 @@ State the design-review requirement generically here. Keep the current R referen
 
 ## Decisions and discoveries
 
-<Batch worker: append technical evidence, surprises, consequences, and suggested design changes. A suggestion changes no plan term or concern contract. The Coordinator opens and scopes an accepted contract-bearing revision; `design-implementation` updates professional design content, and the Coordinator regenerates only its mechanical bindings.>
+<Batch worker: record relevant evidence, surprises or opportunities in normal progress. Follow Working assignments for the affected owner and continuation; a suggestion changes no plan term or concern contract.>
 
 ## Recovery
 

@@ -29,11 +29,11 @@ When routine preflight, accounting or reference updates make the proposed action
 
 ## Review method
 
-Judge only whether the proposed decision is technically coherent and reachable under its cited parents, evidence, Selection, Budget, Reviews and existing user boundaries. Reuse applicable implementation conclusions; examine their applicability and Entry-specific conditions instead of repeating the implementation review. Check:
+Judge only whether the proposed decision is technically coherent and reachable under its cited parents, evidence, Selection, Budget, Reviews and existing user boundaries. Reuse actual implementation and result conclusions; examine only their applicability and unresolved Entry-specific conditions. A plan's internal review sequence is assessed under [Assurance by consequence](batch-evaluation.md#assurance-by-consequence), not treated as its own justification. Check:
 
-- that the resolver result and Selection support the proposed allocation;
+- that Selection supports the work: a Coordinator continuation decision within the current research scope or an applicable resolver judgment for a new investment; absence of a new resolution is not a finding for continuation;
 - that protected reserve is not assigned to routine work;
-- that prerequisites needed to execute and interpret the next action are evidence-backed or tested before dependent work, without requiring the experiment's own hypothesis to be established first; use [Evidence at real boundaries](implementation-review.md#evidence-at-real-boundaries), not the number of prior passing checks;
+- that prerequisites needed to execute and interpret the next action are covered by applicable evidence or an identified check through the existing work path before dependent execution; apply [Evidence at real boundaries](implementation-review.md#evidence-at-real-boundaries) when use or dependencies change, rather than treating complete references or prior passing counts as coverage; the experiment's own hypothesis need not be established first;
 - that the Batch independently judged result, scope and expected Consequences are coherent;
 - that the next action fits the governing campaign limits, protected reserve and strategic allocation;
 - that the next action has its applicable Measurement Definition and any technical Review required by [Assurance by consequence](batch-evaluation.md#assurance-by-consequence);
@@ -57,6 +57,6 @@ Use these current outcomes:
 
 Repair the current draft inside the same B while its independently judged result and user boundaries remain applicable. Preserve the previous Git version and R. Save the corrected complete subject and review the changed dependencies and affected conclusions; reuse unaffected conclusions without a compatibility report or repeated checks.
 
-Intermediate edits create no review object, replacement directory family, new B, Generation or Permission. A corrected technical contract receives the applicable technical Review. A new user answer is required only when the correction crosses the boundary in [User decisions](user-decisions.md).
+Intermediate edits create no review object, replacement directory family, new B, Generation or Permission. A corrected technical contract receives independent judgment only where its changed meaning requires it under Assurance by consequence. A new user answer is required only when the correction crosses the boundary in [User decisions](user-decisions.md).
 
 Entry review is complete when the next affected action is `ENTRY_READY`, has one exact missing user decision, or has one evidence-backed blocker. It must not create a second current execution or authorization contract.

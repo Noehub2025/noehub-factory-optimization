@@ -5,6 +5,7 @@
 - [W is the map](#w-is-the-map)
 - [Choose the profile](#choose-the-profile)
 - [Assign the professional author](#assign-the-professional-author)
+- [Ground consequential design choices](#ground-consequential-design-choices)
 - [Constrain effects, not convenient forms](#constrain-effects-not-convenient-forms)
 - [Resolve user-owned design choices](#resolve-user-owned-design-choices)
 - [Concern contracts](#concern-contracts)
@@ -69,9 +70,11 @@ Choose the profile from relevant task and repository facts. Unknown research ben
 
 ## Assign the professional author
 
-For `module` or `system`, the Coordinator creates a W scaffold with fixed Purpose, semantic Scope, parents, source requirements, design-review repository evidence, exclusions, adopted user decisions, and exclusive write sections. Invoke `design-implementation` in a fresh context with mode `new`, `revision`, or `repair`.
+For `module` or `system`, the Coordinator creates a W scaffold with the research problem, intended progress, actual scope and constraints, parents, source starting points, adopted user decisions and exclusive write sections. Keep tentative combinations, scale and methods in the professional Design brief or concerns, not binding Purpose or Scope. Apply [Evidence access](worker-interfaces.md#evidence-access). Invoke `design-implementation` in a fresh context with mode `new`, `revision`, or `repair`.
 
-Design defines the deliverable's behavior, necessary architecture, interfaces, state ownership, technical dependencies, and acceptance criteria. The executor owns ordinary work breakdown, internal order, temporary material, support operations, and local repair inside the authorized envelope. These choices need no prior enumeration in Design and do not themselves change its contract.
+Design defines the deliverable's behavior, necessary architecture, interfaces, state ownership, technical dependencies, and acceptance criteria. The executor owns ordinary work breakdown, internal order, temporary material, support operations, and local repair inside the authorized envelope. Refine choices through [Working assignments](worker-interfaces.md#working-assignments); an unchanged investment does not waive an affected design or measurement owner's decision.
+
+If an unpublished scaffold mistakes a tentative choice or incidental workflow method for a binding requirement, the designer and Coordinator correct their respective sections in the same task. This creates no new W, revision, review or repair record. Retain actual constraints; a change to adopted technical meaning still follows the affected revision path below. An earlier positive review is reusable evidence, not a reason to preserve a choice whose supporting premise has been contradicted.
 
 When the design uses or replaces an existing capability, apply [Reuse working knowledge](batch-current.md#reuse-working-knowledge) within the assigned scope before inventing another interface or interpretation.
 
@@ -84,6 +87,14 @@ A method or sequence belongs in the relevant professional contract when it deter
 The designer writes only W's Design brief and triggered concern files. The Coordinator derives Design map rows, Delivery map rows and `traceability.yaml` from those pointers and stable slice keys, then prepares the saved reference for review. Preserve professional meaning and leave future B assignments, attempt namespaces, internal evidence destinations and runtime status with their execution owners.
 
 Design authoring is planning and creates no B, proposal identity, reservation, or spend. If a conclusion requires a lower-consequence observation from code execution, a prototype, an experiment, controlled input, an external effect, or protected resources, the designer returns `EVIDENCE_REQUIRED`; the Coordinator obtains that evidence through the existing Q or B path. Do not relabel a runnable, tested, chargeable, irreversible, or protected-resource realization as free design evidence.
+
+## Ground consequential design choices
+
+For choices that can materially change the current observation or its cost, explain in the existing Design brief or Decisions why the realization is worth trying: plausible objective improvement or useful learning, supporting facts and assumptions, and what result would reduce its appeal. Compare only alternatives that could change this choice, using existing evidence, relevant source inspection or simple calculations. Reuse sufficient reasoning on continuation; revisit grounds affected by new facts, not every invocation.
+
+Choose scale, duration and conditions that can expose the addressed mechanism or distinguish the pending question. A prerequisite test may answer only that prerequisite. Judge interpretability prospectively, without requiring activation, profit or hypothesis success in advance. Familiarity, small size and easy verification describe cost, not value; a larger probe earns its cost only when the extra observation matters.
+
+Keep source claims at their supported scope. A weak warning is a hypothesis to assess, not a whole-route exclusion; a claim limit bounds conclusions but supplies no selection rationale. A short explanation suffices for an evident choice. This is part of ordinary design, not a new heading requirement, alternative quota, economic model, optimality proof, research assignment or review gate.
 
 ## Test decisive feasibility claims
 

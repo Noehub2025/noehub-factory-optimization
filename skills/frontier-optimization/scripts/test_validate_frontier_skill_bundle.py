@@ -48,8 +48,8 @@ REFLECTION_REQUIRED_MARKERS = {
         "An improved proxy or aggregate does not establish route progress",
     ),
     "learning-loop.md": (
-        "Establish validity in this order: implementation, measurement, then comparison validity",
-        "Judge that unchanged pre-work hypothesis",
+        "After work returns, adopt its supported meaning and reconcile effects and resources",
+        "Batch completion, a passed prerequisite, a new B or an estimate correction does not by itself reopen investment",
         "For a terminal B, recover the controlling decision hypothesis from that B",
         "A valid whole-treatment comparison may support that the bounded package caused the observed local effect",
         "Component contribution",
@@ -58,15 +58,14 @@ REFLECTION_REQUIRED_MARKERS = {
         "Diagnose it only when the pending decision depends on choosing among those internal explanations",
         "A limitation that does not prevent the addressed decision remains a future-use note",
         "Distinguish a saturated comparator-derived score from exhaustion of the evaluator itself",
-        "a direct reversible attempt may be preferable to separate diagnosis",
-        "it has no mandatory finding enum",
-        "This section is the only direction resolver",
-        "Apply the rows from 1 through 13 exactly once",
-        "Perform no additional research, diagnosis, or review",
+        "A direct attempt may be preferable to separate diagnosis",
+        "This section is the only investment-direction resolver",
+        "Only after an investment trigger, apply the rows from 1 through 13 once",
+        "No extra research or resolution follows",
         "Research before a formal direction choice",
         "industrial implementations, academic evidence, community reports or artifacts",
-        "Unique dominance is sufficient, not necessary, for a technical choice",
-        "Selection must apply its hypothesis result, mechanism inference, attribution limit, R&D implication, measurement implication, maximum conclusion, diagnostic alternatives, and recorded diagnostic ordering without strengthening or reinterpretation",
+        "unique dominance is sufficient, not necessary",
+        "Selection records current work and, when investment was reconsidered, the resolver's supported choice and rationale",
         "Keep every earlier Outcome Reflection immutable under its recorded project evidence",
         "These forms create no additional Q, research, review, repeated B, synthetic E, metric, or trajectory artifact",
         "complete [Fresh-context Reflection analysis](reflection-analysis.md) before showing that analyst",
@@ -149,17 +148,17 @@ def generation_reflection_contract_findings(skills_root: Path) -> list[str]:
             "Select the next investment from adopted evidence",
         ),
         "frontier-optimization/references/learning-loop.md": (
-            "This chain creates no intermediate interpretation stage, Outcome Reflection, coverage record, review, or authority",
-            "Apply the integrated resolver exactly once",
-            "Perform no additional research, diagnosis, or review",
+            "No extra Reflection, continuation certificate or review accompanies this routing",
+            "Run one independent resolver for that decision state",
+            "No extra research or resolution follows",
             "current active generations require no new per-B OR and no OR coverage migration",
         ),
         "frontier-optimization/references/campaign-cycle.md": (
             "Every selected terminal B is adopted, every eligible E is dispositioned, and the same state yields the same next action or blocker",
         ),
         "frontier-optimization/references/campaign-state.md": (
-            "Selection applies reviewed Entry evidence or current adopted project evidence through the sole resolver",
-            "exactly one finalized first applicable resolver row and deterministic resolution",
+            "Selection applies reviewed Entry or adopted project evidence without strengthening its meaning",
+            "New observations and ordinary Selection updates do not each need such an identity or row",
         ),
         "frontier-optimization/references/closeout-and-claims.md": (
             "Create the Generation Reflection",
@@ -173,8 +172,8 @@ def generation_reflection_contract_findings(skills_root: Path) -> list[str]:
         "frontier-optimization/references/entry-and-planning.md": (
             "Use the prior Generation Reflection as candidate-generation input",
             "add its cited adopted evidence—not the Reflection as a verdict—to the next ordinary evidence state",
-            "run the integrated resolver once",
-            "only the resolver's existing row 4 can formally refer",
+            "continue the current research problem or resolve the next investment",
+            "an affected parent rule returns to its existing owner",
         ),
     }
     for relative, markers in required.items():
@@ -255,7 +254,7 @@ def reflection_contract_findings(skills_root: Path) -> list[str]:
 RESOLVER_ROW_MARKERS = {
     1: "An unresolved parent requirement or adopted revision affects the next decision",
     2: "safety, legality, authority, accounting, explicit campaign-scope unconditional F7 stop, or halt",
-    3: "selected terminal B has not been adopted",
+    3: "A terminal result or eligible E needed by this investment",
     4: "parent-owned objective, Representation, Slot H measurement meaning, R8 rule, permitted scope, or claim ceiling",
     5: "without consuming protected reserve",
     6: "Implementation, measurement, or comparison validity",
@@ -264,8 +263,8 @@ RESOLVER_ROW_MARKERS = {
     9: "more than one live causal explanation",
     10: "crossing an actual reviewed strategic boundary",
     11: "Existing valid evidence and R8",
-    12: "crosses another recorded B, T replacement boundary, checkpoint, integration, promotion",
-    13: "No row from 1 through 12 governs",
+    12: "The proposed investment crosses a substantive T replacement boundary",
+    13: "No earlier row governs and the comparison supports retaining the current investment",
 }
 
 
@@ -294,8 +293,8 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
 
     required = {
         "learning-loop.md": (
-            "Apply the rows from 1 through 13 exactly once",
-            "The first applicable row governs; no later row may override it",
+            "Only after an investment trigger, apply the rows from 1 through 13 once",
+            "ordinary continuation has no row",
             "Every stop consequence has one exact scope",
             "Unknown cost of this stage or its unavoidable commitments is not affordable",
             "Do not ask the user to choose a technical diagnostic",
@@ -304,22 +303,22 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "one additional evidence-completion round only through row 7 or row 8",
             "further retrieval is unlikely to change that allocation",
             "Unrelated landscape gaps do not veto it",
-            "an exempt determined action needs no comparative pass",
+            "A comparison that retains current work creates no extra research or follow-up resolution",
             "Entry adoption fixes the producing project decision root and historical chain",
             "Selected, authorized, acknowledged, or execution-started B records preserve their exact authority and execution inputs",
         ),
         "campaign-state.md": (
-            "first applicable row from learning-loop.md",
-            "do not introduce a separate uniqueness test here",
-            "Routine row 13 adds no research, diagnosis, or review",
-            "does not strengthen validity, technical learning, route eligibility, progress, constraint meaning, diagnostic alternatives, dominance, affected scope, or surviving authority",
+            "ordinary continuation creates no new direction resolution",
+            "New observations and ordinary Selection updates do not each need such an identity or row",
+            "ordinary continuation; no placeholder resolution",
+            "Selection applies reviewed Entry or adopted project evidence without strengthening its meaning",
             "Affected scope",
             "Surviving authority",
             "Project provenance",
         ),
         "entry-review.md": (
             "applicable parents, adopted evidence, Campaign, Selection and Budget",
-            "the resolver result and Selection support the proposed allocation",
+            "Selection supports the work: a Coordinator continuation decision within the current research scope or an applicable resolver judgment for a new investment",
             "protected reserve is not assigned to routine work",
             "Do not create a content root, decision node, attestation root, authority node, packet, snapshot, adoption identity or validation identity",
             "entry-review-legacy.md",
@@ -328,7 +327,7 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "This file adds no direction table, fallback priority, research-first exception, or post-resolver R8 override",
             "another evidence round is permitted only when resolver row 7 or row 8 selects it",
             "Until an unchanged review is adopted as `REPLAN_READY`",
-            "apply its persisted row, exact next action, and later-spend gates without running the resolver again",
+            "A terminal B or a new follow-on B does not itself require a direction resolution",
         ),
         "frontier-core.md": (
             "Semantic parent challenge",
@@ -353,7 +352,7 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             if marker not in markdown[name]:
                 findings.append(f"{name} omits {marker}")
 
-    if learning.count("Unique dominance is sufficient, not necessary, for a technical choice") != 1:
+    if learning.count("unique dominance is sufficient, not necessary") != 1:
         findings.append("technical diagnostic ordering rule is not canonical")
     return findings
 
@@ -415,9 +414,9 @@ class FrontierSkillBundleTests(unittest.TestCase):
                 "| 15 | No sufficient next observation",
             ),
             (
-                "frontier-optimization/references/campaign-state.md",
-                "Routine row 13 adds no research, diagnosis, or review",
-                "Routine row 13 adds research for confidence",
+                "frontier-optimization/references/learning-loop.md",
+                "ordinary continuation has no row",
+                "ordinary continuation requires row 13",
             ),
             (
                 "frontier-optimization/references/entry-review.md",
@@ -488,7 +487,7 @@ class FrontierSkillBundleTests(unittest.TestCase):
             ),
             (
                 "frontier-optimization/references/finding-effects.md",
-                "create no replacement identity, B, V, review, or authorization",
+                "An advisory itself creates no replacement object or approval",
                 "create a replacement B and review for every advisory",
             ),
         )

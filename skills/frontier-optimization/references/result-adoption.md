@@ -4,11 +4,11 @@ Load after a current Batch action returns or after completed raw measurement is 
 
 ## Validate the current result
 
-Read the current B, the exact Attempt when one exists, and the referenced parent H measurement and R8 rule. Adopt factual meaning once without choosing the next consequence. Check only:
+Read the current B, the exact Attempt when one exists, and the referenced parent H measurement and R8 rule. Adopt factual meaning once without choosing the next consequence. Use [Assurance by consequence](batch-evaluation.md#assurance-by-consequence) and reuse applicable checks and R conclusions; a separate `RESULT_VALID` review is not an adoption prerequisite. Check only:
 
 - the Batch objective and selected Git Candidate Revision;
 - the Batch-owned Measurement Definition and its mode;
-- required checks and applicable Review;
+- checks and Review conclusions needed for the proposed use;
 - applicable V for any protected Consequence;
 - observations, raw evidence and external references;
 - actual resource use, actual Consequences and unresolved uncertainty; and
@@ -37,20 +37,20 @@ For later observations or a corrected interpretation, preserve earlier facts at 
 
 `diagnostic-only` and `routine-local` results remain B evidence. Record the observation, validity, lifecycle and context limit, which existing H/R8 evidence preconditions it satisfies, the decision it can change, the maximum supported factual conclusion, and unsupported uses. Adoption may narrow inherited limits but cannot establish a target relationship, write an investment consequence, rank routes or choose the next action. These results create no E and cannot establish formal comparison validity, general strength, integration, incumbent use, promotion, submission or a broader claim.
 
-After reconciliation, same-B working observations follow [Boundary-preserving continuation](batch-current.md#boundary-preserving-continuation), without a resolver run after each observation. Terminal result adoption or another decision trigger in [Learning loop](learning-loop.md#active-learning-chain) enters the existing resolver; reuse a still-applicable resolution otherwise. The result itself does not select the next action.
+After reconciliation, continue through [Active learning chain](learning-loop.md#active-learning-chain). Working or terminal results update evidence and current progress; only an investment trigger creates a direction resolution. The Coordinator arranges in-scope follow-on work without promoting raw observations into stronger claims.
 
 ## Adopt formal measurement as E
 
 Only `formal-slot-h` may create E. Before appending E, establish that the result is at the parent-defined decision-ready lifecycle state, carries every required context key, and satisfies the parent comparison contract, including applicable candidate and comparator conditions, data or workload scope, controls, uncertainty, drift, confounding, adaptive exposure, operating cost, hard constraints and claim limits.
 
-An invalid, failed, interrupted, ambiguous or noncomparable formal result remains B evidence and creates no E. E records evaluated evidence; retention, promotion and the next investment remain separate resolver and Selection decisions.
+An invalid, failed, interrupted, ambiguous or noncomparable formal result remains B evidence and creates no E. E records evaluated evidence; retention, promotion and work selection remain separate decisions under their applicable owners and evidence requirements.
 
 ## Reuse completed evidence
 
-Apply [Reuse completed evidence](batch-evaluation.md#reuse-completed-evidence) to distinguish mechanical implementation repair from changed measurement meaning. For an eligible derivation, record the source B, Attempt, raw artifacts, correction and supported conclusion in the existing adoption record, using `RecordObservation` for the current B observation when needed. Preserve prior Git versions and terminal Attempt facts; a corrected conclusion does not rewrite the earlier failure or claim that validation had already passed. Continue through the existing adoption and decision-trigger rules without another measurement Attempt or a separate repair approval.
+Apply [Reuse completed evidence](batch-evaluation.md#reuse-completed-evidence) to distinguish mechanical implementation repair from changed measurement meaning. For an eligible derivation, record the source B, Attempt, raw artifacts, correction and supported conclusion in the existing adoption record, using `RecordObservation` for the current B observation when needed. Preserve prior Git versions and terminal Attempt facts; a corrected conclusion does not rewrite the earlier failure or claim that validation had already passed. Check only the corrected derivation and newly saved output against the established inputs and computation. Record current observations through `RecordObservation`; when retained facts settle an unresolved Attempt, use `ReconcileAttempt` with actual use and effects before concluding B. A corrected derivation creates neither another measurement Attempt nor a mandatory result review. Refer a material unresolved interpretation question to its existing professional owner; invoke claims review only for a claim that needs that independent judgment.
 
 ## Historical compatibility
 
 If the retained result actually contains a legacy packet, acknowledgment, execution-start, immutable experiment identity or result packet, validate that object under [Historical Batch interface](batch-interface.md) and [Historical Batch result](batch-result.md). Preserve its bytes and original conclusion. Legacy validation neither writes a current result nor controls current bundle readiness.
 
-Adoption is complete when the result meaning, satisfied evidence preconditions, unsupported uses, Consequences, recovery state and E eligibility are dispositioned exactly once. Conclude the B only after every affected Attempt is resolved; then use the single resolver for the next investment. Result Adoption never supplies that resolver's priority or selected action.
+Adoption is complete when result meaning, satisfied prerequisites, unsupported uses, Consequences, recovery and E eligibility are dispositioned. Conclude B only after its affected Attempts are resolved. The Coordinator then continues the research problem or invokes the investment trigger; adoption itself neither ranks competing routes nor requires a resolver.

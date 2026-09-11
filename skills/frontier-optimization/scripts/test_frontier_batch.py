@@ -1677,6 +1677,42 @@ class BatchModuleTests(unittest.TestCase):
         self.assertNotIn("capacity_charge", view.data["attempts"][0])
         self.assertEqual(view.status, "stopped")
 
+    def test_reconcile_preserves_explicit_zero_resource_use(self) -> None:
+        def operation(action: Action, context: dict) -> OperationResult:
+            raise RuntimeError("connection lost")
+
+        batch = self._defined_batch(
+            operations={"external": self._operation(operation)},
+            resource_limits={"runs": 1, "external_effects": 0},
+        )
+        with self.assertRaises(ConsequenceUncertain):
+            batch.perform(
+                Action(
+                    key="external",
+                    operation="external",
+                    kind="external",
+                    requested_resources={"runs": 1, "external_effects": 0},
+                )
+            )
+
+        view = batch.apply(
+            ReconcileAttempt(
+                attempt=1,
+                status="failed",
+                rationale="Retained evidence proves one run and zero external effects.",
+                resource_use={"runs": 1, "external_effects": 0},
+            )
+        )
+
+        self.assertEqual(
+            view.data["consumption"],
+            {"runs": 1, "external_effects": 0},
+        )
+        self.assertEqual(
+            view.data["attempts"][0]["resource_use"],
+            {"runs": 1, "external_effects": 0},
+        )
+
     def test_reconcile_unknown_exact_use_preserves_bounds_and_charges_capacity(self) -> None:
         remaining: list[dict[str, int | float]] = []
 

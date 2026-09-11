@@ -41,6 +41,24 @@ tag, or new hosting service is not a prerequisite. Git retention is not an
 off-machine backup. Retain old branches or tags before removing the last
 reference to history still needed by the campaign.
 
+## Review input roles and corrections
+
+Classify materials by their role in the current judgment, not their file type:
+
+| Role | Saved reference |
+|---|---|
+| Subject: content being judged | Every `subject_paths` entry must exist at `subject_git_commit`. Reuse the selected subject rather than rebuilding its list when adding context. |
+| Applicable parents: contracts, prior reviews and other supporting evidence | Use each material's own saved version through existing references. Reading it does not make it part of the subject. |
+| Review output | Use the assigned output path; the new report is not an input to its own review. |
+
+The inputs together must support the judgment. A parent may have been created after the subject; applicability depends on its content and use, not commit order. For example, a plan at commit A can be reviewed using a later assessment at commit B without adding that assessment to A's paths. If the assessment itself is being judged, it belongs in that review's subject.
+
+The Coordinator resolves required references while preparing the existing assignment, using ordinary Git reads or existing reference helpers. Reuse a reference that already locates the material precisely and reuse reads within the same operation. Preparation is complete when the selected inputs are retrievable at their stated versions and their roles are clear. This needs no new preparation tool, snapshot, preflight report or certificate. The independent reviewer still reads the source material needed for its judgment; Coordinator preparation does not replace that reading.
+
+If a reference is wrong, the Coordinator corrects the assignment and the reviewer continues the same task with applicable work retained. A correction is only mechanical when the actual content and versions being judged, and the necessary evidence versions and uses, remain unchanged. Moving a mistakenly included reference into parents can satisfy this condition; removing content that needs judgment cannot. A changed path list alone proves neither case. Review only affected conclusions when content or evidence actually changes. Uncertain references pause their dependent judgments, not unrelated work, and do not establish candidate or route failure.
+
+Draft assignments remain editable. Preserve published reports and use the existing correction path if their references are wrong; the effect on content and conclusions determines any further review. A reference-only correction creates no new B, Generation, authorization or proposal and requires neither unrelated checks nor a full review restart.
+
 ## Current reference tools
 
 Use `scripts/frontier_references.py` for current W consumers and resolver assignments. It reads an existing Git version and writes only into the existing assignment or result when `--output` is supplied; it does not commit, create a registry or choose a direction. Preparation merges generated fields into an existing assignment while preserving its purpose, limits and completion condition. Without `--output`, pass the structured output directly to the next tool. A printed digest is never a field for the model to transcribe.

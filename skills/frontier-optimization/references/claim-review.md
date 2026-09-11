@@ -1,72 +1,26 @@
 # Frontier Claim Review
 
-Load only when creating a claims-review packet, invoking `review-frontier` with `review_kind: claims`, or validating its artifact.
+Load for a named C whose wording and intended use need independent judgment under [Assurance by consequence](batch-evaluation.md#assurance-by-consequence). Ordinary result validation and retained-data recovery use [Result adoption](result-adoption.md).
+
+## Current subject
+
+Use the Git subject and R fields from [Review Frontier](../../review-frontier/SKILL.md). Include exact C wording, intended use, and only the evidence and parent requirements needed to judge it. A supporting R supplies its checked conclusions and assumptions, not an obligation to repeat its procedure. Current work needs no review packet, snapshot manifest or copied identity lineage.
 
 ## Review method
 
-For every C, verify exact wording and intended use; current parents and reviews; F8; applicable reflection and replan lineage; candidate identity; design, user authorization, and implementation-review lineage; legality and engineering evidence; Slot H measurement; Slot D comparison; Slot E uncertainty; R8 meaning; bound authority; gap arithmetic; and later dispositions.
+1. Resolve what each C asserts and how it will be used. Inspect the source evidence needed for that assertion.
+2. Reuse applicable checked facts. Judge remaining questions about comparison conditions, uncertainty, target or proxy meaning, exposure, operating conditions, engineering readiness or bounds only where the wording relies on them. Workflow stages and unrelated history are not additional subjects.
+3. Apply [Finding effects](finding-effects.md). Distinguish evidence that limits the claim from an optional technical improvement. An observed narrow result need not prove a broader claim that was never proposed.
+4. Return `CLAIMS_SUPPORTED`, `CLAIMS_DOWNGRADED`, `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED`, or `BLOCKED`. For each C, give the checked wording, decisive evidence, supported scope, findings and advisories, and required action if any. A downgrade provides the exact maximum supported wording.
 
-Return exactly `CLAIMS_SUPPORTED`, `CLAIMS_DOWNGRADED`, `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED`, or `BLOCKED`. A positive result has no finding. Every nonpositive result identifies the affected C, decisive evidence, and required action. A downgrade supplies exact maximum supported wording.
+Complete when every assigned C has an evidence-backed disposition, not when all possible future uses are established. Preserve the saved subject; the reviewer writes only its assigned R.
 
-## Packet
+## Adoption
 
-Supply the canonical task path; project-snapshot manifest and identity; exact C identifiers, wording, and intended use; current parent bindings and Frontier scope; `FRONTIER.md`; cited Generation Reflections or legacy Outcome Reflections and replans; Q/E/D/X and earlier applicable A records; cited W and B; design-review and authorization lineage; candidate manifests and implementation reviews; engineering and measurement evidence; exact F8 and R8 sources; applicable Slots D, E, and H; module contracts; search-state dispositions; and one exclusive review path. Every cited project input must appear in the snapshot manifest and remain immutable during review.
+The Coordinator uses [Closeout and claims](closeout-and-claims.md#adopt-every-finished-review-through-a) to dispose each reviewed C through A, including nonpositive results. Only supported or explicitly downgraded wording may be adopted for its stated use; `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED` and `BLOCKED` grant no wording authority. Withdrawal follows the existing X path. A does not grant permission for an external action.
 
-```yaml
-review_kind: claims
-review_id: <unique identifier>
-packet_path: <frontier/reviews/claims-<review-id>-packet.yaml>
-packet_id: <review kind and id plus SHA-256 of canonical packet bytes with this field omitted>
-snapshot_manifest: <frontier/reviews/claims-<review-id>-project-snapshot.yaml and identity>
-snapshot_id: <immutable snapshot identity>
-task_path: <canonical task path>
-problem_epoch: <integer>
-problem_generated_at: <ISO-8601 datetime>
-representation_revision: <integer>
-representation_generated_at: <ISO-8601 datetime>
-representation_permitted: <exact reviewed text>
-claim_branch_mode: <claim-only | full-closeout>
-campaign_status_at_trigger: <planned | running | stopped | halted>
-claims: [<C identifier, immutable identity, exact wording, intended use, and scope>]
-supporting_evidence: [<reflection, replan, Q, E, D, X, A, W, B, design, authorization, candidate, implementation, engineering, measurement, Slot, or module-contract identity>]
-assigned_review_path: <exclusive immutable claims-review artifact path>
-completion_check: <every C receives an allowed result and every finding cites immutable snapshot evidence>
-```
+Unrelated later records do not stale a review. Changed evidence or wording reopens only the dependent conclusion under [Change impact and retained results](frontier-core.md#change-impact-and-retained-results). Preserve old verdicts rather than turning a nonpositive report into approval.
 
-## Artifact
+## Historical compatibility
 
-Only `review-frontier` writes the assigned claims-review artifact. The Coordinator adopts every finished result through A, including a nonpositive result. If the user withdraws the request before review finishes, the Coordinator appends a withdrawing X instead. A or X ends that C's routing branch; only explicitly supported A wording may be used externally.
-
-```markdown
----
-type: Optimization Frontier Claims Review
-status: complete
-review_id: <identifier>
-review_result: <CLAIMS_SUPPORTED | CLAIMS_DOWNGRADED | EVIDENCE_REQUIRED | PARENT_REVIEW_REQUIRED | BLOCKED>
-reviewed_by: review-frontier/1
-reviewed_at: "<ISO-8601 datetime>"
-snapshot_packet: <path and identity>
-generated: { by: review-frontier/1, at: "<ISO-8601 datetime>" }
----
-
-# FRONTIER CLAIMS REVIEW: <effort name>
-
-Result: <allowed result>
-Claims: <exact C identifiers>
-Intended use: <exact external use>
-Reviewed records: <paths and identifiers>
-Reviewed at: <ISO-8601 datetime>
-
-## Claim under review: <C identifier and name>
-
-- Claim: <exact reviewed wording>
-- Result: <supported | downgrade | evidence required | parent review required | blocked>
-- Decisive authority: <records and authority>
-- Maximum supported wording: <exact wording or unchanged>
-- Required action: <one action or None>
-- Complete when: <checkable condition or complete>
-```
-
-The reviewer writes no A or X, changes no campaign status, and grants no wording authority directly. `CLAIMS_DOWNGRADED` supplies exact maximum supported wording; `EVIDENCE_REQUIRED`, `PARENT_REVIEW_REQUIRED`, and `BLOCKED` supply no usable wording. The Coordinator validates and records the consequence from durable state.
-
-A claims review binds exact C and evidence identities. Later unrelated campaign records do not stale it. A later X that invalidates, supersedes, voids, or withdraws cited evidence makes the dependent wording unusable. A semantic wording change creates a new C and requires a new review. Never promote an old nonpositive review into approval.
+Read [Review snapshots](review-snapshots.md) only when interpreting a retained snapshot-based report. Its original bytes and verdict remain historical evidence; its packet fields and procedural sequence do not define a current assignment.

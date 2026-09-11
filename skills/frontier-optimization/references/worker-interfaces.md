@@ -1,14 +1,26 @@
 # Frontier Worker Interfaces
 
+Give the worker the current research problem and the local result it owns through existing source references, not only the next command. When professional work reveals a concrete assumption failure, expanded dependency or promising alternative that may change investment, report the facts and possible implications in existing progress or the return. Follow [When to reconsider investment](learning-loop.md#when-to-reconsider-investment); ordinary local problems stay with their owner. This adds no report after every invocation and grants no wider write scope or allocation authority.
+
 Load this file when assigning work or undertaking simple implementation directly. It defines working responsibility, exclusive active writes and the small research and user-decision packets. Batch and review branches have separate action files.
 
 ## Permissions
 
 The Coordinator names the responsible worker and exact writable files or sections. Keep one active writer per section; input or Candidate Revision paths do not imply write authority. Roles below describe the responsibility being performed, not permanent Agent identities. For simple implementation requiring no independence, one Agent may sequentially coordinate and implement under the same working rules, without a role-switch record or authorization. It may not overwrite another worker's evidence or replace an independent reviewer.
 
+### Evidence access
+
+Assignment references are starting points, not a read whitelist. Within the current question and actual access and resource limits, follow relevant source, dependency, original-record and official-document links; use local evidence when sufficient. Source versions establish applicability, not a prohibition on consulting other versions; keep their meanings distinct. Such fact-checking and simple calculations belong to the assigned work, without another Q, B, approval or access log. Coordinate a materially wider research question or commitment with the Coordinator.
+
+Preserve explicit user and sensitive-access limits, the reviewer's assigned judgment, the resolver's research boundary, and purposeful staged isolation such as measurement revision's independent reconstruction. Reading permission grants neither execution nor writes. Correct an internal read restriction that obstructs relevant evidence under [Constrain effects, not convenient forms](technical-design.md#constrain-effects-not-convenient-forms); do not ask for permission on each lookup.
+
+### Write and adoption ownership
+
 Every current worker assignment cites the owning B, R, V, W, or other human handles plus only the full Git commits, repository-relative paths, external artifact references, limits, and completion condition needed by that worker. It does not create or recompute decision, attestation, authority, execution, or outcome roots. Workflow source, Skills, validators, releases, and deployment paths are not project inputs. Historical typed chains and `workflow_source_binding` remain readable only for retained records that already use them.
 
 Prepare W references under [Work Plan](work-plan.md#saved-design-references) and resolver inputs under [Learning Loop](learning-loop.md#resolver-input-preparation). Pass generated bindings as structured data or write them into the existing assignment with the tool. A textual dispatch names that assignment's location; it does not transcribe digests. The receiver reads the binding rather than recreating it from prose.
+
+For review assignments, apply [Assurance by consequence](batch-evaluation.md#assurance-by-consequence) before dispatch. The existing scope and completion condition name the next use, conclusions already established, and remaining question needing independent judgment. Prepare references under [Review input roles and corrections](provenance-and-identity.md#review-input-roles-and-corrections). A later reference or method mismatch is corrected in the same task with applicable reviewer work retained; historical procedural wording does not define the current method.
 
 | Actor | May write | Meaning | Cannot write or decide |
 |---|---|---|---|
@@ -40,9 +52,15 @@ Do not use worker write protection as a global drift rule. `worker_forbidden_pat
 
 W describes the overall design; B pursues one independently judged result; a worker invocation advances a coherent part. In the existing task description or working record, name the next useful deliverable or observation, working location, write surface, applicable source references and known limits, current gap, and what would complete this invocation. Reference existing checks or describe the behavior worth checking when no check exists yet. Read limits and versions from their owners rather than copying them. A new context needs the base task references plus current changes, not an unexplained delta. This needs no separate assignment file, handle, receipt, restatement or completeness proof.
 
+When handing work into a new use, the Coordinator points to the current verification entry point and any uncovered prerequisite under [Reuse working knowledge](batch-current.md#reuse-working-knowledge), not just prior verdicts. The implementation owner connects the affected check to that entry point.
+
 Prefer the existing implementation worker for sustained development and connected parts; a reviewer is not that worker. Keep simple work together, including direct implementation under Permissions above. Split only when dependencies or context load justify it, not by file count. Default to sequential continuation in the same B. The implementation owner connects the resulting work and checks affected seams even when another worker supplies a component. This is ordinary integration, not formal admission or a Campaign conclusion. Reuse sufficient evidence; retain one current writer for shared Batch state without an additional integration role or approval.
 
-An assignment is sufficient when its references support starting the next useful exploration. Unknown benefit, internal methods and unanticipated results are work to investigate, not reasons to demand an exhaustive specification, failure catalogue or test oracle. The implementer may refine internal steps, test methods and error handling from existing goals and evidence. A choice that changes an important interface, state owner, behavior promise, acceptance or measurement meaning goes to its existing owner; pause only dependent work. A needed write outside the assigned surface requires coordination, not a new B or automatic user question.
+An assignment is sufficient when its references support starting the next useful exploration. Unknown benefit, internal methods and unanticipated results are work to investigate, not reasons to demand an exhaustive specification, failure catalogue or test oracle. The implementer may refine internal steps, test methods and error handling from existing goals and evidence. Use [Evidence access](#evidence-access) for related fact-checking.
+
+Refine unadopted technical suggestions in the original professional task. Changes to an adopted design's behavior promise, interfaces, ownership or acceptance go to its design owner; changes to comparator, sampling or interpretation go to the existing measurement owner under [Current Batch measurement](batch-evaluation.md). Updating the affected contract need not reopen investment. Only [When to reconsider investment](learning-loop.md#when-to-reconsider-investment) triggers the resolver; a needed write outside the assigned surface requires coordination, not a new B or automatic user question. Preserve unaffected checks and conclusions; reassess the changed use and pause only dependent work.
+
+A supported opportunity may improve a working solution before it fails. Report its factual basis and possible effect in existing progress or the return, without proving superiority or reopening every alternative. The Coordinator arranges work with the relevant owner, preserving the professional meaning. Reuse sufficient rationale until relevant facts change; neither an invocation return nor this feedback creates a routine comparison or report.
 
 Workers repair ordinary defects and report progress, retained work, remaining gap and next action at an invocation return. The Coordinator resumes or assigns the next in-scope segment under existing authority; an internal return is neither a terminal B result nor a request for user permission. A missing assignment file or unbound check does not by itself prevent ordinary development. Review adoption, operational-limit changes and Batch conclusion remain Coordinator-owned.
 

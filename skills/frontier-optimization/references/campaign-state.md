@@ -122,9 +122,11 @@ A final-closeout update releases or dispositions every reservation, reports unkn
 
 ## Selection
 
-For the Entry Selection, use the Entry gate before any B exists. A later Selection that chooses another B or reallocates investment waits until every previously selected B has an adopted terminal outcome, every eligible E has a disposition, and every completed parallel set has a joined X. A paused `waiting_for_input` B remains selected and blocks that dependent investment choice.
+For the Entry Selection, use the Entry gate before any B exists. During an active task, the Coordinator may update the selected B references and current progress within the research problem under [Active learning chain](learning-loop.md#active-learning-chain). Preserve applicable investment rationale by reference; ordinary continuation creates no new direction resolution. A different independently judged result uses another B, not a broader acceptance for the old B.
 
-When current rules remove an obsolete procedural blocker or an adopted parent change affects the actual next decision of the same selected B, record the change through the existing X and append a bounded Selection update without first ending that B. Preserve its identity, authority, actual execution inputs, effects, cumulative consumption, and surviving scope. This update cannot select another B, reallocate investment, or broaden permission. If the actual next decision is unchanged, reuse the existing Selection and create no event. F3 names the same Primary and Parallel identifiers.
+An investment comparison may occur before active B records finish; comparison itself changes no allocation. To adopt a switch, stop adding affected old work, reconcile its actual effects, unresolved operations, retained results and resource occupation, and apply existing safe stopping and dependency rules. Update the affected B and Selection without fabricating a terminal result. Unrelated parallel work can continue; only the necessary result, join or shared resource delays dependent new work. Unresolved effects retain their controls, and reserved capacity is not released while still in use.
+
+When current rules remove an obsolete procedural blocker, correct the affected current owner without rewriting history or broadening actual permission. Apply the continuation or investment trigger in Learning Loop rather than treating a historical instruction to rerun the resolver as a current obligation. An unchanged investment needs only its current progress or selected-work update, not a new X decision.
 
 ```markdown
 Selection:
@@ -132,9 +134,9 @@ Selection:
 - Campaign generation: <positive integer>
 - Recovery lineage: <prior CLOSEOUT_COMPLETE, recovery V and X identities, reused objects and limits; or None for generation 1>
 - Project provenance: <full Git commit and affected repository-relative paths; no workflow identity>
-- Evidence source and resolution: <tool-produced saved input reference and applicable saved resolution; read the internal evidence-state key from that result>
+- Evidence source and resolution: <applicable evidence references; saved professional resolution when investment was reconsidered; otherwise reference the current research scope and rationale>
 - Route-set state: <complete for this decision | incomplete | reopened, with Q, T, peer-source basis, shared assumptions, exclusions, deferrals, prerequisites, and reopening evidence>
-- Direction resolution: <local R8 | local diagnostic | focused Q | route-landscape Q | strategic replan | stop | halt | blocked, with the first applicable row from learning-loop.md, its persisted condition, and exact next action>
+- Direction resolution: <applicable saved investment judgment and row, or not applicable for ordinary continuation; no placeholder resolution>
 - Affected scope: <candidate | route | campaign, with exact affected identities and evidence; or not applicable>
 - Surviving authority: <unchanged routes, W, Budget, and permissions preserved by the resolver; none for campaign stop or halt; or not applicable>
 - Terminal and join coverage: <terminal selected B identifiers, E coverage, joined X identity, or exact blocker>
@@ -157,8 +159,8 @@ Selection:
 - Strategic replan gate: <assigned review path requiring adopted REPLAN_READY, unchanged prior identity, or not applicable>
 - Adopted replan review: <unchanged REPLAN_READY identity whose reviewed proposal exactly matches this Selection and B state, or not applicable>
 - R8 rule applied: <exact clause>
-- Deterministic resolution: <the exact action produced by the recorded first applicable resolver row, including required Q, V, Replan, specialized gate, stop, halt, or blocker>
-- Primary: <B identifier and reason>
+- Deterministic resolution: <applicable saved investment resolution, or not applicable for ordinary continuation>
+- Primary: <B identifier, next action and owner; reason within current research scope or applicable investment resolution>
 - Parallel: <identifiers and independence reason or None>
 - Parallel checks: <same current W revision when shared, reservations, exclusive mutable paths, shared-resource safety, integration ownership, measurement compatibility, and failure isolation; or None>
 - Join point: <one W-owned interface, integration, or comparison check after all members terminate, or None>
@@ -169,6 +171,6 @@ Selection:
 - Deferred: <identifiers, reasons, unresolved or unavailable prerequisite consequences, and observable reconsideration events>
 ```
 
-Selection applies reviewed Entry evidence or current adopted project evidence through the sole resolver; it does not strengthen validity, technical learning, route eligibility, progress, constraint meaning, diagnostic alternatives, dominance, affected scope, or surviving authority to make a proposed B pass. `complete for this decision` supports the current allocation only and makes no exhaustive-search, originality, or optimality claim. A sole eligible route is sufficient when every material decision-relevant mechanism class is dispositioned. Apply [Research hypotheses and action prerequisites](planning-records.md#research-hypotheses-and-action-prerequisites) to the selected action, and record any [opportunity-led reopening](learning-loop.md#opportunity-led-reconsideration) in the existing route-set state.
+Selection applies reviewed Entry or adopted project evidence without strengthening its meaning. For ordinary continuation, update only current work references and changed facts, retaining the research scope and applicable rationale. For an investment decision, adopt the resolver's professional comparison. Neither path proves exhaustive search or global optimality. Apply [Research hypotheses and action prerequisites](planning-records.md#research-hypotheses-and-action-prerequisites) to the actual action.
 
-One evidence-state identity has exactly one finalized first applicable resolver row and deterministic resolution. Adopt only that completed result, not an intermediate working draft; handle draft correction and source-verified published-premise errors under [Resolver result completion](learning-loop.md#resolver-result-completion). Reject a competing Selection for the same identity. A workflow release alone never recomputes it; a new resolution requires an actual project decision event and genuinely changed decision inputs. Adopt the order, rationale and switching conditions under [Route-investment ordering](learning-loop.md#route-investment-ordering), including its decision-scope limit on reuse; do not introduce a separate uniqueness test here. Use Q only for the resolver's named evidence gap and V only for a genuine user-owned tradeoff or protected Consequence. No later spend allocation is valid until Selection cites its applicable evidence and gates and those facts remain current. Routine row 13 adds no research, diagnosis, or review; routine work cannot consume protected reserve.
+When an investment resolution exists, adopt its finalized judgment and binding under [Resolver result completion](learning-loop.md#resolver-result-completion); preserve history and reject competing judgments for the same decision input. New observations and ordinary Selection updates do not each need such an identity or row. Entry and later work may use the Coordinator's continuation decision under the existing research scope without a fresh resolution. Cite the applicable evidence, Review, Permission, resource and dependency conditions for the actual action; routine work cannot consume protected reserve. Use Q for decision-relevant missing evidence and V only for a genuine user-owned boundary.

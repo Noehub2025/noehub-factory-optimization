@@ -36,7 +36,7 @@ Choose claim-only only when all are true:
 - no ordinary stop, forced halt, unresolved `CLOSEOUT_REQUIRED`, or parent conflict is active; and
 - the campaign was planned or running before the claim trigger.
 
-Choose full closeout for a durable campaign-scope ordinary stop, forced halt, stopped or halted campaign, unresolved `CLOSEOUT_REQUIRED`, or an actual campaign-wide ending condition. Parent revisions follow [Change impact and retained results](frontier-core.md#change-impact-and-retained-results) and do not by themselves select closeout. A candidate- or route-scope disposition returns to Campaign Cycle under the persisted resolver result and never enters full closeout by itself. Full closeout wins when a claim and a campaign-scope stop or halt are both active.
+Choose full closeout for a durable campaign-scope ordinary stop, forced halt, stopped or halted campaign, unresolved `CLOSEOUT_REQUIRED`, or an actual campaign-wide ending condition. Parent revisions follow [Change impact and retained results](frontier-core.md#change-impact-and-retained-results) and do not by themselves select closeout. A candidate- or route-scope disposition returns to Campaign Cycle for continuation or investment reconsideration and never enters full closeout by itself. Full closeout wins when a claim and a campaign-scope stop or halt are both active.
 
 If neither mode fits, record `BLOCKED` with the conflicting records and continue to the canonical return finalization. Do not convert a claim-only request into closeout or use claim review to repair campaign state.
 
@@ -44,7 +44,7 @@ If neither mode fits, record `BLOCKED` with the conflicting records and continue
 
 Preserve the exact campaign status, Budget, Selection, reservations, selected B records, W lifecycle, retained E, and route dispositions that existed before `CLAIM_REVIEW_REQUIRED`. The claim snapshot is read-only and grants no spend, integration, promotion, publication, deployment, or submission authority.
 
-Load [Claim records](claim-records.md), [Claim review](claim-review.md), [Review snapshots](review-snapshots.md), and [Worker interfaces](worker-interfaces.md). Load campaign, planning, evidence, learning, W, design, candidate, or implementation references only when the named C cites those records and the reviewer must interpret them.
+Load [Claim records](claim-records.md), [Claim review](claim-review.md), and the assignment guidance in [Worker interfaces](worker-interfaces.md). Read [Review snapshots](review-snapshots.md) only for a retained snapshot-based report. Load other references only where the named C relies on their meaning.
 
 The branch has exactly two terminal paths:
 

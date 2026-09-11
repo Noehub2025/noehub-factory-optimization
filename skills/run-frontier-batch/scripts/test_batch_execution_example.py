@@ -12,7 +12,7 @@ import pytest
 
 import batch_execution_example as example
 from frontier_batch import (
-    Batch, CandidateRevision, ConsequenceBlocked, ConsequenceUncertain,
+    AdoptReview, Batch, CandidateRevision, ConsequenceBlocked, ConsequenceUncertain,
     GitReference, RecordCheck, ReviewAssessment, ReviseBatch, SelectCandidate,
 )
 
@@ -143,6 +143,31 @@ def test_caller_passes_chosen_review_to_owner_and_blocks_before_read(tmp_path):
         example.execute(tmp_path, "B001", reader=forbidden_reader, required_reviews=("R001",), governance=Owner())
     assert calls == [(reference, selected)]
     assert Batch.open(tmp_path, "B001").view.data["attempts"] == []
+
+
+def test_adopted_review_is_retained_without_becoming_an_action_gate(tmp_path):
+    batch = example.prepare_demo(tmp_path, ("accepted",))
+    (tmp_path / "review.md").write_text(
+        "---\nreview_id: R001\nreview_result: IMPLEMENTATION_READY\n---\n"
+        "Checked an earlier use. That plan required another result review.\n"
+    )
+    subprocess.run(["git", "-C", str(tmp_path), "add", "review.md"], check=True, capture_output=True)
+    review_commit = commit_inputs(tmp_path).commit
+    batch.apply(AdoptReview(review_commit, "review.md", "Retain the earlier judgment."))
+    retained = Batch.open(tmp_path, "B001").view.data["references"]["reviews"]
+    assert retained == [{"handle": "R001", "commit": review_commit, "path": "review.md"}]
+    saved_report = (tmp_path / "review.md").read_bytes()
+
+    # The current caller needs no independent judgment. No owner lookup is installed.
+    outcome = example.execute(tmp_path, "B001")
+    state = Batch.open(tmp_path, "B001").view.data
+    assert outcome.operation_result.result["outcome"] == "positive"
+    assert state["attempts"][0]["action"]["required_reviews"] == []
+    assert state["references"]["reviews"] == retained
+    assert state["current"]["status"] == "open"
+    assert example.read_result(tmp_path, "B001") == outcome.operation_result.result
+    assert (tmp_path / "review.md").read_bytes() == saved_report
+    assert len(Batch.open(tmp_path, "B001").view.data["attempts"]) == 1
 
 
 def test_known_parser_failure_retains_partial_facts_and_can_be_read(tmp_path):

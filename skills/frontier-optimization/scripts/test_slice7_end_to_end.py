@@ -1059,12 +1059,12 @@ class Slice7ContractTests(unittest.TestCase):
     def test_reflection_claim_and_parent_change_routes(self) -> None:
         self.assert_contract_contains(
             "learning-loop.md",
-            "Apply routine R8 without extra research when no earlier resolver condition applies",
-            "A direct reversible attempt may be preferable to separate diagnosis",
+            "Batch completion, a passed prerequisite, a new B or an estimate correction does not by itself reopen investment",
+            "A direct attempt may be preferable to separate diagnosis",
             "Dependent strategic spend needs sufficient evidence",
             "A valid whole-treatment comparison may support that the bounded package caused the observed local effect",
-            "This section is the only direction resolver",
-            "Apply the rows from 1 through 13 exactly once",
+            "This section is the only investment-direction resolver",
+            "Only after an investment trigger, apply the rows from 1 through 13 once",
             "REPLAN_READY",
         )
         self.assert_contract_contains(
@@ -1132,7 +1132,7 @@ class Slice7ContractTests(unittest.TestCase):
         self.assertIn("references/user-facing-handoff.md", coordinator)
         self.assertIn("use the core router for the next in-scope action", coordinator)
         self.assertIn(
-            "distinguish continuation of selected work from a new investment choice",
+            "Follow [Active learning chain]",
             coordinator,
         )
         self.assertIn("A worker's return ends its assignment, not the Coordinator's task", coordinator)
@@ -1161,10 +1161,10 @@ class Slice7ContractTests(unittest.TestCase):
 
         cycle = (SCRIPT_ROOT.parent / "references" / "campaign-cycle.md").read_text()
         for behavior in (
-            "A terminal implementation result has positive implementation review but no later resolver result or Selection",
-            "Complete adoption and accounting, then use the existing resolver and continue its selected action within the request",
-            "Implementation evidence does not establish performance",
-            "A missing Selection alone is neither a blocker nor a user return",
+            "A terminal implementation result has positive implementation review but no later resolver result",
+            "Adopt the result and arrange the next work within the current research problem",
+            "Implementation evidence is not performance evidence",
+            "A fresh direction resolution is not an execution credential for ordinary continuation",
         ):
             with self.subTest(behavior=behavior):
                 self.assertIn(behavior, cycle)

@@ -72,7 +72,10 @@ def execute(
     required_checks: tuple[str, ...] = (),
     governance: GovernanceResolver | None = None,
 ) -> ActionOutcome:
-    """Run this example's observation using current owners and real Batch wiring."""
+    """Run the observation with requirements chosen for this action.
+
+    Retained Batch review references are evidence, not an implicit gate list.
+    """
     current = Batch.open(repo, batch_name).view.data["current"]
     definition = current["measurement_definition"]
     inputs = definition["inputs"]

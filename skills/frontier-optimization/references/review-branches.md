@@ -1,6 +1,6 @@
 # Frontier review branches
 
-Select exactly the review kind named by the packet. Read its method and the cited project evidence. Supporting references are conditional, not a common reading bundle.
+Use [Assurance by consequence](batch-evaluation.md#assurance-by-consequence) to select a necessary judgment, then load its review kind below. These are methods, not sequential approval stages. Ordinary result validation uses [Result adoption](result-adoption.md), not a claims review. Supporting references are conditional.
 
 | Kind | Method | Read additional material only when |
 |---|---|---|
@@ -12,6 +12,6 @@ Select exactly the review kind named by the packet. Read its method and the cite
 
 Read [Finding effects](finding-effects.md) when judging findings. Read a record template only when its meaning is genuinely needed; reviewers do not create Coordinator records.
 
-Verify the saved Git subject and applicable parents once. Judge evidence completeness rather than reconstructing unrelated operational history. If another R is cited, inspect its verdict and applicability, not its whole review procedure. A missing necessary input blocks only its dependent conclusion.
+Verify the saved Git subject and applicable parents once. Reuse another R's actual checked conclusions and assumptions without repeating its procedure. Inspect only evidence needed to settle the remaining question. If the assignment's kind or completion condition conflicts with the current method, correct that assignment with the Coordinator while retaining completed work. A missing necessary input blocks only its dependent conclusion.
 
 The review is complete when the selected method has evidence-backed conclusions and its report identifies the exact subject, findings, maximum supported consequence and conditions.

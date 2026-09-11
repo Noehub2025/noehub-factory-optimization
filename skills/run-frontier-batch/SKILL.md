@@ -16,7 +16,7 @@ For permission questions, apply [User decisions](../frontier-optimization/refere
 3. For W-backed work, load only the concerns needed by this assignment within `delivery_scope`. On continuation, read relevant changes rather than reloading the whole design. Follow Working assignments for discoveries and internal refinements; keep the mutable work breakdown outside the design contract.
 4. Check only facts relevant to the current action. Worker-forbidden paths answer who may write. The selected Git commit and paths answer which bytes a check or Consequence uses. Workflow deployment, unrelated dirty paths and ordinary working changes do not become project inputs. When checking R coverage or using a preflight, apply [Review applicability and adoption](../frontier-optimization/references/batch-current.md#review-applicability-and-adoption).
 
-A missing prerequisite stops its dependent action with the observed facts and recovery condition, not an invented technical conclusion.
+A missing prerequisite stops its dependent action with the observed facts and recovery condition, not an invented technical conclusion. Report professional discoveries that may change investment through [Working assignments](../frontier-optimization/references/worker-interfaces.md#working-assignments); local implementation choices remain within the assignment.
 
 ## Work and report
 

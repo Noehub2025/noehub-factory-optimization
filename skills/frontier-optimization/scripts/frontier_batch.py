@@ -211,6 +211,7 @@ class Action:
     operation: str
     kind: str
     candidate: CandidateRevision | None = None
+    # Current-action requirements, not all retained references.reviews.
     required_reviews: tuple[str, ...] = ()
     required_permissions: tuple[str, ...] = ()
     required_checks: tuple[str, ...] = ()
@@ -1001,7 +1002,7 @@ def _apply_change(
             )
             if revised < 0:
                 raise BatchFormatError("reconciled consumption cannot be negative")
-            if revised == 0:
+            if revised == 0 and key not in resource_use:
                 updated["consumption"].pop(key, None)
             else:
                 updated["consumption"][key] = revised
