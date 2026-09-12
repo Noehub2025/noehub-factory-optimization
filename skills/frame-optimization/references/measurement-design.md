@@ -44,6 +44,8 @@ Define the applicable cases, data, scenarios, environments, workload, comparator
 
 Use task-neutral concepts. A particular task can instantiate them with opponents, seeds, datasets, machines, operators, sites, time periods, physical specimens, or other concrete conditions.
 
+Distinguish a fixed reference for regression from exploratory conditions that expose capability gaps and observations that address the real objective. One comparison can serve several purposes, but a historical reference does not represent the target environment by default. External implementations, behavior and retained observations can inform whole designs before a candidate is mature or individual contributions are known. Use the smallest relevant coverage for that purpose, not a mandatory representative pool. These are uses to explain in the existing definition, not new modes or reasons to invoke a full protocol revision; apply [Proportional depth](#proportional-depth) and preserve the existing owner for changes to adopted measurement meaning.
+
 ### 3. Resolution and decision risk
 
 State the smallest improvement relevant to the intended decision. The user owns value, risk, and resource choices; the Designer translates them into a detectable contrast and decision rule. When no value threshold exists, a bounded diagnostic may report its resolution and limit its consequence. Survivor selection, route closure, material investment, or formal confirmation cannot silently use any positive value as the threshold.

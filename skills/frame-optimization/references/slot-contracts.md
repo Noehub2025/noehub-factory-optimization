@@ -30,6 +30,8 @@ Completion test: A reader can decide whether any candidate is legal and whether 
 
 List every material correctness, safety, accuracy, stability, and physical constraint. Classify each constraint as hard, soft, or probabilistic.
 
+Distinguish actual external or user requirements from internal methods chosen to establish compliance. An internal proof method does not become a hard constraint through adoption or repetition. When a source, license, integrity, or provenance concern would block current use, apply [Constrain effects, not convenient forms](../../frontier-optimization/references/technical-design.md#constrain-effects-not-convenient-forms) before excluding that use or narrowing the solution space. Reuse sufficient evidence; this is not a routine source audit.
+
 For a probabilistic constraint, state the required probability. For a soft constraint, identify its penalty in Slot D.
 
 Completion test: Every violation has a defined legal or objective consequence.

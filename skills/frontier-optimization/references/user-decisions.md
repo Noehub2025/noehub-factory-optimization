@@ -22,6 +22,8 @@ The user decides:
 
 The Coordinator decides research, routes, technical design, local implementation and repair, checks, measurement, result adoption, internal resource allocation, and B or Generation progression inside those boundaries. A new identifier, changed working path, technical uncertainty, Review checkpoint, local time limit, internal run count or workflow-owned single-use unit is not a user decision.
 
+Additional reading, local repair, implementation replacement or maintenance differences within the existing grant do not by themselves create a value question. Correct an unsupported internal proof requirement through its owner rather than asking the user to waive it. Ask only when an actual user-owned choice remains unresolved; a user answer cannot supply missing third-party rights or override an applicable external prohibition.
+
 Before asking, inspect the current request and applicable V. Reuse an answer that already settles the same objective, resource, access and Consequence boundary. Ask once for a missing boundary and its intended continuing scope, not for each dependent action. Continue other permitted work while the affected action waits.
 
 An uncovered action may be worth seeking permission for; it is not executable yet. When the resolver selects that path on objective value and full opportunity cost, prepare the existing user question with its purpose, scope, cost, expected decision-changing observation, and exact missing grant. Do not ask for every possible option. Explicitly denied or withdrawn actions remain excluded unless the user reopens them; a potentially valuable action does not override that decision.

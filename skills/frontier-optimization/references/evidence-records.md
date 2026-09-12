@@ -1,6 +1,6 @@
 # Frontier Evidence Records
 
-Load only when writing a bound/reference D or disposition X. Generation Reflection is a closeout worker output, not an evidence-record branch.
+Load only when writing a bound/reference D or disposition X. Research Reflection is a specialist output under [Research Reflection](learning-loop.md#research-reflection), not an evidence-record branch or a prerequisite to writing X.
 
 ## D: reference, conjecture, or bound
 

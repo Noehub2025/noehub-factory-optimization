@@ -22,7 +22,8 @@ Frame documents and the handoff bind durable problem, representation, comparison
 | User decisions and Permission | V records, citing the adopted Frame source when applicable |
 | Actual and unknown spend, reservations, balance, adopted results, and their decision use | Budget and E records in `frontier/ledger.md` |
 | Batch limits, Attempts, actual consumption and Consequences | current B record |
-| Completed Generation and its recovery entry | latest complete `CLOSEOUT_COMPLETE` |
+| Research-basis transition and continued work | existing Frontier X and `current_state` under [Research-basis transitions](../../frontier-optimization/references/frontier-core.md#research-basis-transitions) |
+| Whole-campaign closeout and its recovery entry | latest complete `CLOSEOUT_COMPLETE` |
 
 Current retained-result status means adoption, elite or survivor status, current Selection, or intended next use. It does not include the stable reference-baseline definition, comparison meaning, result-comparability rules, search-state compatibility, or old-work reuse rules; those remain with Framing.
 

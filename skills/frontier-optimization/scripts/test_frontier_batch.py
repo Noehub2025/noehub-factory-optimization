@@ -5,7 +5,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 import json
+import os
 import runpy
+import stat
 import subprocess
 import sys
 import tempfile
@@ -15,6 +17,7 @@ from unittest.mock import patch
 
 import yaml
 
+import frontier_batch
 from frontier_batch import (
     Action,
     AdoptReview,
@@ -798,6 +801,72 @@ class BatchModuleTests(unittest.TestCase):
         self.assertEqual(calls, ["inspect-working"])
         self.assertIsNone(outcome.attempt)
         self.assertEqual(outcome.view.data["attempts"], [])
+
+    def test_attempt_replace_is_directory_synced_before_operation(self) -> None:
+        events: list[str] = []
+
+        def operation(action: Action, context: dict) -> OperationResult:
+            events.append("operation")
+            return OperationResult(status="completed", resource_use={"runs": 1})
+
+        batch = self._defined_batch(
+            operations={"measure": self._operation(operation)},
+        )
+        action = Action(
+            key="durable-attempt",
+            operation="measure",
+            kind="check",
+            requested_resources={"runs": 1},
+        )
+        real_replace = frontier_batch.os.replace
+        real_fsync = frontier_batch.os.fsync
+
+        def observed_replace(source, destination) -> None:
+            real_replace(source, destination)
+            events.append("replace")
+
+        def observed_fsync(descriptor: int) -> None:
+            real_fsync(descriptor)
+            if stat.S_ISDIR(os.fstat(descriptor).st_mode):
+                events.append("directory-fsync")
+
+        with patch("frontier_batch.os.replace", side_effect=observed_replace), patch(
+            "frontier_batch.os.fsync", side_effect=observed_fsync
+        ):
+            batch.perform(action)
+
+        self.assertEqual(events[:3], ["replace", "directory-fsync", "operation"])
+
+    def test_attempt_directory_fsync_failure_prevents_operation(self) -> None:
+        calls: list[str] = []
+
+        def operation(action: Action, context: dict) -> OperationResult:
+            calls.append(action.key)
+            return OperationResult(status="completed", resource_use={"runs": 1})
+
+        batch = self._defined_batch(
+            operations={"measure": self._operation(operation)},
+        )
+        action = Action(
+            key="undurable-attempt",
+            operation="measure",
+            kind="check",
+            requested_resources={"runs": 1},
+        )
+        real_fsync = frontier_batch.os.fsync
+
+        def fail_directory_fsync(descriptor: int) -> None:
+            if stat.S_ISDIR(os.fstat(descriptor).st_mode):
+                raise OSError("directory fsync failed")
+            real_fsync(descriptor)
+
+        with patch("frontier_batch.os.fsync", side_effect=fail_directory_fsync):
+            with self.assertRaisesRegex(StorageConflict, "cannot update Batch state"):
+                batch.perform(action)
+
+        self.assertEqual(calls, [])
+        retained = yaml.safe_load(self.state_path.read_text(encoding="utf-8"))
+        self.assertEqual(retained["attempts"][0]["status"], "running")
 
     def test_measurement_attempt_binds_revision_checks_and_real_consumption(self) -> None:
         def measure(action: Action, context: dict) -> OperationResult:

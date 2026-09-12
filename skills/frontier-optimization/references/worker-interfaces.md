@@ -26,7 +26,7 @@ For review assignments, apply [Assurance by consequence](batch-evaluation.md#ass
 |---|---|---|---|
 | `frontier-optimization` | `FRONTIER.md`; `log.md`; ledger, bounds and claims; W lifecycle and mechanical bindings; current Batch definition, R and V references, limits, status and conclusion | Checked adoption changes campaign meaning; `Batch.apply` changes routine state and `Batch.perform` owns action execution, Attempts, consumption and Consequences | W Design brief or professional concern bodies; another worker's technical evidence or W progress/discoveries; review artifacts; parents |
 | `design-implementation` | One assigned W Design brief and the professional bodies of triggered architecture, domain, interfaces, flows, decisions, and verification concern files | Proposed professional implementation design only; its invocation result creates no lifecycle state, identity, review verdict, authority, B, reservation, or spend | Purpose, Scope, Current state, Design map, Delivery map, user-decision adoption, traceability, consuming saved references, Validation, Definition of done, progress/discoveries, Recovery, Outcome, campaign records, reviews, candidate code, execution, measurement, route, or parent contracts |
-| `reflect-frontier` | One exclusive `frontier/reflections/generation-<number>.md` assigned after full-closeout reconciliation | Search advantage for the next generation: retained assets, proposal-distribution changes, worthwhile opportunities, search stance, and reconsideration signals | Campaign records, B/E/Q/X, W, reviews, parents, Selection, Budget, authority, claims, execution, measurement, or another generation's Reflection |
+| `reflect-frontier` | One exclusive scope-specific path under `frontier/reflections/`, assigned at the [research learning trigger](learning-loop.md#research-reflection) | Technical insight and promising ideas from implementation and experiment experience, including clearly unverified reasoning | Campaign records, B/E/Q/X, W, reviews, parents, Selection, Budget, authority, claims, execution, measurement, or another author's active file |
 | `research-frontier` | One assigned research evidence section and result packet | Proposed Q or D evidence | Campaign records, W, reviews, parents, selection, adoption |
 | `grill-frontier` | One assigned answer packet | Preserved user answer | Task documents, V adoption, technical eligibility, consequence |
 | `run-frontier-batch` | Assigned working material, its ordinary integration, checks, observations and operation result through the current Batch interface; assigned W progress and discoveries | Evidence only; a Batch result grants no campaign meaning | Worker-forbidden paths; W contract sections; design concern contracts; campaign records; Reviews; E adoption; formal admission or promotion; campaign stop; claims |
@@ -64,33 +64,41 @@ A supported opportunity may improve a working solution before it fails. Report i
 
 Workers repair ordinary defects and report progress, retained work, remaining gap and next action at an invocation return. The Coordinator resumes or assigns the next in-scope segment under existing authority; an internal return is neither a terminal B result nor a request for user permission. A missing assignment file or unbound check does not by itself prevent ordinary development. Review adoption, operational-limit changes and Batch conclusion remain Coordinator-owned.
 
+For Reflection work, use [Research Reflection](learning-loop.md#research-reflection) for the trigger, sufficient inputs, exclusive author and Coordinator content check. For subsequent professional work, pass those sources alongside the current problem and open decisions; Reflection suggestions do not fix the answer.
+
 ## Research packet
 
-Name `target_id`, exact `decision_root`, `research_mode: route_landscape | focused_question`, exact question, parent bindings, applicability, decision the answer can change, materially different findings and their recorded consequences, evidence channels, action window, fixed search stop, assigned evidence section, result-packet path, and completion check.
+Name the owning Q or D handle, `research_mode: route_landscape | focused_question`, open question, applicable project references, decision the answer can change, evidence channels, action window and overall research limits, search stop, assigned evidence section, result-packet path, and completion condition. Use [Write and adoption ownership](#write-and-adoption-ownership) for source bindings rather than creating another identity chain.
 
-A route-landscape packet also names comparison dimensions, reviewed scope, repository and retained evidence, applicable prior-generation Reflection opportunities, and any reopened exclusion or shared high-consequence assumption. Its bounded question may investigate an unknown mechanism or coverage gap; possible findings are prospective decision branches, not known answers or a required winning alternative. Retained evidence carries its scope and limits; prior ranking, exclusion, and stop judgments are assessed under [Scoped evidence reuse](learning-loop.md#scoped-evidence-reuse). The packet asks the worker to map decision-relevant established approach families, representative implementations, known failures, and applicable functional transfer evidence. Inside that one Q invocation, the parent may compile a temporary `role_bundle` from unresolved causal edges:
+A route-landscape packet also names comparison dimensions, actual scope and freedoms, repository and retained evidence, relevant Reflection and its original sources, and any reopened exclusion or shared high-consequence assumption. Supply the objective gap and open question, with routes and sources as starting points. Use [Route-landscape synthesis](../../research-frontier/SKILL.md#route-landscape-synthesis), including discovery beyond known questions, without adding fields or a checklist. Contributors may find a different problem model or combined approach without first predicting its effect on the supplied options. Keep prior recommendations distinct from facts under [Scoped evidence reuse](learning-loop.md#scoped-evidence-reuse). Possible findings illustrate learning value, not required answers or a complete future branch tree.
 
-```yaml
-role_bundle:
-  role_briefs:
-    - workstream_id: <local handle inside this Q>
-      target_edge: <one unresolved causal or failure edge>
-      lens: <problem-specific professional perspective>
-      decision_question: <question that can change the current allocation>
-      input_delta: <input beyond the inherited Q packet, or none>
-      evidence_channel_delta: <different channel emphasis, or none>
-      independence_mode: isolated_first_pass | evidence_reuse_pass
-      unique_contribution: <decision-relevant contribution owned only here>
-      shared_inputs: <adopted facts or shared retrieval reused across briefs>
-      overlap_rule: <question or route family this brief does not duplicate>
-      stop_condition: <point after which retrieval is unlikely to change the mechanism or sufficient falsifier>
-```
+A focused-question packet names the relevant adopted evidence and why a cheaper sufficient observation cannot answer it. The parent answers directly without route synthesis, alternative ranking or specialist fan-out.
 
-The bundle inherits the Q inputs, fixed evidence protocol, write surface, search stop, completion check, and authority boundary. It is invocation context, not a Q, assignment, file, identity, review object, or Entry input. The parent handles zero or one brief directly and may use parallel return-only specialists only for two or more independently answerable briefs after shared retrieval and duplicate questions are merged. The parent remains the sole evidence and result-packet writer.
+### Multidisciplinary research
 
-A focused-question packet names the triggering adopted evidence and why a cheaper sufficient observation cannot answer it. The parent answers it directly without a role bundle, frame challenger, or specialist fan-out.
+For open direction formation, the professional research lead briefly identifies relevant disciplines or method families and the different explanations they might offer. Arrange complementary Subagents before a preferred answer hardens; the lead also researches and integrates. For research within a selected direction, retain that question's scope; technical subproblem division is useful there without reopening global exploration. The perspective list is provisional, not a coverage report, fixed team or one-Agent-per-discipline requirement. Engineering and mixed methods qualify; a tightly coupled derivation can stay with one researcher.
 
-The result uses Q or D fields, reports `outcome: completed | blocked | evidence_required`, and names missing evidence when incomplete. The parent normalizes material specialist provenance, conflicts, transfer limits, negative searches, and reopening conditions into this one result. Raw specialist or challenger returns create no project state and are never resolver inputs. Research supplies evidence; it does not approve, select, require, or score a route and cannot establish originality or exhaustive coverage.
+Give each contributor the common objective and evaluation meaning, actual constraints, original evidence and current capability gap, plus its proposed perspective. Ask it to reinterpret the whole question, inspect applicable methods and propose mechanisms or representations with material potential. It may challenge the framing or cross disciplinary boundaries. Judge methods, sources and reasoning rather than role titles. Share factual retrieval; different models of the same question are not duplicate tasks.
+
+For example, an open question is: "How can we complete more valid work with the available resources and deadline?" All contributors receive the same facts and may propose a whole direction:
+
+| Perspective | Temporary brief |
+|---|---|
+| Operations and scheduling | Model resource contention, dependencies and ordering; investigate which allocation or scheduling changes could raise attainable output. |
+| Control and decision methods | Examine feedback and uncertainty; investigate when adapting decisions could outperform a fixed arrangement. |
+| Algorithms and representation | Examine how the work is represented and computed; investigate reformulation, approximation or reuse that could expand reachable capability. |
+
+These illustrate complementary methods, not a fixed discipline list or team size. "Research route A, accelerate route B, evaluate route C" instead partitions existing answers; it does not by itself provide different ways to understand the problem.
+
+At intake, treat an agent-written route menu or overly narrow reading plan as background when the assigned objective is open. Reframe temporary contributor briefs and follow relevant sources within the same Q, retaining useful findings and the actual objective, limits and write surfaces. Explain the adjustment in existing progress or the synthesis; do not rewrite a frozen assignment or create a correction record. Coordinate an actual scope or permission change under [Evidence access](#evidence-access), while continuing unaffected work. Discussing an unapproved method does not execute it.
+
+Briefs are temporary invocation context, not separate Qs, files, identities or review objects. Share the overall Q limits across contributors and synthesis. Independent first judgments may read relevant evidence; prior rankings are background, not an expected answer. Neither an exclusive contribution nor a new direction is owed by each participant.
+
+Follow [Route-landscape synthesis](../../research-frontier/SKILL.md#route-landscape-synthesis) for comparison, combination and necessary exchange. One final synthesis permits useful intermediate discussion, not fixed debate or review rounds. Proceed with usable findings when a contributor is unavailable; name a missing premise only where it affects the recommendation. Specialists return contributions; the lead alone writes the assigned evidence and result packet. This research organization is not repeated after ordinary T/W progress; use existing owners until relevant new facts reopen the question.
+
+### Research return
+
+The result uses Q or D fields, reports `outcome: completed | blocked | evidence_required`, and names missing evidence when incomplete. Preserve the professional rationale, recommendations, material conflicts and transfer limits in this one result. Raw specialist or challenger returns create no project state and are never resolver inputs. Apply the researcher's [Authority](../../research-frontier/SKILL.md#authority): recommendations are advisory input to investment comparison, not adopted choices. Coordinator adoption reuses the synthesis rather than rewriting its ranking or stripping its assumptions. Carry the selected rationale and critical assumptions into the existing design or working assignment; handle them through [Ground consequential design choices](technical-design.md#ground-consequential-design-choices), not a second research report or a requirement to copy the proposed components.
 
 ## User-decision packet
 

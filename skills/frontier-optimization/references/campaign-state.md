@@ -1,7 +1,8 @@
 # Frontier Campaign State
 
 At Generation opening, record the starting Git commit and intended working scope
-in the existing campaign record; at closeout, cite the ending or retained version.
+in the existing campaign record; at a research-basis transition or full closeout,
+cite the ending or retained version without requiring a clean worktree.
 These locators support comparison and scoped restore, not a second state ledger.
 Use [Provenance, Git, and retained artifacts](provenance-and-identity.md) for
 retention and restore behavior. Working restores preserve evidence and spend.
@@ -103,22 +104,22 @@ Budget update:
 - Campaign generation: <positive integer>
 - Update kind: <interim | final closeout>
 - Governing campaign limit: <amount, unit, and Problem, Frame, V, or verified external-capacity source; or None>
-- Prior setup spend: <amount and cited record>
-- Inherited closed-generation spend: <amount and cited final Budgets, or zero for generation 1>
-- Entry planning and research spend: <amount and cited records, or zero under the governing accounting rule>
+- Prior setup spend: <newly reconciled amount not already in the prior Budget total, and cited source; or zero>
+- Previously reconciled spend: <cumulative governed consumption at the cited prior Budget update, including earlier generations; or zero>
+- Entry planning and research spend: <newly reconciled charged amount not already in the prior Budget total, and cited sources; or zero>
 - Active reservations: <B identifiers, amounts, accounting sources, or None>
-- Actual campaign spend: <amount and cited records>
+- Actual campaign spend: <newly reconciled B/Attempt consumption not already in the prior Budget total, with source references, regardless of producing generation>
 - Required follow-up reserve: <amount, unit, and mandatory confirmation or recovery purpose; Pending before campaign-baseline selection; or None with the governing rule>
 - Unreserved balance: <amount and calculation>
 - Accounting source: <stable path or system>
 - Candidate operating cost: <separate value and unit or not applicable>
 ```
 
-Include only resource keys governed by a cumulative Problem, Frame, V, or verified external-capacity limit. Keep planning estimates, Batch operational limits, Measurement Definition ceilings, and ungoverned internal use in their owning records; do not manufacture a Budget ceiling for them. Before Selection, replace `Pending` with a concrete reserve or `None` under R8. Account for Entry evidence work only when the governing accounting rule charges it. In a recovery generation, carry earlier-generation spend forward exactly once and never reset the governing limit. Subtract prior setup spend, inherited closed-generation spend, charged current-generation Entry spend, current-generation campaign spend, active reservations, and the reserve exactly once. When the reserved purpose becomes a selected B, move that amount from required reserve to active reservation in one update.
+Include only resource keys governed by a cumulative Problem, Frame, V, or verified external-capacity limit. Keep planning estimates, Batch operational limits, Measurement Definition ceilings, and ungoverned internal use in their owning records; do not manufacture a Budget ceiling for them. Before Selection, replace `Pending` with a concrete reserve or `None` under R8. Account for Entry evidence work only when the governing accounting rule charges it. Use the cited prior Budget as a carried cumulative total and add only consumption not already reconciled there, identified by its original source event. Subtract that cumulative consumption, active reservations and protected reserve exactly once from the governing limit. A late result from an earlier generation remains owned by its original B/Attempt and contributes only its unreconciled use, not the whole B total again. Keep unknown consumption explicit. Generation changes never reset accounting or require summing overlapping per-generation totals; historical Budget formats remain readable without migration. When the reserved purpose becomes a selected B, move that amount from required reserve to active reservation in one update.
 
 The Coordinator is the only owner that changes a strategic allocation or Batch operational limit. A Batch limit revision inside the same investment needs no Budget reservation when it stays within the current strategic allocation and governing balance. Create or increase a reservation only when governed capacity must remain unavailable to another allocation before Attempt use is written back; lower the affected operational limit before releasing such a reservation. After `Batch.perform`, retain the Attempt and actual `resource_use` first, then write only governed keys to Budget and disposition any matching reservation before making another dependent allocation. Use identical keys and units wherever the same governed resource appears. A protected reserve is not available until Selection assigns its stated purpose.
 
-A final-closeout update releases or dispositions every reservation, reports unknown spend explicitly, and leaves no active spend authority. Claim-only processing never writes a final-closeout Budget update.
+A research-basis transition uses an interim update and retains outstanding reservations and unknown use under [Research-basis transitions](frontier-core.md#research-basis-transitions); it requires no final old-generation Budget. A final-closeout update releases or dispositions every reservation, reports unknown spend explicitly, and leaves no active spend authority. Claim-only processing never writes a final-closeout Budget update.
 
 ## Selection
 
@@ -132,7 +133,7 @@ When current rules remove an obsolete procedural blocker, correct the affected c
 Selection:
 - Recorded at: <ISO-8601 datetime>
 - Campaign generation: <positive integer>
-- Recovery lineage: <prior CLOSEOUT_COMPLETE, recovery V and X identities, reused objects and limits; or None for generation 1>
+- Recovery lineage: <existing research-basis transition X or prior CLOSEOUT_COMPLETE and recovery context; reused work and limits; or None>
 - Project provenance: <full Git commit and affected repository-relative paths; no workflow identity>
 - Evidence source and resolution: <applicable evidence references; saved professional resolution when investment was reconsidered; otherwise reference the current research scope and rationale>
 - Route-set state: <complete for this decision | incomplete | reopened, with Q, T, peer-source basis, shared assumptions, exclusions, deferrals, prerequisites, and reopening evidence>
@@ -171,6 +172,6 @@ Selection:
 - Deferred: <identifiers, reasons, unresolved or unavailable prerequisite consequences, and observable reconsideration events>
 ```
 
-Selection applies reviewed Entry or adopted project evidence without strengthening its meaning. For ordinary continuation, update only current work references and changed facts, retaining the research scope and applicable rationale. For an investment decision, adopt the resolver's professional comparison. Neither path proves exhaustive search or global optimality. Apply [Research hypotheses and action prerequisites](planning-records.md#research-hypotheses-and-action-prerequisites) to the actual action.
+Selection uses reviewed Entry, adopted observations and explicitly unverified professional reasoning without presenting hypotheses as measured conclusions. Apply [Technical potential](learning-loop.md#technical-potential) and retain independent judgment rather than treating Reflection suggestions as obligations. For ordinary continuation, update only current work references and changed facts, retaining the research scope and applicable rationale. For an investment decision, adopt the resolver's professional comparison. Neither path proves exhaustive search or global optimality. Apply [Research hypotheses and action prerequisites](planning-records.md#research-hypotheses-and-action-prerequisites) to the actual action.
 
 When an investment resolution exists, adopt its finalized judgment and binding under [Resolver result completion](learning-loop.md#resolver-result-completion); preserve history and reject competing judgments for the same decision input. New observations and ordinary Selection updates do not each need such an identity or row. Entry and later work may use the Coordinator's continuation decision under the existing research scope without a fresh resolution. Cite the applicable evidence, Review, Permission, resource and dependency conditions for the actual action; routine work cannot consume protected reserve. Use Q for decision-relevant missing evidence and V only for a genuine user-owned boundary.

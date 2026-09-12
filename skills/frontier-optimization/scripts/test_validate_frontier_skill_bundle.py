@@ -108,103 +108,45 @@ REFLECTION_REQUIRED_MARKERS = {
 }
 
 
-def generation_reflection_contract_findings(skills_root: Path) -> list[str]:
-    """Validate the closeout-only Generation Reflection contract."""
-    findings: list[str] = []
-    documents = {
-        relative: (skills_root / relative).read_text()
-        for relative in (
-            "reflect-frontier/SKILL.md",
-            "frontier-optimization/SKILL.md",
-            "frontier-optimization/references/learning-loop.md",
-            "frontier-optimization/references/campaign-cycle.md",
-            "frontier-optimization/references/campaign-state.md",
-            "frontier-optimization/references/closeout-and-claims.md",
-            "frontier-optimization/references/entry-and-planning.md",
-        )
-    }
-    required = {
-        "reflect-frontier/SKILL.md": (
-            "Act as the fresh-context owner of one Generation Reflection",
-            "A trustworthy whole-package improvement is a search asset even when individual contribution is unknown",
-            "Buy component diagnosis only when different answers would change the next parent, mutation, representation, evaluation, or allocation",
-            "Proposal distribution",
-            "Representation",
-            "Evaluation effort",
-            "Escape behavior",
-            "what to change",
-            "why material improvement is plausible",
-            "which advantage gained in this generation it uses",
-            "the cheapest direct observation that could test its promise",
-            "the result that would make it unattractive",
-            "exploration or exploitation tendency",
-            "name the possible parent implication",
-            "A new elite, routine success or failure, stronger confirmation, unknown component contribution, or route change within the current Frame remains a Frontier lesson",
-            "only that resolver's existing row 4 can formally refer",
-            "The Reflection creates no Selection, route verdict, Budget allocation, authority, review result, or claim",
-        ),
-        "frontier-optimization/SKILL.md": (
-            "then `reflect-frontier` at its closeout trigger",
-            "Select the next investment from adopted evidence",
-        ),
-        "frontier-optimization/references/learning-loop.md": (
-            "No extra Reflection, continuation certificate or review accompanies this routing",
-            "Run one independent resolver for that decision state",
-            "No extra research or resolution follows",
-            "current active generations require no new per-B OR and no OR coverage migration",
-        ),
-        "frontier-optimization/references/campaign-cycle.md": (
-            "Every selected terminal B is adopted, every eligible E is dispositioned, and the same state yields the same next action or blocker",
-        ),
-        "frontier-optimization/references/campaign-state.md": (
-            "Selection applies reviewed Entry or adopted project evidence without strengthening its meaning",
-            "New observations and ordinary Selection updates do not each need such an identity or row",
-        ),
-        "frontier-optimization/references/closeout-and-claims.md": (
-            "Create the Generation Reflection",
-            "invoke `reflect-frontier` once in a fresh context",
-            "The Coordinator does not copy, rewrite, shorten, or reorder its technical content",
-            "Send at most one consolidated correction request",
-            "This is quality control, not a review",
-            "never invalidate B/E, rerun evidence, or delay closeout for stylistic disagreement",
-            "produced no technical or research evidence",
-        ),
-        "frontier-optimization/references/entry-and-planning.md": (
-            "Use the prior Generation Reflection as candidate-generation input",
-            "add its cited adopted evidence—not the Reflection as a verdict—to the next ordinary evidence state",
-            "continue the current research problem or resolve the next investment",
-            "an affected parent rule returns to its existing owner",
-        ),
-    }
-    for relative, markers in required.items():
-        for marker in markers:
-            if marker not in documents[relative]:
-                findings.append(f"{relative} omits {marker}")
+REFLECTION_ENTRYPOINTS = (
+    "reflect-frontier/SKILL.md",
+    "frontier-optimization/SKILL.md",
+)
 
-    reflection = documents["reflect-frontier/SKILL.md"]
-    for heading in (
-        "## Search outcome",
-        "## Search advantage",
-        "## Worthwhile opportunities",
-        "## Search stance",
-        "## Retire or revisit",
-        "## Evidence",
-    ):
-        if reflection.count(heading) != 1:
-            findings.append(
-                f"reflect-frontier canonical output has {reflection.count(heading)} {heading} headings"
-            )
 
-    references = skills_root / "frontier-optimization/references"
-    for obsolete in ("reflection-analysis.md", "reflection-calibration.md"):
-        if (references / obsolete).exists():
-            findings.append(f"obsolete active Reflection reference remains: {obsolete}")
+def reflection_reference_targets(skills_root: Path) -> list[tuple[Path, Path]]:
+    """Check navigation, not the wording or shape of technical reasoning."""
+    targets = []
+    for relative in REFLECTION_ENTRYPOINTS:
+        source = skills_root / relative
+        if not source.is_file():
+            continue
+        body = re.sub(r"```.*?```", "", source.read_text(), flags=re.DOTALL)
+        for link in MODULE.LINK_PATTERN.findall(body):
+            target = link.split("#", 1)[0]
+            if target.endswith(".md") and "://" not in target:
+                targets.append((source, (source.parent / target).resolve()))
+    return targets
+
+
+def research_reflection_contract_findings(skills_root: Path) -> list[str]:
+    """Structural checks; isolated forward cases assess research behavior."""
+    findings = [
+        f"missing Reflection entrypoint: {relative}"
+        for relative in REFLECTION_ENTRYPOINTS
+        if not (skills_root / relative).is_file()
+    ]
+    findings.extend(
+        f"{source} links to missing reference {target}"
+        for source, target in reflection_reference_targets(skills_root)
+        if not target.is_file()
+    )
     return findings
 
 
 def reflection_contract_findings(skills_root: Path) -> list[str]:
     if (skills_root / "reflect-frontier/SKILL.md").exists():
-        return generation_reflection_contract_findings(skills_root)
+        return research_reflection_contract_findings(skills_root)
     references = skills_root / "frontier-optimization/references"
     documents = {
         name: (references / name).read_text()
@@ -255,7 +197,6 @@ RESOLVER_ROW_MARKERS = {
     1: "An unresolved parent requirement or adopted revision affects the next decision",
     2: "safety, legality, authority, accounting, explicit campaign-scope unconditional F7 stop, or halt",
     3: "A terminal result or eligible E needed by this investment",
-    4: "parent-owned objective, Representation, Slot H measurement meaning, R8 rule, permitted scope, or claim ceiling",
     5: "without consuming protected reserve",
     6: "Implementation, measurement, or comparison validity",
     7: "selected next commitment under the ordering above",
@@ -300,8 +241,8 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "Do not ask the user to choose a technical diagnostic",
             "Public repeatable development evidence may guide hypothesis generation",
             "Make no trajectory, route, or parent inference that depends on the unresolved validity",
-            "one additional evidence-completion round only through row 7 or row 8",
-            "further retrieval is unlikely to change that allocation",
+            "one additional research round through row 7 or row 8",
+            "further reading is repetitive or less useful than reasoning or a practical probe",
             "Unrelated landscape gaps do not veto it",
             "A comparison that retains current work creates no extra research or follow-up resolution",
             "Entry adoption fixes the producing project decision root and historical chain",
@@ -311,7 +252,6 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "ordinary continuation creates no new direction resolution",
             "New observations and ordinary Selection updates do not each need such an identity or row",
             "ordinary continuation; no placeholder resolution",
-            "Selection applies reviewed Entry or adopted project evidence without strengthening its meaning",
             "Affected scope",
             "Surviving authority",
             "Project provenance",
@@ -358,48 +298,27 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
 
 
 class FrontierSkillBundleTests(unittest.TestCase):
-    def test_outcome_reflection_has_one_hypothesis_centered_canonical_owner(self) -> None:
-        skills_root = SCRIPT.parents[2]
-        self.assertEqual([], reflection_contract_findings(skills_root))
+    def test_research_reflection_references_resolve(self) -> None:
+        self.assertEqual([], research_reflection_contract_findings(SCRIPT.parents[2]))
 
-    def test_reflection_inference_is_useful_bounded_and_non_blocking(self) -> None:
-        skills_root = SCRIPT.parents[2]
-        mutations = (
-            (
-                "reflect-frontier/SKILL.md",
-                "A trustworthy whole-package improvement is a search asset even when individual contribution is unknown",
-                "A whole-package improvement is unusable until every component is attributed",
-            ),
-            (
-                "reflect-frontier/SKILL.md",
-                "Buy component diagnosis only when different answers would change the next parent, mutation, representation, evaluation, or allocation",
-                "Always diagnose every component before proposing another attempt",
-            ),
-            (
-                "reflect-frontier/SKILL.md",
-                "the cheapest direct observation that could test its promise",
-                "a comprehensive analysis that proves its mechanism",
-            ),
-            (
-                "frontier-optimization/references/closeout-and-claims.md",
-                "This is quality control, not a review",
-                "This is a mandatory approval review",
-            ),
-        )
-        for relative, old, new in mutations:
-            with self.subTest(relative=relative, replacement=new):
-                with tempfile.TemporaryDirectory() as directory:
-                    root = Path(directory) / "skills"
-                    shutil.copytree(
-                        skills_root,
-                        root,
-                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
-                    )
-                    path = root / relative
-                    text = path.read_text()
-                    self.assertIn(old, text)
-                    path.write_text(text.replace(old, new, 1))
-                    self.assertNotEqual([], reflection_contract_findings(root))
+    def test_reflection_navigation_detects_missing_owner_without_a_prose_template(self) -> None:
+        live_root = SCRIPT.parents[2]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "skills"
+            selected = {live_root / relative for relative in REFLECTION_ENTRYPOINTS}
+            selected.update(target for _, target in reflection_reference_targets(live_root))
+            for source in selected:
+                destination = root / source.relative_to(live_root)
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, destination)
+            reflection = root / "reflect-frontier/SKILL.md"
+            reflection.write_text(
+                "# Research notes with a different structure\n\n"
+                "[Learning](../frontier-optimization/references/learning-loop.md)\n"
+            )
+            self.assertEqual([], research_reflection_contract_findings(root))
+            (root / "frontier-optimization/references/learning-loop.md").unlink()
+            self.assertTrue(research_reflection_contract_findings(root))
 
     def test_direction_resolver_has_one_complete_total_order(self) -> None:
         skills_root = SCRIPT.parents[2]
@@ -930,8 +849,12 @@ class FrontierSkillBundleTests(unittest.TestCase):
         self.assertIn("Otherwise use focused checks inside the current B", support)
         self.assertIn("Paid or external execution alone does not trigger this gate", support)
         self.assertIn("public repeatable development evidence", representation.lower())
-        self.assertIn("Prefer the cheapest interpretable observation", learning)
-        self.assertIn("when they overwhelm the observation's decision value", learning)
+        # Check routing to the assurance owner, not prose that prescribes a winner.
+        # Investment judgment is evaluated with forward scenarios, not string matches.
+        self.assertIn(
+            "[Assurance by consequence](batch-evaluation.md#assurance-by-consequence)",
+            learning,
+        )
         self.assertNotIn(
             "same H measurement for the same unresolved target relationship",
             learning,

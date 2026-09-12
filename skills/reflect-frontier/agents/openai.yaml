@@ -1,6 +1,6 @@
 interface:
   display_name: "Reflect Frontier"
-  short_description: "Turn one generation into search advantage"
-  default_prompt: "Use $reflect-frontier in a fresh context to produce the assigned Generation Reflection from adopted evidence."
+  short_description: "Turn research experience into technical insight"
+  default_prompt: "Use $reflect-frontier in a fresh context to explain the assigned research experience and develop promising next ideas, distinguishing observations from unverified reasoning."
 policy:
   allow_implicit_invocation: true

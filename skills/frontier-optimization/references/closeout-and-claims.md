@@ -3,9 +3,9 @@
 Load only after `frontier-core.md` selects either one unresolved claim-only branch or full campaign closeout. These modes share claim forms but have different consequences:
 
 - **Claim-only branch:** review or withdraw one named C without changing `campaign_status`, final budget, route state, or campaign handoff.
-- **Full closeout:** stop new spend, reconcile the whole campaign, dispose active work, settle retained evidence and gap, create one Generation Reflection when technical evidence exists, finish applicable claims, and write the final handoff.
+- **Full closeout:** stop new spend, reconcile the whole campaign, dispose active work, settle retained evidence and gap, reuse research Reflections and capture uncovered learning when needed, finish applicable claims, and write the final handoff.
 
-Use only the existing Frontier worker Skills. Claims review is one branch of `review-frontier`; Generation Reflection uses `reflect-frontier`. Never create another reviewer or reflection worker.
+Use only the existing Frontier worker Skills. Claims review is one branch of `review-frontier`; research Reflection uses `reflect-frontier`. Never create another reviewer or reflection worker.
 
 ## Contents
 
@@ -20,14 +20,14 @@ Use only the existing Frontier worker Skills. Claims review is one branch of `re
 - [Settle retained results and gap](#settle-retained-results-and-gap)
 - [Dispose T W B and search state](#dispose-t-w-b-and-search-state)
 - [Preserve final direction state](#preserve-final-direction-state)
-- [Create the Generation Reflection](#create-the-generation-reflection)
+- [Reuse research learning](#reuse-research-learning)
 - [Claims during full closeout](#claims-during-full-closeout)
 - [Write the final handoff](#write-the-final-handoff)
 - [Slice 6 acceptance scenarios](#slice-6-acceptance-scenarios)
 
 ## Choose one mode from recorded state
 
-Read current parent bindings, `FRONTIER.md`, every surviving project decision root, latest Budget and Selection, terminal B outcomes, W states, E, D, X, prior Generation Reflections and legacy Outcome Reflections when applicable, replan lineage, C, A, review packets and artifacts, and `log.md`. Use exact recorded project identities, never conversation history or workflow identities.
+Read current parent bindings, `FRONTIER.md`, every surviving project decision root, latest Budget and Selection, terminal B outcomes, W states, E, D, X, relevant research Reflections and legacy Outcome Reflections when applicable, replan lineage, C, A, review packets and artifacts, and `log.md`. Use exact recorded project identities, never conversation history or workflow identities.
 
 Choose claim-only only when all are true:
 
@@ -36,7 +36,7 @@ Choose claim-only only when all are true:
 - no ordinary stop, forced halt, unresolved `CLOSEOUT_REQUIRED`, or parent conflict is active; and
 - the campaign was planned or running before the claim trigger.
 
-Choose full closeout for a durable campaign-scope ordinary stop, forced halt, stopped or halted campaign, unresolved `CLOSEOUT_REQUIRED`, or an actual campaign-wide ending condition. Parent revisions follow [Change impact and retained results](frontier-core.md#change-impact-and-retained-results) and do not by themselves select closeout. A candidate- or route-scope disposition returns to Campaign Cycle for continuation or investment reconsideration and never enters full closeout by itself. Full closeout wins when a claim and a campaign-scope stop or halt are both active.
+Choose full closeout for a durable campaign-scope ordinary stop, forced halt, stopped or halted campaign, unresolved `CLOSEOUT_REQUIRED`, or an actual campaign-wide ending condition. Parent revisions follow [Change impact and retained results](frontier-core.md#change-impact-and-retained-results). A [research-basis transition](frontier-core.md#research-basis-transitions) is not a campaign-wide ending and does not select this branch. A candidate- or route-scope disposition returns to Campaign Cycle for continuation or investment reconsideration and never enters full closeout by itself. Full closeout wins when a claim and a campaign-scope stop or halt are both active.
 
 If neither mode fits, record `BLOCKED` with the conflicting records and continue to the canonical return finalization. Do not convert a claim-only request into closeout or use claim review to repair campaign state.
 
@@ -150,7 +150,7 @@ Each X must name affected identities, reason, evidence, recovery or reopening co
 
 ## Preserve final direction state
 
-Before assigning Reflection, settle the final direction state without changing any historical B, E, legacy Outcome Reflection, Selection, or review. Preserve:
+Settle the final direction state without changing any historical B, E, legacy Outcome Reflection, Selection, or review. Preserve:
 
 - the final compatible E sequence, its B lineage and validity, and any applicable legacy Outcome Reflection identity, including exclusions and adaptive-exposure limits;
 - the strongest bounded progress and constraint meaning supported under the tested conditions, with unresolved validity kept explicit;
@@ -162,22 +162,11 @@ Before assigning Reflection, settle the final direction state without changing a
 
 A plateau, diminishing-return, or bottleneck statement remains limited to its exact conditions and evidence. Closeout may say that no permitted work can reach another meaningful check under the final Budget and authority; it cannot claim a local optimum, global optimum, impossibility, or that no better route exists.
 
-## Create the Generation Reflection
+## Reuse research learning
 
-After the campaign-wide stop or halt is established, final Budget and active work are reconciled, retained results and the objective gap are settled, and T/W/B/search-state dispositions are known, invoke `reflect-frontier` once in a fresh context. Assign only:
+Cite completed route Reflections in the final handoff. If substantial implementation or experiment experience has not been covered, or there is new cross-route learning, assign that scope through [Research Reflection](learning-loop.md#research-reflection). Reuse existing prose rather than rewriting it as a whole-generation report. Administrative-only work needs no Reflection.
 
-- the canonical task path and generation number;
-- the objective, real constraints, retained result, valid gap or exact unknown;
-- adopted terminal B and E evidence, relevant lineage, Q, D, X, actual cost, failures, and prior-generation Reflection;
-- applicable legacy Outcome Reflection conclusions without requesting their rewrite;
-- the established stop or halt and settled technical route state; and
-- the exclusive path `frontier/reflections/generation-<number>.md`.
-
-For a Generation that produced no technical or research evidence, skip the worker and state that reason in the ordinary final handoff. Otherwise, only `reflect-frontier` writes the assigned file. The Coordinator does not copy, rewrite, shorten, or reorder its technical content.
-
-The Coordinator checks once that cited evidence exists, conclusions stay within its validity, material results are not omitted, the text is not a process summary, and the output creates usable search advantage. Send at most one consolidated correction request to the same worker for an evidence error, material omission, or search-inert result. This is quality control, not a review: it creates no verdict, identity, gate, or repeat loop. After that correction, closeout proceeds. Record any remaining non-factual weakness in the existing handoff `Known limits`; never invalidate B/E, rerun evidence, or delay closeout for stylistic disagreement.
-
-The final handoff cites the completed Reflection, which then becomes immutable with `CLOSEOUT_COMPLETE`. It offers search opportunities and exploration/exploitation guidance to the next Entry; it grants no route choice, Budget, authority, claim, or next B.
+The specialist owns the assigned file; the Coordinator uses the existing content check, not another review. Preserve source facts if an interpretation needs correction, and scope that correction to the affected use. Missing stylistic polish or an unfinished Reflection does not block accounting, closeout or otherwise-ready work; carry its path and remaining question in the handoff. Research-basis transitions use Core's separate continuation path, not this full-closeout branch.
 
 ## Claims during full closeout
 
@@ -195,15 +184,15 @@ Write the final handoff to `log.md` and update the `FRONTIER.md` Brief and F2-F8
 - measured and retained E with candidate and experiment identities;
 - completed, paused, superseded, invalid, or reusable T, W, B, and search state, including recovery steps;
 - applicable design, V, implementation review, integration, and archive state;
-- the Generation Reflection when required, compatible evidence sequence, bounded progress and constraint meaning, focused research, V, and replan lineage;
-- the Reflection's retained search assets, worthwhile opportunities, exploration/exploitation stance, and reconsideration signals without presenting them as formal Selection;
+- available research Reflections, any unfinished learning assignment, compatible evidence sequence, bounded progress and constraint meaning, focused research, V, and replan lineage;
+- source links to technical learning and opportunities, without copying the Reflection or prescribing its suggestions to the next professional owner;
 - final route-set state, reopening events, diagnostic dominance, first applicable resolver row, and exact direction consequence;
 - exact Git and external references needed by every surviving current object, plus original historical roots only when the retained object already contains them;
 - active compatible D records and valid gap, or `gap: Unknown`;
 - C, A, X, supported wording, and wording that remains unauthorized; and
 - exact evidence, review, authorization, resource, or parent change required before continuation.
 
-Record `CLOSEOUT_COMPLETE` only when the surviving files reproduce all final state, the required Generation Reflection is cited or its technical-evidence skip is stated, and no active campaign authority, unresolved claim branch, or unclassified retained artifact remains. Campaign completion does not imply optimality, publication, deployment, submission, integration, or further-spend permission. Preserve all cited artifacts. On a later explicit request, use [Packaging and durable recovery](packaging-and-recovery.md); packaging and cleanup never occur implicitly during closeout.
+Record `CLOSEOUT_COMPLETE` only when the surviving files reproduce all final state, no active campaign authority, unresolved claim branch, or unclassified retained artifact remains. Campaign completion does not imply optimality, publication, deployment, submission, integration, or further-spend permission. Preserve all cited artifacts. On a later explicit request, use [Packaging and durable recovery](packaging-and-recovery.md); packaging and cleanup never occur implicitly during closeout.
 
 Return the recorded claim or closeout outcome to the Coordinator.
 
@@ -217,7 +206,7 @@ Return the recorded claim or closeout outcome to the Coordinator.
 | Claim and stop or halt are both active | Full closeout wins; claim disposition does not resume the campaign. |
 | Full closeout with unresolved accounting or bound contradiction | Campaign remains halted, affected gap and claims remain unavailable, and the handoff names the exact recovery requirement. |
 | Full closeout after direction resolution | The handoff preserves the final compatible evidence, route set and reopening events, diagnostic dominance, exact resolver row and consequence, Budget reachability, and typed project provenance without rewriting an earlier record. |
-| Technical Generation closeout | After evidence, Budget, gap, and route dispositions are settled, one fresh-context `reflect-frontier` output turns them into search assets and worthwhile opportunities; one non-gating Coordinator quality check precedes the final handoff. |
-| Administrative-only Generation | The final handoff records why no technical Reflection was needed; no empty artifact or specialist invocation is created. |
+| Technical campaign closeout | Reuse route Reflections; assign only uncovered experience or new cross-route learning. Reflection is not an accounting or closeout gate. |
+| Administrative-only work | The final handoff records why no technical Reflection was needed; no empty artifact or specialist invocation is created. |
 
-Slice 6 passes only when every completed claim review has A, every pre-completion withdrawal has X, each C branch has exactly one controlling terminal disposition, claim-only processing leaves campaign state unchanged, and full closeout alone performs final budget, T/W/B, retained-result, gap, Generation Reflection, and handoff reconciliation.
+Slice 6 passes only when every completed claim review has A, every pre-completion withdrawal has X, each C branch has exactly one controlling terminal disposition, claim-only processing leaves campaign state unchanged, and full closeout alone performs final budget, T/W/B, retained-result, gap and final handoff reconciliation. Research learning and research-basis transitions also occur during an active campaign.

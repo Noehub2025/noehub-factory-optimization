@@ -43,6 +43,8 @@ Create T for each technically eligible campaign-baseline candidate. Later direct
 
 The T fields must preserve one evidence-bounded chain: observation or constraint -> mechanism -> permitted change -> causal path -> competing explanation or transfer mismatch -> disconfirming observation -> earliest affordable discriminating check. A transferred or recombined route must map the source function and expected behavior to the target constraint and name where the transfer fails. Surface resemblance is insufficient.
 
+When a route substantively completes, is retired or replaced, retain its learning through [Research Reflection](learning-loop.md#research-reflection). Combine related W/B experience and continue clear next work; a status update or individual B result is not a Reflection trigger.
+
 ### Research hypotheses and action prerequisites
 
 Judge eligibility for the action being proposed, not for the route's eventual success. An unestablished hypothesis is the subject of its test, not a prerequisite that must pass before that test. The test itself needs an executable method, interpretable outcomes, and satisfied resource, safety, access, and authority conditions. A valid negative result or a bounded inconclusive observation can complete a research commitment when it changes the next decision; it does not complete a promised final deliverable.
@@ -130,9 +132,11 @@ Conclude through `Batch.apply(ConcludeBatch(...))`. The Batch record preserves t
 
 Append E only after Coordinator validation establishes valid Slot H measurement and comparison validity. An implementation B, engineering check, diagnostic-only experiment, invalid experiment, or worker result cannot create E. A recovery measurement uses a new E identifier and cites the generation that ran it; it never edits the reference E or creates a retroactive result for the closed generation. Retention and promotion remain separate R8 and Selection decisions.
 
-E records one evaluated result, not a technical hypothesis, mechanism conclusion, trend, or route verdict. The active resolver applies E together with its B hypothesis, lineage, validity, parent objective, R8, and current constraints; the Generation Reflection later synthesizes compatible results into cross-generation search guidance. Combine E records only when their parent objective, measurement meaning, comparator role, protocol, workload, data scope, uncertainty, validity, and result directions remain comparable or have an explicit equivalence argument. Preserve excluded E with the reason. An improved proxy or aggregate does not establish route progress while any parent-owned metric, hard constraint, guardrail, required segment, tail condition, delayed confirmation, or operating-cost boundary fails or remains unresolved.
+E records one evaluated result, not a technical hypothesis, mechanism conclusion, trend, or route verdict. The active resolver applies E together with its B hypothesis, lineage, validity, parent objective, R8, and current constraints; research Reflection develops explanations and next ideas from relevant experience without turning its hypotheses into measured effects. Combine E records only when their parent objective, measurement meaning, comparator role, protocol, workload, data scope, uncertainty, validity, and result directions remain comparable or have an explicit equivalence argument. Preserve excluded E with the reason. An improved proxy or aggregate does not establish route progress while any parent-owned metric, hard constraint, guardrail, required segment, tail condition, delayed confirmation, or operating-cost boundary fails or remains unresolved.
 
 ## Q: research finding
+
+Use [Route-landscape synthesis](../../research-frontier/SKILL.md#route-landscape-synthesis) when forming or comparing technical directions; a focused question needs only its factual answer and relevant limits. These fields preserve the result, not a required sequence of reasoning or proof that the research is sufficient. A recommendation remains advisory for [Route-investment ordering](learning-loop.md#route-investment-ordering).
 
 ```markdown
 ## Q001: <research finding or assumption>
@@ -140,11 +144,11 @@ E records one evaluated result, not a technical hypothesis, mechanism conclusion
 - Recorded at: <ISO-8601 datetime>
 - Research mode: <route landscape | focused question>
 - Target question: <bounded question>
-- Coverage: <repository, prior results, public implementation, benchmark, domain, and academic channels used or marked not applicable>
-- Search stop: <why more searching is unlikely to change eligibility, recommendation, allocation, stopping, or claim limits>
+- Coverage: <sources and retained evidence used, with material applicability limits; no source-category checklist>
+- Search stop: <why reasoning or practical work is now more useful than further retrieval, or the actual research bound reached; retain usable findings and uncertainty>
 - Finding or assumption: <answer or exact Unknown>
 - Alternatives found: <materially different approaches or None>
-- Recommendation: <evidence-backed recommendation and reason or None>
+- Recommendation: <professional recommendation, decisive reason and uncertainty; distinguish evidence from theoretical assumptions; or None>
 - Source identity: <sources and stable evidence links>
 - Applicability: <routes, batches, instances, scales, or claims>
 - Limits: <uncertainty and exclusions>

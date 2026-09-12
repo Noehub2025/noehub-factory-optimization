@@ -90,9 +90,9 @@ Design authoring is planning and creates no B, proposal identity, reservation, o
 
 ## Ground consequential design choices
 
-For choices that can materially change the current observation or its cost, explain in the existing Design brief or Decisions why the realization is worth trying: plausible objective improvement or useful learning, supporting facts and assumptions, and what result would reduce its appeal. Compare only alternatives that could change this choice, using existing evidence, relevant source inspection or simple calculations. Reuse sufficient reasoning on continuation; revisit grounds affected by new facts, not every invocation.
+For choices that can materially change the current observation or its cost, explain in the existing Design brief or Decisions why the realization is worth trying: plausible objective improvement or useful learning, supporting facts and assumptions, and what result would reduce its appeal. Carry the selected research rationale and critical assumptions into these choices. The professional author may replace, combine or remove proposed components with technical reasons in the same design; preserve the problem and address its reasoning, not the initial answer. Compare only alternatives that could change this choice, using existing evidence, relevant source inspection or simple calculations. Reuse sufficient reasoning on continuation; revisit grounds affected by new facts, not every invocation.
 
-Choose scale, duration and conditions that can expose the addressed mechanism or distinguish the pending question. A prerequisite test may answer only that prerequisite. Judge interpretability prospectively, without requiring activation, profit or hypothesis success in advance. Familiarity, small size and easy verification describe cost, not value; a larger probe earns its cost only when the extra observation matters.
+Choose scale, duration and conditions that can expose the addressed mechanism or distinguish the pending question, retaining the interactions on which a whole-solution hypothesis depends. Use normal slices and integration to reach that observation; component attribution is needed only when it informs an actual development choice. A prerequisite test supports only what it tests: a local defect or absent activation does not automatically reject the route, while evidence against a genuine necessary condition may exclude the affected scope. Judge interpretability prospectively, without requiring activation, profit or hypothesis success in advance. Familiarity, small size and easy verification describe cost, not value; a larger probe earns its cost only when the extra observation matters.
 
 Keep source claims at their supported scope. A weak warning is a hypothesis to assess, not a whole-route exclusion; a claim limit bounds conclusions but supplies no selection rationale. A short explanation suffices for an evident choice. This is part of ordinary design, not a new heading requirement, alternative quota, economic model, optimality proof, research assignment or review gate.
 
@@ -118,15 +118,19 @@ Address every decisive claim before design review, starting with the weakest. Do
 
 When a restriction on implementation form, evidence access, or verification method materially affects the current work, identify its owner and protection basis: an actual user or external constraint, a sampling or irreversible-effect requirement, or an internal technical choice. Explain what it protects and how. Prior adoption or an `unchanged` label is not itself a protection basis; a planner's precaution remains an internal choice rather than becoming a user prohibition or external rule.
 
+When a source, license, integrity, or provenance concern would block current use, explain in the existing rationale the applicable requirement, intended use, relevant available evidence, and consequential gap. Consider supplied declarations before claiming that permission or source evidence is absent; assess concrete conflicting evidence rather than treating a public label as conclusive. Separate artifact identity, source claims, usage conditions and technical compatibility. Require further upstream or derived-material tracing only to answer a concrete question relevant to the current use, not to complete an unbounded provenance chain. Future-only publication or distribution obligations do not block an otherwise supported present use; local use is not automatically exempt from applicable conditions.
+
 A reviewer may require repair when that current basis is absent or contradicted, or cite a concrete compatible alternative showing that the restriction prevents a useful observation or makes delivery infeasible or materially more costly without a protection rationale. The reviewer need not prove the narrowest possible rule or examine every restriction. Novelty, unfamiliarity, and ordinary implementation risk are not findings. A restriction that does not affect the current work is at most advisory.
 
 The existing owner may revise an internal choice within the real user, resource, and evidence boundaries before affected work proceeds. Apply the existing scoped revision and review rules only to conclusions that actually change; do not automatically create a new B, V, or full review. Preserve historical evidence and actual consumption. A reviewer-only execution exclusion does not prohibit the implementation owner from obtaining relevant evidence through the normal permitted path.
 
+Use [Finding effects](finding-effects.md#finding-effects) for unresolved necessary evidence or corrected premises. Do not preserve a rejection by escalating proof demands after its original basis has been resolved; a further concern needs its own concrete, applicable basis. These questions guide the affected decision, not a new checklist, certificate or approval stage.
+
 ## Resolve user-owned design choices
 
-Evidence decides technical eligibility. The user decides among eligible options when the difference concerns cost, lock-in, reversibility, maintenance, operations, interface ergonomics, migration disruption, deadline, privacy, safety tolerance, or build-versus-buy preference.
+Evidence decides technical eligibility. Apply [User decisions](user-decisions.md#ask-only-for-a-user-owned-decision) to identify a genuine value tradeoff that evidence and existing preferences or grants do not settle. Cost, maintenance, migration or implementation differences alone do not require a user answer; the professional owner decides ordinary technical choices within the delegated scope.
 
-For each such choice:
+For each unresolved user-owned choice:
 
 1. Record alternatives, recommendation, evidence, uncertainty, and consequences in `decisions.md`.
 2. Invoke `grill-frontier` with `decision_kind: tradeoff`.
@@ -167,7 +171,7 @@ Describe end-to-end control and data flow; state owner at each step; concurrency
 
 Trigger for alternatives, user tradeoffs, migration, hard-to-reverse choices, material quality limits, or unresolved questions.
 
-For each decision, record status, alternatives, technical eligibility, recommendation, evidence, user owner, adopted V, consequence, reconsideration event, and which slices it blocks.
+For each decision, record status, alternatives, technical eligibility, recommendation, evidence, consequence, reconsideration event, and which slices it blocks. Cite a user owner and adopted V only when a user decision applies; ordinary technical choices do not create one.
 
 ### Verification
 

@@ -51,7 +51,7 @@ Keep interface facts beside the capability they explain and significant choices 
 
 Run the smallest affected check when the next use first depends on an unproven condition, when a deliverable, packaging, dependency, configuration or host change affects prior coverage, or when contrary evidence appears. Reuse sufficient evidence for unchanged relevant content and conditions. A new B, unrelated commit or report-path change alone requires no rerun. Judge this in existing work, without a per-task classification form or full historical revalidation.
 
-Use existing locations and Git history. Add a short pointer only when the relevant entry point is missing. This is ordinary work, not a knowledge inventory, adoption gate, or prerequisite to unrelated optimization. Operational corrections happen during repair; cross-generation search synthesis remains with the closing Generation Reflection.
+Use existing locations and Git history. Add a short pointer only when the relevant entry point is missing. This is ordinary work, not a knowledge inventory, adoption gate, or prerequisite to unrelated optimization. Operational corrections happen during repair; technical learning uses [Research Reflection](learning-loop.md#research-reflection) at substantive research checkpoints.
 
 ## Apply routine changes
 

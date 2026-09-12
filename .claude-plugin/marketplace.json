@@ -4,16 +4,16 @@
     "name": "Ken Chen",
     "url": "https://github.com/Noehub2025"
   },
-  "description": "Noehub Skills for task-agnostic Recursive Self-Improvement research, bounded iteration, and generation-level learning.",
+  "description": "Noehub Skills for task-agnostic Recursive Self-Improvement research, bounded iteration, and route-level learning.",
   "metadata": {
-    "description": "Noehub Skills for task-agnostic Recursive Self-Improvement research, bounded iteration, and generation-level learning."
+    "description": "Noehub Skills for task-agnostic Recursive Self-Improvement research, bounded iteration, and route-level learning."
   },
   "plugins": [
     {
       "name": "noehub-factory-optimization",
       "source": "./",
-      "version": "0.31.0",
-      "description": "Frame optimization problems, iterate within explicit limits, and turn closed generations into search advantage.",
+      "version": "0.32.0",
+      "description": "Frame optimization problems, iterate within explicit limits, and turn research experience into search advantage.",
       "category": "engineering",
       "keywords": [
         "optimization",

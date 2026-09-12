@@ -758,6 +758,11 @@ def _write_state(path: Path, state: Mapping[str, Any]) -> None:
             os.fsync(stream.fileno())
         os.replace(temporary, path)
         temporary = None
+        directory = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
     except OSError as exc:
         raise StorageConflict(f"cannot update Batch state: {path}") from exc
     finally:

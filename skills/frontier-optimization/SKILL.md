@@ -20,7 +20,7 @@ Read [User decisions](references/user-decisions.md) when interpreting the reques
 3. Load action references only at their trigger below. Keep unrelated stage procedures and historical formats unloaded.
 4. Complete necessary adoption and accounting, then use the core router for the next in-scope action. Follow [Active learning chain](references/learning-loop.md#active-learning-chain) for continuous research and professional discovery feedback; load the direction resolver only at its investment trigger. A worker's return ends its assignment, not the Coordinator's task. Read [User-facing handoff](references/user-facing-handoff.md) when the completion boundary in User decisions requires a user return.
 
-For a changed parent or retained result, apply [Change impact](references/frontier-core.md#change-impact-and-retained-results). Report only the exact unresolved dependency; a version difference alone does not end the campaign.
+For a material shared research-premise change, use [Research-basis transitions](references/frontier-core.md#research-basis-transitions); retain applicable work without full closeout. For a changed parent or retained result, apply [Change impact](references/frontier-core.md#change-impact-and-retained-results). Report only the exact unresolved dependency; a version difference alone does not end the campaign.
 
 ## Action references
 
@@ -47,7 +47,8 @@ For a changed parent or retained result, apply [Change impact](references/fronti
 | Read an identity-heavy historical B | [Historical Batch interface](references/batch-interface.md), and [Historical Batch result](references/batch-result.md) when present |
 | Validate or adopt a current result | [Current Batch](references/batch-current.md), [Result adoption](references/result-adoption.md) |
 | Select the next investment from adopted evidence | [Learning loop](references/learning-loop.md) |
-| Close one technical campaign generation | [Closeout and claims](references/closeout-and-claims.md), then `reflect-frontier` at its closeout trigger |
+| Capture substantive route experience or new cross-route learning | [Research Reflection](references/learning-loop.md#research-reflection), then `reflect-frontier` |
+| End the whole campaign | [Closeout and claims](references/closeout-and-claims.md) |
 | Prepare a selected strategic replan | [Replan review](references/replan-review.md) |
 | Interpret a finding | [Finding effects](references/finding-effects.md) |
 
@@ -58,7 +59,7 @@ Create the assignment using [Working assignments](references/worker-interfaces.m
 - `research-frontier`: one bounded evidence question.
 - `grill-frontier`: one unresolved user-owned decision.
 - `design-implementation`: professional design in a fresh context.
-- `reflect-frontier`: one Generation Reflection after technical closeout reconciliation.
+- `reflect-frontier`: technical learning from a completed, retired or replaced research route, a substantial learning checkpoint, or new cross-route experience.
 - `run-frontier-batch`: implementation, repair, integration and observation within B, not just final execution.
 - `review-frontier`: the selected independent review.
 
@@ -66,6 +67,6 @@ The designer writes professional concerns, not lifecycle records or executable o
 
 Adopt the worker's supported conclusions, reuse applicable checks, and resume the next covered action through the core router. A Skill change or assignment return is not another approval stage. Preserve the specialist's professional meaning; send an actual defect to its owner rather than silently rewriting it. For direction judgments, use [Resolver result completion](references/learning-loop.md#resolver-result-completion) to handle a concrete comparison defect without creating a competing resolution. A draft preparation failure remains editable work, not a new review or recovery chain.
 
-Route working changes and repairs through [Batch continuation](references/batch-current.md#boundary-preserving-continuation) before considering another investment decision; correct inherited procedural gates through [Repair an existing execution restriction](references/batch-current.md#repair-an-existing-execution-restriction), including their dispatch and writeback. Continue the current research problem across working steps and B records; use the [single resolver](references/learning-loop.md#when-to-reconsider-investment) only when investment needs reconsideration. Generation Reflection improves the next generation's search after closeout; it does not choose a route or grant permission. Neither worker output nor a technical review chooses another route or grants a new user permission.
+Route working changes and repairs through [Batch continuation](references/batch-current.md#boundary-preserving-continuation) before considering another investment decision; correct inherited procedural gates through [Repair an existing execution restriction](references/batch-current.md#repair-an-existing-execution-restriction), including their dispatch and writeback. Continue the current research problem across working steps and B records; use the [single resolver](references/learning-loop.md#when-to-reconsider-investment) only when investment needs reconsideration. Research Reflection develops technical insight and new ideas under its learning trigger; professional owners judge them independently alongside original evidence. Neither worker output nor a technical review chooses another route or grants a new user permission.
 
 A route-scoped result does not complete a continuing task. A running campaign with no selected next action returns only when the requested bounded deliverable is complete, the user explicitly pauses or requests reporting, or a user-owned boundary blocks every remaining worthwhile action. Otherwise continue the current research problem, reconsider investment when triggered, or close the campaign under [Continuing task and stage instructions](references/user-decisions.md#continuing-task-and-stage-instructions), with persisted state supporting any final report.

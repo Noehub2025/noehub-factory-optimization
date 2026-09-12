@@ -406,7 +406,7 @@ acceptance_scenarios:
   - {number: 25, name: One-shot work, target: {kind: contract-assertion, path: references/campaign-cycle.md, marker: One-shot, administrative, or implementation-only work has no cross-B performance meaning}}
   - {number: 26, name: Qualitative iterative route, target: {kind: contract-assertion, path: references/planning-records.md, marker: mechanism checkpoint}}
   - {number: 27, name: Post-hoc rule, target: {kind: contract-assertion, path: references/learning-loop.md, marker: prospective}}
-  - {number: 28, name: Semantic conflict, target: {kind: contract-assertion, path: references/campaign-state.md, marker: Selection applies reviewed Entry or adopted project evidence without strengthening its meaning}}
+  - {number: 28, name: Semantic conflict, target: {kind: contract-assertion, path: references/campaign-state.md, marker: Selection uses reviewed Entry, adopted observations and explicitly unverified professional reasoning without presenting hypotheses as measured conclusions}}
   - {number: 29, name: Compaction recovery, target: {kind: regression-test, path: scripts/test_frontier_provenance.py, test: test_complete_handoff_references_git_and_retained_legacy_roots}}
   - {number: 30, name: Claims boundary, target: {kind: contract-assertion, path: references/closeout-and-claims.md, marker: local optimum}}
   - {number: 31, name: Mid-campaign workflow update, target: {kind: contract-assertion, path: references/frontier-core.md, marker: 'Apply current workflow rules to its next decision'}}
@@ -420,7 +420,7 @@ acceptance_scenarios:
   - {number: 39, name: Common-mode route assumption, target: {kind: resolver-fixture, id: shared-assumption-first}}
   - {number: 40, name: Route replacement and maturity, target: {kind: contract-assertion, path: references/learning-loop.md, marker: replacement boundary}}
   - {number: 41, name: Parent-owned result vector, target: {kind: contract-assertion, path: references/learning-loop.md, marker: complete parent-owned vector}}
-  - {number: 42, name: Mutable context and expiring action, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'action window'}}
+  - {number: 42, name: Mutable planning context, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'do not freeze the whole W or mutable work breakdown'}}
   - {number: 43, name: Dominated diagnostic repeat, target: {kind: resolver-fixture, id: dominated-diagnostic-repeat}}
   - {number: 44, name: Proportionate governance, target: {kind: contract-assertion, path: references/entry-review.md, marker: 'review the changed dependencies and affected conclusions; reuse unaffected conclusions'}}
   - {number: 45, name: Workflow identity exclusion, target: {kind: contract-assertion, path: references/learning-loop.md, marker: workflow source, semantic, validator, worker, deployment, or release change}}
