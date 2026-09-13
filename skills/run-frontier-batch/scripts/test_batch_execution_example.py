@@ -145,15 +145,21 @@ def test_caller_passes_chosen_review_to_owner_and_blocks_before_read(tmp_path):
     assert Batch.open(tmp_path, "B001").view.data["attempts"] == []
 
 
-def test_adopted_review_is_retained_without_becoming_an_action_gate(tmp_path):
+@pytest.mark.parametrize("verdict", ["IMPLEMENTATION_READY", "IMPLEMENTATION_REPAIR_REQUIRED"])
+def test_adopted_review_is_retained_without_becoming_an_action_gate(tmp_path, verdict):
     batch = example.prepare_demo(tmp_path, ("accepted",))
     (tmp_path / "review.md").write_text(
-        "---\nreview_id: R001\nreview_result: IMPLEMENTATION_READY\n---\n"
-        "Checked an earlier use. That plan required another result review.\n"
+        f"---\nreview_id: R001\nreview_result: {verdict}\n---\n"
+        "The input omits a descriptive label. Status remains readable.\n"
+        "The earlier plan required the label and another result review.\n"
     )
     subprocess.run(["git", "-C", str(tmp_path), "add", "review.md"], check=True, capture_output=True)
     review_commit = commit_inputs(tmp_path).commit
-    batch.apply(AdoptReview(review_commit, "review.md", "Retain the earlier judgment."))
+    batch.apply(AdoptReview(
+        review_commit, "review.md",
+        "Retain the missing-label fact and original verdict. The current status-only "
+        "observation does not rely on a label; leave it unfixed without another review.",
+    ))
     retained = Batch.open(tmp_path, "B001").view.data["references"]["reviews"]
     assert retained == [{"handle": "R001", "commit": review_commit, "path": "review.md"}]
     saved_report = (tmp_path / "review.md").read_bytes()
@@ -167,6 +173,32 @@ def test_adopted_review_is_retained_without_becoming_an_action_gate(tmp_path):
     assert state["current"]["status"] == "open"
     assert example.read_result(tmp_path, "B001") == outcome.operation_result.result
     assert (tmp_path / "review.md").read_bytes() == saved_report
+    assert "label" not in json.loads((tmp_path / "input-0.json").read_bytes())
+    assert list(tmp_path.glob("review*.md")) == [tmp_path / "review.md"]
+    assert len(Batch.open(tmp_path, "B001").view.data["attempts"]) == 1
+
+
+def test_availability_query_does_not_inherit_measurement_gate_or_consume_unit(tmp_path):
+    batch = example.prepare_demo(tmp_path, ("accepted",), single_use=True)
+    selected = commit_inputs(tmp_path)
+    batch.apply(SelectCandidate(selected, "Retain inputs for the later observation."))
+
+    # The measurement is not ready, but its input can already be located.
+    with pytest.raises(ConsequenceBlocked, match="required check"):
+        example.execute(tmp_path, "B001", required_checks=("status-format",))
+    outcome = example.inspect_inputs(tmp_path, "B001")
+    assert outcome.operation_result.result == {"available": ["input-0.json"]}
+    state = Batch.open(tmp_path, "B001").view.data
+    assert state["attempts"] == []
+    assert state["consumption"] == {}
+
+    batch.apply(RecordCheck("status-format", selected, "passed", {"method": "read status"}))
+    example.execute(tmp_path, "B001", required_checks=("status-format",))
+    state = Batch.open(tmp_path, "B001").view.data
+    assert len(state["attempts"]) == 1
+    assert state["attempts"][0]["actual_consequences"][0]["kind"] == "single_use_consumption"
+    with pytest.raises(ConsequenceBlocked):
+        example.execute(tmp_path, "B001", required_checks=("status-format",))
     assert len(Batch.open(tmp_path, "B001").view.data["attempts"]) == 1
 
 

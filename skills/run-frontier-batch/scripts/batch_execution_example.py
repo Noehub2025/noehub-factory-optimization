@@ -23,6 +23,28 @@ from frontier_batch import (  # noqa: E402
 InputReader = Callable[[Path, str, CandidateRevision | None], bytes]
 
 
+def inspect_inputs(repo: Path, batch_name: str) -> ActionOutcome:
+    """Query local availability without invoking the later observation.
+
+    This sample query promises neither input validity nor selected-byte identity.
+    It is independent of the measurement's checks and single-use effects.
+    """
+    def operation(action: Action, context: Mapping[str, Any]) -> OperationResult:
+        paths = action.details["paths"]
+        return OperationResult(status="completed", result={
+            "available": [path for path in paths if (repo / path).is_file()],
+        })
+
+    batch = Batch.open(repo, batch_name, operations={
+        "inspect-input-availability": OperationBinding(operation, ()),
+    })
+    return batch.perform(Action(
+        key="inspect-input-availability", operation="inspect-input-availability",
+        kind="query", repeatable=True,
+        details={"paths": batch.view.data["definition"]["scope"]},
+    ))
+
+
 def read_input(repo: Path, path: str, candidate: CandidateRevision | None) -> bytes:
     """Use the selected input bytes when this observation has a selection."""
     relative = PurePosixPath(path)

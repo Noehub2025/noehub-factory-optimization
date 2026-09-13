@@ -17,7 +17,7 @@ Keep the proposed decision mutable until ordinary deterministic checks pass. Sav
 - applicable governing campaign limits, protected reserve and strategic allocation;
 - applicable R and V references;
 - the current W or Measurement Definition, including any interpretation-bearing resource ceiling, only when the action needs it; and
-- one exclusive review path and completion check.
+- one exclusive review path and a completion check naming the remaining Entry question for that use and applicable reused conclusions.
 
 Do not create a content root, decision node, attestation root, authority node, packet, snapshot, adoption identity or validation identity. Workflow source, validator versions, deployment locations and historical identity fields are not project inputs.
 
@@ -29,7 +29,7 @@ When routine preflight, accounting or reference updates make the proposed action
 
 ## Review method
 
-Judge only whether the proposed decision is technically coherent and reachable under its cited parents, evidence, Selection, Budget, Reviews and existing user boundaries. Reuse actual implementation and result conclusions; examine only their applicability and unresolved Entry-specific conditions. A plan's internal review sequence is assessed under [Assurance by consequence](batch-evaluation.md#assurance-by-consequence), not treated as its own justification. Check:
+Judge the unresolved Entry question under the proposed use's parents, evidence, Selection, Budget and user boundaries. Use the list below to locate affected conditions, not to repeat settled implementation or result checks. Apply [Assurance by consequence](batch-evaluation.md#assurance-by-consequence) to any internal review sequence. Examine only the conditions still needing judgment:
 
 - that Selection supports the work: a Coordinator continuation decision within the current research scope or an applicable resolver judgment for a new investment; absence of a new resolution is not a finding for continuation;
 - that protected reserve is not assigned to routine work;
@@ -55,7 +55,7 @@ Use these current outcomes:
 
 ## Entry repair review
 
-Repair the current draft inside the same B while its independently judged result and user boundaries remain applicable. Preserve the previous Git version and R. Save the corrected complete subject and review the changed dependencies and affected conclusions; reuse unaffected conclusions without a compatibility report or repeated checks.
+Repair the current draft inside the same B while its independently judged result and user boundaries remain applicable. Preserve the previous Git version and R. Save the corrected subject and apply Assurance by consequence to the changed dependencies and affected conclusions; a new R is needed only for remaining required independent judgment. Reuse unaffected conclusions without a compatibility report or repeated checks.
 
 Intermediate edits create no review object, replacement directory family, new B, Generation or Permission. A corrected technical contract receives independent judgment only where its changed meaning requires it under Assurance by consequence. A new user answer is required only when the correction crosses the boundary in [User decisions](user-decisions.md).
 

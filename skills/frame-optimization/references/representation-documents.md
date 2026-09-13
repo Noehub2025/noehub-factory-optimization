@@ -1,6 +1,6 @@
 # Representation documents — format and lifecycle rules
 
-Read this reference completely before creating or editing representation-stage task documents. It defines the shared `REPRESENTATION.md` template, authority, revision, invalidation, review, continuity, and handoff rules.
+Read the sections relevant to the current representation document or lifecycle change. It defines the shared `REPRESENTATION.md` template, authority, revision, invalidation, review, continuity, and handoff rules.
 
 ## Contents
 
@@ -37,7 +37,7 @@ docs/skills/optimization/<task-slug>/
 
 During search design, readers normally start with only `PROBLEM.md` and `REPRESENTATION.md`. Create optional documents only when their extra detail is necessary.
 
-The two main documents state every choice that a person or agent doing the work must make. They also name the fixed code, manifests, configs, or schemas that remove a choice. Details may contain complete contents, algorithms, command syntax, serialization, validation order, and evidence. If two allowed implementations may choose differently, state the choice or allowed freedom and its limits in the main document that owns it.
+The two main documents state durable choices and the freedom left to later work under [Stable contract and live state](frontier-handoff.md#stable-contract-and-live-state). Reference reusable measurement definitions and keep current realizations and execution parameters in W or Batch. Details supply precision and evidence; a new instance does not redefine the problem unless it changes the governing meaning, applicability or use.
 
 ## `REPRESENTATION.md` template
 
@@ -150,9 +150,9 @@ Use plain names before formal labels:
 
 Formal labels can appear in the Contract table or a linked detail only after the Brief has introduced the underlying item in plain language. A label never replaces the concrete noun.
 
-Words such as `canonical`, `normative`, `encoding`, `redundancy`, `reachability`, `decomposition`, `coupling`, `semantics`, `claim limit`, `exhaustion`, `state compatibility`, `epoch`, `revision`, and `review` fail the plain-language check in Brief prose unless an exact field or quotation requires them. Rewrite the concrete fact and consequence.
+Prefer concrete facts and consequences over workflow jargon in Brief prose. Explain necessary technical terms; no word is by itself a review failure.
 
-Read both Briefs before review. Without merely repeating task-specific labels, a new reader must be able to explain:
+For initial framing or a material change to the search story, these questions can help assess understanding; they are not a mandatory reading sequence or report form:
 
 - what system or process is being improved, what can change, and how that change affects the result;
 - the complete thing measurement accepts and what search proposes;
@@ -160,9 +160,9 @@ Read both Briefs before review. Without merely repeating task-specific labels, a
 - whether search changes the whole thing or named parts;
 - what the search results cannot prove.
 
-Then read the complete `PROBLEM.md` and `REPRESENTATION.md` without opening details. The pair passes the decision check only when the reader can decide what search may try, how proposals become measurable, how invalid work is handled, how feedback and budget may be used, how work is selected or stopped, whether search is split, which old work may be reused, what remains unknown, and what the results cannot prove.
+Read linked normative details when exact choices matter. Apply [Readability and review scope](task-documents.md#readability-and-review-scope) to unresolved ambiguity; do not fail a review merely because a clear rule is in a linked detail rather than repeated in the core documents.
 
-For an older table-only `REPRESENTATION.md`, derive the Brief, Open decisions, and Known limits from the current table and linked rule details. Apply both the task-to-search understanding check and the two-document decision test before preserving review assurance. When the search meaning already exists consistently and only the Brief explanation is missing, keep R1-R8 status and `representation_revision`, rewrite the Brief, set `REPRESENTATION.md` to draft, remove `review_scope` and `verified`, and require a fresh readability review. When an underlying search decision is absent, set the affected row to `O`, name the missing decision under Open decisions, invalidate representation assurance, and apply the search-state rules. In particular, absent feedback, survivor selection, tie handling, confirmation, promotion, stop scope, surviving authority, or scale-up rules are missing R8 decisions, not wording omissions.
+For an older table-only `REPRESENTATION.md`, apply [Readability and review scope](task-documents.md#readability-and-review-scope). A faithful summary or structural edit preserves existing assurance and revision. Missing or conflicting search decisions require repair of the affected R items and dependent uses, not a format-driven review of the whole representation.
 
 ## Frontmatter and row status
 
@@ -292,12 +292,9 @@ Reviewed: <canonical path to REPRESENTATION.md and every reviewed detail or modu
 Reviewed at: <ISO-8601 datetime>
 Permitted: <none | bounded whole-candidate search | exact named modules and operations plus bounded whole-candidate search>
 
-## Cold-read reconstruction
+## Review notes
 
-- Task and result: <plain restatement based only on both Briefs>
-- Proposal path: <what measurement accepts, what search proposes, and how it becomes measurable>
-- Search loop: <start, propose, reject or measure, use feedback, select, and stop>
-- Unexplained terms or relationships: <None or exact gaps>
+<New and reused conclusions, permitted scope and any material understanding gaps. Apply task-documents' Readability and review scope; no fixed reconstruction is required.>
 ```
 
 Allowed results are `PROCEED_EXPLORATORY`, `PROCEED_MODULAR`, `RESEARCH_REQUIRED`, `REDESIGN_REQUIRED`, `REFRAME_REQUIRED`, and `BLOCKED`.
@@ -316,7 +313,7 @@ Each nonpositive finding uses this schema:
 - Repair status: <open | complete | blocked>
 ```
 
-A positive result has no open finding and says `None` for unexplained terms or relationships in its Cold-read reconstruction. A nonpositive result has at least one finding with every field. `Reviewed` names the complete review surface. `Permitted` names exact modules and operations for modular scope. The reviewer owns result, Cold-read reconstruction, and finding text. The coordinator can update only repair status and writer metadata.
+A positive result has no open finding. Advisory wording improvements do not prevent it. A nonpositive result has at least one finding with every field. `Reviewed` names the review surface, including applicable coverage reused by reference. `Permitted` names exact modules and operations for modular scope. The reviewer owns result, review notes and finding text. Existing Cold-read reconstruction sections remain historical notes; their heading is not required. The coordinator can update only repair status and writer metadata.
 
 For a positive result, the reviewer sets `REPRESENTATION.md` and every reviewed normative detail or active module contract to `stable`. The reviewer adds current `verified` metadata and sets the core `review_scope` to `exploratory` or `modular`. The reviewer also sets `representation-review.md` to `stable`.
 
@@ -372,7 +369,7 @@ After the affected parent change is adopted, update its current epoch and `gener
 
 Meaningful changes include coverage, translation, redundancy, neighborhood, reachability, legality handling, module ownership, interfaces, composition, coupling, local-to-global claims, and search-state compatibility.
 
-Small wording improvements that already pass the current understanding check, links that preserve meaning, repair-status updates, and verification metadata do not invalidate semantics. A rewrite needed because either Brief failed the understanding check keeps R1-R8 status and `representation_revision` when meaning is unchanged, but it invalidates review assurance and requires a fresh review.
+Editorial changes, links that preserve meaning, repair-status updates and verification metadata preserve applicable assurance. Apply [Readability and review scope](task-documents.md#readability-and-review-scope) to an actual understanding defect; review only its repair and affected conclusions.
 
 ## Continuity and recovery
 
@@ -389,7 +386,7 @@ After compaction or a new session:
 9. Open only details needed for the next action.
 10. Confirm harness and baseline readiness before positive review.
 
-Before selecting work, read both main documents without opening optional details. Confirm that their Briefs tell one coherent story, both tables agree, Open decisions lists every unresolved decision, Known limits lists every remaining restriction, and the pair contains every fact needed for ordinary search and result decisions.
+Before selecting work, read both main documents and consult linked rules needed for the current action. Resolve material conflicts or missing decisions; do not repeat a readability review solely to resume work. Apply task-documents' Readability and review scope.
 
 If the last decision was not recorded, confirm only that decision. Do not reconstruct it from uncertain conversation context.
 

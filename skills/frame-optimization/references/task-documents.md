@@ -7,6 +7,7 @@ Shared base reference for skills that write optimization task documents. It defi
 - Task path and layout
 - Open Knowledge Format rules
 - `PROBLEM.md` template
+- Readability and review scope
 - Status and ownership
 - `review.md` structure
 - Slot documents
@@ -34,9 +35,9 @@ docs/skills/optimization/<task-slug>/
 └── eval/
 ```
 
-During problem framing, readers normally use `PROBLEM.md` to make decisions. During search design, they normally use `PROBLEM.md` and `REPRESENTATION.md` together. A reader should not need an optional detail for an ordinary development, evaluation, acceptance, resource, reuse, or claim decision. Create each optional file only when its extra precision is necessary.
+During problem framing, readers normally use `PROBLEM.md` to make decisions. During search design, they normally use `PROBLEM.md` and `REPRESENTATION.md` together. Keep the governing choices visible in the core document; clearly named normative details may supply their exact rules without duplicating them. Create each optional file only when its extra precision is necessary.
 
-An ordinary decision chooses an allowed action, value, limit, file, acceptance outcome, reuse outcome, or supported claim. The main document names the executable code and fixed inputs that settle the decision and summarizes what they do. A detail may contain complete seed lists, derivations, serialization rules, command syntax, validation order, and other internals when the named executable or fixed file already removes the choice. If the person or agent doing the work must choose between alternatives, the choice and its limits belong in the main document.
+Use [Stable contract and live state](frontier-handoff.md#stable-contract-and-live-state) to place a decision. Core documents state durable meaning and allowed freedom, referencing reusable methods and their applicable limits. Details supply precision and evidence. A particular realization or execution choice belongs in W or Batch; a main document need not settle each file, parameter or command chosen there.
 
 Keep existing project documents in place. Link them as sources; publish or rewrite them only when the applicable user grant covers that action; use [User decisions](../../frontier-optimization/references/user-decisions.md) when permission is missing.
 
@@ -102,11 +103,11 @@ generated: { by: frame-optimization/1, at: <ISO-8601 datetime> }
 St: `P` = decided for this work; `~` = working answer; `O` = not decided; `-` = not relevant.
 
 Rules: Each result records the task path and `epoch`.
-Compare results only within one epoch.
-When a `P` row changes, record whether old results still apply, must be rerun, or must be discarded in `log.md`.
+Compare results only when their measurement meaning supports the proposed use.
+For a changed comparison, apply the affected-use disposition in `log.md`; preserve original results and their producing epochs.
 ```
 
-The Brief is the plain-language entry point to the problem, not an A-H summary and not a second Contract. It must make the task story and relationships easy to follow. `PROBLEM.md` as a whole must support ordinary problem-level decisions without opening a detail. Use the Contract table as a completeness check after drafting; do not use its row order as the reading order.
+The Brief is the plain-language entry point to the problem, not an A-H summary and not a second Contract. It must make the task story and relationships easy to follow. The core document states the governing choices and links exact normative details where needed. Use the Contract table as a completeness check after drafting; do not use its row order as the reading order.
 
 Explain the task through this general path:
 
@@ -123,7 +124,7 @@ Use concrete task nouns. Prefer `schedule`, `config`, `model`, `deck`, or anothe
 
 Use verbs to explain relationships that affect the optimization. Naming two components is not enough when one changes the input, state, cost, or opportunity seen by the other. State that effect in ordinary language.
 
-Before drafting the Contract table, restate the Brief without relying on task-specific labels. The restatement must answer:
+When assessing readability, use these questions as thinking aids, not a required restatement or checklist:
 
 - What system or process exists before optimization?
 - What can this work change?
@@ -132,7 +133,7 @@ Before drafting the Contract table, restate the Brief without relying on task-sp
 - How does that output affect the measured result?
 - What is one evaluation run, what result is better, and what is the current success test?
 
-If a question does not apply, the Brief must make the reason clear. A name such as a product, environment, model, benchmark, algorithm, file set, or dataset does not answer a question by itself.
+A name alone does not explain a relationship. Omit questions that do not help the current reader; apply Readability and review scope to any actual gap.
 
 Keep the Brief compact by removing evidence history, rejected alternatives, full formulas, file hashes, and step-by-step procedures. Keep a version, path, or identifier only when a reader needs it to interpret the current result. Remove repeated meaning, but never merge separate concepts only to shorten the document.
 
@@ -154,7 +155,7 @@ Use this main-document test: if omitting a fact could make two reasonable reader
 | parent contract | the rules in `PROBLEM.md` |
 | review is not ready | state the missing fact or file and the action it blocks |
 
-Words such as `canonical`, `normative`, `semantics`, `quantifier`, `adversary`, `claim limit`, `epoch`, `revision`, and `review` fail the plain-language check in Brief prose unless an exact field or quotation requires them. Rewrite the concrete fact and consequence.
+Prefer concrete facts and consequences over workflow jargon in Brief prose. Explain necessary technical terms; no word is by itself a review failure.
 
 The Contract table decides the ordinary problem-level actions and conclusions. Use one concise decision sentence in each Contract cell; use a second short sentence only when the decision and its direct consequence would otherwise be unclear. Never use a request such as `define`, `decide`, `fill in`, or `name` as the Contract. When no defensible decision exists, state exactly what remains undecided. Name a cross-Slot dependency in the affected Contract cells.
 
@@ -164,7 +165,15 @@ List every `O` or `~` row exactly once under Open decisions. Each bullet states 
 
 List under Known limits every current restriction on action or conclusion that remains after a row is decided, plus any cross-cutting evidence limit. A `P` row can appear here because its rule is decided even when available evidence cannot support a stronger claim. Do not put a `P` row under Open decisions. Write `- None.` when no known limit remains.
 
-For an older table-only `PROBLEM.md`, derive the Brief, Open decisions, and Known limits from the current table and linked rule details. Apply both the task-understanding check and the main-document decision test before preserving review assurance. When the task meaning already exists consistently and only the Brief explanation is missing, keep A-H status and the epoch, rewrite the Brief, set `PROBLEM.md` to draft, remove `verified`, and require a fresh readability review. When the underlying meaning is absent or conflicting, set the affected row to `O`, name the missing decision under Open decisions, and apply the normal semantic invalidation and epoch rules.
+For an older table-only `PROBLEM.md`, add a readable summary from the existing rules when that helps the current work. A faithful editorial change preserves row status, epoch and applicable review assurance. If the rules themselves are absent or conflicting, repair only the affected decisions under Review invalidation.
+
+## Readability and review scope
+
+A new reader should understand what can change, how it affects the objective, how outcomes are measured and what the next use permits. Assess that understanding on first framing, material changes to this story, or an assigned readability repair. Briefs orient the reader; clearly linked normative details may settle exact choices. Read them when needed rather than freezing a judgment made before evidence was available.
+
+Do not require a fixed question list, a Brief-only reading sequence or repeated prose in several documents. Record only an ambiguity that could change the current action or conclusion as a required correction. When the full contract is consistent and understandable, wording, section placement and nonessential format improvements are advisory; the Coordinator may correct them without new technical review.
+
+For a repair, inspect the changed meaning and affected dependencies and reuse applicable conclusions. An actual unresolved misunderstanding requires a focused check of that repair, not a new review of unchanged technical decisions. Do not repeat a completed readability check because another document or stage is being reviewed.
 
 ## Status and ownership
 
@@ -177,7 +186,7 @@ The Primary Framing Agent alone writes the problem Brief, Open decisions, and Kn
 
 The Primary Framing Agent creates or selects each worker detail before delegation. The Research Agent writes only research evidence, sources, observations, candidate representations, risks, unknowns, recommendations, and explicitly proposed Contract text. The Grill Agent writes only user answers, authorizations, decision provenance, necessary context, and unresolved user choices. Each worker returns a packet that matches its durable record.
 
-The Design Measurement Agent writes only the assigned nonnormative analysis, independent reconstruction when required, exact Contract projection, and finding dispositions in the selected Slot H detail. It is the sole professional author and reviser of measurement design. The Primary Framing Agent remains the sole normative adopter and may adopt or reject a complete projection without editing its measurement meaning.
+The Design Measurement Agent writes only its assigned nonnormative design sections. It is the sole professional author and reviser of measurement design. The Primary Framing Agent remains the sole normative adopter under [Contract projection](measurement-design.md#contract-projection), preserving the complete affected professional change without rewriting its meaning.
 
 Research, grill, and measurement-design workers do not edit the problem Brief, Open decisions, Known limits, core Contract cells, row status, adopted normative rules, epochs, representation revisions, lifecycle assurance metadata, or normative module-contract content.
 
@@ -207,12 +216,9 @@ Verdict: <PROCEED | RESEARCH_REQUIRED | REFRAME_REQUIRED | BLOCKED>
 Reviewed: <canonical task paths>
 Reviewed at: <ISO-8601 datetime>
 
-## Cold-read reconstruction
+## Review notes
 
-- System and run: <plain restatement based only on the Brief>
-- Change and effect: <what can change and how it affects the result>
-- Evaluation and success: <one evaluation, current success, and real goal>
-- Unexplained terms or relationships: <None or exact gaps>
+<New and reused conclusions, any accepted agent defaults, and material understanding gaps. Record only what this review needs; no question-by-question reconstruction is required.>
 
 ## R1: <short finding name>
 
@@ -224,7 +230,7 @@ Reviewed at: <ISO-8601 datetime>
 - Repair status: <open | complete | blocked>
 ```
 
-A valid review contains exactly one allowed verdict and a Cold-read reconstruction written before details were opened. `PROCEED` has no open finding and says `None` for unexplained terms or relationships. Every other verdict has at least one finding with all six fields.
+A valid review contains exactly one allowed verdict and the evidence and scope supporting it. `PROCEED` has no open finding; advisory wording improvements do not prevent it. Every other verdict has at least one finding with all six fields. Existing Cold-read reconstruction sections remain historical review notes; neither that heading nor a new reconstruction is required.
 
 `Required action` and `Complete when` define the repair work and its checkable completion, not the user reply. Keep the finding field set unchanged. When control returns to the user, derive the reply through [user-facing-return.md](user-facing-return.md).
 
@@ -232,7 +238,7 @@ The Review Agent initializes each finding to `open`. The Primary Framing Agent s
 
 Derive the verdict from work types: any `blocker` gives `BLOCKED`; otherwise, any `measurement-design`, `reframe`, or `grill` gives `REFRAME_REQUIRED`; otherwise, factual findings give `RESEARCH_REQUIRED`.
 
-A Review Agent accepts an evidence-backed agent default through a `reframe` finding. The Primary Framing Agent records that acceptance, changes the row to `P`, and requests a fresh readiness review.
+For a technical agent default, the Review Agent records independent acceptance of the exact proposed meaning in the review notes, not as a finding. A `~` row awaiting only this acceptance may be included in `PROCEED` when all substantive requirements pass. Before using that result for a handoff, the Primary Framing Agent pins the accepted row, preserves `Decision source: agent default`, updates Open decisions and checks that adoption changed no reviewed meaning. This mechanical adoption does not require a fresh review. Changed meaning needs only its affected review; a genuinely unresolved user-owned choice cannot be accepted as an agent default.
 
 ## Slot document frontmatter
 
@@ -316,4 +322,4 @@ Task documents are in English and follow this 12-rule profile from ASD-STE100 Is
 
 File paths, code identifiers, formulas, and exact quotations keep their original form. Optimization terms are project technical terms: define a local term in its Slot document, and a term used by multiple Slots in `terms.md`, linked from where it is used.
 
-For a core Brief, plain-language readability takes priority over sentence-length targets and formal labels. Do not omit a relationship or stack nouns to shorten a sentence. A reader who has not seen the task or this workflow must understand the task story and every term used in that story without opening the table or a detail. After reading the complete `PROBLEM.md`, the reader must be able to decide which options and results are valid, how results are compared, what counts as current success, which resources and feedback are allowed, what remains undecided, and what the results cannot conclude.
+For a core Brief, plain-language readability takes priority over sentence-length targets and formal labels. Explain the task and its relation to the objective; use linked normative details for exact rules instead of repeating them. Apply Readability and review scope to the current use, not a fixed reading order or a vocabulary test.

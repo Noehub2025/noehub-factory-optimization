@@ -4,7 +4,7 @@ Read this reference when `design-measurement` designs or repairs a protocol, whe
 
 ## Ownership and adoption
 
-`design-measurement` is the sole professional author and reviser of measurement design. `frame-optimization` is the sole lifecycle coordinator and normative adopter. The Designer writes nonnormative analysis and one complete projection in the Coordinator-selected Slot H detail. The Coordinator adopts or rejects the projection as a whole and never edits, completes, or reinterprets its measurement meaning.
+`design-measurement` is the sole professional author and reviser of measurement design. `frame-optimization` is the sole lifecycle coordinator and normative adopter. The Designer writes nonnormative analysis and a [Contract projection](#contract-projection) in the Coordinator-selected Slot H detail; the projection contains the complete professional change, not repeated unchanged parent text.
 
 After adoption, `PROBLEM.md`, its adopted Slot details, and `REPRESENTATION.md` are the runtime contract. The Designer record remains design evidence, not a second source of authority. A later semantic change returns to `design-measurement`.
 
@@ -78,20 +78,16 @@ Expand only the portions implicated by the intended consequence. Stronger analys
 
 ## Contract projection
 
-The Designer returns complete proposed content for:
+Place content under [Stable contract and live state](frontier-handoff.md#stable-contract-and-live-state). Keep one current `Contract projection — not adopted` section in the existing detail:
 
-```yaml
-slot_d: <final evaluated entity, objective, comparison, and material threshold>
-slot_e: <elementary outcome, inferential target, analysis unit, cross-instance aggregation, variation, and uncertainty>
-slot_h: <D/E references, reusable protocol, lifecycle meaning, required context keys, source coverage, target relationship, factual interpretation limit, schedule roles, controls, and calibration>
-r8_measurement_constraints: <result-to-use ceilings, confirmation, exposure, reuse, and forbidden investment consequences>
-known_limits: <current restrictions that remain after adoption>
-invalidation_and_recalibration: <preserve, recalibrate, replace, and comparability triggers>
-```
+- For a new design, provide the clauses needed to use that design, referencing existing parent meaning.
+- For a revision or repair, provide the complete affected professional change: the locations and proposed text of additions or replacements, explicit removal of superseded current clauses, and any dependent changes needed for consistency.
+- Use the existing labels `slot_d`, `slot_e`, `slot_h`, `r8_measurement_constraints`, `known_limits` and `invalidation_and_recalibration` only where affected. Reference unchanged clauses; omission is not deletion and does not require reproducing the other blocks.
+- Keep instance-specific inputs and execution arrangements in W or Batch unless they actually define reusable measurement meaning. The projection does not select survivors, routes, budgets, stopping policy or authority.
 
-The projection contains measurement constraints, not search decisions. It cannot select a survivor, prioritize a route, allocate a budget, define campaign stopping, or create authority. The Coordinator copies each complete block into its owning contract location. If a block is not adoptable, return it to the Designer rather than editing its meaning.
+The Coordinator adopts or rejects the complete affected professional change. It cannot select only part, alter professional meaning, or leave a superseded clause governing the changed use. An unresolved location or scope conflict returns that specific issue to the Designer. Preserve historical clauses and evidence at their original uses.
 
-Keep exactly one current `Contract projection — not adopted` section. The existing readiness review compares every projection block with its adopted D, E, H, R8, Known limits, and invalidation or recalibration location. A missing or changed block is a mechanical adoption error for `frame-optimization`, not a new professional design finding.
+The existing readiness review checks the adopted additions, replacements and removals together with their affected dependencies, reusing unchanged conclusions by reference. Missing a necessary dependent edit or changing professional meaning is a mechanical adoption error for `frame-optimization`; an absent unchanged block is not. Use the existing detail and adoption work without a new schema, identifier, registry or review stage.
 
 ## Review findings
 

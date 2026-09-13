@@ -22,7 +22,7 @@ class FrameSkillBundleTests(unittest.TestCase):
             SKILL_ROOT / "references/measurement-design.md"
         ).read_text(encoding="utf-8")
         reviewer = (
-            SKILL_ROOT.parent / "review-optimization/SKILL.md"
+            SKILL_ROOT.parent / "review-optimization/references/readiness.md"
         ).read_text(encoding="utf-8")
         representation_reviewer = (
             SKILL_ROOT.parent / "review-representation/SKILL.md"
@@ -30,7 +30,10 @@ class FrameSkillBundleTests(unittest.TestCase):
 
         self.assertIn("sole professional author and reviser", designer)
         self.assertIn("sole lifecycle coordinator and normative adopter", contract)
-        self.assertIn("adopt or reject its complete projection", coordinator)
+        self.assertIn(
+            (SKILL_ROOT / "references/measurement-design.md").resolve(),
+            markdown_targets(SKILL_ROOT / "SKILL.md"),
+        )
         self.assertIn("do not write the protocol", reviewer)
         self.assertIn("check only that R8 faithfully stays within", representation_reviewer)
         self.assertIn("does not select survivors, routes, budgets", designer)
@@ -41,7 +44,7 @@ class FrameSkillBundleTests(unittest.TestCase):
             SKILL_ROOT / "references/task-documents.md"
         ).read_text(encoding="utf-8")
         reviewer = (
-            SKILL_ROOT.parent / "review-optimization/SKILL.md"
+            SKILL_ROOT.parent / "review-optimization/references/readiness.md"
         ).read_text(encoding="utf-8")
         contract = (
             SKILL_ROOT / "references/measurement-design.md"
@@ -62,14 +65,17 @@ class FrameSkillBundleTests(unittest.TestCase):
             SKILL_ROOT / "references/measurement-design.md"
         ).read_text(encoding="utf-8")
         reviewer = (
-            SKILL_ROOT.parent / "review-optimization/SKILL.md"
+            SKILL_ROOT.parent / "review-optimization/references/readiness.md"
         ).read_text(encoding="utf-8")
 
         self.assertIn("Use `new` only when no current protocol exists", coordinator)
         self.assertIn("do not supply the current protocol", coordinator)
         self.assertIn("DESIGN_BLOCKED: fresh revision context required", designer)
         self.assertIn("Phase A does not read Slot H content", contract)
-        self.assertIn("compare every `slot_d`, `slot_e`, `slot_h`", reviewer)
+        self.assertIn(
+            (SKILL_ROOT / "references/measurement-design.md").resolve(),
+            markdown_targets(SKILL_ROOT.parent / "review-optimization/references/readiness.md"),
+        )
         self.assertIn("mechanical adoption error with work type `reframe`", reviewer)
 
     def test_measurement_depth_follows_consequence_without_persisted_mode(self) -> None:
@@ -97,7 +103,7 @@ class FrameSkillBundleTests(unittest.TestCase):
 
         self.assertIn("the smallest affected scope (`candidate`, `route`, or `campaign`)", contract)
         self.assertIn("the exact material and authority that survive", contract)
-        self.assertIn("stop scope, surviving authority", documents)
+        self.assertIn("scope and surviving authority", documents)
 
     def test_single_user_return_contract_is_referenced_from_core_paths(self) -> None:
         contract = SKILL_ROOT / "references/user-facing-return.md"
@@ -154,23 +160,27 @@ class FrameSkillBundleTests(unittest.TestCase):
             SKILL_ROOT / "references/user-facing-return.md"
         ).read_text(encoding="utf-8")
         coordinator = (SKILL_ROOT / "references/measurement-work.md").read_text(encoding="utf-8")
+        reviewer = (
+            SKILL_ROOT.parent / "review-optimization/references/measurement-support.md"
+        ).read_text(encoding="utf-8")
 
         self.assertNotIn("sequencing gate", contract)
         self.assertNotIn("conditional authority", contract)
         self.assertNotIn("Git commit", contract)
-        self.assertIn("When the trigger above applies", coordinator)
+        self.assertIn("Apply this gate only when materially changed shared support affects", coordinator)
         self.assertIn("Both conditions are required", coordinator)
         self.assertIn("Otherwise use focused checks inside the current B", coordinator)
         self.assertIn("Paid or external execution alone does not trigger this gate", coordinator)
-        self.assertIn("retain their separate readiness checks", coordinator)
-        self.assertIn("request another authorization only when the run falls outside the grant", coordinator)
-        self.assertIn("allowed file set, required behavior", coordinator)
-        self.assertIn("excluded consequential actions", coordinator)
+        self.assertIn("Readiness and permission remain separate", coordinator)
+        self.assertIn("Request another authorization only when the run falls outside that grant", coordinator)
+        self.assertIn("the exact allowed file set", reviewer)
+        self.assertIn("required behavior and failure cases", reviewer)
+        self.assertIn("every consequential action excluded from the review", reviewer)
 
     def test_measurement_support_review_has_a_frame_owned_route(self) -> None:
         coordinator = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         reviewer = (
-            SKILL_ROOT.parent / "review-optimization/SKILL.md"
+            SKILL_ROOT.parent / "review-optimization/references/measurement-support.md"
         ).read_text(encoding="utf-8")
 
         support = (SKILL_ROOT / "references/measurement-work.md").read_text(encoding="utf-8")
@@ -183,10 +193,10 @@ class FrameSkillBundleTests(unittest.TestCase):
         self.assertIn("For a Slot H implementation finding", problem)
         self.assertIn("do not route professional design to measurement support", problem)
         self.assertIn("shared measurement-support gate", representation)
-        self.assertIn("`measurement-support` branch of `review-optimization`", support)
-        self.assertIn("Accept only a fresh `IMPLEMENTATION_READY` result from `review-optimization/1`", support)
+        self.assertIn("`review-optimization`'s `measurement-support` branch", support)
+        self.assertIn("Accept `IMPLEMENTATION_READY` for the assigned question", support)
         self.assertIn("## Measurement-support branch", reviewer)
-        self.assertIn("reviewed path and SHA-256", reviewer)
+        self.assertIn("newly reviewed paths and SHA-256", reviewer)
         self.assertIn("grants no durable containment, baseline, evaluation", reviewer)
         self.assertNotIn("review-frontier", coordinator)
 
@@ -214,7 +224,7 @@ class FrameSkillBundleTests(unittest.TestCase):
             encoding="utf-8"
         )
         reviewer = (
-            SKILL_ROOT.parent / "review-optimization/SKILL.md"
+            SKILL_ROOT.parent / "review-optimization/references/measurement-support.md"
         ).read_text(encoding="utf-8")
         normative = "\n".join((coordinator, handoff, reviewer))
 
@@ -263,6 +273,10 @@ class FrameSkillBundleTests(unittest.TestCase):
             SKILL_ROOT.parent / "frontier-optimization/references/user-facing-handoff.md",
             SKILL_ROOT.parent / "design-measurement/SKILL.md",
             SKILL_ROOT.parent / "review-optimization/SKILL.md",
+            SKILL_ROOT.parent / "review-optimization/references/readiness.md",
+            SKILL_ROOT.parent / "review-optimization/references/measurement-support.md",
+            SKILL_ROOT.parent / "review-optimization/references/comparability.md",
+            SKILL_ROOT.parent / "review-representation/SKILL.md",
         )
 
         for source in checked_files:

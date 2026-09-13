@@ -1053,13 +1053,13 @@ class Slice7ContractTests(unittest.TestCase):
         )
         self.assert_contract_contains(
             "design-review.md",
-            "Introducing this authoring role does not invalidate or reopen an existing unchanged finding-free `DESIGN_READY` design",
+            "Introducing this authoring role does not reopen an unchanged finding-free design",
         )
 
     def test_reflection_claim_and_parent_change_routes(self) -> None:
         self.assert_contract_contains(
             "learning-loop.md",
-            "Batch completion, a passed prerequisite, a new B or an estimate correction does not by itself reopen investment",
+            "Batch completion or failure does not establish route completion or failure",
             "A direct attempt may be preferable to separate diagnosis",
             "Dependent strategic spend needs sufficient evidence",
             "A valid whole-treatment comparison may support that the bounded package caused the observed local effect",
@@ -1130,12 +1130,12 @@ class Slice7ContractTests(unittest.TestCase):
         )
         coordinator = (SCRIPT_ROOT.parent / "SKILL.md").read_text()
         self.assertIn("references/user-facing-handoff.md", coordinator)
-        self.assertIn("use the core router for the next in-scope action", coordinator)
+        self.assertIn("Select one stage using the core router", coordinator)
         self.assertIn(
-            "Follow [Active learning chain]",
+            "use the three questions in [Active learning chain]",
             coordinator,
         )
-        self.assertIn("A worker's return ends its assignment, not the Coordinator's task", coordinator)
+        self.assertIn("A worker return or Batch outcome does not by itself end the research problem", coordinator)
         self.assert_contract_contains(
             "user-decisions.md",
             "Continue necessary in-scope work after each stage completes",

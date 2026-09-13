@@ -10,6 +10,8 @@ Stop only the affected action when an observed hard boundary is crossed, an auth
 
 Judge progress by objective improvement, tighter bounds, eliminated live hypotheses, stronger representations, or newly reachable search space—not by artifact count, zero failures, zero spending, or procedural compliance.
 
+When coordinating optimization work, recover the current research question, missing observation and new facts before resuming worker work, changing routes or restoring a long task. Reuse sufficient context that still applies; read sources only where needed. Distinguish execution state, observations, inferences and recommendations. Apply the current Workflow to downstream advice while preserving actual user limits and effects already incurred. Continue clear in-scope work and use the existing owner for professional judgment. These judgments require no new proof document, approval or review.
+
 ## User-facing workflow returns
 
 Whenever any workflow returns control to the user, lead with what materially changed, why it matters to the objective, the strongest supported conclusion and its important limit, the remaining objective gap or the observation needed to determine it, and every material next choice with its recorded ordering and switching conditions.

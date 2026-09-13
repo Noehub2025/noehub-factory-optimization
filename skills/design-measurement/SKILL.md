@@ -56,13 +56,13 @@ Write only these sections in the selected Slot H detail:
 - `Contract projection — not adopted`; and
 - `Finding dispositions` for `repair`.
 
-Keep exactly one current projection. It contains complete proposed text for `slot_d`, `slot_e`, `slot_h`, `r8_measurement_constraints`, `known_limits`, and `invalidation_and_recalibration`. D owns the objective and material threshold; E owns the elementary outcome and cross-instance inference; H owns reusable lifecycle, context, source coverage, target relationship and factual limits; R8 owns result-to-investment ceilings. The projection does not select survivors, routes, budgets, stopping policy, or authority.
+Apply [Contract projection](../frame-optimization/references/measurement-design.md#contract-projection): return the complete affected professional change, with clause locations, additions, replacements, removals and dependent edits. Reference unchanged content instead of rewriting six blocks. The projection does not select survivors, routes, budgets, stopping policy or authority.
 
 For each finding, record `accepted`, `adapted`, `rejected-with-evidence`, or `blocked`. Preserve the finding itself. A rejection requires applicable evidence; an unchanged disagreement narrows the supported consequence or returns an exact blocker.
 
-Do not edit core documents, adopted normative sections, row status, epochs, revisions, reviews, logs, handoffs, implementation, results, or project identity. `frame-optimization` may adopt or reject the complete projection but may not rewrite its measurement meaning.
+Do not edit core documents, adopted normative sections, row status, epochs, revisions, reviews, logs, handoffs, implementation, results, or project identity. `frame-optimization` adopts or rejects the complete affected professional change without rewriting its measurement meaning.
 
-This step is complete when the selected detail contains one internally consistent design and one complete projection, or one exact blocker.
+This step is complete when the selected detail contains an internally consistent design and its complete affected professional change, or one exact blocker.
 
 ## Output
 
@@ -74,7 +74,7 @@ Task: <canonical task path>
 Mode: new | revision | repair
 Detail: <selected Slot H detail>
 Intended consequence: <bounded consequence>
-Projection: slot_d, slot_e, slot_h, r8_measurement_constraints, known_limits, invalidation_and_recalibration
+Projection: <affected clauses and locations; references for unchanged dependencies>
 Finding dispositions: <omit unless repair>
 Blocker: <omit for DESIGN_READY>
 ```

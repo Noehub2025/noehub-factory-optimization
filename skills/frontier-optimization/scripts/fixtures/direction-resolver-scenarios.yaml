@@ -422,7 +422,7 @@ acceptance_scenarios:
   - {number: 41, name: Parent-owned result vector, target: {kind: contract-assertion, path: references/learning-loop.md, marker: complete parent-owned vector}}
   - {number: 42, name: Mutable planning context, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'do not freeze the whole W or mutable work breakdown'}}
   - {number: 43, name: Dominated diagnostic repeat, target: {kind: resolver-fixture, id: dominated-diagnostic-repeat}}
-  - {number: 44, name: Proportionate governance, target: {kind: contract-assertion, path: references/entry-review.md, marker: 'review the changed dependencies and affected conclusions; reuse unaffected conclusions'}}
+  - {number: 44, name: Proportionate governance, target: {kind: contract-assertion, path: references/entry-review.md, marker: 'apply Assurance by consequence to the changed dependencies and affected conclusions'}}
   - {number: 45, name: Workflow identity exclusion, target: {kind: contract-assertion, path: references/learning-loop.md, marker: workflow source, semantic, validator, worker, deployment, or release change}}
   - {number: 46, name: Fabricated progress rule, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'Do not invent a number merely to complete the template'}}
   - {number: 47, name: Evidence-derived route before Q completion, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: provisional}}

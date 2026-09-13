@@ -645,7 +645,7 @@ def test_running_return_and_no_action_recovery_contracts_are_closed() -> None:
     core = (skill_root / "references/frontier-core.md").read_text()
 
     assert "A route-scoped result does not complete a continuing task." in skill
-    assert "it is not a durable completion state for a continuing task" in state
+    assert "an empty Selection alone neither completes a continuing task nor triggers direction resolution" in state
     assert "A running campaign with no selected next action is transitional" in handoff
     assert "A boundary affecting only one action does not end independent permitted work" in handoff
     assert "An ordinary `continue` is not that event" in core

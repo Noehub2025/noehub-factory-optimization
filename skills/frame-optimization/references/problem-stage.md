@@ -18,16 +18,16 @@ Classify and route one item:
 |---|---|
 | `research` | Select a Slot detail. Give its path, target, and one bounded research question to `research-optimization`. |
 | `grill` | Select a Slot detail. Give its path and one user-owned decision or authorization to `grill-optimization`. |
-| `measurement-design` | Apply the shared measurement-design route. The Designer repairs the professional content; the coordinator adopts only a complete projection. |
+| `measurement-design` | Apply the shared measurement-design route and its complete affected-change adoption rule. |
 | `reframe` | Repair missing or conflicting problem semantics directly after resolving dependencies. |
 | `blocker` | Record the exact missing authority, private fact, data, tool, access, or fresh context. |
 
 For a Slot H implementation finding, apply the shared measurement-support gate before readiness review. For a fitness, inferential, proxy, resolution, calibration, evidence-reuse, or consequence defect, use `measurement-design`; do not route professional design to measurement support.
 
-After research, validate the research record and packet, then make the semantic edit yourself. After grill, validate the decision record and packet before deciding its Contract effect. After measurement design, adopt only its complete unchanged projection. Apply review invalidation with every meaningful edit.
+After research, validate the research record and packet, then make the semantic edit yourself. After grill, validate the decision record and packet before deciding its Contract effect. For measurement design, apply [Contract projection](measurement-design.md#contract-projection). Apply review invalidation only to affected conclusions.
 
 When the change affects a proposed interpretation or comparison of retained results, preserve both meanings and request the existing `comparability` branch for that affected use. Otherwise use [Change impact and retained results](../../frontier-optimization/references/frontier-core.md#change-impact-and-retained-results) without a comparability review. Reuse unaffected readiness conclusions and review only the changed requirements and their dependencies.
 
-Request a fresh `readiness` review when every applicable A-H row is `P` or `-`, Open decisions says `None`, Known limits states every remaining evidence restriction, and the current repair set meets Step 6. Repair a valid non-`PROCEED` result from its complete finding set. Apply Step 2 to every returned review.
+Request an independent `readiness` review when substantive A-H decisions are ready and the current repair set meets Step 6. A `~` technical agent default may enter this review when only independent acceptance remains; identify its exact proposed meaning and evidence. Other unresolved choices remain open. Known limits must state remaining evidence restrictions. Apply the shared acceptance rule before handoff rather than creating a finding and second review for an accepted default. Repair a valid non-`PROCEED` result from its complete finding set. Apply Step 2 to every returned review.
 
 This stage is complete only after durable `PROCEED`, an exact blocker, or one user-owned input or exact authorization remains and no safe in-scope action can bypass it.

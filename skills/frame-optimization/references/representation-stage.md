@@ -26,7 +26,7 @@ Draft or repair the Brief, every R1 through R8 row, Open decisions, and Known li
 
 Keep R5-R7 at `-` while search treats the candidate as one whole. Do not prewrite modules, interfaces, or coupling for possible future decomposition. Create a module `PROBLEM.md` only for actual separate optimization, proof, review, or delegation.
 
-Before review, read both Briefs without their tables or details. Ask a new reader to restate the task without merely repeating its special labels: what exists, what can change, what the changed thing receives or faces, what it produces or controls, and how that affects the result. Then require the reader to restate the search loop from starting point through proposal, conversion, rejection or measurement, feedback, selection, and stopping. Only after both explanations pass, read the complete main documents without opening details and apply the decision check.
+Apply [Readability and review scope](task-documents.md#readability-and-review-scope) when the task or search story is new, materially changed or genuinely unclear. Use the current documents and linked rules; do not add a separate reader, Brief-only reconstruction or presentation gate before the requested technical review.
 
 This step is complete when every R row has a valid status, contract, and necessary detail, with no hidden assumption that changes permitted search claims.
 

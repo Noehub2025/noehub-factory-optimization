@@ -31,9 +31,9 @@ Record source locators and only the minimum excerpt needed to support a finding.
 ## Steps
 
 1. **State the question.** Repeat the task, target, question, and research-record path. Complete this step when a reader can test whether the result answers the delegated question.
-2. **Inspect repository evidence.** Search applicable code, data, tests, documents, and logs. Complete this step when each applicable repository source is inspected or its absence is stated.
+2. **Inspect repository evidence.** Search applicable code, data, tests, documents, and logs. Inspect the relevant primary evidence needed to answer the question; do not inventory every source category.
 3. **Search external sources when needed.** Name the owning authority and use [external-sources.md](external-sources.md). Check version, scale, distribution, and operating conditions. Complete this step when each material claim meets that reference's sufficiency bar or remains `Unknown`.
-4. **Search for disconfirming evidence.** Run at least one check against the working answer. Complete this step when supporting and conflicting evidence are both reported.
+4. **Challenge the working answer where it matters.** Investigate a plausible conflicting explanation, version change or weak assumption when it could change the recommendation. Use retained evidence where sufficient; a settled fact does not require another search merely to fill this step.
 5. **Write the research record.** Update only the permitted sections of the selected detail. Follow [task-documents.md](../frame-optimization/references/task-documents.md) for A-H details and [representation-documents.md](../frame-optimization/references/representation-documents.md) for R1-R8 details. Update `generated` and `sources`. Complete this step when the durable record contains every material finding and preserves all protected content.
 6. **Return the research packet.** Match the durable record exactly. Complete this step when the packet distinguishes evidence, alternatives, risks, and proposals from adopted rules.
 
@@ -67,7 +67,7 @@ Findings:
   Source: <canonical locator>
   Applicability: <version, scale, distribution, and operating conditions>
   Limits: <source limit or none>
-Disconfirming evidence: <result and locator>
+Disconfirming evidence: <material conflicting evidence and locator, or none found in the consulted evidence>
 Unresolved evidence: <what would settle each unknown or none>
 Candidate representations: <bounded alternatives or none>
 Risks and unknowns: <material items or none>

@@ -1,6 +1,6 @@
 # Representation contracts
 
-Read this reference completely when creating or materially reframing an R1-R8 contract. `PROBLEM.md` remains authoritative for problem semantics; these items define search strategy and its permitted claims.
+Use all applicable R items for an initial representation; read the affected items and dependencies for a revision or repair. `PROBLEM.md` remains authoritative for problem semantics; these items define search strategy and its permitted claims.
 
 Write the two core Briefs and Contract tables with concrete task nouns. Use the PROBLEM Brief for the task story and the REPRESENTATION Brief for the search story. Say which rendered object the harness measures, what the optimizer proposes, how conversion works, and which actual configs, schedules, models, or decks are searched. Keep labels such as `C`, `E1`, `T1`, and `U` out of the Brief. Use them only in the Contract table or linked details after the underlying items have plain names. Each core Contract cell contains a concise decision, not a TODO; use a second short sentence only when needed for its direct consequence. Do not copy technical terms from this reference into a core document; use the plain-language rewrites in `representation-documents.md`.
 
@@ -34,7 +34,9 @@ Use Slot B exact identity for lossless round trips. Use semantic equivalence onl
 
 Partial or unknown coverage prohibits global-optimality, exhaustion, and non-discovery claims over uncovered parent solutions.
 
-Completion test: A reader can identify every active form, translate it to evaluation form, and state the searched subset and claim limit.
+When creating or materially changing a representation, explain which substantive decisions it exposes, how they can affect the objective, and what mechanisms it can express or makes difficult to explore. Distinguish a limitation of the representation from one of its current implementation or unexplored space. Use observations or theory to explain a relevant reason to change form; file layout alone does not explain search capability. An alternative requiring professional comparison belongs with the existing research or design owner, without an alternative quota or a new review.
+
+Completion test: A reader can identify the active forms, their decision scope and relevant limitations, translate them to evaluation form, and understand the current search opportunity without a claim of complete coverage.
 
 ## R2. Encoding redundancy
 
@@ -90,9 +92,9 @@ Assign exactly one legality mode:
 
 For `repair`, define failure behavior and search-distribution bias. Repair must not silently change candidate meaning.
 
-Define the neighborhood as candidates reachable by one permitted operation. Classify intended-subset reachability as connected, disconnected, or unknown.
+Define operations by the substantive changes they allow, not only file edits. An operation can replace an integrated mechanism across components. Define the neighborhood as candidates reachable by one permitted operation and classify intended-subset reachability as connected, disconnected, or unknown.
 
-For disconnected reachability, identify components or a starting policy that covers them. For unknown reachability, state tests and claim limits.
+For disconnected reachability, identify components or a starting policy that covers them. For unknown reachability, state the claim limit and investigate only a gap that matters to the current choice. Whole-candidate evaluation permits integrated alternatives and sliced implementation; it does not require local-only changes or one-shot development.
 
 Check hard constraints against Slot C, soft constraints against Slot D, and probabilistic constraints against Slots E and H.
 
@@ -233,9 +235,7 @@ Completion test: Two reasonable readers or agents using only the two main docume
 Request exploratory review only when:
 
 - the parent is stable, verified, and matches the recorded binding;
-- the PROBLEM Brief explains the system or process, what can change, what the changed thing receives or faces, what it produces or controls, and how that affects the result without relying on unexplained task labels;
-- the REPRESENTATION Brief explains the search loop from starting point through proposal, conversion, rejection or measurement, feedback, selection, and stopping without opening a detail;
-- the complete `PROBLEM.md` and `REPRESENTATION.md`, read without optional details, contain every fact needed for ordinary legality, evaluation, success, resource, proposal, feedback, selection, stopping, reuse, and claim decisions;
+- the task, objective and search loop are understandable under [Readability and review scope](task-documents.md#readability-and-review-scope); the core documents state governing choices and identify exact rules in normative details where needed;
 - every core Contract cell states a concise decision rather than a request to fill in information;
 - Open decisions lists every `O` or `~` row with its next action and closure condition;
 - Known limits lists every remaining restriction on search or conclusions, including restrictions carried by `P` rows;

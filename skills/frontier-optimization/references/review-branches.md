@@ -12,6 +12,6 @@ Use [Assurance by consequence](batch-evaluation.md#assurance-by-consequence) to 
 
 Read [Finding effects](finding-effects.md) when judging findings. Read a record template only when its meaning is genuinely needed; reviewers do not create Coordinator records.
 
-Verify the saved Git subject and applicable parents once. Reuse another R's actual checked conclusions and assumptions without repeating its procedure. Inspect only evidence needed to settle the remaining question. If the assignment's kind or completion condition conflicts with the current method, correct that assignment with the Coordinator while retaining completed work. A missing necessary input blocks only its dependent conclusion.
+Verify the saved Git subject and applicable parents once; inspect the remaining question using the selected method. For corrections, use the changed dependencies and affected conclusions, not the complete historical finding list as a rerun list. Correct a conflicting assignment through the [review worker interface](../../review-frontier/SKILL.md), retaining completed work.
 
-The review is complete when the selected method has evidence-backed conclusions and its report identifies the exact subject, findings, maximum supported consequence and conditions.
+New review work is complete when its report answers the assigned question with evidence-backed conclusions, the exact subject, findings and supported use conditions. Sufficient reused conclusions return through the same adoption path without a new report or automatic next review.

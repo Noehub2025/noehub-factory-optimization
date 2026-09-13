@@ -37,7 +37,7 @@ Inspect the current modules, callers, state, dependencies, runtime flow, failure
 - a change to the research problem or substantive investment returns `PARENT_REVIEW_REQUIRED`; refine tentative technical choices through [Working assignments](../frontier-optimization/references/worker-interfaces.md#working-assignments);
 - a measurement meaning change returns to the measurement owner;
 - a user-owned cost, lock-in, maintenance, migration, privacy, or operating tradeoff returns `USER_DECISION_REQUIRED` with technically eligible options and a recommendation; and
-- a conclusion that needs a lower-consequence observation from code execution, a prototype, an experiment, controlled input, an external effect, or protected resources returns `EVIDENCE_REQUIRED` with the smallest decision-changing evidence request; do not disguise the normal formal proposal as free design evidence.
+- a consequential assumption needing practical feedback follows [Early design feedback](../frontier-optimization/references/technical-design.md#early-design-feedback): name the uncertainty and smallest useful observation, obtain it through the existing work owner, and continue the original design task.
 
 Read-only design work is planning. It creates no B, proposal identity, reservation, or spend.
 
@@ -53,7 +53,7 @@ This step is complete when each decisive claim for the promised output has posit
 
 Write only the assigned W `Design brief` and triggered concern files. For `module` or `system`, cover architecture, interfaces, flows, and verification; add domain or decisions only when their triggers apply. Apply security, performance, reliability, compatibility, migration, and rollback requirements in the owning concern when they materially affect the design.
 
-In `verification.md`, make each delivery slice a stable, verifiable obligation with one observable behavior, prerequisite set, exact design inputs, distinguishing oracle, failure checks, and safe recovery point. Together the obligations must cover one complete realization. They do not prescribe the executor's mutable work breakdown or execution order. The Coordinator later maps those pointers to stable Delivery and traceability rows; Entry binds the exact delivery obligations one B must satisfy.
+In `verification.md`, define the complete realization through [Verification](../frontier-optimization/references/technical-design.md#verification) and its stable delivery obligations. Apply its current-use scope to supporting requirements, failure behavior and recovery; leave ordinary test methods and mutable work breakdown to the implementer. The Coordinator maps these pointers to Delivery and traceability; Entry binds the obligations one B must satisfy.
 
 For any implementation-form restriction that materially affects a slice, apply [Technical design: Constrain effects, not convenient forms](../frontier-optimization/references/technical-design.md#constrain-effects-not-convenient-forms). State the current protection rationale and causal relation; do not optimize the design for an easy syntactic check.
 
@@ -69,7 +69,7 @@ This step is complete when the assigned design files contain one coherent design
 
 ## Finish at cold-read implementability
 
-Return `DRAFT_READY` when consequential choices have the grounds described above and a fresh executor can implement every planned slice in dependency order, integrate the complete realization, and recover after any slice without inventing entity meaning, responsibility, interface behavior, state ownership, runtime transitions, failure response, compatibility behavior, test oracle, or recovery boundary. For `repair`, resolve the supplied findings and any newly discovered fact affecting those grounds; reuse unaffected conclusions and return an exact remaining blocker when necessary. Create no separate finding-disposition artifact.
+Return `DRAFT_READY` when consequential choices have the grounds described above and a fresh executor can implement and integrate the promised realization under [Verification's implementability boundary](../frontier-optimization/references/technical-design.md#verification). Remaining ordinary implementation choices and unknown research outcomes are work to investigate, not missing design obligations. For `repair`, resolve the supplied findings and any newly discovered fact affecting those grounds; reuse unaffected conclusions and return an exact remaining blocker when necessary. Create no separate finding-disposition artifact.
 
 If execution evidence shows only that the order or internal split is inefficient, keep the design contract unchanged and let the Batch record a revised next action. If it shows that a slice cannot deliver its observable result without changing a public seam, ownership, lifecycle, acceptance meaning, or another load-bearing design assumption, identify the affected contract and return it to the Coordinator for a scoped design revision. Do not turn ordinary implementation defects into design changes or let an executor invent missing contract meaning.
 
@@ -82,7 +82,7 @@ Mode: new | revision | repair
 Work plan: <W path and revision>
 Written design: <exact Design brief and concern paths, or none>
 Technical slices: <exact verification pointers, or none>
-Required next owner: <Coordinator | grill-frontier | research or B evidence path | parent stage | none>
+Required next owner: <Coordinator | grill-frontier | existing evidence-work owner | parent stage | none>
 Blocker: <omit when none>
 ```
 

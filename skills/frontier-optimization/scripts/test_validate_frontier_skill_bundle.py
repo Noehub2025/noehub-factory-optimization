@@ -406,7 +406,7 @@ class FrontierSkillBundleTests(unittest.TestCase):
             ),
             (
                 "frontier-optimization/references/finding-effects.md",
-                "An advisory itself creates no replacement object or approval",
+                "An advisory creates no replacement object or approval",
                 "create a replacement B and review for every advisory",
             ),
         )
@@ -771,7 +771,7 @@ class FrontierSkillBundleTests(unittest.TestCase):
         canonical = (
             skills_root / "frame-optimization/references/representation-contracts.md"
         ).read_text()
-        problem_review = (skills_root / "review-optimization/SKILL.md").read_text()
+        problem_review = (skills_root / "review-optimization/references/readiness.md").read_text()
         representation_review = (skills_root / "review-representation/SKILL.md").read_text()
         planning = (
             skills_root

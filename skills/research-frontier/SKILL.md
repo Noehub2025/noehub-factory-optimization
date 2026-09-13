@@ -1,6 +1,6 @@
 ---
 name: research-frontier
-description: Research one bounded Frontier route landscape or focused question about a route, assumption, bound, failure, or claim. Use when `frontier-optimization` has created the target and assigned exact input versions, evidence channels, an evidence path, and a result-packet path.
+description: Investigate a Frontier route landscape or focused question about mechanisms, assumptions, bounds, failures, or claims. Use when a research decision needs technical evidence or alternative approaches.
 ---
 
 # Research Frontier

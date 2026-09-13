@@ -15,7 +15,7 @@ Load this file for every Frontier invocation. It defines authority, canonical pa
 
 `frontier-optimization` is the only Coordinator. It chooses campaign actions, assigns budget, adopts worker evidence, changes retained results, stops or halts work, and adopts reviewed claim wording. `reflect-frontier` exclusively writes its assigned research Reflection under [Research Reflection](learning-loop.md#research-reflection); that file creates no campaign decision or authority.
 
-Specialist workers answer one assigned research question, preserve one user decision, design one technical seam, execute one B, reflect on a substantive research experience, or review one exact Git subject. Worker output changes no campaign meaning until the Coordinator checks it and writes the result to the canonical record.
+Specialist workers answer one assigned research question, preserve one user decision, design one technical seam, execute one B, reflect on a substantive research experience, or review one exact Git subject. Worker output changes no campaign meaning until the Coordinator checks it and writes the result to the canonical record. When a professional output proposes another review or execution gate, apply [Professional output and workflow decisions](worker-interfaces.md#professional-output-and-workflow-decisions); adopting its conclusions does not adopt its proposed procedure.
 
 Current diagnostic, routine and formal measurement use one Batch-owned Measurement Definition and `Batch.perform`. Apply protocol reuse and single-use controls in [Evaluation protocol reuse](evaluation-protocol.md). Diagnostic and routine results remain B evidence; formal Slot H comparison keeps its technical readiness and validity gates.
 

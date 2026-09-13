@@ -14,7 +14,16 @@ The user's task selects the initial Coordinator. Technical stage transitions wit
 
 ## Stable contract and live state
 
-Frame documents and the handoff bind durable problem, representation, comparison, resource, feedback, stop, claim, and reuse rules. Frontier owns live campaign facts:
+Keep content at the scope where it governs work:
+
+| Content | Owner |
+|---|---|
+| Real objective and success meaning, external evaluation mechanism, legal solution space and user boundaries | Problem: D retains objective-side success; E retains the external evaluation and applicable aggregation meaning |
+| Search forms, substantive decisions they express, evaluation translation and search rules | Representation |
+| Reusable comparison method, evidence meaning, applicability and use limits | Measurement definition referenced by H |
+| Current realization, exact inputs, schedule, observation window, local engineering arrangements and recovery | W or Batch |
+
+A fixed reference, dataset or parameter may define one reusable protocol without becoming the only permitted condition for all search. An instance change stays in the Batch while the method's meaning, applicability and supported use remain intact; a change to those premises goes to the existing professional owner. Keep D's objective separate from a particular diagnostic's result classes, and R8's search rules separate from its execution sequence. Frontier owns live campaign facts:
 
 | Live fact | Current owner |
 |---|---|
@@ -30,6 +39,10 @@ Current retained-result status means adoption, elite or survivor status, current
 Do not copy live values into normative Frame content or use them to decide parent freshness. A historical handoff or Frame explanation that contains such values remains a point-in-time record. When the typed Frontier owners agree, a difference confined to that nonauthoritative explanation is an advisory under [Frontier finding effects](../../frontier-optimization/references/finding-effects.md), not a parent mismatch. It does not invalidate a handoff or review, require reframing or reauthorization, or block Frontier work.
 
 Only a changed durable parent meaning or concrete contrary evidence can affect a parent conclusion. Leave historical summaries unchanged unless one actually misleads the current read or the owning document is already changing for a valid reason; this rule creates no mass cleanup, rebinding, or review work.
+
+## Research knowledge in the handoff
+
+At initial handoff, a material framing change or an actual applicability challenge, use relevant retained research to explain what changes the pending search judgment. A limitation that undermines the current method goes to its professional owner rather than only becoming a disclaimer. Unknowns that do not affect the choice need no new research. Frontier consumes this reasoning through [Investment comparison](../../frontier-optimization/references/learning-loop.md#route-investment-ordering), including theory-grounded exploration without promoting an unsupported proxy conclusion. Use the existing handoff and decision work; this adds no per-result analysis, research checkpoint or review.
 
 ## Handoff contract
 

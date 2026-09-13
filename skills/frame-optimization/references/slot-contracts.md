@@ -2,7 +2,7 @@
 
 Read this reference completely when creating a new A-H contract or materially reframing an existing contract.
 
-When D, E, or H requires a new or materially revised measurement design, use `design-measurement` and [measurement-design.md](measurement-design.md). The Primary Framing Agent adopts its complete projection without rewriting the professional meaning. Existing-protocol execution and implementation-only repair do not invoke measurement design.
+Place requirements according to [Stable contract and live state](frontier-handoff.md#stable-contract-and-live-state). When D, E, or H requires a new or materially revised measurement design, use `design-measurement` and its [Contract projection](measurement-design.md#contract-projection). Existing-protocol execution and implementation-only repair do not invoke measurement design.
 
 ## Implementation-form boundaries
 
@@ -30,7 +30,7 @@ Completion test: A reader can decide whether any candidate is legal and whether 
 
 List every material correctness, safety, accuracy, stability, and physical constraint. Classify each constraint as hard, soft, or probabilistic.
 
-Distinguish actual external or user requirements from internal methods chosen to establish compliance. An internal proof method does not become a hard constraint through adoption or repetition. When a source, license, integrity, or provenance concern would block current use, apply [Constrain effects, not convenient forms](../../frontier-optimization/references/technical-design.md#constrain-effects-not-convenient-forms) before excluding that use or narrowing the solution space. Reuse sufficient evidence; this is not a routine source audit.
+Reference actual user and verified external requirements at their source. Keep an internal engineering choice in its owning work record; adoption, repetition or an `unchanged` label does not make it a permanent hard constraint. When a changed mechanism, scale, operating condition or use challenges its basis, reassess only the affected requirement with its professional owner under existing authority. Reuse unchanged requirements by reference rather than copying constants; no routine historical audit or new user approval follows. When a source, license, integrity, or provenance concern would block current use, apply [Constrain effects, not convenient forms](../../frontier-optimization/references/technical-design.md#constrain-effects-not-convenient-forms) before excluding that use or narrowing the solution space.
 
 For a probabilistic constraint, state the required probability. For a soft constraint, identify its penalty in Slot D.
 

@@ -5,6 +5,7 @@
 - [W is the map](#w-is-the-map)
 - [Choose the profile](#choose-the-profile)
 - [Assign the professional author](#assign-the-professional-author)
+- [Early design feedback](#early-design-feedback)
 - [Ground consequential design choices](#ground-consequential-design-choices)
 - [Constrain effects, not convenient forms](#constrain-effects-not-convenient-forms)
 - [Resolve user-owned design choices](#resolve-user-owned-design-choices)
@@ -78,7 +79,7 @@ If an unpublished scaffold mistakes a tentative choice or incidental workflow me
 
 When the design uses or replaces an existing capability, apply [Reuse working knowledge](batch-current.md#reuse-working-knowledge) within the assigned scope before inventing another interface or interpretation.
 
-Publication eligibility, authority, accounting, and result closure stay with their existing workflow or parent owners; reference their rules rather than reproducing their operation in W. Explicit user and parent requirements remain binding with the appropriate owner. Their origin, repetition, or inclusion in an earlier assignment does not make them Design-owned.
+Publication eligibility, authority, accounting, and result closure stay with their existing workflow or parent owners; reference their rules rather than reproducing their operation in W. Apply [Professional output and workflow decisions](worker-interfaces.md#professional-output-and-workflow-decisions) when Design proposes another review or stage. Explicit user and parent requirements retain their original owner; their appearance in W does not make them Design-owned.
 
 Apply [Decision-bearing thresholds](frontier-core.md#decision-bearing-thresholds) only to a condition that can change the acceptance or disposition of the planned work. W owns an implementation-acceptance threshold only when that consequence belongs to the designed module or system; cite a parent, Measurement Definition, or direct-B owner instead of copying its threshold into Design. When W does own the threshold, state its basis, applicable workload and statistic, allowed consequence, and reconsideration trigger in Decisions or Verification. Reusing an `unchanged` threshold requires the complete semantic match defined by Frontier Core, not merely the same value.
 
@@ -86,7 +87,11 @@ A method or sequence belongs in the relevant professional contract when it deter
 
 The designer writes only W's Design brief and triggered concern files. The Coordinator derives Design map rows, Delivery map rows and `traceability.yaml` from those pointers and stable slice keys, then prepares the saved reference for review. Preserve professional meaning and leave future B assignments, attempt namespaces, internal evidence destinations and runtime status with their execution owners.
 
-Design authoring is planning and creates no B, proposal identity, reservation, or spend. If a conclusion requires a lower-consequence observation from code execution, a prototype, an experiment, controlled input, an external effect, or protected resources, the designer returns `EVIDENCE_REQUIRED`; the Coordinator obtains that evidence through the existing Q or B path. Do not relabel a runnable, tested, chargeable, irreversible, or protected-resource realization as free design evidence.
+### Early design feedback
+
+When a consequential assumption needs practical feedback, the designer names the uncertainty and smallest observation that could change the design. The Coordinator first reuses existing evidence or arranges that observation with the implementation or evidence-work owner in the current authorized work, then returns the facts to the original designer to continue. Use existing assignment and progress records. This coordination does not itself require a new Q, B, review, terminal result or user pause; create further work only when the observation's actual scope or effects require it. Test a decisive real-interface assumption early enough to revise the affected design before dependent construction, rather than leaving the first useful feedback to review.
+
+Design authoring remains planning, with no execution authority or automatic proposal charge. Evidence work retains its owner's write scope and the normal controls for its actual effects, protected resources and charge events. Use `EVIDENCE_REQUIRED` only under [Test decisive feasibility claims](#test-decisive-feasibility-claims); it requests the missing observation, not a new evidence stage. Ordinary implementation feedback stays in development. A formal proposal does not become free by calling it design evidence.
 
 ## Ground consequential design choices
 
@@ -96,13 +101,15 @@ Choose scale, duration and conditions that can expose the addressed mechanism or
 
 Keep source claims at their supported scope. A weak warning is a hypothesis to assess, not a whole-route exclusion; a claim limit bounds conclusions but supplies no selection rationale. A short explanation suffices for an evident choice. This is part of ordinary design, not a new heading requirement, alternative quota, economic model, optimality proof, research assignment or review gate.
 
+Derive supporting requirements from the promised observation or deliverable and its actual effects before prescribing facilities. Reuse existing execution, accounting and recovery capabilities. Add capability only for a concrete unmet need of this use, not generic completeness, speculative future use or easier review. Keep that rationale with the affected choice rather than creating a requirement inventory. Simplify the support around an ambitious, informative experiment; do not shrink the experiment until it can no longer test its hypothesis.
+
 ## Test decisive feasibility claims
 
 Apply this check inside the existing cold-read implementability work for `module` and `system`; it is not a new gate and does not change the `direct` profile. First apply [Research hypotheses and action prerequisites](planning-records.md#research-hypotheses-and-action-prerequisites) to the promised output. A research slice must support an executable, interpretable observation, not establish its hypothesis in advance. Full delivery retains its acceptance obligations. A decisive feasibility claim is an unestablished, falsifiable claim on which that promised output depends. Novelty, complexity, first implementation, absence of a final deliverable, first-identity charging, and ordinary implementation risk do not establish such a claim by themselves.
 
 For every decisive claim, require positive, reviewable grounds for a credible realization of the promised output under its relevant conditions and acceptance meaning. Grounds may come from analysis, proof, inspection, a same-condition example, demonstration, test, prototype, or another direct source appropriate to that output. Negative examples, internal consistency, or a future acceptance plan alone do not establish its feasibility.
 
-Decide evidence routing separately from whether the claim needs review. Return `EVIDENCE_REQUIRED` only when current grounds are insufficient and one lower-consequence observation is affordable, reachable, and capable of changing the design verdict. If no such observation exists, do not create a recursive evidence gate or weaken readiness: use current grounds to establish a credible realization, revise the design to remove the unsupported dependency, return the exact parent-owned formal-risk decision, or return the exact blocker when no legal path remains. Work that only the normal formal proposal can test stays subject to its parent and R8 consequence; design work cannot make that proposal free.
+Decide evidence routing separately from whether the claim needs review. Return `EVIDENCE_REQUIRED` only when current grounds are insufficient and one lower-consequence observation is affordable, reachable, and capable of changing the design verdict; continue through [Early design feedback](#early-design-feedback). If no such observation exists, do not create a recursive evidence gate or weaken readiness: use current grounds to establish a credible realization, revise the design to remove the unsupported dependency, return the exact parent-owned formal-risk decision, or return the exact blocker when no legal path remains. Work that only the normal formal proposal can test stays subject to its parent and R8 consequence; design work cannot make that proposal free.
 
 Use these questions without creating a new field or artifact:
 
@@ -177,19 +184,19 @@ For each decision, record status, alternatives, technical eligibility, recommend
 
 Trigger for every `module` or `system` design.
 
-Map each requirement and failure behavior to an observable test oracle. State unit, interface, integration, compatibility, migration, rollback, performance, security, global, and comparison-integrity checks as applicable; fixtures; evidence meaning and format; producer and consumer roles; and any stable external-interface path.
+State how to distinguish the promised behavior or observation from an implementation defect. Cover the requirements and failure behavior material to this use, including applicable interface, integration, compatibility, performance, migration or evidence-integrity checks. Specify evidence meaning, producer and consumer responsibilities, and stable external-interface behavior where they affect interpretation. Internal test methods and unanticipated research outcomes remain implementation work, not an exhaustive design-time catalogue.
 
 Apply [Evidence at real boundaries](implementation-review.md#evidence-at-real-boundaries) to assumptions about actual dependencies that the next use relies on. The implementation owner covers the complete deliverable, including its relevant dependency seams; splitting implementation work or review scope does not transfer that responsibility to an unassigned future reviewer.
 
-Make each delivery slice's observable behavior, stable prerequisites, exact design inputs, distinguishing oracle, failure checks, and safe recovery point authoritative here. A delivery slice is a stable obligation, not the executor's mutable work breakdown. Entry later binds the exact obligations one B must satisfy to its execution source, worker paths, and internal output destinations without changing their meaning.
+Make each delivery slice's observable behavior, stable prerequisites, required design inputs and distinguishing verification authoritative here. Specify failure and recovery obligations only where they affect the promised deliverable, a shared interface, actual effects or evidence interpretation. Reuse [Result and recovery](batch-current.md#result-and-recovery) for retained facts and unresolved effects; an exception need not produce an immediate final conclusion. A slice does not need its own recovery facility or resume point when ordinary working repair suffices. Entry binds these stable obligations to execution sources and working paths; it does not freeze the implementer's mutable work breakdown.
 
-Use examples, schemas, state tables, or sequence descriptions whenever prose permits incompatible implementations. A design is not ready while a developer must invent entity meaning, responsibility, interface contract, state owner, runtime transition, failure response, user decision, oracle, or slice boundary.
+Use examples, schemas, state tables, or sequence descriptions when prose permits incompatible consequential behavior. A fresh executor must be able to implement and integrate the promised realization without inventing shared entity meaning, ownership, interface behavior, acceptance meaning, or failure and recovery obligations material to this use. Ordinary internal error handling, test implementation and work segmentation need not be settled in Design. Research needs an executable observation with interpretable outcomes, not advance proof of success or complete attribution.
 
 ## Delivery slices
 
 `design-implementation` defines vertical delivery obligations that each produce one observable result through the real seam and records their exact contracts in `verification.md`. Together they must cover the complete realization and its integration check. The Coordinator summarizes each obligation in W's Delivery map under a stable technical name and immutable verification pointer. Entry, not Design, later assigns an exact B and realization paths. One B may satisfy several obligations before one formal publication; obligations never create their own B, candidate, proposal, review, or charge lifecycle. Do not make an executor read unrelated concerns.
 
-Execution owns its mutable work breakdown and may add, remove, merge, replace, or reorder internal steps while the B envelope and delivery obligations remain satisfied. Stable verification obligations do not freeze every test implementation or require one worker invocation to deliver all slices; use [Working assignments](worker-interfaces.md#working-assignments). Evidence that an obligation, seam, ownership, acceptance meaning, or load-bearing design assumption must change returns to `design-implementation` as a scoped revision. A local defect, failed check, or inconvenient implementation shape remains implementation feedback.
+The implementation owner maintains the mutable [Working plan](worker-interfaces.md#working-plan) outside W's design obligations and Batch lifecycle. Internal steps may be added, removed, merged, replaced or reordered while the B envelope and delivery obligations remain satisfied. Stable verification obligations do not freeze every test implementation or require one worker invocation to deliver all slices. Evidence that an obligation, seam, ownership, acceptance meaning, or load-bearing design assumption must change returns to `design-implementation` as a scoped revision. A local defect, failed check, or inconvenient implementation shape remains implementation feedback.
 
 A design, research, or non-code prototype B may resolve one open question. Its worker reports evidence and proposed wording; a changed contract takes effect through an adopted W revision.
 

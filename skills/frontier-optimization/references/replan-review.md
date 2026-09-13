@@ -29,6 +29,6 @@ Return exactly `REPLAN_READY`, `REPLAN_REPAIR_REQUIRED`, `EVIDENCE_REQUIRED`, `P
 
 ## Review and adoption
 
-Only `review-frontier` writes the assigned R, using its current artifact requirements. Cite the saved subject and affected source paths for checked conclusions and findings; completion means every applicable requirement above has an evidence-backed disposition.
+Only `review-frontier` writes the assigned R, using its current artifact requirements. Cite the saved subject and affected source paths; completion means the proposed strategic change's remaining questions are settled by new and applicable retained conclusions, or their precise blockers are identified. The method above locates affected conditions; it does not require repeating settled technical reviews.
 
 The Coordinator adopts an applicable positive R and applies only the reviewed strategic changes at their existing owners. Where a B references that R, use [Maintained Batch operations](batch-current.md#maintained-batch-operations). A nonpositive or inapplicable review does not apply the proposed strategic allocation. Historical subjects and verdicts remain unchanged; unrelated current facts and work do not need to be rewritten.

@@ -4,7 +4,7 @@ Read only when a current nonpositive framing or representation review has findin
 
 ## 6. Run the repair loop
 
-Use this loop for either valid nonpositive review. The current repair set is every finding in the applicable latest schema-valid nonpositive review, even when subsequent repair writes make that review stale. Route each finding by its own work type, never only by the overall result.
+Use this loop for either valid nonpositive review. The current repair set contains the required corrections in the applicable latest schema-valid nonpositive review, even when subsequent repair writes make that review stale. Apply current rules to historical requirements: an accepted default or advisory formatting issue is not a reason to request another review. Preserve the old judgment and record its current disposition through the existing Repair status and coordinator metadata. Route each finding by its own work type, never only by the overall result.
 
 For `review.md`, use Step 3 routes: `research`, `grill`, `measurement-design`, `reframe`, or `blocker`. For `representation-review.md`, use these routes:
 
@@ -18,11 +18,11 @@ Classify each representation finding before acting:
 | `reframe-problem` | Stop representation work and return to the problem-definition stage. |
 | `blocker` | Record the exact missing authority, private fact, data, tool, access, or fresh context. |
 
-After research, validate the research record and packet, then edit the normative Contract yourself. After grill, validate the decision record and packet before deciding whether an evidence-backed reversible default is allowed. After measurement design, adopt only its complete unchanged projection. Mark an affected row `O` when a finding prevents the requested scope, and record its closing action.
+After research, validate the research record and packet, then edit the normative Contract yourself. After grill, validate the decision record and packet before deciding whether an evidence-backed reversible default is allowed. After measurement design, apply [Contract projection](measurement-design.md#contract-projection) to its complete affected professional change. Mark an affected row `O` when a finding prevents the requested scope, and record its closing action.
 
 For each current finding:
 
-1. Set each affected semantic row to `O` when its meaning is absent, conflicting, or undecided and the finding prevents the requested scope. For an explanation-only finding, keep existing row meaning and status, repair the Brief, and require fresh review. Keep a cross-cutting finding in the review file.
+1. Set each affected semantic row to `O` when its meaning is absent, conflicting, or undecided and the finding prevents the requested scope. For an explanation-only finding, apply [Readability and review scope](task-documents.md#readability-and-review-scope). Keep existing row meaning and status; correct advisory wording without a new review, and check only an actual unresolved understanding defect. Keep a cross-cutting finding in the review file.
 2. Complete every independent safe action, including actions that do not depend on a remaining blocker.
 3. Update only `Repair status` and coordinator writer metadata in the review file. Do not change reviewer-owned result, scope, time, evidence, required action, or completion text.
 4. Mark a finding `complete` only after its `Complete when` condition holds. Mark it `blocked` only after recording the exact unavailable authority, fact, data, tool, access, or fresh context.
