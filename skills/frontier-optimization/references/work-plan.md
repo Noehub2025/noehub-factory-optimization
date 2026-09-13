@@ -4,7 +4,7 @@
 
 - [Template](#template): W frontmatter plus Purpose, Scope, design, delivery, input, progress, validation, recovery, and outcome sections.
 
-Load only when work needs W. This is the sole `WORK.md` template. Use one W across B records that share one design contract or operational outcome. W stays a short map; indexed concern files hold exact design contracts.
+Load only when work needs W under [Technical design](technical-design.md#w-is-the-map). This is the sole `WORK.md` template. Use one W across B records that need a shared design contract or operational map. Local professional answers can remain in existing working material. W stays a short map; indexed concerns hold the needed design agreements.
 
 Increment `plan_revision` for a material change to purpose, scope, design profile, concern meaning, user design choice, delivery obligation, input contract, validation, or definition of done. Apply [Technical design's assignment ownership rule](technical-design.md#assign-the-professional-author) to ordinary working-method changes. Assess the affected review conclusions and Permissions against the actual change; progress, corrected pointers and unrelated commits do not invalidate them.
 
@@ -48,7 +48,7 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 
 ## Current state
 
-<Coordinator: state the adopted checkpoint, next action, blockers, stable artifacts, design-review state, candidate-code lifecycle state, first performance check, preparation cost estimate, and required follow-up reserve. A preparation estimate is non-binding and does not create allocation, authority, consumption, or a hard limit. Keep current authorization in external lifecycle records.>
+<Coordinator: state current work, next useful check and unresolved dependencies; reference stable artifacts, applicable review and resource records when needed. Follow Informative checkpoints for research work; each internal step need not produce a performance result. Estimates remain planning inputs, not authority or hard limits.>
 
 ## Design brief
 
@@ -74,9 +74,9 @@ generated: { by: frontier-optimization/1, at: "<ISO-8601 datetime>" }
 
 `design/verification.md` owns each delivery obligation under [Technical design: Verification](technical-design.md#verification), including when failure or recovery behavior matters. The Coordinator derives a concise summary plus exact technical pointers without adding obligations. Selection and Entry later bind one exact B and execution realization; their status, paths, mutable work breakdown, and execution order never enter this contract-bearing table. One B may satisfy several obligations. An obligation is not independently published or charged unless a parent explicitly selected it as a standalone objective.
 
-Every selected W-backed B cites the saved design reference and a nonempty unordered `delivery_scope` of stable slice keys through its existing Entry assignment or applicable R. The current Batch's `reviews` references that R; record selected obligations in its existing scope and acceptance rather than adding subject fields to `frontier-batch/1`. Resolve the selected scope at the design reference, including prerequisites and required inputs. A changed commit alone does not invalidate a review of unchanged relevant content.
+When B depends on W's stable delivery obligations, cite the saved design reference and nonempty `delivery_scope` through its existing assignment or applicable R. Reference an R only when that judgment is needed. Resolve the selected obligations and their actual prerequisites; unrelated unfinished design does not block them. Queries, preparation and implementation independent of those obligations use their own applicable B scope under [Active learning chain](learning-loop.md#active-learning-chain), without a whole-W readiness requirement. A changed commit alone does not invalidate unchanged relevant conclusions.
 
-For `module` or `system`, the Coordinator maintains `design/traceability.yaml` as a contract-bearing machine-readable index. `design-implementation` does not write it:
+When W supplies stable delivery obligations to a consuming B or review, the Coordinator maintains `design/traceability.yaml` as their machine-readable index. A profile or local professional answer alone does not require it. `design-implementation` does not write it:
 
 ```yaml
 work_id: <W identifier>

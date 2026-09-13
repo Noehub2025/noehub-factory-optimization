@@ -273,7 +273,8 @@ CURRENT_FINDING_EFFECT_REQUIREMENTS = {
     ),
     "frontier-optimization/references/finding-effects.md": (
         "An unknown code defaults to `block`",
-        "For a human finding, judge fitness for the current use, not freedom from defects",
+        "For a human finding, judge fitness for the current use:",
+        "A constructible failure alone does not require repair",
         "An advisory creates no replacement object or approval",
         "Apply this contract prospectively",
         "`finding-free` means zero `block` or `repair` findings",

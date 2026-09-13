@@ -149,10 +149,10 @@ Selection:
 - Campaign-baseline choice: <chosen T, recommendation, V identifier, and decisive tradeoff; or sole eligible T and evidence>
 - Repository structure: <existing structure and integration recommendation; or absent structure, user-approved V, and approved layout>
 - Candidate interface and code integration: <existing or user-approved seam, source, tests, configuration, artifact convention, and stable shared paths; or not applicable>
-- Design profile and map: <direct with evidence; or saved W reference, indexed concerns, stable slice keys and required source references under Work Plan; or not applicable>
-- Design review: <applicable DESIGN_READY R reference, pending design work, or not applicable under direct profile>
+- Design profile and map: <direct work; adopted professional answer; or saved W reference and selected delivery scope when needed under Technical design>
+- Design review: <applicable R for a required independent judgment, exact unresolved design question, or not required for the current use>
 - Development authorization: <applicable user grant, current Entry readiness and execution authority; cite a new V only when User decisions requires one; not applicable when no execution is proposed>
-- Implementation review gate: <required review before first measurement, integration, or incumbent use; reusable prior review and exact unchanged identity; or not applicable>
+- Implementation review gate: <remaining required independent judgment for the proposed use, reusable applicable conclusions, or not required under Assurance by consequence>
 - User values applied: <V identifiers and effective conditions or None>
 - Decision-relevant unknowns: <answered, deferred with event, or blocking>
 - Diagnostic decision: <current adopted evidence or Entry, ordered alternatives, selected path, investment rationale and switching condition under the single Learning Loop resolver; or not applicable>

@@ -17,7 +17,7 @@
 
 Use this stage for initial Entry, post-closeout recovery, or an affected decision after a parent revision. Initial Entry produces a reproducible first-batch plan with zero new-generation B spend and reconciled inherited and Entry cost. Parent revision follows its scoped branch below without reopening initial Entry.
 
-Match planning to the requested deliverable under the [Coordinator's scope and completion rule](../SKILL.md#recover-and-choose-the-current-action). For campaign-opening planning that needs a first-batch Entry, a ready design is a prerequisite, not a completed plan: continue to `FIRST_BATCH_PLANNED` or an applicable stage blocker. Reuse existing plans and reviews; prepare Entry only for a decision that actually needs it. A design-only, advisory or local planning request may finish at its requested deliverable without creating a B or completing Entry.
+Match planning to the requested deliverable under the [Coordinator's scope and completion rule](../SKILL.md#recover-and-choose-the-current-action). Campaign-opening planning continues to its first applicable B decision or exact unresolved dependency; a completed design alone does not finish that request. Require only the design meaning the selected work depends on. Reuse existing plans and reviews; prepare Entry only for a decision that actually needs it. A design-only, advisory or local planning request may finish at its requested deliverable without creating a B or completing Entry.
 
 ## Load only what Entry reaches
 
@@ -91,25 +91,17 @@ Adopt each new answer as V. Its stated scope can authorize continuing work; a me
 
 ## 6. Plan the first observable work
 
-Create the first B from its sole template. Create W only when the work is complex, spans checkpoints, or needs a technical-design map. Do not create empty W or design-concern scaffolding to satisfy a form. For a module or system design, the Coordinator creates only the bounded W scaffold and invokes `design-implementation`; it does not author professional design content. A complex non-code W uses one reasoned `not applicable` Design-map row and no technical-design concern files. Every selected B must precommit:
+Create the first B from its sole template with the current question or deliverable, selection rationale, scope, relevant sources, actual limits and the result needed to judge its work. Use [Active learning chain](learning-loop.md#active-learning-chain) to order preparation and [Informative checkpoints](planning-records.md#informative-checkpoints) to choose checks at the research commitment's scale. Include result branches, recovery and protected follow-up resources only where they affect this work's actual use or effects; a performance check or distinct next action for every internal step is not required.
 
-- decision hypothesis;
-- expected observation;
-- decision rule for continue, diagnose, research, revise, promote, stop, or halt;
-- exact first checkpoint and first performance check;
-- preparation cost estimate, governing campaign limit and protected follow-up reserve;
-- legality, engineering, measurement, and comparison-validity checks;
-- recovery point, stop conditions, and prohibited actions.
+Use [Technical design](technical-design.md#choose-the-profile) to decide professional involvement and whether W is needed. Ordinary development progress uses the existing working plan. A query, preparation or implementation that does not depend on an unresolved design can establish or continue its own applicable B scope before the whole W is ready, using the existing Selection and Batch interfaces. This creates no preliminary stage or mandatory B per query.
 
-List the legal result branches for the first check and their distinct allowed next actions. When the check answers an unknown measurement property, stop at that observation and preserve its decision and claim boundary. When a materialized candidate uses the diagnostic-only exception in `candidate-lifecycle.md`, plan a separate non-code experiment B and keep formal Slot H measurement, E, integration, incumbent use, promotion, and strength claims closed.
+Apply [Research hypotheses and action prerequisites](planning-records.md#research-hypotheses-and-action-prerequisites) when preparation settles a dependency. Preserve the observation's evidence ceiling and continue when the selected condition is met. When the retained historical-candidate diagnostic exception actually applies, use its separate experiment B and consequence limits.
 
-Also record `Trajectory contribution` before execution. For prerequisite-first work, bind the output and stop boundary to the prerequisite observation and make dependent implementation explicitly ineligible until the Coordinator adopts passing evidence through the applicable Entry or Replan gate.
-
-The plan separates worker write surfaces from exact project bytes selected later for checks or Consequences. It does not assign execution snapshots, execution-start paths or result identities. For W-backed work, cite the reviewed design and stable delivery obligations; do not freeze the whole W or mutable work breakdown. Apply [Batch continuation](batch-current.md#boundary-preserving-continuation) to distinguish working methods from the independently judged result.
+The plan separates worker write surfaces from exact project bytes selected later for checks or Consequences. It does not assign execution snapshots, execution-start paths or result identities. Work depending on W cites its adopted relevant design and delivery obligations, with a review only when required for that use. Independent preparation does not inherit the whole W's readiness. Apply [Batch continuation](batch-current.md#boundary-preserving-continuation) to distinguish working methods from the independently judged result.
 
 Use [Entry review](entry-review.md) only after ordinary structural checks pass and the complete subject is saved in Git. A failed draft stays mutable within the same B and creates no R, packet, snapshot, identity, or successor B. The reviewed decision must cover the objective, scope, applicable R and V, governing campaign limits, protected reserve, strategic allocation, any interpretation-bearing Measurement Definition ceiling, delivery obligations, earliest useful check, result meaning, and recovery needed by the next Consequence. A planning estimate and exact Batch operational cap do not become frozen review semantics.
 
-Preparation must end at the earliest check that can discriminate the chosen mechanism. A baseline-establishment slice may be simple, but it cannot become open-ended infrastructure work.
+Keep preparation tied to the selected useful result under [Reuse working knowledge](batch-current.md#reuse-working-knowledge). Expand support only for a concrete need of that use.
 
 If the B may change executable candidate code, complete `entry-code-planning.md` before selection. A design, research, or isolated prototype B must explicitly state `changes_executable_candidate: false`; it authorizes no candidate code.
 
@@ -125,7 +117,7 @@ Include the proposed Selection and affected F2-F4 update in the reviewed target.
 
 ## 8. Record the Entry decision
 
-Write a plain-language Brief in `FRONTIER.md` that a fresh reader can use without following identifiers. It must name the reference baseline, replaceable campaign baseline, exact allowed work, remaining governing budget, selected B and W, first checkpoint, first performance check, preparation cost estimate, protected reserve, comparison and promotion rules, stop and halt rules, and claim limits.
+Update only affected explanations in the [FRONTIER Brief](campaign-state.md#frontiermd-and-f1-f8). Keep current question, missing observation, ongoing work and source pointers there; budgets, permissions and execution state remain with their owners.
 
 Pin F1-F4, F7, and F8. F5 and F6 may remain provisional or not relevant when the parents provide no usable bound; missing bounds never widen F7 or F8. Confirm new-generation B spend is zero, inherited spend is exact, and every charged Entry cost is already accounted.
 

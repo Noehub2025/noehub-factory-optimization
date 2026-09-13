@@ -12,6 +12,12 @@ Batch.apply(RoutineChange)
 Batch.perform(Action)
 ```
 
+Read current work through `Batch.view`: `defined`, `scope`, `status`, `candidate_revision`, `reviews`, `passed_checks`, `measurement_definition`, `remaining_capacity`, and `latest_attempt`. Candidate Revision and Review references use their existing value types. Mutable results are detached from the snapshot, and an old view remains about its original state. Reopen the Batch for fresh external changes; `perform` still reloads and checks current state before an action.
+
+`passed_checks` reports checks passing on the selected Candidate Revision; it does not choose required checks or Reviews. `remaining_capacity` subtracts exact use and retained conservative charges when reconciliation established bounded use. It reports retained accounting, not permission to execute: unresolved Attempts still block dependent execution through `perform`. Read these facts instead of rebuilding saved objects or subtracting recorded consumption in callers. Project-specific Measurement Definition fields and Review applicability remain with their existing owners.
+
+Use `export_record()` for complete diagnostic or compatibility reads; `data` remains its historical alias. Ordinary current callers use named facts. The persisted `frontier-batch/1` record is unchanged, and reading a fact neither writes the record nor creates an Attempt.
+
 A Batch is one stable allocation of work toward one independently judged result. It is not a candidate identity, dispatch instance, command, process, immutable packet, or proposal hash. Its design, implementation, checks, paths, Review and Permission references, operational limits, and Candidate Revisions may evolve while it still pursues that result.
 
 Write `acceptance` as the result and evidence required to judge this B, and `scope` as its work boundary. Keep a temporary turn limit in current progress, not in acceptance as an inferred user stop. Real user limits come from [User decisions](user-decisions.md). Finishing an implementation-only B can lead to a separate measurement B within the continuing task; it does not enlarge this B's independently judged result.
@@ -45,7 +51,7 @@ Review readiness does not grant Permission. Permission does not prove execution.
 
 ## Reuse working knowledge
 
-When work touches an existing capability, start from its current implementation or method, usage reference, and relevant retained evidence. Cite that entry point in the existing assignment and reuse what fits. Contrary evidence or changed needs may justify repair or replacement; a historical success is not a requirement to preserve an unsuitable approach.
+When work touches an existing capability, start from its current tool, implementation or method, usage reference, and relevant retained evidence. Use an adequate established path directly; add support only for a concrete unmet need of the current research commitment and its necessary follow-up. Result acquisition and later analysis can proceed separately when the later work does not determine safe execution or require evidence that cannot be recovered afterward. General recovery, classification and future reuse facilities are not prerequisites merely because they may eventually help. Cite the relevant entry point in the existing assignment. Contrary evidence or changed needs may justify repair or replacement.
 
 Keep interface facts beside the capability they explain and significant choices with their rationale in the existing W, Frame, or measurement design. Include sources and applicable versions or conditions where they affect use; keep changing values as dated observations. When a relevant compatibility check exists only in historical task material, the implementation owner adapts its method and applicable conditions into the capability's current verification entry point and updates its existing usage reference. Reuse the method, not obsolete task-specific paths, limits or passing verdicts. Complete that repair by exercising the current entry point against the current deliverable; adding an uncalled helper or a lesson alone is insufficient. For a real dependency, apply [Evidence at real boundaries](implementation-review.md#evidence-at-real-boundaries).
 

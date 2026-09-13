@@ -5,7 +5,7 @@ Load when `frontier-core.md` selects active campaign work, result adoption, or a
 - one simple non-code B with no W; or
 - one `direct` code B with no W, ending at the materialized-candidate checkpoint;
 - one complex non-code B under a current W;
-- one professional `module` or `system` design draft or revision under a current W with no B or spend;
+- one professional design answer, draft or revision, using W only when its shared map is needed;
 - one evidence-producing design checkpoint or code slice under a current W; or
 - one human-input B with its request and validation contract in B or W;
 - one executable or mixed B with an explicit working-observation target inside the current Batch scope;
@@ -33,8 +33,8 @@ An explicit working-observation target does not authorize an external, paid, hum
 - Load [Executable work](batch-code-execution.md) for current executable material. Load [Candidate lifecycle](candidate-lifecycle.md), [Review snapshots](review-snapshots.md), and historical implementation-review material only when an actual retained record or external publication seam uses them. Load [Evaluation protocol reuse](evaluation-protocol.md) only when the current Measurement Definition reuses calibration or shared protocol meaning.
 - Load [Result adoption](result-adoption.md) only after a worker result exists, when freezing a materialized candidate review, adopting diagnostic evidence, or validating and adopting E.
 - Load [Work plan](work-plan.md) when B cites W. Load only W frontmatter, Current state, the obligations named by the B's `delivery_scope`, applicable Validation and Definition-of-done terms, Recovery, and Design-map rows whose `Read when` condition matches the action.
-- Load [Technical design](technical-design.md) only while proving direct eligibility, preparing a design assignment, or mechanically adopting or reviewing a `module` or `system` design. `design-implementation` authors and repairs the professional content. Load [Design review](design-review.md) only when freezing, reviewing, or adopting that design.
-- Load [Learning loop](learning-loop.md) after terminal result adoption or when a pending direction decision or strategic replan requires it. Load [Evidence records](evidence-records.md) only for a controlling D or X action.
+- Load [Technical design](technical-design.md) for a consequential unresolved design question or affected adoption. Load [Design review](design-review.md) only for required independent judgment or its adoption.
+- Use [Active learning chain](learning-loop.md#active-learning-chain) to order current work, including early preparation. Load the resolver only when its investment trigger applies, and [Evidence records](evidence-records.md) only for a controlling D or X action.
 - Load [Claim records](claim-records.md) only when exact external wording or a claim-review request appears. Do not load [Claim review](claim-review.md) in this slice.
 - Load [Worker interfaces](worker-interfaces.md) before invoking `design-implementation`, `run-frontier-batch`, or `review-frontier`.
 
@@ -103,7 +103,7 @@ Choose one row below to load the owner of the current action. Adoption, accounti
 | Current action | Load | Completion criterion |
 |---|---|---|
 | Execute one simple non-executable B | [Current Batch](batch-current.md) and [Planning records](planning-records.md) | One bounded result or recovery condition is recorded; worker observations have no adopted campaign meaning |
-| Author or repair a module or system design | [Work plan](work-plan.md) and [Technical design](technical-design.md), then `design-implementation` in a fresh context | Designer writes only the assigned Design brief and concern bodies; the Coordinator mechanically binds exact pointers, or records the returned owner or blocker; no B, reservation, or spend is created |
+| Resolve or revise an important design question | [Technical design](technical-design.md), then `design-implementation`; load [Work plan](work-plan.md) only when W is needed | Designer answers in the assigned existing work or design content; the Coordinator adopts it and any required delivery bindings or independent judgment, then continues covered work |
 | Execute complex non-code, shared W, design-evidence, or human-input work | [Work plan](work-plan.md); add [Technical design](technical-design.md) only when the evidence changes a contract | Exact W revision, stable Delivery slice, and Entry realization govern the B; only assigned progress or discoveries change worker-side |
 | Develop, recover, review, or measure executable material | [Executable work](batch-code-execution.md), then [Result adoption](result-adoption.md) when a result exists | Working revisions and checks remain in one B; measurement uses an Attempt and its result receives only supported meaning |
 | Validate a result, reconcile spend, freeze implementation review, or append E | [Result adoption](result-adoption.md) | Result meaning, spend, recovery, candidate review, and E eligibility are durably dispositioned |

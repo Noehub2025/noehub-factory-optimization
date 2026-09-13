@@ -802,7 +802,7 @@ class FrontierSkillBundleTests(unittest.TestCase):
 
         self.assertIn("canonical R8 vacuity definition", representation_review)
         self.assertIn("headroom, noise, resolution", canonical)
-        self.assertIn("keep formal Slot H measurement, E", planning)
+        self.assertIn("smallest bounded prerequisite or diagnostic check", planning)
         self.assertIn("Diagnostic-only exception", lifecycle)
         self.assertIn("create no E", adoption)
         for prohibited_consequence in (

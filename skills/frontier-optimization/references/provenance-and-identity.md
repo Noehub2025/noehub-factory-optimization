@@ -78,6 +78,12 @@ Design preparation resolves the Design map's pointer column and `design/traceabi
 
 Resolver preparation derives the canonical JSON key with sorted object keys, compact separators, UTF-8 and no trailing newline. It preserves every supplied decision fact. Formatting and location are outside that key; metadata that changes no decision fact should remain outside the evidence object. Reuse and preparation-failure behavior are owned by [Learning Loop](learning-loop.md#resolver-input-preparation). This helper checks saved references and propagates bindings; it does not schedule or record worker invocations.
 
+### Shared saved-byte implementation
+
+`scripts/saved_git.py` owns current Git mechanics: resolve a revision, validate a selected set of objects, and read a regular file at an exact commit. Candidate Revision selections may contain trees; document reads require regular files and reject symlinks. Paths are literal, including whitespace, newlines and Git pathspec characters. Selection checks stay batched, and saved-byte reads ignore working edits. The module uses ordinary Git and imports no historical provenance stack.
+
+Current reference preparation, Batch selection and maintained operation callers share this implementation. Working-file reads remain an explicit caller choice when no Candidate Revision is selected. Review applicability, project parsing and measurement meaning are not Git mechanics.
+
 ## Selected input references
 
 The current writer is `GitReferenceStore` in

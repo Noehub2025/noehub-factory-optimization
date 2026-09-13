@@ -1,6 +1,6 @@
 ---
 name: design-implementation
-description: Design or revise implementation architecture in a fresh context for a selected Frontier research problem when work changes a shared interface, state ownership, interacting modules, migration, or another consequential technical seam.
+description: Resolve an important implementation-design question in a fresh context when existing agreements do not settle shared behavior, state ownership, architecture, migration or another consequential technical choice.
 ---
 
 # Design Implementation
@@ -13,22 +13,20 @@ Require:
 
 - one canonical Frontier task and exact project decision root;
 - mode `new`, `revision`, or `repair`;
-- one Coordinator-created W scaffold with the research problem, intended progress, actual scope, parents, source starting points, and exact writable sections and concern paths;
+- the unresolved question, relevant existing agreements and evidence, and exact writable sections in current work or design material; include W when a shared design map is needed;
 - the selected investment and behavior target, existing repository seams, actual runtime and resource constraints, and adopted user decisions;
 - for `revision`, the current design and the evidence that requires a contract-bearing change; and
 - for `repair`, the complete current design-review findings.
 
-Read [Technical design](../frontier-optimization/references/technical-design.md) and the assigned W through [Work plan](../frontier-optimization/references/work-plan.md). Use [Evidence access](../frontier-optimization/references/worker-interfaces.md#evidence-access) for relevant original-source checks. Resolve a missing target or write surface with the Coordinator; a short source list does not itself block work.
+Read [Technical design](../frontier-optimization/references/technical-design.md), and [Work plan](../frontier-optimization/references/work-plan.md) only when W is used. Use [Evidence access](../frontier-optimization/references/worker-interfaces.md#evidence-access) for relevant original-source checks. Resolve a missing target or write surface with the Coordinator; a short source list does not itself block work.
 
 This step is complete when the design question, evidence surface, and exclusive write surface are reproducible without conversation history.
 
 ## Check the seam before designing
 
-Confirm that the work actually crosses a professional design trigger from Technical design. A bounded, reversible behavior change may touch multiple files and remain `direct` when established seams, ownership, interfaces, schemas, lifecycle, dependency direction, failure semantics, and migration remain unchanged.
+Apply [Choose the profile](../frontier-optimization/references/technical-design.md#choose-the-profile) to distinguish the professional question, needed design content and any later independent judgment. Return `DIRECT_ELIGIBLE` without writing when established agreements already settle the important choices; do not routinely recheck the Coordinator's direct cases.
 
-Return `DIRECT_ELIGIBLE` without writing when the assignment was misrouted. Do not make this check a routine gate for work that the Coordinator has already proved direct.
-
-This step is complete when the work is either returned as direct or has a concrete `module` or `system` reason.
+This step is complete when the remaining professional question and affected scope are clear, or the work is returned for direct implementation.
 
 ## Reconstruct the implementation design
 
@@ -51,9 +49,9 @@ This step is complete when each decisive claim for the promised output has posit
 
 ## Author the existing design contract
 
-Write only the assigned W `Design brief` and triggered concern files. For `module` or `system`, cover architecture, interfaces, flows, and verification; add domain or decisions only when their triggers apply. Apply security, performance, reliability, compatibility, migration, and rollback requirements in the owning concern when they materially affect the design.
+Write the assigned answer or affected existing design content, creating only the concerns needed by the current problem under Technical design. Preserve applicable security, performance, reliability, compatibility, migration and recovery requirements with their owning agreement.
 
-In `verification.md`, define the complete realization through [Verification](../frontier-optimization/references/technical-design.md#verification) and its stable delivery obligations. Apply its current-use scope to supporting requirements, failure behavior and recovery; leave ordinary test methods and mutable work breakdown to the implementer. The Coordinator maps these pointers to Delivery and traceability; Entry binds the obligations one B must satisfy.
+Where W carries stable delivery obligations, define them through [Verification](../frontier-optimization/references/technical-design.md#verification). The Coordinator maps those pointers to Delivery and traceability; Entry binds only the obligations its B depends on. Otherwise reference existing applicable checks in the answer. Ordinary test methods and mutable work breakdown remain with the implementer.
 
 For any implementation-form restriction that materially affects a slice, apply [Technical design: Constrain effects, not convenient forms](../frontier-optimization/references/technical-design.md#constrain-effects-not-convenient-forms). State the current protection rationale and causal relation; do not optimize the design for an easy syntactic check.
 
@@ -63,9 +61,9 @@ Use schemas, examples, state tables, or sequence descriptions when prose would a
 
 Apply [Technical design's assignment ownership rule](../frontier-optimization/references/technical-design.md#assign-the-professional-author) when tentative choices or workflow methods have been misplaced in Purpose or Scope. Correct the scaffold with the Coordinator in the same task. Keep Batch continuation with [Boundary-preserving continuation](../frontier-optimization/references/batch-current.md#boundary-preserving-continuation).
 
-Write professional bodies with stable section headings. The Coordinator owns Design map rows, Delivery map rows, `traceability.yaml`, lifecycle fields and the consuming saved reference under [Work Plan](../frontier-optimization/references/work-plan.md#saved-design-references). Keep V, B, Selection, Budget, review artifacts, candidate code and campaign records with their existing owners.
+When W is used, the Coordinator owns maps, traceability, lifecycle fields and the consuming saved reference under [Work Plan](../frontier-optimization/references/work-plan.md#saved-design-references). Keep V, B, Selection, Budget, review artifacts, candidate code and campaign records with their existing owners.
 
-This step is complete when the assigned design files contain one coherent design, every decision-bearing threshold is either cited from its current owner or owned and grounded once in W, and no other actor must fill a professional section.
+This step is complete when the assigned content answers the professional question, relevant decision-bearing thresholds retain their grounds and owners, and no consequential meaning needed by the promised use remains implicit.
 
 ## Finish at cold-read implementability
 
@@ -79,11 +77,11 @@ Return exactly:
 RESULT: DRAFT_READY | DIRECT_ELIGIBLE | EVIDENCE_REQUIRED | USER_DECISION_REQUIRED | PARENT_REVIEW_REQUIRED | BLOCKED
 Task: <canonical task path>
 Mode: new | revision | repair
-Work plan: <W path and revision>
-Written design: <exact Design brief and concern paths, or none>
+Work plan: <W path and revision, or none>
+Written design: <assigned answer or affected design paths, or none>
 Technical slices: <exact verification pointers, or none>
 Required next owner: <Coordinator | grill-frontier | existing evidence-work owner | parent stage | none>
 Blocker: <omit when none>
 ```
 
-These results are invocation outcomes only. They create no W lifecycle state, ledger entry, identity, readiness verdict, Permission, spend or implementation result. An unchanged finding-free `DESIGN_READY` establishes technical design readiness. The Coordinator then applies the current Entry checks and existing V required by the next actual Consequence; no separate development-authorization chain is created.
+These results are invocation outcomes only. They create no lifecycle state, review verdict, Permission, spend or implementation result. The Coordinator adopts the answer through [Review and revision](../frontier-optimization/references/technical-design.md#review-and-revision), selects any remaining required independent judgment, and continues the covered work under its actual Entry and V conditions.

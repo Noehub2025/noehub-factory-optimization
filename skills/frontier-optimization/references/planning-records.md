@@ -33,7 +33,7 @@ Create T for each technically eligible campaign-baseline candidate. Later direct
 - Depends on: <identifiers, including prerequisite checks that must pass before dependent work, or None>
 - Maximum allocation: <amount and unit>
 - Next checkpoint: <earliest affordable bounded output or discriminating test>
-- First performance check: <comparison or decision result and parent-approved feedback>
+- First performance check: <comparison and permitted feedback when this route needs one; otherwise the relevant theoretical or technical result>
 - Replacement boundary: <exact mechanism boundary beyond which a new T and strategic Replan are required; parts that may improve or be replaced; stable measurement or evidence interfaces>
 - Disqualifying evidence: <competing explanation, transfer mismatch, failed prerequisite, or other observable result that falsifies the causal path or makes the route ineligible or not worth continuing>
 - Continue when: <observable result>
@@ -47,15 +47,15 @@ When a route substantively completes, is retired or replaced, retain its learnin
 
 ### Research hypotheses and action prerequisites
 
-Judge eligibility for the action being proposed, not for the route's eventual success. An unestablished hypothesis is the subject of its test, not a prerequisite that must pass before that test. The test itself needs an executable method, interpretable outcomes, and satisfied resource, safety, access, and authority conditions. A valid negative result or a bounded inconclusive observation can complete a research commitment when it changes the next decision; it does not complete a promised final deliverable.
+Judge eligibility for the action being proposed, not for the route's eventual success. An unestablished hypothesis is the subject of its test, not a prerequisite that must pass before that test. The test itself needs an executable method, interpretable outcomes, and satisfied resource, safety, access, and authority conditions. A valid negative result or a bounded inconclusive observation can complete the assigned research question at its supported scope; it does not complete a promised final deliverable. Ordinary implementation, theoretical derivation and experiment preparation can contribute jointly to a research commitment without each producing a performance result, distinct next-action branches or a new investment decision. Continuing the selected work can be the appropriate consequence of a useful result.
 
-Every prerequisite of the proposed action must be supported by current evidence, assigned a funded prerequisite-first check, or dispositioned as unavailable. While it remains unresolved, select only work that tests it without relying on it already being true; dependent delivery, adoption, and stronger claims remain ineligible. A failed prerequisite keeps dependent work ineligible until applicable evidence and Entry or Replan permit it.
+Identify the prerequisites the proposed action actually depends on and reuse sufficient current evidence. Obtain a missing fact through appropriate authorized work; continue other work that does not depend on it. A failed prerequisite limits its dependent use until the needed condition is established. When evidence satisfies an already selected condition, continue directly; use Entry or Replan only when the resulting decision itself requires it. This is dependency handling, not a requirement to enumerate every possible failure before development.
 
 Use [current Batch actions](batch-current.md#perform-an-action) for authorized empirical tests without a complete W or published candidate. Research Permission does not make the eventual route delivery-ready or waive parent-owned charges. Keep an existing full-delivery commitment intact unless its owner changes it through the existing revision path.
 
 ### Informative checkpoints
 
-Choose the least costly observation that can change the decision, including its necessary conditions, scale, duration, setup, interpretation, and recovery. An early or reduced-scale result may eliminate a route only when it can distinguish the mechanism under test. Otherwise bound the conclusion and compare the next informative observation under the existing resource and stop limits; a new observation window is a prospective allocation, not a retrospective extension of a triggered stop.
+Arrange checks at the scale of the current research commitment, including the conditions, scale, duration, setup, interpretation and recovery needed for a useful result. Prefer lower cost among observations that can answer the question; theoretical work, coupled implementation or a larger experiment may be the most informative affordable choice. Necessary internal steps do not each need a separate performance check or proof of value. An early or reduced-scale result may eliminate a route only when it can distinguish the mechanism under test. Otherwise bound the conclusion and compare the next informative observation under the existing resource and stop limits; a new observation window is a prospective allocation, not a retrospective extension of a triggered stop.
 
 Preserve a useful non-winner's distinct capability, mechanism evidence, or plausible transfer in existing evidence. Retention creates no ongoing funding, maintenance, review, or retest obligation. Adjust measurement only when its limitation can change the pending selection or claim.
 

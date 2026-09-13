@@ -7,18 +7,17 @@ import argparse
 import json
 import os
 import re
-import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-from identity_bindings import canonical_json, normalize_repo_path, sha256_bytes
+from identity_bindings import canonical_json, sha256_bytes
+from saved_git import SavedGitError, normalize_path, read_file, resolve_revision
 
 
-class ReferenceError(ValueError):
-    """A required saved input cannot be interpreted unambiguously."""
+ReferenceError = SavedGitError
 
 
 class _UniqueLoader(yaml.SafeLoader):
@@ -48,37 +47,15 @@ def _document(raw: bytes) -> dict[str, Any]:
     return value
 
 
-def _git(root: Path, *args: str) -> bytes:
-    try:
-        return subprocess.run(
-            ["git", "-C", str(root), *args], check=True, capture_output=True
-        ).stdout
-    except subprocess.CalledProcessError as exc:
-        raise ReferenceError(exc.stderr.decode(errors="replace").strip()) from exc
-
-
-def resolve_revision(root: Path, revision: str) -> str:
-    return _git(root, "rev-parse", "--verify", "--end-of-options", revision + "^{commit}").decode().strip()
-
-
 def reference(root: Path, revision: str, path: str) -> dict[str, str]:
     """Resolve a revision once; consumers retain the returned full commit."""
-    commit = resolve_revision(root, revision)
-    ref = {"commit": commit, "path": normalize_repo_path(path, "path")}
+    ref = {"commit": resolve_revision(root, revision), "path": normalize_path(path)}
     read_reference(root, ref)
     return ref
 
 
 def read_reference(root: Path, ref: dict[str, str]) -> bytes:
-    commit = ref.get("commit", "")
-    if not re.fullmatch(r"(?:[0-9a-f]{40}|[0-9a-f]{64})", commit):
-        raise ReferenceError("saved reference needs a full Git commit")
-    path = normalize_repo_path(ref.get("path"), "path")
-    # Trees and symlinks are not document inputs.
-    row = _git(root, "ls-tree", commit, "--", path).decode().split("\t", 1)[0]
-    if not row.startswith(("100644 blob ", "100755 blob ")):
-        raise ReferenceError(f"required regular file is absent at saved version: {path}")
-    return _git(root, "show", f"{commit}:{path}")
+    return read_file(root, ref.get("commit", ""), ref.get("path", ""))
 
 
 def prepare_review_reference(root: Path, revision: str, path: str, handle: str | None = None) -> dict:
@@ -162,7 +139,7 @@ def prepare_design(root: Path, revision: str, work: str, scope=()) -> dict:
         link = re.fullmatch(r"\[[^\]]*\]\(([^)]+)\)", value.strip())
         value = (link.group(1) if link else value.strip()).strip("`")
         path, _, section = value.partition("#")
-        path = normalize_repo_path(path, "design pointer")
+        path = normalize_path(path)
         if path not in files:
             files[path] = read_reference(root, {"commit": commit, "path": path})
         if section:

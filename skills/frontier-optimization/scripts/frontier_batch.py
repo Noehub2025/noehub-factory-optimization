@@ -14,13 +14,14 @@ import copy
 import fcntl
 import math
 import os
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 import re
-import subprocess
 import tempfile
 from typing import Any, Protocol, TypeAlias
 
 import yaml
+
+from saved_git import SavedGitError, normalize_path, validate_selection
 
 
 CONTRACT_VERSION = "frontier-batch/1"
@@ -300,17 +301,70 @@ LegacyProjector: TypeAlias = Callable[[Path, str], Mapping[str, Any] | None]
 
 @dataclass(frozen=True)
 class BatchView:
-    """Read-only view returned through the Batch interface."""
+    """Batch facts from one snapshot, independent of the persisted record layout."""
 
-    data: Mapping[str, Any]
+    _record: Mapping[str, Any] = field(repr=False)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "_record", copy.deepcopy(dict(self._record)))
+
+    def export_record(self) -> dict[str, Any]:
+        """Export a detached record for diagnostics and historical compatibility."""
+        return copy.deepcopy(dict(self._record))
+
+    @property
+    def data(self) -> Mapping[str, Any]:
+        """Compatibility export; ordinary callers should read named Batch facts."""
+        return self.export_record()
 
     @property
     def batch(self) -> str:
-        return str(self.data["batch"])
+        return str(self._record["batch"])
 
     @property
     def status(self) -> str:
-        return str(self.data["current"]["status"])
+        return str(self._record["current"]["status"])
+
+    @property
+    def defined(self) -> bool:
+        return bool(self._record["definition"])
+
+    @property
+    def scope(self) -> tuple[str, ...]:
+        return tuple(self._record["definition"].get("scope", ()))
+
+    @property
+    def candidate_revision(self) -> CandidateRevision | None:
+        selected = self._record["current"].get("candidate_revision")
+        return CandidateRevision(selected["commit"], tuple(selected["paths"])) if selected else None
+
+    @property
+    def reviews(self) -> tuple[GitReference, ...]:
+        return tuple(GitReference(**row) for row in self._record["references"]["reviews"])
+
+    @property
+    def passed_checks(self) -> tuple[str, ...]:
+        """Check keys passing on the current selection, without deciding requirements."""
+        selected = self._record["current"].get("candidate_revision")
+        return tuple(
+            key for key, check in self._record["current"].get("checks", {}).items()
+            if check["outcome"] == "passed" and check.get("candidate_revision") == selected
+        )
+
+    @property
+    def measurement_definition(self) -> dict[str, Any] | None:
+        """Return the owned definition; project-specific meaning stays with its owner."""
+        return copy.deepcopy(self._record["current"].get("measurement_definition"))
+
+    @property
+    def remaining_capacity(self) -> dict[str, float | int]:
+        """Subtract exact use and retained conservative charges for bounded use."""
+        return _remaining_resources(self._record)
+
+    @property
+    def latest_attempt(self) -> dict[str, Any] | None:
+        attempts = self._record["attempts"]
+        return copy.deepcopy(attempts[-1]) if attempts else None
 
 
 @dataclass(frozen=True)
@@ -395,7 +449,7 @@ class Batch:
 
     @property
     def view(self) -> BatchView:
-        return BatchView(copy.deepcopy(self._state))
+        return BatchView(self._state)
 
     def apply(self, change: RoutineChange) -> BatchView:
         """Apply one routine change without producing an execution result."""
@@ -1448,7 +1502,7 @@ def _merge_working_fields(current: Mapping[str, Any], updates: Mapping[str, Any]
 
 def batch_facts(view: BatchView) -> dict[str, Any]:
     """Render Batch-owned facts only, never Campaign accounting or inferred charges."""
-    state = view.data
+    state = view._record
     return copy.deepcopy({
         "batch": state["batch"],
         "status": state["current"]["status"],
@@ -1456,7 +1510,7 @@ def batch_facts(view: BatchView) -> dict[str, Any]:
         "reviews": state["references"]["reviews"],
         "resource_limits": state["resource_limits"],
         "attempt_consumption": state["consumption"],
-        "remaining_capacity": _remaining_resources(state),
+        "remaining_capacity": view.remaining_capacity,
         "unresolved_attempts": [
             item["attempt"] for item in state["attempts"]
             if item["status"] in {"running", "uncertain"}
@@ -1473,54 +1527,10 @@ def _remaining_resources(state: Mapping[str, Any]) -> dict[str, float | int]:
 
 
 def _validate_candidate(repo_root: Path, candidate: CandidateRevision) -> None:
-    if not isinstance(candidate.commit, str) or not candidate.commit:
-        raise BatchFormatError("Candidate Revision requires a full Git commit")
-    if not candidate.paths:
-        raise BatchFormatError("Candidate Revision requires selected paths")
     try:
-        resolved = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(repo_root),
-                "rev-parse",
-                "--verify",
-                f"{candidate.commit}^{{commit}}",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
-    except (OSError, subprocess.CalledProcessError) as exc:
-        raise BatchFormatError("Candidate Revision commit is unavailable") from exc
-    if resolved != candidate.commit:
-        raise BatchFormatError("Candidate Revision must use the full Git commit")
-    seen: set[str] = set()
-    paths: list[str] = []
-    for raw in candidate.paths:
-        normalized = _repo_path(raw)
-        if normalized in seen:
-            raise BatchFormatError("Candidate Revision paths must be unique")
-        seen.add(normalized)
-        paths.append(normalized)
-    try:
-        # NUL-delimited input preserves whitespace in paths. Successful output
-        # contains only object IDs; batch mode reports missing objects on stdout.
-        checked = subprocess.run(
-            ["git", "-C", str(repo_root), "cat-file", "--batch-check=%(objectname)", "-z"],
-            input=b"".join(f"{resolved}:{path}\0".encode("utf-8") for path in paths),
-            check=True,
-            capture_output=True,
-        ).stdout.splitlines()
-    except (OSError, subprocess.CalledProcessError) as exc:
-        raise BatchFormatError("Candidate Revision paths could not be checked") from exc
-    if len(checked) != len(paths):
-        raise BatchFormatError("Candidate Revision paths are unavailable or Git returned incomplete output")
-    for path, object_id in zip(paths, checked):
-        if re.fullmatch(rb"[0-9a-f]{40}|[0-9a-f]{64}", object_id) is None:
-            raise BatchFormatError(
-                f"Candidate Revision path is unavailable at its commit: {path}"
-            )
+        validate_selection(repo_root, candidate.commit, candidate.paths)
+    except SavedGitError as exc:
+        raise BatchFormatError(str(exc)) from exc
 
 
 def _validate_reference_list(
@@ -1724,12 +1734,10 @@ def _number(value: Any, name: str) -> float | int:
 
 
 def _repo_path(value: Any) -> str:
-    if not isinstance(value, str) or not value:
-        raise BatchFormatError("repository path must be a nonempty string")
-    path = PurePosixPath(value)
-    if path.is_absolute() or ".." in path.parts or "." in path.parts or ".git" in path.parts:
-        raise BatchFormatError(f"invalid repository-relative path: {value!r}")
-    return path.as_posix()
+    try:
+        return normalize_path(value)
+    except SavedGitError as exc:
+        raise BatchFormatError(str(exc)) from exc
 
 
 def _require_text(value: Any, name: str) -> None:

@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Callable, Mapping
 import json
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 import subprocess
 import sys
 import tempfile
@@ -18,6 +18,9 @@ from frontier_batch import (  # noqa: E402
     Action, ActionOutcome, Batch, CandidateRevision, ConcludeBatch, Consequence,
     DefineBatch, GovernanceResolver, OperationBinding, OperationResult, ReviseBatch,
 )
+
+
+from saved_git import normalize_path, read_file
 
 
 InputReader = Callable[[Path, str, CandidateRevision | None], bytes]
@@ -41,22 +44,17 @@ def inspect_inputs(repo: Path, batch_name: str) -> ActionOutcome:
     return batch.perform(Action(
         key="inspect-input-availability", operation="inspect-input-availability",
         kind="query", repeatable=True,
-        details={"paths": batch.view.data["definition"]["scope"]},
+        details={"paths": batch.view.scope},
     ))
 
 
 def read_input(repo: Path, path: str, candidate: CandidateRevision | None) -> bytes:
     """Use the selected input bytes when this observation has a selection."""
-    relative = PurePosixPath(path)
-    if relative.is_absolute() or ".." in relative.parts:
-        raise ValueError("example input must be repository-relative")
+    path = normalize_path(path)
     if candidate is not None:
         if path not in candidate.paths:
             raise ValueError("example input is outside the selected revision")
-        return subprocess.run(
-            ["git", "-C", str(repo), "show", f"{candidate.commit}:{path}"],
-            check=True, capture_output=True,
-        ).stdout
+        return read_file(repo, candidate.commit, path)
     target = (repo / path).resolve()
     target.relative_to(repo.resolve())
     return target.read_bytes()
@@ -98,16 +96,14 @@ def execute(
 
     Retained Batch review references are evidence, not an implicit gate list.
     """
-    current = Batch.open(repo, batch_name).view.data["current"]
-    definition = current["measurement_definition"]
+    view = Batch.open(repo, batch_name).view
+    definition = view.measurement_definition
+    if definition is None:
+        raise ValueError("example requires a Measurement Definition")
     inputs = definition["inputs"]
     if not isinstance(inputs, list) or not inputs or not all(isinstance(p, str) for p in inputs):
         raise ValueError("example requires a nonempty input list")
-    selected = current.get("candidate_revision")
-    candidate = (
-        CandidateRevision(selected["commit"], tuple(selected["paths"]))
-        if selected is not None else None
-    )
+    candidate = view.candidate_revision
     single_use = bool(definition.get("nonrepeatable_unit"))
     effects = ("single_use_consumption",) if single_use else ()
 
@@ -167,7 +163,9 @@ def execute(
 
 def read_result(repo: Path, batch_name: str) -> Mapping[str, Any]:
     """Reopen a settled observation or support failure without retrying work."""
-    attempt = Batch.open(repo, batch_name).view.data["attempts"][-1]
+    attempt = Batch.open(repo, batch_name).view.latest_attempt
+    if attempt is None:
+        raise ValueError("no observation has started")
     if attempt["status"] not in {"completed", "failed"}:
         raise ValueError("observation is not settled; inspect the saved Attempt")
     result = attempt["result"]

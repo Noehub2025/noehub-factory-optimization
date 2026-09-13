@@ -1,13 +1,13 @@
 # Frontier Design Review
 
-Load only when freezing a `module` or `system` design, invoking `review-frontier` with `review_kind: design`, or validating its artifact. `direct` has no design review.
+Load only when [Assurance by consequence](batch-evaluation.md#assurance-by-consequence) selects an independent design judgment, or when interpreting its artifact. Professional involvement, profile selection and a design revision do not themselves require review.
 
-Prepare the saved Git subject after the professional Design brief, applicable concerns, W maps, traceability and needed user choices are complete. Use [W saved references](work-plan.md#saved-design-references); the consuming review owns the commit, not W. Preserve prior reviews and assess changed content under the existing affected-review rule. The assignment contains no expected verdict or proposed repair.
+For a needed W design review, prepare the saved subject once the assigned question's relevant concerns, delivery bindings and user choices are available. Reuse existing design content; completeness is judged for the selected use, not every future part of W. Use [W saved references](work-plan.md#saved-design-references); the consuming review owns the commit, not W. Preserve prior reviews and assess only changed content and affected conclusions. The assignment contains no expected verdict or proposed repair.
 
 ## Review method
 
 1. Read W, indexed concerns and traceability at the assigned Git commit. Verify parents, scope, route, repository evidence, profile, applicable V and selected stable slice keys. Use the current saved-reference checks, not historical packet or snapshot preparation.
-2. Check the profile against task and repository facts. Require every triggered concern and reject any concern that W does not index. W remains a short brief and map; `design-implementation` owns professional meaning once in the Design brief and applicable concern bodies, while Coordinator fields remain mechanical or lifecycle-only.
+2. Check whether the selected use has the technical agreements it needs under [Choose the profile](technical-design.md#choose-the-profile). A profile does not impose a file bundle. W indexes the concerns used by its contract; the professional owner supplies their meaning and the Coordinator maintains affected maps and lifecycle fields.
 3. Apply [Technical design's assignment ownership rule](technical-design.md#assign-the-professional-author) before reviewing completeness. Ignore incidental workflow background. If a method owned by Batch is nevertheless normative, return at most one root `scope` finding for that mechanism and do not derive receipt, owner, schema, digest, failure, or recovery findings from it. Missing immutable ownership for reversible, unpublished working material is not a finding. Continue reviewing unrelated technical content.
 4. Review applicable architecture, responsibilities, dependencies, integration placement, domain meaning, state ownership, lifecycle, invariants, interfaces, callers, runtime data and control flow, failures, recovery, migration, compatibility, rollback, replacement boundaries, and any human-input schema, provenance, quality, confidentiality, acceptance, and evidence-only terms.
 5. Check [consequential design choices](technical-design.md#ground-consequential-design-choices) against their cited grounds and intended use. Address a source misreading, omitted material cost or dependency, or observation incapable of answering its question when it affects the next delivery or investment's reliability. Reuse sufficient reasoning; finding a better design, enumerating alternatives or proving success is not the reviewer's task. A missing comparison table, modest scale or unfamiliar method is not a finding. Keep other advice non-blocking. Every user-owned tradeoff needed by a reviewed slice retains its eligible options, adopted V and conditions; design preference is not development authorization.
@@ -64,17 +64,10 @@ Maximum consequence: technical design readiness for the saved subject; Permissio
 
 ## Readiness checks
 
-- Parent, route, scope, and repository evidence: <pass or findings>
-- Design profile and concern coverage: <pass or findings>
-- W brief, map, pointer precision, and single-source ownership: <pass or findings>
-- Architecture, responsibilities, dependencies, and integration: <pass or findings>
-- Domain entities, state, lifecycle, and invariants: <pass, not applicable, or findings>
-- Interfaces, callers, contracts, and test seams: <pass or findings>
-- Runtime, data, failure, and recovery flows: <pass or findings>
-- Technical decisions, V records, and open ownership: <pass or findings>
-- Human input contract and evidence-only boundary: <pass, not applicable, or findings>
-- Verification traceability, slices, blocking edges, and recovery: <pass or findings>
-- Cold-read implementability, decisive feasibility, and lifecycle boundaries: <pass or findings>
+- Assigned question and intended use: <supported conclusion or findings>
+- Reused evidence and affected technical agreements: <relevant pointers, assumptions and checks>
+- Selected delivery, applicable bindings and implementability: <supported conclusion or concrete remaining dependency>
+- Other required checks: <only those needed for this use, or omit>
 
 ## Findings
 

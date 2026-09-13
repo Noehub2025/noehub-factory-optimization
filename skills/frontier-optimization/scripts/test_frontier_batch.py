@@ -112,6 +112,36 @@ class BatchModuleTests(unittest.TestCase):
     def _candidate(self, commit: str | None = None) -> CandidateRevision:
         return CandidateRevision(commit or self.first_commit, ("src/candidate.txt",))
 
+    def test_named_read_facts_survive_caller_mutation_and_candidate_changes(self):
+        draft = Batch.open(self.repo, "B001", state_path=self.state_path).view
+        self.assertFalse(draft.defined)
+        self.assertIsNone(draft.latest_attempt)
+        batch = self._defined_batch()
+        candidate = self._candidate()
+        batch.apply(SelectCandidate(candidate, "Choose saved inputs."))
+        batch.apply(RecordCheck("ready", candidate, "passed"))
+        batch.apply(RecordCheck("failed-check", candidate, "failed"))
+        view = batch.view
+        self.assertTrue(view.defined)
+        self.assertEqual(view.scope, ("local work", "local measurement"))
+        self.assertEqual(view.candidate_revision, candidate)
+        self.assertEqual(view.reviews, (self._reference("R001", "records/R001.md"),))
+        self.assertEqual(view.passed_checks, ("ready",))
+        exported = view.export_record()
+        exported["current"]["status"] = "stopped"
+        view.data["current"]["candidate_revision"] = None
+        view.remaining_capacity["runs"] = 0
+        self.assertEqual(view.status, "open")
+        self.assertEqual(view.candidate_revision, candidate)
+        self.assertEqual(view.remaining_capacity["runs"], 2)
+        (self.repo / "src/candidate.txt").write_text("second\n")
+        self._git("add", "src/candidate.txt")
+        self._git("commit", "-qm", "second candidate")
+        batch.apply(SelectCandidate(self._candidate(self._git("rev-parse", "HEAD")), "Select changed bytes."))
+        self.assertEqual(batch.view.passed_checks, ())
+        self.assertEqual(view.passed_checks, ("ready",))
+        self.assertEqual(Batch.open(self.repo, "B001", state_path=self.state_path).view.passed_checks, ())
+
     def test_candidate_git_checks_are_batched_and_preserve_path_boundaries(self):
         paths = tuple(f"src/item {index}.txt" for index in range(28)) + ("src/line\nbreak.txt",)
         for path in paths:
@@ -122,7 +152,7 @@ class BatchModuleTests(unittest.TestCase):
         batch = self._defined_batch()
         for selected in (paths[:1], paths):
             with self.subTest(paths=len(selected)):
-                with patch("frontier_batch.subprocess.run", wraps=subprocess.run) as git:
+                with patch("saved_git.subprocess.run", wraps=subprocess.run) as git:
                     batch.apply(SelectCandidate(CandidateRevision(commit, selected), "Select inputs."))
                 self.assertEqual(git.call_count, 2)
                 self.assertIn("--batch-check=%(objectname)", git.call_args.args[0])
@@ -1829,7 +1859,9 @@ class BatchModuleTests(unittest.TestCase):
             )
         )
 
-        attempt = view.data["attempts"][0]
+        attempt = view.latest_attempt
+        self.assertEqual(view.remaining_capacity, {"candidate_calls": 1, "processes": 1})
+        self.assertEqual(batch_facts(view)["remaining_capacity"], view.remaining_capacity)
         self.assertEqual(view.data["consumption"], {"processes": 1})
         self.assertEqual(attempt["resource_bounds"]["candidate_calls"]["minimum"], 3)
         self.assertEqual(attempt["capacity_charge"], {"candidate_calls": 5})

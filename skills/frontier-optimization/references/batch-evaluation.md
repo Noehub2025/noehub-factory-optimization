@@ -16,7 +16,7 @@ Use or reference the existing basis for [Evidence sufficient for the decision](.
 
 Only when the Action or installed adapter declares `single_use_consumption`, also state `nonrepeatable_unit`, `resource_owner: workflow | user`, and `consumption_control`, and set `Action.repeatable: false`. Omit those fields when there is no real single-use unit; do not write `none`. Current writes use `nonrepeatable_unit`. Historical `non_repeatable_unit` remains readable, but two different alias values are invalid before the adapter starts.
 
-Equivalent existing definitions remain usable even when their field names predate this guide. Update meaning only when the intended measurement changes; do not create a migration or review merely to rename fields.
+Equivalent existing definitions remain usable even when their field names predate this guide. Instantiating a still-valid protocol or repairing its implementation follows [Measurement design and support](../../frame-optimization/references/measurement-work.md); only changed measurement meaning or a concrete challenge to its basis needs professional revision. Field renaming alone creates no migration or review.
 
 An Action cannot supply another definition. `Batch.perform` reads the current one, binds it to the selected Git Candidate Revision and passing checks, checks applicable R, V and resource limits, then creates the consuming Attempt before the adapter begins.
 

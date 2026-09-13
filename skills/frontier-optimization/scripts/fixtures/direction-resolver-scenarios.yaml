@@ -420,7 +420,7 @@ acceptance_scenarios:
   - {number: 39, name: Common-mode route assumption, target: {kind: resolver-fixture, id: shared-assumption-first}}
   - {number: 40, name: Route replacement and maturity, target: {kind: contract-assertion, path: references/learning-loop.md, marker: replacement boundary}}
   - {number: 41, name: Parent-owned result vector, target: {kind: contract-assertion, path: references/learning-loop.md, marker: complete parent-owned vector}}
-  - {number: 42, name: Mutable planning context, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'do not freeze the whole W or mutable work breakdown'}}
+  - {number: 42, name: Mutable planning context, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'A planning estimate and exact Batch operational cap do not become frozen review semantics.'}}
   - {number: 43, name: Dominated diagnostic repeat, target: {kind: resolver-fixture, id: dominated-diagnostic-repeat}}
   - {number: 44, name: Proportionate governance, target: {kind: contract-assertion, path: references/entry-review.md, marker: 'apply Assurance by consequence to the changed dependencies and affected conclusions'}}
   - {number: 45, name: Workflow identity exclusion, target: {kind: contract-assertion, path: references/learning-loop.md, marker: workflow source, semantic, validator, worker, deployment, or release change}}
@@ -435,7 +435,7 @@ acceptance_scenarios:
   - {number: 54, name: No continuous ideation tax, target: {kind: resolver-fixture, id: routine-unique-r8}}
   - {number: 55, name: No learning or evaluation signal, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'feedback'}}
   - {number: 56, name: Unresolved data adequacy, target: {kind: resolver-fixture, id: unresolved-prerequisite-first}}
-  - {number: 57, name: Supported small-data route, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'Every prerequisite of the proposed action'}}
+  - {number: 57, name: Supported small-data route, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'Identify the prerequisites the proposed action actually depends on and reuse sufficient current evidence.'}}
   - {number: 58, name: Failed prerequisite, target: {kind: contract-assertion, path: references/planning-records.md, marker: A failed prerequisite}}
 
 # Revision 2 verification inventory. The model inputs below are synthetic

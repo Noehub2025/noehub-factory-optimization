@@ -7,6 +7,7 @@ modules:
       - frontier-optimization/agents/openai.yaml
       - frontier-optimization/references/frontier-core.md
       - frontier-optimization/references/user-facing-handoff.md
+      - frontier-optimization/references/user-decisions.md
       - frontier-optimization/references/provenance-and-identity.md
       - frontier-optimization/references/provenance-rollout.yaml
       - frontier-optimization/references/source-modules.yaml
@@ -19,6 +20,7 @@ modules:
       - frontier-optimization/references/batch-current.md
       - frontier-optimization/scripts/frontier_batch.py
       - frontier-optimization/scripts/frontier_references.py
+      - frontier-optimization/scripts/saved_git.py
   validator-support:
     depends_on: [graph-core]
     files:
@@ -28,6 +30,7 @@ modules:
   direction:
     depends_on: [graph-core]
     files:
+      - frontier-optimization/scripts/fixtures/direction-resolver-scenarios.yaml
       - frontier-optimization/references/campaign-cycle.md
       - frontier-optimization/references/campaign-state.md
       - frontier-optimization/references/entry-and-planning.md
@@ -50,6 +53,9 @@ modules:
       - frontier-optimization/references/batch-evaluation.md
       - frontier-optimization/references/evaluation-protocol.md
       - frontier-optimization/references/worker-interfaces.md
+      - frontier-optimization/references/implementation-review.md
+      - frontier-optimization/references/technical-design.md
+      - frontier-optimization/references/work-plan.md
       - run-frontier-batch/SKILL.md
       - run-frontier-batch/agents/openai.yaml
       - run-frontier-batch/references/execution-example.md
@@ -119,6 +125,8 @@ modules:
       - frontier-optimization/scripts/test_direction_resolver_contract.py
       - frontier-optimization/scripts/test_finding_effects.py
       - frontier-optimization/scripts/test_frontier_batch.py
+      - frontier-optimization/scripts/test_frontier_references.py
+      - frontier-optimization/scripts/test_saved_git.py
       - frontier-optimization/scripts/test_run_workflow_checks.py
       - run-frontier-batch/scripts/test_batch_execution_example.py
       - frontier-optimization/scripts/test_validate_current_frontier_skill_bundle.py

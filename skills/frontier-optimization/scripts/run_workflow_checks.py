@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Iterable, Sequence
 
+import yaml
+
 
 WORKFLOW_ROOT = PurePosixPath(".agents/skills")
 FRONTIER_SCRIPTS = WORKFLOW_ROOT / "frontier-optimization/scripts"
@@ -48,15 +50,35 @@ RECOVERY_TESTS = (
     FRONTIER_SCRIPTS / "test_slice7_end_to_end.py",
 )
 DESIGN_TESTS = (FRONTIER_SCRIPTS / "test_slice7_end_to_end.py",)
-CURRENT_RELEASE_TESTS = (
-    FRAME_TEST,
-    BUNDLE_TEST,
-    SELECTOR_TEST,
-    *DIRECTION_TESTS,
-    *CURRENT_BATCH_TESTS,
-    EXECUTION_EXAMPLE_TEST,
-    *REFERENCE_TESTS,
+# The installed source inventory owns current/legacy membership. Selection is
+# pure after loading this deployment input, never campaign or project state.
+_SOURCE_MODULES = yaml.safe_load(
+    (Path(__file__).parents[1] / "references/source-modules.yaml").read_text()
+)["modules"]
+CURRENT_RELEASE_TESTS = tuple(
+    WORKFLOW_ROOT / path for path in _SOURCE_MODULES["release-validation"]["files"]
+    if PurePosixPath(path).name.startswith("test_") and path.endswith(".py")
 )
+LEGACY_TESTS = tuple(
+    WORKFLOW_ROOT / path for path in _SOURCE_MODULES["legacy-compatibility"]["files"]
+    if PurePosixPath(path).name.startswith("test_") and path.endswith(".py")
+)
+_SOURCE_OWNERS: dict[str, set[str]] = {}
+for _module, _body in _SOURCE_MODULES.items():
+    for _path in _body["files"]:
+        _SOURCE_OWNERS.setdefault((WORKFLOW_ROOT / _path).as_posix(), set()).add(_module)
+
+MODULE_TESTS = {
+    "direction": DIRECTION_TESTS,
+    "batch-runtime": (*CURRENT_BATCH_TESTS, EXECUTION_EXAMPLE_TEST, *REFERENCE_TESTS, FRONTIER_SCRIPTS / "test_saved_git.py"),
+    "execution": CURRENT_BATCH_TESTS,
+    "evidence": (*DIRECTION_TESTS, *CURRENT_BATCH_TESTS),
+    "claims": DIRECTION_TESTS,
+    "validator-runtime": (BUNDLE_TEST, SELECTOR_TEST),
+    "validator-support": (*PROVENANCE_TESTS, *ENTRY_TESTS, *LEGACY_BATCH_TESTS, *RECOVERY_TESTS),
+    "legacy-validation": (*ENTRY_TESTS, *LEGACY_BATCH_TESTS, *RECOVERY_TESTS),
+}
+
 FRAME_SKILLS = {
     "frame-optimization",
     "design-measurement",
@@ -68,53 +90,19 @@ FRAME_SKILLS = {
 DESIGN_SKILLS = {"design-implementation"}
 DIRECTION_SKILLS = {"research-frontier", "grill-frontier", "reflect-frontier"}
 
-DIRECTION_REFERENCES = {
-    "campaign-cycle.md",
-    "campaign-state.md",
-    "entry-and-planning.md",
-    "learning-loop.md",
-    "planning-records.md",
-}
-ENTRY_REFERENCES = {
-    "entry-code-planning.md",
-    "entry-review.md",
-}
-BATCH_REFERENCES = {
-    "batch-current.md",
-    "batch-evaluation.md",
-    "evaluation-protocol.md",
-    "implementation-review.md",
-    "technical-design.md",
-    "work-plan.md",
-    "worker-interfaces.md",
-}
-RECOVERY_REFERENCES = {
-    "closeout-and-claims.md",
-    "packaging-and-recovery.md",
-    "result-adoption.md",
-}
-LEGACY_REFERENCES = {
-    "batch-interface.md",
-    "batch-packet-format.md",
-    "batch-result.md",
-    "candidate-lifecycle.md",
-    "entry-review-legacy.md",
-    "review-snapshots.md",
-}
-CROSS_CUTTING_REFERENCES = {
-    "frontier-core.md",
-    "provenance-and-identity.md",
-    "provenance-rollout.yaml",
-    "source-modules.yaml",
-    "user-facing-handoff.md",
+# More focused checks where the document's action spans its inventory owner.
+REFERENCE_TESTS_BY_NAME = {
+    "entry-code-planning.md": (*DIRECTION_TESTS, *CURRENT_BATCH_TESTS),
+    "entry-review.md": (*DIRECTION_TESTS, *CURRENT_BATCH_TESTS),
 }
 
 SCRIPT_TESTS = {
-    "frontier_references.py": REFERENCE_TESTS,
+    "frontier_references.py": (*REFERENCE_TESTS, *CURRENT_BATCH_TESTS),
+    "saved_git.py": (*CURRENT_BATCH_TESTS, EXECUTION_EXAMPLE_TEST, *REFERENCE_TESTS, FRONTIER_SCRIPTS / "test_saved_git.py"),
     "authorization_target_contract.py": ENTRY_TESTS,
     "freeze_execution_baseline.py": ENTRY_TESTS,
     "frontier_batch.py": (*CURRENT_BATCH_TESTS, EXECUTION_EXAMPLE_TEST),
-    "identity_bindings.py": (*PROVENANCE_TESTS, *ENTRY_TESTS),
+    "identity_bindings.py": (*PROVENANCE_TESTS, *ENTRY_TESTS, *REFERENCE_TESTS),
     "package_frontier_handoff.py": (*PROVENANCE_TESTS, *RECOVERY_TESTS),
     "post_adoption_state.py": ENTRY_TESTS,
     "project_snapshot.py": (*PROVENANCE_TESTS, *ENTRY_TESTS),
@@ -173,14 +161,12 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
     changed = tuple(sorted({_as_posix(path) for path in paths if str(path).strip()}))
     workflow = tuple(path for path in changed if _is_workflow_path(path))
     if mode == "release":
+        affected = select_checks(changed, "affected")
+        tests = set(affected.tests) | {path.as_posix() for path in CURRENT_RELEASE_TESTS}
         return CheckPlan(
-            mode=mode,
-            changed_paths=changed,
-            workflow_paths=workflow,
-            tests=tuple(path.as_posix() for path in CURRENT_RELEASE_TESTS),
-            reasons=("release mode requires the current workflow contract suite",),
-            run_bundle_validator=True,
-            release=True,
+            mode, changed, workflow, tuple(sorted(tests)),
+            tuple(sorted({*affected.reasons, "release mode requires current tests plus affected compatibility tests"})),
+            True, True,
         )
 
     if not workflow:
@@ -232,6 +218,8 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
             )
             continue
         if skill != "frontier-optimization":
+            escalate = True
+            reasons.add(f"unclassified workflow Skill changed: {skill}")
             continue
 
         if len(parts) < 4:
@@ -239,24 +227,29 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
             reasons.add(f"unclassified Frontier path: {raw_path}")
             continue
 
+        if path.name == "SKILL.md" or parts[3] == "agents":
+            escalate = True
+            reasons.add("Frontier coordinator entrypoint changed")
+            continue
+
         area = parts[3]
         if area == "references":
-            if path.name in CROSS_CUTTING_REFERENCES:
+            focused = REFERENCE_TESTS_BY_NAME.get(path.name)
+            owners = _SOURCE_OWNERS.get(raw_path, set())
+            if focused:
+                _add_tests(selected, reasons, focused, f"action contract changed: {path.name}")
+            elif "graph-core" in owners or not owners:
                 escalate = True
-                reasons.add(f"cross-cutting workflow contract changed: {path.name}")
-            elif path.name in DIRECTION_REFERENCES:
-                _add_tests(selected, reasons, DIRECTION_TESTS, f"direction contract changed: {path.name}")
-            elif path.name in ENTRY_REFERENCES:
-                _add_tests(selected, reasons, (*DIRECTION_TESTS, *CURRENT_BATCH_TESTS), f"Entry contract changed: {path.name}")
-            elif path.name in BATCH_REFERENCES:
-                _add_tests(selected, reasons, CURRENT_BATCH_TESTS, f"execution contract changed: {path.name}")
-            elif path.name in RECOVERY_REFERENCES:
-                _add_tests(selected, reasons, (*DIRECTION_TESTS, *CURRENT_BATCH_TESTS), f"current recovery contract changed: {path.name}")
-            elif path.name in LEGACY_REFERENCES:
-                _add_tests(selected, reasons, (*ENTRY_TESTS, *LEGACY_BATCH_TESTS, *RECOVERY_TESTS), f"legacy compatibility contract changed: {path.name}")
+                reasons.add(f"shared or unclassified workflow contract changed: {path.name}")
+            else:
+                for owner in sorted(owners):
+                    _add_tests(selected, reasons, MODULE_TESTS.get(owner, CURRENT_RELEASE_TESTS), f"{owner} contract changed: {path.name}")
             continue
 
         if area == "scripts":
+            if parts[4:6] == ("fixtures", "slice7"):
+                _add_tests(selected, reasons, RECOVERY_TESTS, "legacy recovery fixture changed")
+                continue
             if len(parts) >= 5 and parts[4] == "frontier_review":
                 _add_tests(
                     selected,
@@ -274,22 +267,25 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
                         "review subject contract changed",
                     )
                     continue
-                _add_tests(
-                    selected,
-                    reasons,
-                    (*PROVENANCE_TESTS, *ENTRY_TESTS, *LEGACY_BATCH_TESTS, *RECOVERY_TESTS),
-                    "shared provenance module changed",
-                )
+                tests = (*PROVENANCE_TESTS, *ENTRY_TESTS, *LEGACY_BATCH_TESTS, *RECOVERY_TESTS)
+                if "validator-support" in _SOURCE_OWNERS.get(raw_path, set()):
+                    tests = (*tests, BUNDLE_TEST)
+                _add_tests(selected, reasons, tests, "shared provenance module changed")
                 continue
             mapped = SCRIPT_TESTS.get(path.name)
             if mapped:
                 _add_tests(selected, reasons, mapped, f"workflow script changed: {path.name}")
+            elif "legacy-validation" in _SOURCE_OWNERS.get(raw_path, set()):
+                _add_tests(selected, reasons, LEGACY_TESTS, f"legacy implementation changed: {path.name}")
             elif path.suffix == ".py":
                 escalate = True
                 reasons.add(f"unclassified workflow Python changed: {raw_path}")
+            else:
+                for owner in sorted(_SOURCE_OWNERS.get(raw_path, set())):
+                    _add_tests(selected, reasons, MODULE_TESTS.get(owner, CURRENT_RELEASE_TESTS), f"{owner} input changed: {path.name}")
 
     if escalate:
-        selected = {path.as_posix() for path in CURRENT_RELEASE_TESTS}
+        selected.update(path.as_posix() for path in CURRENT_RELEASE_TESTS)
         reasons.add("affected mode escalated to the current contract suite")
 
     return CheckPlan(

@@ -13,7 +13,7 @@
 - [Delivery slices](#delivery-slices)
 - [Review and revision](#review-and-revision)
 
-Load only when proving a direct profile; preparing, reviewing, or repairing a `module` or `system` design assignment; changing a shared interface, state owner, lifecycle, or schema; running an evidence-producing design batch; or responding to evidence that requires a contract-bearing design change. This reference is the single source for profile triggers and concern coverage. Do not load it merely to execute a `ready` design; follow W's `Read when` pointers to the required concern contracts. Load `work-plan.md` only when W is required and `design-review.md` only when freezing or reviewing a `module` or `system` design.
+Load when deciding whether an unresolved technical question needs professional design, assigning or revising that design, or reviewing its meaning. This reference owns design involvement, scope and concern coverage. To execute an adopted design, follow its relevant pointers instead. Load `work-plan.md` only when W is needed and `design-review.md` only for a required independent design judgment.
 
 Treat a legacy W as `repair-required` only when the next changed work relies on missing technical meaning. Preserve useful content and update the affected design. Permission is owned by V, not by W completeness.
 
@@ -32,46 +32,27 @@ frontier/work/W001/design/
 └── traceability.yaml
 ```
 
-Create only triggered concerns, plus Coordinator-generated `traceability.yaml` for every `module` or `system`. Every W pointer states path, section, trigger, `Read when` and readiness. Use [W saved references](work-plan.md#saved-design-references) for version binding. A file absent from the Design map is outside the design contract.
+Use W when implementation needs a shared map of design agreements and delivery obligations. A local professional answer may stay in its assigned existing work or design record. For W, create only concerns needed to state those agreements; maintain `traceability.yaml` when selecting stable delivery obligations through W. Every W pointer states path, section, applicability, `Read when` and readiness. Use [W saved references](work-plan.md#saved-design-references) for selected delivery scope. A file absent from the Design map is outside the W contract.
 
 ## Choose the profile
 
 ### Direct
 
-Use B without code-design W only when all are true:
-
-- one bounded and reversible behavior change stays within established seams; it may touch multiple files;
-- entities, state ownership, identity, invariants, lifecycle, shared or public interfaces, persisted schemas, dependency direction, migration, and contract-bearing failure behavior remain unchanged;
-- B identifies the next useful behavior or observation, relevant source base, working paths and constraints, including recovery needs that matter to its actual effects;
-- remaining executor choices impose no consequential architecture or interface obligations on another B or later technical route; and
-- no unresolved user-owned design tradeoff remains.
-
-Record the repository evidence and direct-profile reasoning. Apply the current Entry checks needed by the next actual Consequence. Development proceeds under an applicable existing V; ask the user only when [User decisions](user-decisions.md) identifies an uncovered boundary.
+Continue directly when established tools, interfaces and agreements settle the important technical choices for the proposed work. The implementation owner handles ordinary choices and affected checks within the assigned scope. Reuse sufficient source context; no separate proof of a direct profile is needed. Apply [User decisions](user-decisions.md) and Entry only for the next action's actual requirements.
 
 ### Module
 
-Use when one module or stable seam changes and callers need a revised contract. Create W plus `architecture`, `interfaces`, `flows`, and `verification`; add `domain` or `decisions` when triggered.
+Use to describe professional design focused on one module or stable seam. Update only the agreements and concerns the current problem needs; reuse existing content.
 
 ### System
 
-Use when work changes interaction across modules, state ownership or lifecycle, migration, external operations, or coordinated rollout and recovery. Create W and every applicable concern. Editing several files is not sufficient by itself.
+Use when unresolved interactions, ownership, migration or other consequential choices need a coordinated design across the promised realization. Full design is appropriate when that problem requires it; file count, an external operation or changed failure handling alone does not establish that need.
 
-Profile selection is complete only when a fresh reviewer can reproduce it from cited task and repository facts. Understating the profile is a design finding.
-
-Invoke `design-implementation` when any of these conditions holds:
-
-- a shared, public, or persisted interface or schema changes;
-- state ownership, identity, invariants, or lifecycle changes;
-- responsibility, ordering, failure propagation, or an integration seam changes across modules;
-- data, configuration, protocol, or deployment needs migration;
-- an architecture or algorithm choice constrains several later slices, materially changes a performance or reliability limit, or is costly to replace; or
-- the next work requires a consequential decision about entity meaning, interface behavior, state ownership, runtime transitions, failure propagation or acceptance meaning that existing agreements do not settle.
-
-Choose the profile from relevant task and repository facts. Unknown research benefit, ordinary internal responses, test methods and work segmentation do not by themselves trigger professional design or require exhaustive checks before development. The Coordinator does not routinely call the designer to confirm a direct case. A misrouted designer may return `DIRECT_ELIGIBLE` without writing.
+Decide professional involvement, documentation scope and independent review separately. Invoke `design-implementation` for an important technical question that existing agreements do not settle, such as shared behavior, state ownership, migration or a consequential architecture choice. Give it that question and existing grounds. Profile names describe scope; they do not impose a document bundle or review. Use [Assurance by consequence](batch-evaluation.md#assurance-by-consequence) for any remaining independent judgment. Unknown research benefit and ordinary implementation choices stay in development; a misrouted designer may return `DIRECT_ELIGIBLE` without writing.
 
 ## Assign the professional author
 
-For `module` or `system`, the Coordinator creates a W scaffold with the research problem, intended progress, actual scope and constraints, parents, source starting points, adopted user decisions and exclusive write sections. Keep tentative combinations, scale and methods in the professional Design brief or concerns, not binding Purpose or Scope. Apply [Evidence access](worker-interfaces.md#evidence-access). Invoke `design-implementation` in a fresh context with mode `new`, `revision`, or `repair`.
+Give `design-implementation` the research problem, unresolved technical question, relevant existing agreements and evidence, actual constraints and an exclusive write surface in existing work or design material. Create a W scaffold only when the work needs the map described above. Keep tentative combinations and methods in professional reasoning, not binding Purpose or Scope. Apply [Evidence access](worker-interfaces.md#evidence-access); use a fresh context with mode `new`, `revision`, or `repair`.
 
 Design defines the deliverable's behavior, necessary architecture, interfaces, state ownership, technical dependencies, and acceptance criteria. The executor owns ordinary work breakdown, internal order, temporary material, support operations, and local repair inside the authorized envelope. Refine choices through [Working assignments](worker-interfaces.md#working-assignments); an unchanged investment does not waive an affected design or measurement owner's decision.
 
@@ -85,7 +66,7 @@ Apply [Decision-bearing thresholds](frontier-core.md#decision-bearing-thresholds
 
 A method or sequence belongs in the relevant professional contract when it determines deliverable behavior, a necessary interface, evidence meaning, or an irreversible consequence. When a workflow, measurement facility, or publication system is itself the deliverable, design that system normally. Decide from the deliverable and consequences, not the task label or technology. Apply this distinction during ordinary authoring, without a classification record or additional gate.
 
-The designer writes only W's Design brief and triggered concern files. The Coordinator derives Design map rows, Delivery map rows and `traceability.yaml` from those pointers and stable slice keys, then prepares the saved reference for review. Preserve professional meaning and leave future B assignments, attempt namespaces, internal evidence destinations and runtime status with their execution owners.
+The designer writes the assigned professional answer or affected design content. When W carries delivery obligations, the Coordinator derives its maps and traceability from the professional pointers and stable slice keys. Prepare a review subject only when independent judgment is needed. Preserve professional meaning and leave B assignments, internal evidence destinations and runtime status with their execution owners.
 
 ### Early design feedback
 
@@ -144,15 +125,15 @@ For each unresolved user-owned choice:
 3. Adopt the answer in V, then invoke `design-implementation` to update the owning concern and W brief under a new revision when the answer changes contract-bearing meaning.
 4. Give local reversible executor choices explicit bounds instead of asking the user.
 
-Prepare design review only after every user choice needed by the planned slice resolves. After adopting `DESIGN_READY`, return to the work that required the design: continue [Entry planning](entry-and-planning.md) when a first B still needs it, or [same-B continuation](batch-current.md#boundary-preserving-continuation) for a design revision within an existing B. A design-only request may finish here; apply the [Coordinator's scope and completion rule](../SKILL.md#recover-and-choose-the-current-action). Reuse an applicable V and obtain only checks required by the next actual Consequence. `DESIGN_READY` neither grants Permission nor blocks work already permitted by its owner.
+Resolve user choices needed by the dependent work, then adopt the supported design and any required independent judgment. Return to [Entry planning](entry-and-planning.md) when the first B needs it, or [same-B continuation](batch-current.md#boundary-preserving-continuation) for existing work. A design-only request may finish here under the [Coordinator's completion rule](../SKILL.md#recover-and-choose-the-current-action). Reuse applicable V; independent work continues while another design dependency remains unresolved.
 
 ## Concern contracts
 
-`design-implementation` owns each triggered concern's professional content. Identify sections with stable headings. Inherit the W and saved version from [W saved references](work-plan.md#saved-design-references); concern files need no repeated design identity, revision, status or parent frontmatter. State a separately versioned input only where its version affects technical meaning.
+`design-implementation` owns the needed professional content. The concerns below are reference coverage for an actual design question, not a file or field checklist. Use only details that affect the promised use, retaining existing agreements. For W, inherit its saved version through [W saved references](work-plan.md#saved-design-references); concern files need no repeated design identity or parent frontmatter.
 
 ### Architecture
 
-Trigger for `module` or `system`.
+Use when module responsibilities, boundaries or integration need a new or revised agreement.
 
 State system context, current and proposed modules, responsibilities, boundaries, dependency direction, runtime or deployment topology when relevant, integration seam, protected components, alternatives, and rejected shapes.
 
@@ -170,7 +151,7 @@ Name callers and providers; inputs and outputs; schemas and examples; preconditi
 
 ### Flows
 
-Trigger for `module` or `system` or when sequencing, data movement, asynchronous work, or failure recovery matters.
+Use when sequencing, data movement, asynchronous work or failure recovery needs an agreement that affects the promised use.
 
 Describe end-to-end control and data flow; state owner at each step; concurrency; ordering; retries; timeouts; cancellation; failure propagation; recovery; observability; and security or privacy boundaries.
 
@@ -182,7 +163,7 @@ For each decision, record status, alternatives, technical eligibility, recommend
 
 ### Verification
 
-Trigger for every `module` or `system` design.
+Use when designed behavior needs explicit acceptance or stable delivery obligations. A local answer may reference the existing applicable checks instead.
 
 State how to distinguish the promised behavior or observation from an implementation defect. Cover the requirements and failure behavior material to this use, including applicable interface, integration, compatibility, performance, migration or evidence-integrity checks. Specify evidence meaning, producer and consumer responsibilities, and stable external-interface behavior where they affect interpretation. Internal test methods and unanticipated research outcomes remain implementation work, not an exhaustive design-time catalogue.
 
@@ -210,8 +191,8 @@ Use the current stable-slice traceability shape from Work Plan for new or materi
 
 Keep the current R and pending-review state in lifecycle fields. Technical obligations may specify required review checks but do not name their own future reviewer record. The consuming review stores its subject commit; W never backfills its own commit.
 
-A contract-bearing change needs a new W revision and fresh technical review. The executor preserves the discovery; the Coordinator scopes the revision; `design-implementation` updates professional meaning; the Coordinator updates mechanical bindings. Follow [Boundary-preserving continuation](batch-current.md#boundary-preserving-continuation) for same-B work. Do not require a new user answer solely because a delegated technical concern changed. Lifecycle evidence alone does not change Design. A change to parent legality, permitted operations, acceptance, measurement meaning, or promotion returns to its owning stage.
+A contract-bearing W change needs a scoped W revision. The executor preserves the discovery; the Coordinator scopes the affected work; `design-implementation` updates professional meaning; the Coordinator updates affected bindings. Select independent review under [Assurance by consequence](batch-evaluation.md#assurance-by-consequence), rather than from the revision alone. Follow [Boundary-preserving continuation](batch-current.md#boundary-preserving-continuation); changed technical meaning does not itself require another user answer. Lifecycle evidence alone does not change Design. A changed parent requirement returns to its owning stage.
 
 Apply assignment ownership prospectively. Preserve historical verdicts and explicit constraints. Repair conflicting obligations in the next necessary scoped revision and reuse unaffected evidence and review conclusions. A corrected reference or guidance change creates no new design revision by itself.
 
-Design planning is complete when the designer has returned `DRAFT_READY`, the maps and traceability cover every triggered concern and selected obligation without semantic drift, needed user choices resolve, and the saved Git subject is ready for `design-review.md`. Only `review-frontier` may return `DESIGN_READY`.
+Design authoring is complete when the assigned question has a supported, implementable answer or a specific unresolved dependency. Adopt it in the existing work; where W is used, update its affected content and required delivery bindings. Proceed when the next use is sufficiently supported, obtaining an independent judgment only when required. Only `review-frontier` issues `DESIGN_READY`; adoption without a new review creates no substitute verdict or review record.

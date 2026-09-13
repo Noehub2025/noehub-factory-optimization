@@ -1317,6 +1317,7 @@ class EntryPacketSchemaTests(unittest.TestCase):
             "scripts/frontier_review_cli.py",
             "scripts/frontier_batch.py",
             "scripts/run_workflow_checks.py",
+            "scripts/saved_git.py",
         }
 
         self.assertEqual(

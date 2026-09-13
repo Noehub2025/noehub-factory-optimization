@@ -20,6 +20,48 @@ SPEC.loader.exec_module(MODULE)
 
 
 class WorkflowCheckSelectionTests(unittest.TestCase):
+    def test_expansion_and_release_preserve_affected_compatibility_tests(self) -> None:
+        preparation = ".agents/skills/frontier-optimization/scripts/frontier_review/preparation.py"
+        core = ".agents/skills/frontier-optimization/references/frontier-core.md"
+        affected = set(MODULE.select_checks((preparation,), "affected").tests)
+        for paths in ((preparation, core), (core, preparation)):
+            for mode in ("affected", "release"):
+                with self.subTest(paths=paths, mode=mode):
+                    plan = MODULE.select_checks(paths, mode)
+                    self.assertLessEqual(affected, set(plan.tests))
+                    self.assertLessEqual(
+                        {test.as_posix() for test in MODULE.CURRENT_RELEASE_TESTS}, set(plan.tests),
+                    )
+        current_release = MODULE.select_checks((core,), "release")
+        self.assertFalse(affected & set(current_release.tests))
+
+    def test_reference_ownership_and_unknown_contracts_never_silently_skip(self) -> None:
+        for name in ("user-decisions.md", "new-current-contract.md"):
+            plan = MODULE.select_checks(
+                (f".agents/skills/frontier-optimization/references/{name}",), "affected",
+            )
+            self.assertTrue(plan.tests)
+            self.assertTrue(plan.run_bundle_validator)
+
+    def test_shared_git_change_selects_all_current_consumers_without_legacy(self) -> None:
+        plan = MODULE.select_checks(
+            (".agents/skills/frontier-optimization/scripts/saved_git.py",), "affected",
+        )
+        self.assertLessEqual(
+            {"test_frontier_batch.py", "test_frontier_references.py", "test_saved_git.py", "test_batch_execution_example.py"},
+            {Path(test).name for test in plan.tests},
+        )
+        self.assertNotIn("test_frontier_provenance.py", {Path(test).name for test in plan.tests})
+
+    def test_fixture_changes_select_their_current_or_legacy_consumers(self) -> None:
+        fixtures = ".agents/skills/frontier-optimization/scripts/fixtures/"
+        for relative, expected in (
+            ("direction-resolver-scenarios.yaml", MODULE.DIRECTION_TESTS),
+            ("slice7/scenarios.yaml", MODULE.RECOVERY_TESTS),
+        ):
+            plan = MODULE.select_checks((fixtures + relative,), "affected")
+            self.assertEqual(set(plan.tests), {test.as_posix() for test in expected})
+
     def test_project_changes_do_not_select_workflow_regression(self) -> None:
         plan = MODULE.select_checks(
             ("src/example.py", "tests/test_example.py", "docs/campaign/log.md"),

@@ -1010,12 +1010,12 @@ class Slice7ContractTests(unittest.TestCase):
             with self.subTest(reference=relative, fragment=fragment):
                 self.assertIn(fragment, text)
 
-    def test_single_route_and_noncode_w_exceptions(self) -> None:
+    def test_single_route_and_optional_w_profile(self) -> None:
         self.assert_contract_contains(
             "entry-and-planning.md",
             "Create no fake alternative T",
             "request no campaign-baseline tradeoff V",
-            "A complex non-code W uses one reasoned `not applicable` Design-map row",
+            "decide professional involvement and whether W is needed",
         )
 
     def test_progressive_design_and_candidate_measurement_boundary(self) -> None:
@@ -1031,9 +1031,9 @@ class Slice7ContractTests(unittest.TestCase):
             SCRIPT_ROOT.parents[1] / "design-implementation/SKILL.md"
         ).read_text()
         for fragment in (
-            "may touch multiple files and remain `direct`",
-            "Write only the assigned W `Design brief` and triggered concern files",
-            "The Coordinator owns Design map rows, Delivery map rows, `traceability.yaml`",
+            "Return `DIRECT_ELIGIBLE` without writing when established agreements already settle the important choices",
+            "Write the assigned answer or affected existing design content",
+            "When W is used, the Coordinator owns maps, traceability, lifecycle fields",
             "creates no B, proposal identity, reservation, or spend",
             "RESULT: DRAFT_READY | DIRECT_ELIGIBLE",
         ):
@@ -1041,10 +1041,10 @@ class Slice7ContractTests(unittest.TestCase):
 
         self.assert_contract_contains(
             "technical-design.md",
-            "it may touch multiple files",
-            "does not routinely call the designer to confirm a direct case",
-            "The designer writes only W's Design brief and triggered concern files",
-            "The Coordinator derives Design map rows, Delivery map rows and `traceability.yaml`",
+            "Continue directly when established tools, interfaces and agreements settle the important technical choices",
+            "A local professional answer may stay in its assigned existing work or design record",
+            "`design-implementation` owns the professional Design brief and design contracts",
+            "The Coordinator owns W lifecycle and the derived Design map, Delivery map and traceability",
         )
         self.assert_contract_contains(
             "worker-interfaces.md",
@@ -1132,7 +1132,7 @@ class Slice7ContractTests(unittest.TestCase):
         self.assertIn("references/user-facing-handoff.md", coordinator)
         self.assertIn("Select one stage using the core router", coordinator)
         self.assertIn(
-            "use the three questions in [Active learning chain]",
+            "use [Active learning chain]",
             coordinator,
         )
         self.assertIn("A worker return or Batch outcome does not by itself end the research problem", coordinator)

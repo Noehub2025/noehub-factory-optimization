@@ -19,13 +19,13 @@ The technical owner chooses layout, tools and local commands. An absent structur
 
 Load [Technical design](technical-design.md#choose-the-profile) for the profile criteria. Use `direct` for bounded, reversible work through established agreements; ordinary internal choices do not require a complete specification first. Touching several files alone does not make work architectural.
 
-Use `module` or `system` only when a professional design trigger is present. The Coordinator creates the W scaffold and `design-implementation` authors the relevant technical concerns. Design authoring is planning and creates no B Attempt, proposal identity or spend by itself.
+For a remaining important technical question, assign `design-implementation` the affected scope under Technical design. W and concern files are used only when that work needs them. Design authoring creates no B Attempt, proposal identity or spend by itself.
 
 This step is complete when the next useful work has an applicable target and constraints, and any consequential technical choice it depends on has reached its existing owner. Research questions and ordinary implementation details may remain open under [Working assignments](worker-interfaces.md#working-assignments); only work dependent on an unresolved important agreement waits.
 
 ## Separate technical readiness from Permission
 
-`DESIGN_READY` establishes design readiness for `module` or `system`; `direct` records its supporting repository facts without a design review. Apply [User decisions](user-decisions.md) separately. Work inside an existing V proceeds without another question. A changed technical contract needs the affected design review, not a new user answer unless it crosses the adopted user boundary.
+Adopt supported professional answers under [Review and revision](technical-design.md#review-and-revision). Independent design review is selected for the remaining judgment, not automatically by profile or revision. Apply [User decisions](user-decisions.md) separately; an existing V covers work within its boundaries.
 
 Entry checks only the decision needed by the next actual Consequence. Same-B implementation revisions, local repair, harmless checks and working observations use [Boundary-preserving continuation](batch-current.md#boundary-preserving-continuation) rather than another Entry.
 

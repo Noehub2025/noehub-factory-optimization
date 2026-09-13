@@ -2,13 +2,13 @@
 
 Read only for new or changed measurement meaning, or newly created or repaired measurement support. Use [measurement-design.md](measurement-design.md) for professional design. Execution under an unchanged protocol does not load this route.
 
-A one-off, low-cost observation inside an adopted Slot H `diagnostic-only` category stays in the current Batch. Its Measurement Definition may define local inputs, initialization, update events, observation window and within-window calculation. It does not change reusable target linkage, cross-instance inference, comparison meaning or an investment ceiling, so it creates no measurement-design task or readiness review.
+A bounded observation inside an adopted Slot H `diagnostic-only` category uses its applicable Batch scope and resources. Its Measurement Definition may instantiate inputs, initialization, update events, observation window and within-window calculation within that category. When reusable target linkage, cross-instance inference, comparison meaning and investment limits remain unchanged, this creates no measurement-design task or readiness review. Local or remote location does not decide that distinction.
 
 Apply [Evidence sufficient for the decision](measurement-design.md#evidence-sufficient-for-the-decision) to that actual use. Merely informing the next action does not trigger the Designer. A new reusable interpretation, a proposed use beyond the adopted ceiling, or concrete evidence that the current fitness judgment is unsound returns only the affected question to the design route below. Ordinary queries and parser repairs remain implementation work; naming a new investment rule inside a Batch or Replan does not make it an implementation detail.
 
 ## Shared measurement-design route
 
-Use this route only for a new reusable protocol; a material change to the target, elementary outcome, cross-instance aggregation, lifecycle meaning, required interpretation context, source-supported target relationship, comparison meaning or evidence ceiling; a current fitness challenge; or a `measurement-design` readiness finding. Do not invoke it for a one-off local calculation inside an adopted diagnostic category, harness implementation, execution under unchanged meaning, routine result recording, editorial change, or a new candidate under a still-valid protocol.
+Use this route only for a new reusable protocol; a material change to the target, elementary outcome, cross-instance aggregation, interpretation-relevant lifecycle, source-supported target relationship, comparison meaning or evidence ceiling; a current fitness challenge; or a `measurement-design` readiness finding. Operational input lookup, access preparation, harness repair, execution under unchanged meaning, routine recording and a new candidate under a still-valid protocol remain with their current owners. Changed operational steps need design revision only when they change measurement meaning or expose a concrete flaw in its basis.
 
 Create or select the exact Slot H detail and its permitted nonnormative sections. Use `new` only when no current protocol exists, `revision` for any material change to an existing protocol, and `repair` for current findings. Give `design-measurement` the fixed real objective, intended consequence, resources, operating conditions, allowed evidence paths, selected mode, and the complete finding set for repair.
 
@@ -16,7 +16,7 @@ Dispatch a fresh agent for every design. For revision, first create an empty `In
 
 For a valid `DESIGN_READY`, adopt the [Contract projection](measurement-design.md#contract-projection) as one complete affected professional change, including dependent edits and removal of superseded current clauses. Reuse unchanged parent content by reference. The coordinator retains search decisions within the adopted evidence ceiling and applies existing invalidation and comparability rules only to affected meanings and uses.
 
-This route creates no separate review. Request the existing readiness review once after the complete repair set and adopted contract change are ready. It is complete when one design is adopted, one exact design blocker remains, or one user-owned value, risk, resource, or authority input is required.
+This route creates no separate review. Apply [Assurance by consequence](../../frontier-optimization/references/batch-evaluation.md#assurance-by-consequence) and the existing parent readiness rules only to affected judgments; reuse unchanged conclusions. Request an independent review only for a remaining required judgment after the affected change is ready. The route is complete when the supported change is adopted or its exact unresolved dependency is identified; continue work that does not depend on it.
 
 ## Shared measurement-support gate
 
