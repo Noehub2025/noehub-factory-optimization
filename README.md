@@ -100,6 +100,7 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 - Budget owns governing campaign-wide capacity, reservations, actual and unknown governed consumption, and remaining balance. Batch operational limits are separate: the coordinator may revise them within the same independently judged result and existing boundaries, but cannot turn protected reserve into routine capacity or expand the campaign ceiling.
 - A working assignment supplies the current research problem, enough context and ownership to begin useful work, and source references as starting points rather than a read whitelist. Open direction research may combine different professional perspectives around the same problem instead of dividing a preset route menu; workers report concrete assumption failures, expanding dependencies, and promising alternatives that may change investment.
 - The coordinator orders early research, prerequisites, implementation, feedback, and long-task recovery around the current research commitment and the missing observation. An ordinary step may be necessary without independently improving the metric or changing direction. Internal process, audit, authorization, or identity machinery that blocks feasible authorized work is a workflow defect: the responsible owner corrects it and work resumes, while real limits and effects already incurred remain binding.
+- Long repair chains retain a named reassessment point and the next meaningful observation across worker, owner, and Batch changes. Before expanding discretionary repair, the coordinator checks whether cumulative findings and remaining work still support the investment; same-B continuity and sunk effort do not answer that question.
 - Each Batch owns one Measurement Definition. It records the question, comparator, scope, resource ceiling, lifecycle state, required context, evidence limits, result owner, and why the planned observation is sufficient for its intended decision. Measurement mode controls evidence use, not repeatability, Review, Permission, or resource ownership. Single-use fields are present only when the Action or adapter can consume a real single-use unit.
 - Attempts exist only when a measurement or possible Consequence makes repetition important. An unresolved Attempt blocks another consequential performance in the same Batch, while routine work and other Batches continue. For genuine single-use work, the actual unit remains protected across Action-key changes until the Attempt is reconciled.
 - Operation bindings protect the real seam involved—such as a paid call, external submission, sensitive access, irreversible change, remote job, or single-use sample—without activating unrelated controls.
@@ -187,17 +188,17 @@ The loop pauses only work affected by an exhausted limit, missing permission, an
 
 ## Shared agent instructions
 
-This repository includes a task-neutral [`AGENTS.md`](./AGENTS.md) for outcome-oriented optimization behavior. The detailed workflow remains in the Skills. Codex reads `AGENTS.md` directly; Claude Code uses the checked-in [`CLAUDE.md`](./CLAUDE.md) adapter, which imports `AGENTS.md` instead of duplicating it.
+This repository includes a task-neutral [`AGENTS.md`](./AGENTS.md) for outcome-oriented optimization behavior. The detailed workflow remains in the Skills. Codex reads `AGENTS.md` directly. Claude Code 2.1.277 or later can also read `AGENTS.md` directly when no project `CLAUDE.md` or `CLAUDE.local.md` takes precedence; the checked-in [`CLAUDE.md`](./CLAUDE.md) imports `AGENTS.md` to support mixed-file repositories, older versions, and sessions where direct support is unavailable.
 
 When adding the workflow to another repository:
 
-- if no agent instruction file exists, copy `AGENTS.md` and add a `CLAUDE.md` containing `@AGENTS.md` for Claude Code;
+- if no agent instruction file exists, copy `AGENTS.md`; modern Claude Code can use it directly, while a `CLAUDE.md` containing `@AGENTS.md` provides the broadest compatibility;
 - if `AGENTS.md` already exists, merge the `Frontier-seeking workflow behavior` and `User-facing workflow returns` sections once each and preserve all repository-specific rules;
 - if `CLAUDE.md` already exists, add `@AGENTS.md` once without replacing its Claude Code-specific content; for `.claude/CLAUDE.md`, use `@../AGENTS.md` instead;
 - inspect nested instruction files and `AGENTS.override.md` before choosing where the shared rules should apply; and
 - resolve conflicts explicitly. Shared optimization behavior never broadens existing authority or weakens task-specific safety, resource, evidence, or validation rules.
 
-Claude Code plugins provide Skills but do not load a plugin-root `CLAUDE.md` as project context, so deploy or merge the instruction files separately. See [Deploying shared agent instructions](./docs/agent-instructions.md) for the complete new-repository, existing-file, nested-instruction, and verification procedure.
+Claude Code plugins provide Skills but do not load a plugin-root project instruction file for the consuming repository, so deploy or merge the instruction files separately. See [Deploying shared agent instructions](./docs/agent-instructions.md) for direct `AGENTS.md` support, compatibility adapters, existing-file handling, nested instructions, and verification.
 
 ## Install
 

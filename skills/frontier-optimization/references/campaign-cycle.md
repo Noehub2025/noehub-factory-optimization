@@ -52,7 +52,7 @@ For W-backed work, resolve the exact W path, current `plan_revision`, applicable
 
 For human input, recover the request, schema, provenance requirements, quality checks, confidentiality limits, response identity, validation state, and resume event. Do not infer a missing answer or validation from conversation history.
 
-Resume at the first missing applicable step for the current action: working continuation and affected checks; an applicable Review; `Batch.perform` for a measurement or Consequence; result reconciliation; B conclusion; E adoption when valid; applicable research or V; replan review; join; and next-investment Selection. Skip stages that do not apply. Never repeat an Attempt whose result or Consequence is unknown merely because the live workspace is missing.
+Before resuming a recorded next action, recover the research question, missing observation and changed remaining work through [Active learning chain](learning-loop.md#active-learning-chain). Historical repair ordering does not override a current material investment challenge. When the retained rationale still applies, resume at the first missing applicable step: working continuation and affected checks; an applicable Review; `Batch.perform` for a measurement or Consequence; result reconciliation; B conclusion; E adoption when valid; applicable research or V; replan review; join; and next-investment Selection. Skip stages that do not apply. Never repeat an Attempt whose result or Consequence is unknown merely because the live workspace is missing.
 
 ## Current readiness and consequence gate
 

@@ -5,17 +5,18 @@ This repository keeps task-neutral optimization behavior in `AGENTS.md`. The thi
 ## How the files are loaded
 
 - Codex discovers `AGENTS.md` from the repository root toward the current working directory. A closer `AGENTS.md` or `AGENTS.override.md` can add or override instructions for a narrower subtree. See the [official OpenAI documentation](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
-- Claude Code reads `CLAUDE.md`, not `AGENTS.md`. Its supported compatibility pattern is a small `CLAUDE.md` that imports `AGENTS.md` with `@AGENTS.md`. See the [Claude Code project-instructions documentation](https://code.claude.com/docs/en/memory#agents-md).
+- Claude Code 2.1.277 or later reads `AGENTS.md` directly when no project `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` exists in the working path. When either instruction family is present, its Project instructions setting controls whether Claude loads one or both. See the [Claude Code project-instructions documentation](https://code.claude.com/docs/en/memory#agents-md).
+- A small `CLAUDE.md` that imports `AGENTS.md` with `@AGENTS.md` remains the portable compatibility pattern when the repository also needs Claude-specific instructions, supports older Claude Code versions, or runs sessions where direct `AGENTS.md` support is unavailable, including some third-party-provider or telemetry-disabled environments.
 - An installed Claude Code plugin does not load a plugin-root `CLAUDE.md` as project context. The plugin supplies the Skills; the consuming repository must add or merge its own project instructions. See the [Claude Code plugin reference](https://code.claude.com/docs/en/plugins-reference#plugin-directory-structure).
 
 The checked-in `CLAUDE.md` in this repository is a regular file rather than a symbolic link. This keeps the adapter portable to Windows and leaves room for Claude Code-specific additions.
 
-Current Claude Code also offers two conversion helpers. With `CLAUDE_CODE_NEW_INIT=1`, `/init` can inspect an existing `AGENTS.md` while proposing `CLAUDE.md`; `/import` can append a one-time copy of another coding agent's configuration in Claude Code 2.1.213 or later. Prefer the checked-in `@AGENTS.md` import when the shared instructions should stay synchronized. Use `/import` only when a one-time conversion is intentional, then remove duplicated rules before committing.
+Claude Code also offers two conversion helpers. With `CLAUDE_CODE_NEW_INIT=1`, `/init` can inspect an existing `AGENTS.md` while proposing `CLAUDE.md`; `/import` can append a one-time copy of another coding agent's configuration in Claude Code 2.1.213 or later. Prefer direct `AGENTS.md` loading or a checked-in `@AGENTS.md` import when the shared instructions should stay synchronized. Use `/import` only when a one-time conversion is intentional, then remove duplicated rules before committing.
 
 ## New repository
 
 1. Copy `AGENTS.md` to the repository root.
-2. If the repository uses Claude Code, create a root `CLAUDE.md` containing:
+2. Claude Code 2.1.277 or later can use the root `AGENTS.md` directly when the repository has no project `CLAUDE.md` or `CLAUDE.local.md`. For the broadest compatibility, or when Claude-specific instructions are also needed, create a root `CLAUDE.md` containing:
 
    ```markdown
    @AGENTS.md
@@ -23,7 +24,7 @@ Current Claude Code also offers two conversion helpers. With `CLAUDE_CODE_NEW_IN
 
 3. Put any Claude Code-specific instructions below the import.
 4. Keep personal project preferences in `CLAUDE.local.md` and exclude that file from version control.
-5. Start a new Claude Code session and use `/context` to confirm that `CLAUDE.md` and its imported `AGENTS.md` are loaded.
+5. Start a new Claude Code session. For direct loading, confirm the session reports `AGENTS.md loaded` or ask Claude to summarize its project instructions; directly loaded `AGENTS.md` does not appear in `/context`. For the import adapter, use `/context` to confirm that `CLAUDE.md` and its imported `AGENTS.md` are loaded.
 
 ## Repository that already has AGENTS.md
 
@@ -33,6 +34,8 @@ Do not replace the existing file.
 2. Merge the `## Frontier-seeking workflow behavior` and `## User-facing workflow returns` sections from this repository exactly once each at the root or at the narrowest directory where they should apply.
 3. Treat existing task-specific authority, safety, resource, evidence, and validation rules as controlling. The shared section guides route selection inside those boundaries; it never broadens permission or removes a hard limit.
 4. Resolve contradictory instructions explicitly instead of relying on file order. Codex gives closer files greater precedence, but a clear, non-conflicting rule is safer for every agent.
+
+If the repository has no project `CLAUDE.md` or `CLAUDE.local.md`, current Claude Code can read the merged `AGENTS.md` directly. Add the import adapter when older or unsupported Claude environments must work, or when the repository later adds Claude-specific project instructions.
 
 ## Repository that already has CLAUDE.md
 
@@ -47,14 +50,16 @@ If `CLAUDE.md` is a symbolic link or is generated by another tool, update its so
 
 If the repository uses `.claude/CLAUDE.md`, add `@../AGENTS.md` there instead of creating a second root adapter. Claude resolves an import relative to the file containing it, not the current working directory. Check existing imports first to avoid loading the same shared instructions through multiple paths.
 
+Claude Code can alternatively load both instruction families through its user or managed Project instructions setting, `claude-md-and-agents-md`. Do not depend on a user-local setting for a repository-wide deployment; the checked-in import makes the relationship visible and portable.
+
 ## Nested instructions and overrides
 
 Inspect instruction files along the intended working path before merging. At each directory, Codex prefers `AGENTS.override.md` over `AGENTS.md`, so adding shared rules only to an ignored file will not activate them. Preserve the override's purpose and merge the relevant shared guidance into the active instruction source when appropriate.
 
-Claude loads ancestor `CLAUDE.md` files at startup and nested ones when it reads files in those directories. A root `@AGENTS.md` import does not automatically import every nested `AGENTS.md`. If a subtree needs shared cross-agent rules, import that subtree's instruction file from its existing local `CLAUDE.md` using the correct relative path. Keep narrower rules local and resolve conflicts without duplicating the root guidance.
+Claude loads ancestor `CLAUDE.md` files at startup and nested ones when it reads files in those directories. With direct AGENTS support, it can also discover nested `AGENTS.md` when no project CLAUDE file takes precedence. A root `@AGENTS.md` import does not automatically import every nested `AGENTS.md`. If a subtree needs shared cross-agent rules in an adapter-based deployment, import that subtree's instruction file from its existing local `CLAUDE.md` using the correct relative path. Keep narrower rules local and resolve conflicts without duplicating the root guidance. Claude does not treat `AGENTS.override.md` as a direct AGENTS instruction file, although Codex does, so document or bridge that difference explicitly where it matters.
 
 ## Repository that already has both files
 
 Merge both shared sections into `AGENTS.md`, then confirm that `CLAUDE.md` imports `AGENTS.md` once. Keep environment-specific additions in `CLAUDE.md`; keep cross-agent behavior in `AGENTS.md`.
 
-After installation, start a new agent session and verify the loaded instruction sources. Codex rebuilds its instruction chain at session start. In Claude Code, run `/context` and confirm that the project `CLAUDE.md` and imported `AGENTS.md` are present.
+After installation, start a new agent session and verify the loaded instruction sources. Codex rebuilds its instruction chain at session start. In Claude Code, use the startup `AGENTS.md loaded` report or ask Claude to summarize direct project instructions; for adapter-based deployments, run `/context` and confirm that the project `CLAUDE.md` and imported `AGENTS.md` are present.

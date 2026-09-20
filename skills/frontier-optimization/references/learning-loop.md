@@ -37,14 +37,16 @@ Use the same questions when recovering a long task or considering a route change
 | Observed situation | Next work |
 |---|---|
 | A prerequisite completed as expected and the investment rationale holds | Continue the next necessary work. |
-| A local input is missing or support implementation failed, without refuting the research premise | Repair or obtain the affected part through its existing owner, retaining the research question. |
+| A local input is missing or support implementation failed, and the investment rationale still applies to the remaining work | Repair or obtain the affected part through its existing owner, retaining the research question. |
 | Observed facts satisfy a conditional branch of the selected plan | Apply that branch directly within its actual scope and limits. |
 | Technical findings, remaining work, timing or a new opportunity materially change the investment question | Use [When to reconsider investment](#when-to-reconsider-investment). |
 | An uncovered user-owned decision or permission prevents an action | Ask only for that gap under [User decisions](user-decisions.md); continue unaffected work. |
 
 Distinguish execution status, observations, inferences and recommendations. Arrange follow-up from the actual cause, effects already incurred and remaining work. Batch completion or failure does not establish route completion or failure. Verify a fallback's factual condition before applying it: a single failed action establishes only its supported scope. An action that cannot be repeated may leave other ways to obtain the observation; preserve the actual consumption and repetition limits. A missing observation does not justify unlimited repair; expanding costs or dependencies may reopen investment before B ends.
 
-Update only changed progress and selected B references under [Selection](campaign-state.md#selection), retaining applicable rationale. Ordinary continuation creates no direction input, resolution or placeholder row. Keep development progress in its working plan and maintain the Brief under [Campaign state](campaign-state.md#frontiermd-and-f1-f8).
+An observed material challenge takes precedence over the local-repair row. A `same B`, unchanged objective, or repair label does not discharge it. Reuse an applicable existing decision when its evidence settles the challenge; otherwise resolve the affected investment before further dependent discretionary work. An unlisted small dependency alone does not trigger a resolver. Adopt the result and select the next work in the same Coordinator turn, without a separate routine assessment role.
+
+Update only changed progress and selected B references under [Selection](campaign-state.md#selection), retaining applicable rationale. Carry the missing observation, current remaining path and consequential changes across B records, owner changes and recovery in the existing working plan or rationale; do not reset them at a new assignment. Past support work informs the remaining estimate, not a reason to continue because it has already been spent. Ordinary continuation creates no direction input, resolution or placeholder row. Keep development progress in its working plan and maintain the Brief under [Campaign state](campaign-state.md#frontiermd-and-f1-f8).
 
 ## Research Reflection
 
