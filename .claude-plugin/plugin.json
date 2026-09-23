@@ -1,6 +1,6 @@
 {
   "name": "noehub-factory-optimization",
-  "version": "0.35.0",
+  "version": "0.36.0",
   "description": "Task-agnostic Recursive Self-Improvement research with active learning, bounded repair, and Git-backed evidence.",
   "author": {
     "name": "Ken Chen"
