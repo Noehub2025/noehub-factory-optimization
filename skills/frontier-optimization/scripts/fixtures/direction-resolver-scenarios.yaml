@@ -427,11 +427,11 @@ acceptance_scenarios:
   - {number: 46, name: Fabricated progress rule, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'Do not invent a number merely to complete the template'}}
   - {number: 47, name: Evidence-derived route before Q completion, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: provisional}}
   - {number: 48, name: Established route wins, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'not novelty or maturity alone'}}
-  - {number: 49, name: New route rejected cheaply, target: {kind: contract-assertion, path: references/planning-records.md, marker: earliest affordable discriminating check}}
+  - {number: 49, name: Untested route needs a useful observation, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'A complete causal pathway, established bottleneck or competing explanation is not required for route eligibility.'}}
   - {number: 50, name: New route survives the first probe, target: {kind: contract-assertion, path: references/candidate-lifecycle.md, marker: 'Formal Slot H measurement'}}
   - {number: 51, name: Decision-complete without exhaustive search, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'decision completeness'}}
   - {number: 52, name: Literature dump is not route diversity, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'mechanism classes'}}
-  - {number: 53, name: Superficial analogy, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'Surface resemblance is insufficient'}}
+  - {number: 53, name: Analogy remains a hypothesis, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'Analogy can motivate a trial but does not establish equivalent behavior or benefit.'}}
   - {number: 54, name: No continuous ideation tax, target: {kind: resolver-fixture, id: routine-unique-r8}}
   - {number: 55, name: No learning or evaluation signal, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'feedback'}}
   - {number: 56, name: Unresolved data adequacy, target: {kind: resolver-fixture, id: unresolved-prerequisite-first}}

@@ -20,10 +20,10 @@ Create T for each technically eligible campaign-baseline candidate. Later direct
 
 - Recorded at: <ISO-8601 datetime>
 - Campaign-baseline role: <candidate | not applicable>
-- Produced by: <established approach, Q, repository evidence, E, D, failure finding, functional transfer or recombination, migration or reorganization, new mechanism reasoning, or a combination; sources are peers>
+- Produced by: <established approach, Q, repository evidence, E, D, failure finding, experience, intuition, analogy, automated search, functional transfer or recombination, migration or reorganization, new mechanism reasoning, or a combination; retain source and uncertainty>
 - Starting records: <decision-relevant observations, constraints, source mechanisms, and identifiers>
 - Reviewed scope: <forms, operations, or modules>
-- Improvement mechanism: <proposed limiting or enabling mechanism, permitted change, and expected causal path to the parent objective>
+- Improvement mechanism: <intended change and conjectured objective effect; distinguish known behavior from unknown internal causes>
 - Why it can carry optimization: <expected behavior, usable optimization surfaces, feedback path, and known headroom or limits>
 - Iteration shape: <one-shot | repeated comparable evidence expected | repeated evidence not comparable, with reason>
 - Prospective progress rule: <expectation envelope, meaningful threshold, mechanism checkpoint, reachability condition, or not applicable with reason>
@@ -35,13 +35,13 @@ Create T for each technically eligible campaign-baseline candidate. Later direct
 - Next checkpoint: <earliest affordable bounded output or discriminating test>
 - First performance check: <comparison and permitted feedback when this route needs one; otherwise the relevant theoretical or technical result>
 - Replacement boundary: <exact mechanism boundary beyond which a new T and strategic Replan are required; parts that may improve or be replaced; stable measurement or evidence interfaces>
-- Disqualifying evidence: <competing explanation, transfer mismatch, failed prerequisite, or other observable result that falsifies the causal path or makes the route ineligible or not worth continuing>
+- Disqualifying evidence: <observable result that challenges the conjecture or makes the route ineligible or not worth continuing; include a competing explanation, transfer mismatch or failed prerequisite where relevant>
 - Continue when: <observable result>
 - Stop or combine when: <condition and affected routes>
 - Status: <proposed | active>
 ```
 
-The T fields must preserve one evidence-bounded chain: observation or constraint -> mechanism -> permitted change -> causal path -> competing explanation or transfer mismatch -> disconfirming observation -> earliest affordable discriminating check. A transferred or recombined route must map the source function and expected behavior to the target constraint and name where the transfer fails. Surface resemblance is insufficient.
+Use the existing T fields to connect the conjecture, permitted change and next useful observation under [Technical potential](learning-loop.md#technical-potential). A complete causal pathway, established bottleneck or competing explanation is not required for route eligibility. For transferred or recombined ideas, state what is being transferred and what target feedback could test it; mark unverified transfer as a hypothesis. Analogy can motivate a trial but does not establish equivalent behavior or benefit. Keep unknown explanation in existing prose rather than inventing evidence or adding fields.
 
 When a route substantively completes, is retired or replaced, retain its learning through [Research Reflection](learning-loop.md#research-reflection). Combine related W/B experience and continue clear next work; a status update or individual B result is not a Reflection trigger.
 

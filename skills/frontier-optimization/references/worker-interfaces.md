@@ -2,6 +2,8 @@
 
 Give the worker the current research problem, why the work was selected, relevant facts and evidence limits, open questions and the local result it owns through existing source references. Keep an unsupported route conclusion as a hypothesis, not an assignment premise. Professional workers may correct a handoff premise and suggest plausible unverified technical opportunities in existing progress or the return, without first proving superiority. Follow [When to reconsider investment](learning-loop.md#when-to-reconsider-investment); ordinary local problems stay with their owner. This grants no wider write scope or allocation authority.
 
+For frontier-seeking research and design, carry the core-mechanism question under [Technical potential](learning-loop.md#technical-potential), the decisive question and the observation that could change the judgment into the existing assignment. Separate actual user, effect and resource limits from tentative methods. A support-cost limit does not ban a technical capability by name. Minimal edits, baseline preservation and a chosen wrapper are not default design boundaries: permit necessary restructuring and coordinated changes within the selected commitment and write ownership. Correct an inherited restriction at its owner and current use, without rewriting historical evidence or adding an approval step.
+
 Load this file when assigning work or undertaking simple implementation directly. It defines working responsibility, exclusive active writes and the small research and user-decision packets. Batch and review branches have separate action files.
 
 ## Permissions
