@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+for profile in release debug; do
+  binary="$script_dir/target/$profile/workflow-codex-hook"
+  if [ -x "$binary" ]; then
+    exec "$binary" "$@"
+  fi
+done
+
+printf '%s\n' \
+  'Workflow Codex Hook is not built; run cargo build --locked --release --manifest-path tools/workflow-harness/Cargo.toml --bin workflow-codex-hook.' \
+  >&2
+printf '{}\n'
+exit 0

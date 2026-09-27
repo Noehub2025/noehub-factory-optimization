@@ -32,6 +32,8 @@ draft -> open -> completed | stopped
 
 Preparation, editing, local debugging, harmless checks, support repair, and a failed pre-execution transition remain ordinary work in the open Batch. They create no Attempt and no separate identity. A completed or stopped Batch may reopen only through an explicit same-result revision. Work that can be evaluated, stopped, or funded independently requires another B.
 
+A development failure does not consume an evidence-bearing exposure or single-use unit unless the actual governed effect occurred. Preserve real nonrepeatable consumption, including failed exposures, without applying its repetition limit to unrelated pure repair. Necessary debugging can precede benefit evidence inside a still-worthwhile commitment; it is not a new route-admission test. Conversely, an unexplained but valid outcome can guide allocation without commissioning causal diagnosis.
+
 The module stores one current `frontier-batch/1` record. Git retains ordinary history. The record has no self-hash and no decision, authority, execution, outcome, packet, acknowledgment, start, result, validation, snapshot, inventory, or handoff identity.
 
 ## Ownership

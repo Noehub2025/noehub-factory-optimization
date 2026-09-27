@@ -8,7 +8,10 @@ Before an agent starts changing code, the workflow makes it explain the task in 
 
 The workflow is not tied to a particular benchmark, model, codebase, or optimization method. Use it for tasks such as reducing latency or cost, improving a model or game-playing agent, tuning a configuration, or searching over alternative implementations. It is especially useful when a passing test is not enough to prove that a change is genuinely better.
 
-This repository provides the RSI workflow as thirteen reusable Agent Skills. It does not provide a domain-specific optimizer, promise a winning solution, or remove human authority over consequential actions.
+This repository provides the RSI workflow as thirteen reusable Agent Skills, a
+shared `AGENTS.md`, and an optional execution harness with a project-level Codex
+Hook. It does not provide a domain-specific optimizer, promise a winning
+solution, or remove human authority over consequential actions.
 
 ## What problem does it solve?
 
@@ -201,6 +204,41 @@ When adding the workflow to another repository:
 
 Claude Code plugins provide Skills but do not load a plugin-root project instruction file for the consuming repository, so deploy or merge the instruction files separately. See [Deploying shared agent instructions](./docs/agent-instructions.md) for direct `AGENTS.md` support, compatibility adapters, existing-file handling, nested instructions, and verification.
 
+## Optional Codex Hook and execution harness
+
+The repository includes a host-neutral Rust [workflow harness](./tools/workflow-harness/README.md)
+and a project-level [Codex Hook](./.codex/hooks.json). The harness can preserve a
+bounded research assignment, correlate agent returns, retain cumulative usage,
+and withhold continuation at an explicit return condition. The Hook adds a
+narrow observation layer for restored adopted-work context and supported agent
+dispatch evidence.
+
+The Hook is Codex-only in this release. It does not provide Claude Code, Cursor,
+or other tool compatibility, and it is not part of the Claude Code plugin. Use
+`AGENTS.md` and the documented `CLAUDE.md` import for shared behavior in Claude
+Code; do not translate `.codex/hooks.json` into another host's Hook format.
+
+Before using the Hook, build its binary:
+
+```sh
+cargo build --locked --release \
+  --manifest-path tools/workflow-harness/Cargo.toml \
+  --bin workflow-codex-hook
+```
+
+Codex loads repository Hooks only after the project layer is trusted. Inspect
+and approve the exact definition with `/hooks`. If a consuming repository
+already has `.codex/hooks.json`, merge the event entries instead of replacing
+its Hooks; all matching Hooks run. Keep one Hook representation per project
+layer rather than duplicating the same definition in `config.toml`.
+
+The checked-in command resolves the Git root at runtime and contains no local
+checkout path. Without a valid adopted-work pointer under
+`.frontier/hook-context/`, it exits without changing a tool decision. The Hook
+does not grant permission, deny ordinary tools, call a model, resume paused work,
+or continue a session automatically. See the harness documentation for setup,
+scope, and evidence limits.
+
 ## Install
 
 ### Agent Skills installer
@@ -241,11 +279,16 @@ AGENTS.md             shared cross-agent workflow behavior
 CLAUDE.md             Claude Code adapter that imports AGENTS.md
 docs/
   agent-instructions.md
+.codex/
+  hooks.json           Codex-only project Hook definition
 skills/<skill-name>/
   SKILL.md
   references/          optional detailed guidance
   scripts/             optional deterministic checks and packaging tools
   agents/openai.yaml   optional Codex display metadata
+tools/workflow-harness/
+  Cargo.toml           host-neutral runtime and Codex adapter
+  run-codex-hook       portable launcher for the built Hook binary
 .claude-plugin/
   plugin.json
   marketplace.json

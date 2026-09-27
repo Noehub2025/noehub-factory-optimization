@@ -127,6 +127,7 @@ def test_design_checks_scope_and_saved_pointer(repo):
 
 def test_cli_writes_existing_assignment_and_result_without_transcription(repo, monkeypatch):
     save(repo, {"evidence.json": '{"result":1}'})
+    policy_file(repo)
     assignment = repo / "assignment.json"
     assignment.write_text('{"purpose":"choose next observation","limits":{"calls":0}}')
     monkeypatch.setattr("sys.argv", ["frontier_references.py", "resolver", "--repo", str(repo), "--path", "evidence.json", "--output", str(assignment)])
@@ -134,6 +135,7 @@ def test_cli_writes_existing_assignment_and_result_without_transcription(repo, m
     prepared = json.loads(assignment.read_text())
     assert prepared["purpose"] == "choose next observation"
     assert prepared["limits"] == {"calls": 0}
+    assert prepared["decision_policy"]["status"] == "provided"
     draft = repo / "resolution.json"
     draft.write_text('{"row":11,"exact_action":"continue"}')
     monkeypatch.setattr("sys.argv", ["frontier_references.py", "bind-resolution", "--repo", str(repo), "--path", "assignment.json", "--result", str(draft), "--output", str(draft)])
@@ -142,3 +144,178 @@ def test_cli_writes_existing_assignment_and_result_without_transcription(repo, m
     assert bound["evidence_source"] == prepared["evidence_source"]
     assert bound["evidence_state_identity"] == prepared["evidence_state_identity"]
     assert bound["exact_action"] == "continue"
+    assert bound["policy_coverage"]["judgment_status"] == "not_reported"
+
+
+def policy_file(repo, text="Use the same investment judgment; do not require benefit proof."):
+    path = repo / refs.DECISION_POLICY_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_cli_keeps_proposals_separate_from_adopted_work(repo, monkeypatch):
+    save(repo, {"evidence.json": '{"result":1}'})
+    policy_file(repo)
+    monkeypatch.setenv("CODEX_SESSION_ID", "current-owner")
+    monkeypatch.setenv("CODEX_THREAD_ID", "current-owner")
+    monkeypatch.delenv("CODEX_AGENT_ID", raising=False)
+    assignment = repo / "assignment.json"
+    monkeypatch.setattr("sys.argv", ["frontier_references.py", "resolver", "--repo", str(repo),
+                                    "--path", "evidence.json", "--output", str(assignment)])
+    assert refs.main() == 0
+    pointer = repo / ".frontier/hook-context/current-owner-proposal.json"
+    assert not (pointer.parent / "current-owner.json").exists()
+    assert json.loads(pointer.read_text())["record"] == str(assignment.resolve())
+    result = repo / "result.json"
+    result.write_text('{"row":11}')
+    monkeypatch.setattr("sys.argv", ["frontier_references.py", "bind-resolution", "--repo", str(repo),
+                                    "--path", "assignment.json", "--result", str(result), "--output", str(result)])
+    assert refs.main() == 0
+    assert json.loads(pointer.read_text())["record"] == str(result.resolve())
+    assert json.loads(pointer.read_text())["phase"] == "bind-resolution"
+    assert json.loads(result.read_text())["policy_coverage"]["judgment_status"] == "not_reported"
+    before = pointer.read_bytes()
+    monkeypatch.setenv("CODEX_THREAD_ID", "child-task")
+    assert not refs.register_hook_record(repo, assignment, "resolver")
+    assert pointer.read_bytes() == before
+    monkeypatch.setenv("CODEX_THREAD_ID", "another-owner")
+    monkeypatch.setenv("CODEX_SESSION_ID", "another-owner")
+    assert refs.register_hook_record(repo, assignment, "resolver")
+    assert pointer.read_bytes() == before
+
+
+def test_native_registration_failure_does_not_discard_the_decision(repo, monkeypatch):
+    save(repo, {"evidence.json": '{"result":1}'})
+    policy_file(repo)
+    assignment = repo / "assignment.json"
+    def unavailable(*args, **kwargs):
+        raise OSError("context directory unavailable")
+    monkeypatch.setattr(refs, "register_hook_record", unavailable)
+    monkeypatch.setattr("sys.argv", ["frontier_references.py", "resolver", "--repo", str(repo),
+                                    "--path", "evidence.json", "--output", str(assignment)])
+    assert refs.main() == 0
+    assert json.loads(assignment.read_text())["evidence_state_identity"]
+
+
+def test_optional_policy_is_supplied_to_existing_resolver_without_claiming_handling(repo):
+    save(repo, {"evidence.json": '{"result":1}'})
+    absent = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    policy_file(repo)
+    supplied = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    assert supplied["evidence_state_identity"] == absent["evidence_state_identity"]
+    assert supplied["decision_policy"]["status"] == "provided"
+    assert "same investment judgment" in supplied["decision_policy"]["text"]
+    result = refs.bind_resolution(repo, supplied, {"row": 11})
+    assert result["policy_coverage"]["policy_status"] == "current"
+    assert result["policy_coverage"]["judgment_status"] == "not_reported"
+    assert "text" not in result["decision_policy"]
+
+
+@pytest.mark.parametrize("status", ["addressed", "not_addressed", "unavailable"])
+def test_coverage_records_explicit_handling_without_a_second_judgment(repo, status):
+    save(repo, {"evidence.json": '{"result":1}'})
+    policy_file(repo)
+    prepared = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    disposition = {"status": status, "reason": "Compared direct design with diagnosis in the existing rationale."}
+    body = {"row": 11, "exact_action": "develop the whole mechanism", "policy_disposition": disposition,
+            "policy_coverage": {"policy_status": "invented_pass"}}
+    result = refs.bind_resolution(repo, prepared, body)
+    assert result["policy_disposition"] == disposition
+    assert result["policy_coverage"]["judgment_status"] == status
+    assert result["policy_coverage"]["policy_status"] == "current"
+    assert result["exact_action"] == body["exact_action"]
+
+
+@pytest.mark.parametrize("disposition", [None, "addressed", {"status": "addressed"},
+                                         {"status": "addressed", "reason": " "},
+                                         {"status": "passed", "reason": "All good"}])
+def test_missing_or_incomplete_optional_handling_is_uncovered_not_blocked(repo, disposition):
+    save(repo, {"evidence.json": '{"result":1}'})
+    policy_file(repo)
+    prepared = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    result = refs.bind_resolution(repo, prepared, {"row": 11, "policy_disposition": disposition})
+    assert result["row"] == 11
+    assert result["policy_coverage"]["judgment_status"] == "not_reported"
+
+
+def test_changed_policy_preserves_reported_handling_but_does_not_claim_current_coverage(repo):
+    save(repo, {"evidence.json": '{"result":1}'})
+    path = policy_file(repo)
+    prepared = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    path.write_text("Changed guidance", encoding="utf-8")
+    result = refs.bind_resolution(repo, prepared, {"row": 11, "policy_disposition": {
+        "status": "addressed", "reason": "Used the supplied guidance in the original comparison."}})
+    assert result["policy_coverage"]["policy_status"] == "changed"
+    assert result["policy_coverage"]["judgment_status"] == "addressed"
+    assert result["decision_policy"]["sha256"] == prepared["decision_policy"]["sha256"]
+
+
+def test_missing_unreadable_and_old_policy_context_do_not_block_existing_work(repo):
+    save(repo, {"evidence.json": '{"result":1}'})
+    absent = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    old = {key: value for key, value in absent.items() if key != "decision_policy"}
+    for prepared in (absent, old):
+        result = refs.bind_resolution(repo, prepared, {"row": 11})
+        assert result["policy_coverage"] == {"policy_status": "not_provided", "judgment_status": "not_reported"}
+    path = policy_file(repo)
+    path.write_bytes(b"\xff")
+    unavailable = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    result = refs.bind_resolution(repo, unavailable, {"row": 11})
+    assert result["policy_coverage"]["policy_status"] == "unavailable"
+    assert result["row"] == 11
+
+
+@pytest.mark.parametrize("change_policy", [False, True])
+def test_prior_judgment_reuse_reports_actual_original_coverage_without_reopening(repo, change_policy):
+    save(repo, {"evidence.json": '{"result":1}'})
+    path = policy_file(repo)
+    prepared = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    result = refs.bind_resolution(repo, prepared, {"row": 11, "policy_disposition": {
+        "status": "addressed", "reason": "The existing comparison applied the supplied policy."}})
+    save(repo, {"resolution.json": json.dumps(result)})
+    if change_policy:
+        path.write_text("Updated optional guidance", encoding="utf-8")
+    reused = refs.prepare_resolver(repo, "HEAD", "evidence.json", ["resolution.json"])
+    assert reused["reuse_resolution"]["path"] == "resolution.json"
+    assert reused["reused_policy_coverage"]["policy_status"] == ("changed" if change_policy else "current")
+    assert reused["reused_policy_coverage"]["judgment_status"] == "addressed"
+    assert json.loads((repo / "resolution.json").read_text()) == result
+
+
+def test_rebinding_an_existing_judgment_cannot_refresh_its_policy_coverage(repo):
+    save(repo, {"evidence.json": '{"result":1}'})
+    path = policy_file(repo)
+    first = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    result = refs.bind_resolution(repo, first, {"row": 11, "policy_disposition": {
+        "status": "addressed", "reason": "Applied the original supplied guidance."}})
+    path.write_text("Different current guidance", encoding="utf-8")
+    current = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    rebound = refs.bind_resolution(repo, current, result)
+    assert rebound["decision_policy"] == result["decision_policy"]
+    assert rebound["policy_coverage"]["policy_status"] == "changed"
+    assert rebound["policy_coverage"]["judgment_status"] == "addressed"
+
+
+def test_cli_reusing_assignment_clears_prior_policy_coverage_when_facts_change(repo, monkeypatch):
+    save(repo, {"evidence.json": '{"result":1}'})
+    policy_file(repo)
+    prepared = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    result = refs.bind_resolution(repo, prepared, {"row": 11, "policy_disposition": {
+        "status": "addressed", "reason": "Applied the supplied policy in this judgment."}})
+    save(repo, {"resolution.json": json.dumps(result)})
+    assignment = repo / "assignment.json"
+    command = ["frontier_references.py", "resolver", "--repo", str(repo), "--path", "evidence.json",
+               "--prior", "resolution.json", "--output", str(assignment)]
+    monkeypatch.setattr("sys.argv", command)
+    assert refs.main() == 0
+    reused = json.loads(assignment.read_text())
+    assert reused["reused_policy_coverage"]["judgment_status"] == "addressed"
+    assert "reuse_resolution" in reused
+    save(repo, {"evidence.json": '{"result":2}'})
+    assert refs.main() == 0
+    fresh = json.loads(assignment.read_text())
+    assert "reuse_resolution" not in fresh
+    assert "reused_policy_coverage" not in fresh
+    assert fresh["evidence_state_identity"] != reused["evidence_state_identity"]
+    assert fresh["decision_policy"]["status"] == "provided"

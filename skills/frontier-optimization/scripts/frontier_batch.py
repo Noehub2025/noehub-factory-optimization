@@ -817,6 +817,8 @@ def _write_state(path: Path, state: Mapping[str, Any]) -> None:
             os.fsync(directory)
         finally:
             os.close(directory)
+        from frontier_context import refresh_active_work
+        refresh_active_work(path)
     except OSError as exc:
         raise StorageConflict(f"cannot update Batch state: {path}") from exc
     finally:

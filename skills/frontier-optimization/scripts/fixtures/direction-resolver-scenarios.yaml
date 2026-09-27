@@ -49,6 +49,7 @@ scenarios:
     evidence_state: sha256:funded-validity
     facts:
       validity: unresolved-funded
+      selected_validity_diagnostic: true
       validity_diagnostic:
         sufficient: true
         affordable: true
@@ -60,6 +61,7 @@ scenarios:
     evidence_state: sha256:nonunique-validity
     facts:
       validity: unresolved-non-unique
+      selected_validity_diagnostic: true
       validity_diagnostic:
         sufficient: true
         affordable: true
@@ -193,6 +195,7 @@ scenarios:
     evidence_state: sha256:protocol-drift
     facts:
       validity: protocol-drift
+      selected_validity_diagnostic: true
       changed_dimensions: [evaluator, workload, comparator]
       forbidden_inference: trajectory-decline
       validity_diagnostic:
@@ -206,6 +209,7 @@ scenarios:
     evidence_state: sha256:measurement-floor
     facts:
       validity: measurement-floor
+      selected_validity_diagnostic: true
       apparent_change: below-resolution
       forbidden_inference: route-exhaustion
       validity_diagnostic:
@@ -427,11 +431,11 @@ acceptance_scenarios:
   - {number: 46, name: Fabricated progress rule, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'Do not invent a number merely to complete the template'}}
   - {number: 47, name: Evidence-derived route before Q completion, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: provisional}}
   - {number: 48, name: Established route wins, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'not novelty or maturity alone'}}
-  - {number: 49, name: Untested route needs a useful observation, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'A complete causal pathway, established bottleneck or competing explanation is not required for route eligibility.'}}
+  - {number: 49, name: New route rejected at a sufficient scale, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'An early or reduced-scale result may eliminate a route only when it can distinguish the mechanism under test.'}}
   - {number: 50, name: New route survives the first probe, target: {kind: contract-assertion, path: references/candidate-lifecycle.md, marker: 'Formal Slot H measurement'}}
   - {number: 51, name: Decision-complete without exhaustive search, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'decision completeness'}}
   - {number: 52, name: Literature dump is not route diversity, target: {kind: contract-assertion, path: references/entry-and-planning.md, marker: 'mechanism classes'}}
-  - {number: 53, name: Analogy remains a hypothesis, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'Analogy can motivate a trial but does not establish equivalent behavior or benefit.'}}
+  - {number: 53, name: Superficial analogy, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'Analogy can motivate a trial but does not establish equivalent behavior or benefit.'}}
   - {number: 54, name: No continuous ideation tax, target: {kind: resolver-fixture, id: routine-unique-r8}}
   - {number: 55, name: No learning or evaluation signal, target: {kind: contract-assertion, path: references/planning-records.md, marker: 'feedback'}}
   - {number: 56, name: Unresolved data adequacy, target: {kind: resolver-fixture, id: unresolved-prerequisite-first}}

@@ -63,3 +63,13 @@ Claude loads ancestor `CLAUDE.md` files at startup and nested ones when it reads
 Merge both shared sections into `AGENTS.md`, then confirm that `CLAUDE.md` imports `AGENTS.md` once. Keep environment-specific additions in `CLAUDE.md`; keep cross-agent behavior in `AGENTS.md`.
 
 After installation, start a new agent session and verify the loaded instruction sources. Codex rebuilds its instruction chain at session start. In Claude Code, use the startup `AGENTS.md loaded` report or ask Claude to summarize direct project instructions; for adapter-based deployments, run `/context` and confirm that the project `CLAUDE.md` and imported `AGENTS.md` are present.
+
+## Codex Hook is separate
+
+`AGENTS.md` and `CLAUDE.md` provide model instructions. The optional
+`.codex/hooks.json` in this repository invokes the workflow harness in Codex and
+has a separate trust and build process. It is not loaded by Claude Code and this
+release deliberately provides no cross-tool Hook adapter. Do not copy the Codex
+Hook into `CLAUDE.md` or convert it into another host's event format. See the
+[workflow harness documentation](../tools/workflow-harness/README.md) for the
+supported Codex events, build command, and evidence limits.

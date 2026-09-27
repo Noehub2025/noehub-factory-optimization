@@ -19,6 +19,7 @@ modules:
       - frontier-optimization/references/batch-code-execution.md
       - frontier-optimization/references/batch-current.md
       - frontier-optimization/scripts/frontier_batch.py
+      - frontier-optimization/scripts/frontier_context.py
       - frontier-optimization/scripts/frontier_references.py
       - frontier-optimization/scripts/saved_git.py
   validator-support:
@@ -125,6 +126,7 @@ modules:
       - frontier-optimization/scripts/test_direction_resolver_contract.py
       - frontier-optimization/scripts/test_finding_effects.py
       - frontier-optimization/scripts/test_frontier_batch.py
+      - frontier-optimization/scripts/test_frontier_context.py
       - frontier-optimization/scripts/test_frontier_references.py
       - frontier-optimization/scripts/test_saved_git.py
       - frontier-optimization/scripts/test_run_workflow_checks.py

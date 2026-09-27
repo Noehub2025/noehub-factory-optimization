@@ -240,7 +240,7 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "Unknown cost of this stage or its unavoidable commitments is not affordable",
             "Do not ask the user to choose a technical diagnostic",
             "Public repeatable development evidence may guide hypothesis generation",
-            "Make no trajectory, route, or parent inference that depends on the unresolved validity",
+            "make no trajectory, route, or parent inference that depends on the unresolved validity",
             "one additional research round through row 7 or row 8",
             "further reading is repetitive or less useful than reasoning or a practical probe",
             "Unrelated landscape gaps do not veto it",

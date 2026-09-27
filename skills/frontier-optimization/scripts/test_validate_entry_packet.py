@@ -1316,6 +1316,7 @@ class EntryPacketSchemaTests(unittest.TestCase):
             "scripts/frontier_references.py",
             "scripts/frontier_review_cli.py",
             "scripts/frontier_batch.py",
+            "scripts/frontier_context.py",
             "scripts/run_workflow_checks.py",
             "scripts/saved_git.py",
         }

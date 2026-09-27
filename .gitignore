@@ -1,2 +1,6 @@
 .DS_Store
 CLAUDE.local.md
+.frontier/hook-context/
+__pycache__/
+*.pyc
+.pytest_cache/

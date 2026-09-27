@@ -57,7 +57,7 @@ def resolve_persisted_facts(scenario: dict) -> tuple[int, str, str]:
         return 5, direction, action
 
     validity = facts.get("validity")
-    if validity:
+    if validity and facts.get("selected_validity_diagnostic"):
         diagnostic = facts.get("validity_diagnostic")
         if not isinstance(diagnostic, dict):
             raise ValueError("validity requires persisted diagnostic eligibility facts")
@@ -205,6 +205,15 @@ def action_is_ready(action: dict, established: list[str]) -> bool:
         action.get(field) is True
         for field in ("sufficient", "authorized", "affordable", "reachable")
     ) and set(action.get("requires", [])) <= set(established)
+
+
+def test_validity_gap_does_not_override_the_selected_alternative() -> None:
+    scenario = deepcopy(next(s for s in load_contract()["scenarios"] if s["id"] == "funded-validity-diagnostic"))
+    scenario["facts"]["selected_validity_diagnostic"] = False
+    scenario["facts"]["routine_r8"] = "develop-independent-mechanism"
+    assert resolve_persisted_facts(scenario) == (13, "local R8", "develop-independent-mechanism")
+    scenario["facts"]["specialized_gate"] = "valid-comparison-required"
+    assert resolve_persisted_facts(scenario) == (12, "blocked", "require-valid-comparison-required")
 
 
 def test_same_persisted_state_yields_same_exact_resolution() -> None:

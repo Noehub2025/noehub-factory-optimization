@@ -1,0 +1,44 @@
+{
+  "description": "Optional Codex-only observer for adopted work and agent dispatch evidence. It does not deny tools, grant authority, or continue work automatically.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "^(startup|resume|compact)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/sh -lc 'repo=\"$(git rev-parse --show-toplevel)\" && exec \"$repo/tools/workflow-harness/run-codex-hook\" --record-context \"$repo\"'",
+            "timeout": 2,
+            "additionalContextLimit": 4000
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/sh -lc 'repo=\"$(git rev-parse --show-toplevel)\" && exec \"$repo/tools/workflow-harness/run-codex-hook\" --record-context \"$repo\"'",
+            "timeout": 2,
+            "additionalContextLimit": 4000
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(spawn_agent|followup_task|collaboration[.]?(spawn_agent|followup_task)|Agent)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/sh -lc 'repo=\"$(git rev-parse --show-toplevel)\" && exec \"$repo/tools/workflow-harness/run-codex-hook\" --record-context \"$repo\"'",
+            "timeout": 2,
+            "additionalContextLimit": 4000
+          }
+        ]
+      }
+    ]
+  }
+}

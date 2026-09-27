@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import re
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -88,11 +89,51 @@ def _evidence(root: Path, ref: dict[str, str]) -> tuple[dict, str]:
     return facts, "frontier-selection-evidence-state-sha256:" + sha256_bytes(canonical_json(facts))
 
 
+DECISION_POLICY_PATH = "tools/workflow-harness/decision-policy.md"
+
+
+def _decision_policy(root: Path) -> dict:
+    """Supply optional current guidance, not another research evidence identity."""
+    policy = {"path": DECISION_POLICY_PATH}
+    try:
+        raw = (root / DECISION_POLICY_PATH).read_bytes()
+        text = raw.decode("utf-8")
+        if not text.strip():
+            return {**policy, "status": "unavailable", "reason": "policy is empty"}
+    except FileNotFoundError:
+        return {**policy, "status": "not_provided"}
+    except (OSError, UnicodeError) as exc:
+        return {**policy, "status": "unavailable", "reason": str(exc)}
+    return {**policy, "status": "provided", "sha256": sha256_bytes(raw), "text": text,
+            "instruction": "Apply this guidance within the existing independent investment judgment, not a second review. Optionally report policy_disposition with status addressed, not_addressed or unavailable and a brief reason describing actual handling. Missing reporting is not a pass or a blocker."}
+
+
+def _policy_coverage(root: Path, policy: Any, result: dict) -> dict:
+    """Report association and explicit handling, never infer a successful judgment."""
+    policy = policy if isinstance(policy, dict) else {}
+    digest = policy.get("sha256")
+    if policy.get("status") != "provided" or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+        return {"policy_status": "unavailable" if policy.get("status") == "unavailable" else "not_provided",
+                "judgment_status": "not_reported"}
+    current = _decision_policy(root)
+    if current["status"] == "unavailable":
+        policy_status = "unavailable"
+    else:
+        policy_status = "current" if current.get("sha256") == digest else "changed"
+    disposition = result.get("policy_disposition")
+    judgment_status = "not_reported"
+    if isinstance(disposition, dict) and isinstance(disposition.get("reason"), str) and disposition["reason"].strip():
+        if disposition.get("status") in {"addressed", "not_addressed", "unavailable"}:
+            judgment_status = disposition["status"]
+    return {"policy_status": policy_status, "judgment_status": judgment_status, "sha256": digest}
+
+
 def prepare_resolver(root: Path, revision: str, path: str, prior_paths=()) -> dict:
     """Return input binding or reuse an existing resolution; never choose a row."""
     ref = reference(root, revision, path)
     _, identity = _evidence(root, ref)
-    prepared = {"evidence_source": ref, "evidence_state_identity": identity}
+    prepared = {"evidence_source": ref, "evidence_state_identity": identity,
+                "decision_policy": _decision_policy(root)}
     for prior_path in prior_paths:
         prior_ref = reference(root, ref["commit"], prior_path)
         prior = _document(read_reference(root, prior_ref))
@@ -105,6 +146,7 @@ def prepare_resolver(root: Path, revision: str, path: str, prior_paths=()) -> di
                 raise ReferenceError("prior resolution needs its original evidence reference or retained identity")
         if previous == identity:
             prepared["reuse_resolution"] = prior_ref
+            prepared["reused_policy_coverage"] = _policy_coverage(root, prior.get("decision_policy"), prior)
             break
     return prepared
 
@@ -120,7 +162,12 @@ def bind_resolution(root: Path, prepared: dict, result: dict) -> dict:
         if previous != identity:
             raise ReferenceError("result belongs to different decision facts")
     # Derived fields are owned here. Professional result fields are preserved.
-    return {**result, "evidence_source": ref, "evidence_state_identity": identity}
+    # Rebinding an existing judgment does not retroactively apply new guidance to it.
+    policy = result.get("decision_policy", prepared.get("decision_policy"))
+    # Keep the supplied policy identity with this result; the full text stays in its assignment.
+    retained_policy = {key: value for key, value in policy.items() if key not in {"text", "instruction"}} if isinstance(policy, dict) else {"status": "not_provided"}
+    return {**result, "evidence_source": ref, "evidence_state_identity": identity,
+            "decision_policy": retained_policy, "policy_coverage": _policy_coverage(root, policy, result)}
 
 
 def _anchor(text: str) -> str:
@@ -193,8 +240,8 @@ def prepare_design(root: Path, revision: str, work: str, scope=()) -> dict:
 def _write(path: Path, value: dict, *, merge: bool = False) -> None:
     if merge and path.exists():
         existing = _document(path.read_bytes())
-        for key in ("evidence_source", "evidence_state_identity", "reuse_resolution", "subject", "work_plan", "delivery_scope"):
-            if key in value or key == "reuse_resolution":
+        for key in ("evidence_source", "evidence_state_identity", "reuse_resolution", "reused_policy_coverage", "subject", "work_plan", "delivery_scope"):
+            if key in value or key in {"reuse_resolution", "reused_policy_coverage"}:
                 existing.pop(key, None)
         value = {**existing, **value}
     raw = json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
@@ -208,12 +255,30 @@ def _write(path: Path, value: dict, *, merge: bool = False) -> None:
             temporary.unlink(missing_ok=True)
 
 
+def register_hook_record(root: Path, output: Path, phase: str, session_id: str | None = None) -> bool:
+    """Retain a proposal reference without replacing the owner's adopted work."""
+    from frontier_context import root_session
+    session = root_session(session_id)
+    if session is None:
+        return False
+    root, output = root.resolve(), output.resolve(strict=True)
+    if not output.is_relative_to(root) or not (root / DECISION_POLICY_PATH).is_file():
+        return False
+    directory = root / ".frontier/hook-context"
+    directory.mkdir(parents=True, exist_ok=True)
+    _write(directory / f"{session}-proposal.json", {"workspace": str(root), "session_id": session,
+           "record": str(output), "phase": phase})
+    return True
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("kind", choices=("design", "resolver", "bind-resolution", "batch-review", "batch-update", "batch-view"))
+    parser.add_argument("kind", choices=("design", "resolver", "bind-resolution", "adopt-work", "bind-return", "batch-review", "batch-update", "batch-view"))
     parser.add_argument("--repo", type=Path, default=Path.cwd())
     parser.add_argument("--revision", help="chosen saved revision; defaults to HEAD for reference preparation")
     parser.add_argument("--path", help="W, evidence, review, or existing prepared assignment path")
+    parser.add_argument("--session", help="explicit root owner for adopted-work registration")
+    parser.add_argument("--call", help="actual native tool_use_id for an existing work return")
     parser.add_argument("--scope", action="append", default=[])
     parser.add_argument("--prior", action="append", default=[], help="known resolution path at revision; repeat as needed")
     parser.add_argument("--result", type=Path, help="existing result draft for binding")
@@ -228,7 +293,17 @@ def main() -> int:
     from frontier_batch import AdoptReview, Batch, BatchError, UpdateWorkingState, batch_facts
 
     try:
-        if args.kind.startswith("batch-"):
+        if args.kind == "bind-return":
+            if not args.result or not args.call or args.output:
+                raise ReferenceError("bind-return requires --result and --call, without --output")
+            from frontier_context import bind_dispatch_return
+            value = bind_dispatch_return(args.repo, args.result, args.call, args.session)
+        elif args.kind == "adopt-work":
+            if not args.path or args.output:
+                raise ReferenceError("adopt-work requires --path to saved Selection and no --output")
+            from frontier_context import register_adopted_work
+            value = {"registered": register_adopted_work(args.repo, Path(args.path), args.session)}
+        elif args.kind.startswith("batch-"):
             if not args.batch:
                 raise ReferenceError("Batch operations require --batch")
             if args.output:
@@ -269,6 +344,11 @@ def main() -> int:
             value = bind_resolution(args.repo, prepared, _document(args.result.read_bytes()))
         if args.output:
             _write(args.output, value, merge=args.kind != "bind-resolution")
+            if args.kind in {"resolver", "bind-resolution"}:
+                try:
+                    register_hook_record(args.repo, args.output, args.kind)
+                except (OSError, ValueError) as exc:
+                    print(f"Native decision context not registered; existing result is retained: {exc}", file=sys.stderr)
         else:
             print(json.dumps(value, ensure_ascii=False, indent=2))
         return 0
