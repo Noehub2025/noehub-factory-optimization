@@ -81,9 +81,8 @@ fn task_visibility(input: &Value) -> &'static str {
     }
 }
 
-fn response_outcome(response: &Value, input: &Value) -> (String, Value) {
-    // Recognize explicit structured handles only. Unknown envelopes stay uncertain.
-    if response.get("isError").and_then(Value::as_bool) == Some(true)
+fn explicit_failure(response: &Value) -> bool {
+    response.get("isError").and_then(Value::as_bool) == Some(true)
         || response.get("success").and_then(Value::as_bool) == Some(false)
         || matches!(
             response.get("status").and_then(Value::as_str),
@@ -99,9 +98,24 @@ fn response_outcome(response: &Value, input: &Value) -> (String, Value) {
             )
         )
         || response.get("error").is_some_and(|v| !v.is_null())
-    {
+}
+
+fn response_outcome(event: &Value, input: &Value) -> (String, Value) {
+    let original = &event["tool_response"];
+    if explicit_failure(event) || explicit_failure(original) {
         return ("failed".into(), Value::Null);
     }
+    // Decode only the observed JSON-string object envelope, once. The caller
+    // bounds its serialized size and retains the original response unchanged.
+    let decoded = original
+        .as_str()
+        .and_then(|text| serde_json::from_str::<Value>(text).ok())
+        .filter(Value::is_object);
+    let response = decoded.as_ref().unwrap_or(original);
+    if explicit_failure(response) {
+        return ("failed".into(), Value::Null);
+    }
+    // Recognize explicit structured handles only. Unknown envelopes stay uncertain.
     for key in ["agent_id", "task_name", "agent_task_id"] {
         if let Some(handle) = response
             .get(key)
@@ -177,7 +191,7 @@ pub fn observe(event: &Value, root: &Path, binding: &Value) -> Result<Value> {
             if response.to_string().len() > 262_144 {
                 return Err("dispatch response exceeds observation limit".into());
             }
-            let (status, handle) = response_outcome(response, &attempted["tool_input"]);
+            let (status, handle) = response_outcome(event, &attempted["tool_input"]);
             let post = directory.join(format!("{id}-call-{call}-post.json"));
             write_once(
                 &post,

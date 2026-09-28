@@ -318,6 +318,148 @@ fn response_stays_with_original_work_and_does_not_claim_worker_completion() {
 }
 
 #[test]
+fn retained_serialized_dispatch_shape_confirms_only_dispatch_and_preserves_opaque_task() {
+    let f = Fixture::new();
+    let (directory, mut event) = adopted_fixture(&f);
+    // Retained x1081 response shape; the task body remains a synthetic opaque value.
+    event["tool_name"] = json!("collaborationspawn_agent");
+    event["tool_input"] =
+        json!({"task_name":"x1081_resolver","message":"gAAAAopaque-host-payload"});
+    context_mode(&f, event.clone(), true);
+    event["hook_event_name"] = json!("PostToolUse");
+    event["tool_response"] = json!(r#"{"task_name":"/root/x1081_resolver"}"#);
+    let mut mismatched = event.clone();
+    mismatched["tool_input"]["task_name"] = json!("different_resolver");
+    assert_eq!(context_mode(&f, mismatched, true), json!({}));
+    let post_path = directory.join("owner-call-call1-post.json");
+    assert!(!post_path.exists());
+
+    let output = context_mode(&f, event.clone(), true);
+    let message = output["hookSpecificOutput"]["additionalContext"]
+        .as_str()
+        .unwrap();
+    assert!(message.contains("confirmed_dispatch"));
+    assert!(message.contains("not worker completion or semantic acceptance"));
+    let original = fs::read(&post_path).unwrap();
+    let post: serde_json::Value = serde_json::from_slice(&original).unwrap();
+    assert_eq!(post["status"], "confirmed_dispatch");
+    assert_eq!(post["worker_handle"], "/root/x1081_resolver");
+    assert_eq!(post["tool_response"], event["tool_response"]);
+    let attempt: serde_json::Value =
+        serde_json::from_slice(&fs::read(directory.join("owner-call-call1.json")).unwrap())
+            .unwrap();
+    assert_eq!(attempt["tool_input"], event["tool_input"]);
+    assert_eq!(attempt["task_visibility"], "opaque_or_unavailable");
+    event["tool_response"] = json!(r#"{"error":"late duplicate"}"#);
+    context_mode(&f, event, true);
+    assert_eq!(fs::read(post_path).unwrap(), original);
+}
+
+#[test]
+fn serialized_dispatch_responses_decode_only_one_object_level() {
+    let f = Fixture::new();
+    let (directory, mut event) = adopted_fixture(&f);
+    let object = json!({"task_name":"/root/x1081_resolver"});
+    for (index, (response, expected)) in [
+        (object.clone(), "confirmed_dispatch"),
+        (json!(object.to_string()), "confirmed_dispatch"),
+        (json!(json!(object.to_string()).to_string()), "uncertain"),
+        (json!(r#"{"task_name":"/root/x1081_resolver""#), "uncertain"),
+        (json!(format!("{object} trailing data")), "uncertain"),
+        (json!("{}"), "uncertain"),
+        (json!("null"), "uncertain"),
+        (json!("true"), "uncertain"),
+        (json!("42"), "uncertain"),
+        (json!(format!("[{object}]")), "uncertain"),
+        (json!(json!({"response":object}).to_string()), "uncertain"),
+        (json!(r#"{"queued":true}"#), "uncertain"),
+        (json!(r#"{"task_name":""}"#), "uncertain"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let call = format!("shape-{index}");
+        event["tool_use_id"] = json!(call);
+        event["hook_event_name"] = json!("PreToolUse");
+        context_mode(&f, event.clone(), true);
+        event["hook_event_name"] = json!("PostToolUse");
+        event["tool_response"] = response;
+        context_mode(&f, event.clone(), true);
+        let post: serde_json::Value = serde_json::from_slice(
+            &fs::read(directory.join(format!("owner-call-{call}-post.json"))).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(post["status"], expected, "{call}");
+        assert_eq!(post["tool_response"], event["tool_response"], "{call}");
+        if expected == "uncertain" {
+            assert!(post["worker_handle"].is_null(), "{call}");
+        }
+    }
+}
+
+#[test]
+fn explicit_outer_and_inner_errors_override_serialized_dispatch_handles() {
+    for failure in [
+        json!({"isError":true}),
+        json!({"success":false}),
+        json!({"error":"reported failure"}),
+        json!({"status":"failed"}),
+        json!({"status":"cancelled"}),
+        json!({"status":"canceled"}),
+        json!({"status":"rejected"}),
+        json!({"status":"error"}),
+        json!({"status":"aborted"}),
+        json!({"status":"timeout"}),
+        json!({"status":"unavailable"}),
+    ] {
+        for location in ["event", "object", "serialized_object"] {
+            let f = Fixture::new();
+            let (directory, mut event) = adopted_fixture(&f);
+            context_mode(&f, event.clone(), true);
+            event["hook_event_name"] = json!("PostToolUse");
+            let mut response = json!({"task_name":"/root/x1081_resolver"});
+            if location == "event" {
+                event
+                    .as_object_mut()
+                    .unwrap()
+                    .extend(failure.as_object().unwrap().clone());
+            } else {
+                response
+                    .as_object_mut()
+                    .unwrap()
+                    .extend(failure.as_object().unwrap().clone());
+            }
+            event["tool_response"] = if location == "object" {
+                response
+            } else {
+                json!(response.to_string())
+            };
+            context_mode(&f, event, true);
+            let post: serde_json::Value = serde_json::from_slice(
+                &fs::read(directory.join("owner-call-call1-post.json")).unwrap(),
+            )
+            .unwrap();
+            assert_eq!(post["status"], "failed", "{location}: {failure}");
+            assert!(post["worker_handle"].is_null(), "{location}: {failure}");
+        }
+    }
+}
+
+#[test]
+fn oversized_serialized_dispatch_response_does_not_bypass_observation_limit() {
+    let f = Fixture::new();
+    let (directory, mut event) = adopted_fixture(&f);
+    context_mode(&f, event.clone(), true);
+    event["hook_event_name"] = json!("PostToolUse");
+    event["tool_response"] = json!(
+        json!({"task_name":"/root/x1081_resolver","padding":"x".repeat(262_144)}).to_string()
+    );
+    assert_eq!(context_mode(&f, event, true), json!({}));
+    assert!(directory.join("owner-call-call1.json").exists());
+    assert!(!directory.join("owner-call-call1-post.json").exists());
+}
+
+#[test]
 fn followups_use_distinct_calls_and_unknown_or_failed_responses_are_not_confirmed() {
     let f = Fixture::new();
     let (directory, mut event) = adopted_fixture(&f);

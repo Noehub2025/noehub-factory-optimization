@@ -17,6 +17,10 @@ Protocol version 2 is enabled when a task includes a `research` object. It can:
   constraints, alternatives, and role-specific methods;
 - preserve the whole-chain advantage hypothesis, decisive prospective
   conditions, and selected target feedback across owner and Batch handoffs;
+- bind a consequential decision to its adopted objective, evaluation, and
+  current-work sources, including an explicit feedback-timing disposition;
+- retain delayed observations, delivery failures, capability limitations, and
+  recoverable alternatives without converting them into automatic support work;
 - correlate a worker return with the invocation that created it;
 - retain cumulative elapsed time, model tokens, compute, and currency-specific
   spending without treating unknown values as zero;
@@ -33,7 +37,11 @@ maker. The existing owner still decides whether target feedback is ready,
 whether a delay is necessary, and how external changes or intervention-induced
 effects alter the next commitment. Behavioral examples live in
 [`tests/target-feedback-cases.md`](./tests/target-feedback-cases.md) and
-[`tests/foresight-cases.md`](./tests/foresight-cases.md).
+[`tests/foresight-cases.md`](./tests/foresight-cases.md). Additional bounded
+cases cover [capability learning](./tests/capability-learning-cases.md),
+[research judgment](./tests/research-judgment-cases.md), and
+[research transfer](./tests/research-transfer-cases.md). These cases test
+decision behavior; they do not prove objective improvement in a live campaign.
 
 ## Build and test
 

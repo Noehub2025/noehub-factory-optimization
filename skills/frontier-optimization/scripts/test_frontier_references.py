@@ -9,6 +9,10 @@ import pytest
 import frontier_references as refs
 
 
+def prepare(root, revision, path, prior_paths=(), **kwargs):
+    return refs.prepare_resolver(root, revision, path, prior_paths, owner_source=kwargs.pop("owner_source", "TASK.md"), **kwargs)
+
+
 def git(root, *args):
     return subprocess.check_output(["git", "-C", str(root), *args], stderr=subprocess.PIPE).decode().strip()
 
@@ -18,6 +22,7 @@ def repo(tmp_path):
     git(tmp_path, "init")
     git(tmp_path, "config", "user.email", "test@example.invalid")
     git(tmp_path, "config", "user.name", "Reference Test")
+    save(tmp_path, {"TASK.md": "---\nfeedback_not_due: The selected prerequisite remains necessary before a useful observation.\n---\n# Task\nImprove the actual outcome.\n"})
     return tmp_path
 
 
@@ -33,7 +38,7 @@ def save(root, files):
 
 def test_resolver_uses_saved_bytes_and_repairs_derived_binding(repo):
     commit = save(repo, {"evidence.json": '{"goal":"改善","result":1}'})
-    prepared = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    prepared = prepare(repo, "HEAD", "evidence.json")
     (repo / "evidence.json").write_text('{"result":999}')
     body = {"row": 11, "exact_action": "test a new route", "evidence_state_identity": "mistyped"}
     result = refs.bind_resolution(repo, {**prepared, "evidence_state_identity": "also mistyped"}, body)
@@ -44,11 +49,11 @@ def test_resolver_uses_saved_bytes_and_repairs_derived_binding(repo):
 
 def test_same_facts_reuse_result_after_format_location_and_commit_change(repo):
     save(repo, {"evidence.json": '{"a":1,"b":[2,3]}'})
-    prepared = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    prepared = prepare(repo, "HEAD", "evidence.json")
     result = refs.bind_resolution(repo, prepared, {"row": 11, "exact_action": "continue"})
     result["evidence_state_identity"] = "old transcription error"
     save(repo, {"resolution.json": json.dumps(result), "moved.json": '{\n "b": [2, 3], "a": 1\n}', "unrelated.txt": "note"})
-    reused = refs.prepare_resolver(repo, "HEAD", "moved.json", ["resolution.json"])
+    reused = prepare(repo, "HEAD", "moved.json", ["resolution.json"])
     assert reused["evidence_state_identity"] == prepared["evidence_state_identity"]
     assert reused["reuse_resolution"]["path"] == "resolution.json"
     with pytest.raises(refs.ReferenceError, match="reuse"):
@@ -57,10 +62,10 @@ def test_same_facts_reuse_result_after_format_location_and_commit_change(repo):
 
 def test_changed_facts_do_not_reuse_or_rebind_old_judgment(repo):
     save(repo, {"evidence.json": '{"result":1}'})
-    old = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    old = prepare(repo, "HEAD", "evidence.json")
     result = refs.bind_resolution(repo, old, {"row": 11})
     save(repo, {"resolution.json": json.dumps(result), "evidence.json": '{"result":2}'})
-    new = refs.prepare_resolver(repo, "HEAD", "evidence.json", ["resolution.json"])
+    new = prepare(repo, "HEAD", "evidence.json", ["resolution.json"])
     assert "reuse_resolution" not in new
     with pytest.raises(refs.ReferenceError, match="different decision facts"):
         refs.bind_resolution(repo, new, result)
@@ -68,11 +73,16 @@ def test_changed_facts_do_not_reuse_or_rebind_old_judgment(repo):
 
 def test_retained_resolution_identity_is_read_without_rewrite(repo):
     save(repo, {"evidence.json": '{"result":1}'})
-    identity = refs.prepare_resolver(repo, "HEAD", "evidence.json")["evidence_state_identity"]
+    identity = prepare(repo, "HEAD", "evidence.json")["evidence_state_identity"]
     historical = json.dumps({"identity_reproduction": {"evidence_state_identity": identity}, "resolution": {"first_applicable_row": 11}})
     save(repo, {"historical.yaml": historical})
-    result = refs.prepare_resolver(repo, "HEAD", "evidence.json", ["historical.yaml"])
-    assert result["reuse_resolution"]["path"] == "historical.yaml"
+    result = prepare(repo, "HEAD", "evidence.json", ["historical.yaml"])
+    assert "reuse_resolution" not in result
+    legacy = {"evidence_source": refs.reference(repo, "HEAD", "evidence.json"), "row": 11}
+    save(repo, {"legacy.json": json.dumps(legacy)})
+    rebound = refs.bind_resolution(repo, {"evidence_source": legacy["evidence_source"]}, legacy,
+                                   historical_source=refs.reference(repo, "HEAD", "legacy.json"))
+    assert rebound["row"] == 11
     assert (repo / "historical.yaml").read_text() == historical
 
 
@@ -81,7 +91,7 @@ def test_invalid_preparation_has_no_output_or_decision(repo, content):
     save(repo, {"evidence.json": content})
     before = git(repo, "status", "--porcelain")
     with pytest.raises(ValueError):
-        refs.prepare_resolver(repo, "HEAD", "evidence.json")
+        prepare(repo, "HEAD", "evidence.json")
     assert git(repo, "status", "--porcelain") == before
     assert not (repo / "resolution.json").exists()
 
@@ -130,7 +140,7 @@ def test_cli_writes_existing_assignment_and_result_without_transcription(repo, m
     policy_file(repo)
     assignment = repo / "assignment.json"
     assignment.write_text('{"purpose":"choose next observation","limits":{"calls":0}}')
-    monkeypatch.setattr("sys.argv", ["frontier_references.py", "resolver", "--repo", str(repo), "--path", "evidence.json", "--output", str(assignment)])
+    monkeypatch.setattr("sys.argv", ["frontier_references.py", "resolver", "--owner-source", "TASK.md", "--repo", str(repo), "--path", "evidence.json", "--output", str(assignment)])
     assert refs.main() == 0
     prepared = json.loads(assignment.read_text())
     assert prepared["purpose"] == "choose next observation"
@@ -161,7 +171,7 @@ def test_cli_keeps_proposals_separate_from_adopted_work(repo, monkeypatch):
     monkeypatch.setenv("CODEX_THREAD_ID", "current-owner")
     monkeypatch.delenv("CODEX_AGENT_ID", raising=False)
     assignment = repo / "assignment.json"
-    monkeypatch.setattr("sys.argv", ["frontier_references.py", "resolver", "--repo", str(repo),
+    monkeypatch.setattr("sys.argv", ["frontier_references.py", "resolver", "--owner-source", "TASK.md", "--repo", str(repo),
                                     "--path", "evidence.json", "--output", str(assignment)])
     assert refs.main() == 0
     pointer = repo / ".frontier/hook-context/current-owner-proposal.json"
@@ -192,7 +202,7 @@ def test_native_registration_failure_does_not_discard_the_decision(repo, monkeyp
     def unavailable(*args, **kwargs):
         raise OSError("context directory unavailable")
     monkeypatch.setattr(refs, "register_hook_record", unavailable)
-    monkeypatch.setattr("sys.argv", ["frontier_references.py", "resolver", "--repo", str(repo),
+    monkeypatch.setattr("sys.argv", ["frontier_references.py", "resolver", "--owner-source", "TASK.md", "--repo", str(repo),
                                     "--path", "evidence.json", "--output", str(assignment)])
     assert refs.main() == 0
     assert json.loads(assignment.read_text())["evidence_state_identity"]
@@ -200,9 +210,9 @@ def test_native_registration_failure_does_not_discard_the_decision(repo, monkeyp
 
 def test_optional_policy_is_supplied_to_existing_resolver_without_claiming_handling(repo):
     save(repo, {"evidence.json": '{"result":1}'})
-    absent = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    absent = prepare(repo, "HEAD", "evidence.json")
     policy_file(repo)
-    supplied = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    supplied = prepare(repo, "HEAD", "evidence.json")
     assert supplied["evidence_state_identity"] == absent["evidence_state_identity"]
     assert supplied["decision_policy"]["status"] == "provided"
     assert "same investment judgment" in supplied["decision_policy"]["text"]
@@ -216,7 +226,7 @@ def test_optional_policy_is_supplied_to_existing_resolver_without_claiming_handl
 def test_coverage_records_explicit_handling_without_a_second_judgment(repo, status):
     save(repo, {"evidence.json": '{"result":1}'})
     policy_file(repo)
-    prepared = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    prepared = prepare(repo, "HEAD", "evidence.json")
     disposition = {"status": status, "reason": "Compared direct design with diagnosis in the existing rationale."}
     body = {"row": 11, "exact_action": "develop the whole mechanism", "policy_disposition": disposition,
             "policy_coverage": {"policy_status": "invented_pass"}}
@@ -233,7 +243,7 @@ def test_coverage_records_explicit_handling_without_a_second_judgment(repo, stat
 def test_missing_or_incomplete_optional_handling_is_uncovered_not_blocked(repo, disposition):
     save(repo, {"evidence.json": '{"result":1}'})
     policy_file(repo)
-    prepared = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    prepared = prepare(repo, "HEAD", "evidence.json")
     result = refs.bind_resolution(repo, prepared, {"row": 11, "policy_disposition": disposition})
     assert result["row"] == 11
     assert result["policy_coverage"]["judgment_status"] == "not_reported"
@@ -242,7 +252,7 @@ def test_missing_or_incomplete_optional_handling_is_uncovered_not_blocked(repo, 
 def test_changed_policy_preserves_reported_handling_but_does_not_claim_current_coverage(repo):
     save(repo, {"evidence.json": '{"result":1}'})
     path = policy_file(repo)
-    prepared = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    prepared = prepare(repo, "HEAD", "evidence.json")
     path.write_text("Changed guidance", encoding="utf-8")
     result = refs.bind_resolution(repo, prepared, {"row": 11, "policy_disposition": {
         "status": "addressed", "reason": "Used the supplied guidance in the original comparison."}})
@@ -253,14 +263,14 @@ def test_changed_policy_preserves_reported_handling_but_does_not_claim_current_c
 
 def test_missing_unreadable_and_old_policy_context_do_not_block_existing_work(repo):
     save(repo, {"evidence.json": '{"result":1}'})
-    absent = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    absent = prepare(repo, "HEAD", "evidence.json")
     old = {key: value for key, value in absent.items() if key != "decision_policy"}
     for prepared in (absent, old):
         result = refs.bind_resolution(repo, prepared, {"row": 11})
         assert result["policy_coverage"] == {"policy_status": "not_provided", "judgment_status": "not_reported"}
     path = policy_file(repo)
     path.write_bytes(b"\xff")
-    unavailable = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    unavailable = prepare(repo, "HEAD", "evidence.json")
     result = refs.bind_resolution(repo, unavailable, {"row": 11})
     assert result["policy_coverage"]["policy_status"] == "unavailable"
     assert result["row"] == 11
@@ -270,13 +280,13 @@ def test_missing_unreadable_and_old_policy_context_do_not_block_existing_work(re
 def test_prior_judgment_reuse_reports_actual_original_coverage_without_reopening(repo, change_policy):
     save(repo, {"evidence.json": '{"result":1}'})
     path = policy_file(repo)
-    prepared = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    prepared = prepare(repo, "HEAD", "evidence.json")
     result = refs.bind_resolution(repo, prepared, {"row": 11, "policy_disposition": {
         "status": "addressed", "reason": "The existing comparison applied the supplied policy."}})
     save(repo, {"resolution.json": json.dumps(result)})
     if change_policy:
         path.write_text("Updated optional guidance", encoding="utf-8")
-    reused = refs.prepare_resolver(repo, "HEAD", "evidence.json", ["resolution.json"])
+    reused = prepare(repo, "HEAD", "evidence.json", ["resolution.json"])
     assert reused["reuse_resolution"]["path"] == "resolution.json"
     assert reused["reused_policy_coverage"]["policy_status"] == ("changed" if change_policy else "current")
     assert reused["reused_policy_coverage"]["judgment_status"] == "addressed"
@@ -286,11 +296,11 @@ def test_prior_judgment_reuse_reports_actual_original_coverage_without_reopening
 def test_rebinding_an_existing_judgment_cannot_refresh_its_policy_coverage(repo):
     save(repo, {"evidence.json": '{"result":1}'})
     path = policy_file(repo)
-    first = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    first = prepare(repo, "HEAD", "evidence.json")
     result = refs.bind_resolution(repo, first, {"row": 11, "policy_disposition": {
         "status": "addressed", "reason": "Applied the original supplied guidance."}})
     path.write_text("Different current guidance", encoding="utf-8")
-    current = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    current = prepare(repo, "HEAD", "evidence.json")
     rebound = refs.bind_resolution(repo, current, result)
     assert rebound["decision_policy"] == result["decision_policy"]
     assert rebound["policy_coverage"]["policy_status"] == "changed"
@@ -300,12 +310,12 @@ def test_rebinding_an_existing_judgment_cannot_refresh_its_policy_coverage(repo)
 def test_cli_reusing_assignment_clears_prior_policy_coverage_when_facts_change(repo, monkeypatch):
     save(repo, {"evidence.json": '{"result":1}'})
     policy_file(repo)
-    prepared = refs.prepare_resolver(repo, "HEAD", "evidence.json")
+    prepared = prepare(repo, "HEAD", "evidence.json")
     result = refs.bind_resolution(repo, prepared, {"row": 11, "policy_disposition": {
         "status": "addressed", "reason": "Applied the supplied policy in this judgment."}})
     save(repo, {"resolution.json": json.dumps(result)})
     assignment = repo / "assignment.json"
-    command = ["frontier_references.py", "resolver", "--repo", str(repo), "--path", "evidence.json",
+    command = ["frontier_references.py", "resolver", "--owner-source", "TASK.md", "--repo", str(repo), "--path", "evidence.json",
                "--prior", "resolution.json", "--output", str(assignment)]
     monkeypatch.setattr("sys.argv", command)
     assert refs.main() == 0
@@ -319,3 +329,195 @@ def test_cli_reusing_assignment_clears_prior_policy_coverage_when_facts_change(r
     assert "reused_policy_coverage" not in fresh
     assert fresh["evidence_state_identity"] != reused["evidence_state_identity"]
     assert fresh["decision_policy"]["status"] == "provided"
+
+
+def frontier_files(*, due=True):
+    timing = 'feedback_trigger: The candidate can now produce useful objective evidence.\n' if due else 'feedback_not_due: The prerequisite still cannot produce useful evidence.\n'
+    return {
+        "campaign/FRONTIER.md": '---\ntype: Optimization Frontier\nproblem: PROBLEM.md\nproblem_epoch: 2\nrepresentation: REPRESENTATION.md\nrepresentation_revision: 3\ncurrent_state:\n  primary_batch: B001\n  pending_observation: Result becomes usable after exposure.\nobjective_basis:\n  objective_source: PROBLEM.md#goal\n  evaluation_source: PROBLEM.md#evaluation\n' + timing + '---\n# Campaign\n[Work](WORK.md#pending)\n## History\nUnrelated past work.\n',
+        "campaign/PROBLEM.md": '---\nepoch: 2\n---\n# Problem\n## Goal\nImprove the real outcome.\n## Evaluation\nCompare outcomes under the named conditions.\n## History\nEarlier work.\n',
+        "campaign/REPRESENTATION.md": '---\nproblem: PROBLEM.md\nproblem_epoch: 2\nrepresentation_revision: 3\n---\n# Representation\nSearch translation.\n',
+        "campaign/WORK.md": '# Work\n## Pending\nObserve after the first usable exposure.\n## History\nEarlier work.\n',
+        "evidence.json": '{"recommended":"local diagnosis"}',
+    }
+
+
+def feedback_result():
+    return {"comparison": "The available observation can distinguish the live explanations before optional diagnosis.",
+            "feedback_decision": {"trigger": "The candidate can now produce useful objective evidence.",
+                                  "action": "observe", "basis": "/comparison", "next_condition": "Adopt the observation before choosing dependent work."}}
+
+
+def test_preparation_derives_adopted_sources_outside_recommendations(repo):
+    save(repo, frontier_files())
+    prepared = prepare(repo, "HEAD", "evidence.json", owner_source="campaign/FRONTIER.md")
+    assert prepared["objective_basis"]["objective_source"]["path"] == "campaign/PROBLEM.md"
+    assert prepared["objective_basis"]["evaluation_source"]["section"] == "evaluation"
+    assert prepared["objective_basis"]["current_work_source"]["field"] == "current_state"
+    assert "Improve the real outcome" in prepared["objective_basis_content"]["objective_source"]
+    assert "Earlier work" not in json.dumps(prepared["objective_basis_content"])
+    assert refs.bind_resolution(repo, prepared, feedback_result())["feedback_decision"]["action"] == "observe"
+
+
+@pytest.mark.parametrize("change", ["missing", "bad_action", "missing_basis", "wrong_trigger", "self_basis"])
+def test_due_feedback_requires_concrete_linkage(repo, change):
+    save(repo, frontier_files())
+    prepared = prepare(repo, "HEAD", "evidence.json", owner_source="campaign/FRONTIER.md")
+    result = feedback_result()
+    if change == "missing":
+        result.pop("feedback_decision")
+    else:
+        field, value = {"bad_action": ("action", "passed"), "missing_basis": ("basis", "/absent"),
+                        "wrong_trigger": ("trigger", "An unrelated event"), "self_basis": ("basis", "/feedback_decision/action")}[change]
+        result["feedback_decision"][field] = value
+    with pytest.raises(refs.ReferenceError):
+        refs.bind_resolution(repo, prepared, result)
+
+
+@pytest.mark.parametrize("change", ["goal", "evaluation", "pending", "timing", "epoch", "parent"])
+def test_relevant_source_change_prevents_reuse_and_binding(repo, change):
+    files = frontier_files()
+    save(repo, files)
+    prepared = prepare(repo, "HEAD", "evidence.json", owner_source="campaign/FRONTIER.md")
+    result = refs.bind_resolution(repo, prepared, feedback_result())
+    updates = {"resolution.json": json.dumps(result)}
+    if change in {"goal", "evaluation"}:
+        updates["campaign/PROBLEM.md"] = files["campaign/PROBLEM.md"].replace(
+            "Improve the real outcome." if change == "goal" else "Compare outcomes under the named conditions.", "A decision-relevant change.")
+    else:
+        old, new = {"pending": ("Result becomes usable after exposure.", "A new result is available."),
+                    "timing": ("The candidate can now produce useful objective evidence.", "The deadline changed."),
+                    "epoch": ("problem_epoch: 2", "problem_epoch: 9"),
+                    "parent": ("problem: PROBLEM.md", "problem: OTHER.md")}[change]
+        updates["campaign/FRONTIER.md"] = files["campaign/FRONTIER.md"].replace(old, new)
+    save(repo, updates)
+    with pytest.raises(refs.ReferenceError):
+        refs.bind_resolution(repo, prepared, feedback_result())
+    if change in {"epoch", "parent"}:
+        with pytest.raises(refs.ReferenceError):
+            prepare(repo, "HEAD", "evidence.json", ["resolution.json"], owner_source="campaign/FRONTIER.md")
+    else:
+        fresh = prepare(repo, "HEAD", "evidence.json", ["resolution.json"], owner_source="campaign/FRONTIER.md")
+        assert fresh["evidence_state_identity"] == prepared["evidence_state_identity"]
+        assert "reuse_resolution" not in fresh
+
+
+def test_unrelated_source_sections_commits_and_dirty_files_preserve_reuse(repo):
+    files = frontier_files()
+    save(repo, files)
+    prepared = prepare(repo, "HEAD", "evidence.json", owner_source="campaign/FRONTIER.md")
+    result = refs.bind_resolution(repo, prepared, feedback_result())
+    save(repo, {"resolution.json": json.dumps(result), "unrelated.txt": "New unrelated work.",
+                "campaign/FRONTIER.md": files["campaign/FRONTIER.md"].replace("Unrelated past work.", "More unrelated history."),
+                "campaign/PROBLEM.md": files["campaign/PROBLEM.md"].replace("Earlier work.", "More old details.")})
+    (repo / "unrelated.txt").write_text("Unsaved unrelated changes.")
+    reused = prepare(repo, "HEAD", "evidence.json", ["resolution.json"], owner_source="campaign/FRONTIER.md")
+    assert reused["reuse_resolution"]["path"] == "resolution.json"
+    assert refs.bind_resolution(repo, prepared, feedback_result())["objective_basis_identity"] == result["objective_basis_identity"]
+    assert (repo / "unrelated.txt").read_text() == "Unsaved unrelated changes."
+
+
+@pytest.mark.parametrize("pointer", ["MISSING.md", "PROBLEM.md#missing", "UNRELATED.md"])
+def test_bad_owner_sources_fail_before_assignment(repo, pointer):
+    files = frontier_files()
+    files["campaign/FRONTIER.md"] = files["campaign/FRONTIER.md"].replace("PROBLEM.md#goal", pointer)
+    files["campaign/UNRELATED.md"] = "An arbitrary recommendation source."
+    save(repo, files)
+    with pytest.raises(refs.ReferenceError):
+        prepare(repo, "HEAD", "evidence.json", owner_source="campaign/FRONTIER.md")
+
+
+def test_missing_timing_and_owner_fail_normal_cli_without_replacing_output(repo, monkeypatch, capsys):
+    save(repo, {"TASK.md": "# Actual task\nA goal and a pending decision.", "evidence.json": '{}'})
+    output = repo / "assignment.json"
+    output.write_text('{"retained":"existing assignment"}')
+    command = ["frontier_references.py", "resolver", "--repo", str(repo), "--path", "evidence.json", "--output", str(output)]
+    for extra in ([], ["--owner-source", "TASK.md"]):
+        monkeypatch.setattr("sys.argv", command + extra)
+        assert refs.main() == 2
+        assert json.loads(capsys.readouterr().out)["status"] == "NOT_READY"
+        assert output.read_text() == '{"retained":"existing assignment"}'
+    monkeypatch.setattr("sys.argv", command + ["--owner-source", "TASK.md", "--feedback-not-due", "The necessary prerequisite is incomplete."])
+    assert refs.main() == 0
+    assert json.loads(output.read_text())["feedback_not_due"]
+
+
+def test_due_cli_binding_failure_keeps_draft_and_assignment(repo, monkeypatch, capsys):
+    save(repo, frontier_files())
+    assignment, draft = repo / "assignment.json", repo / "result.json"
+    monkeypatch.setattr("sys.argv", ["frontier_references.py", "resolver", "--repo", str(repo), "--path", "evidence.json",
+                                    "--owner-source", "campaign/FRONTIER.md", "--output", str(assignment)])
+    assert refs.main() == 0
+    before = assignment.read_bytes()
+    draft.write_text('{"comparison":"Keep diagnosing."}')
+    monkeypatch.setattr("sys.argv", ["frontier_references.py", "bind-resolution", "--repo", str(repo), "--path", "assignment.json",
+                                    "--result", str(draft), "--output", str(draft)])
+    assert refs.main() == 2
+    assert "feedback_decision" in capsys.readouterr().out
+    assert assignment.read_bytes() == before
+    assert draft.read_text() == '{"comparison":"Keep diagnosing."}'
+
+
+def test_tampered_basis_and_unlinked_current_work_rejected(repo):
+    save(repo, frontier_files())
+    prepared = prepare(repo, "HEAD", "evidence.json", owner_source="campaign/FRONTIER.md")
+    prepared["objective_basis"]["objective_source"]["section"] = "history"
+    with pytest.raises(refs.ReferenceError, match="bindings"):
+        refs.bind_resolution(repo, prepared, feedback_result())
+    with pytest.raises(refs.ReferenceError, match="linked"):
+        prepare(repo, "HEAD", "evidence.json", owner_source="campaign/FRONTIER.md", current_work_source="REPRESENTATION.md")
+    valid = prepare(repo, "HEAD", "evidence.json", owner_source="campaign/FRONTIER.md", current_work_source="WORK.md#pending")
+    assert valid["objective_basis"]["current_work_source"]["path"] == "campaign/WORK.md"
+
+
+def test_stripping_objective_fields_cannot_make_a_new_judgment_historical(repo):
+    save(repo, {"evidence.json": '{"result":1}'})
+    source = refs.reference(repo, "HEAD", "evidence.json")
+    fake = {"evidence_source": source, "row": 11}
+    with pytest.raises(refs.ReferenceError, match="unchanged saved result"):
+        refs.bind_resolution(repo, {"evidence_source": source}, fake)
+
+
+def test_tampered_supplied_objective_content_rejected(repo):
+    save(repo, frontier_files())
+    prepared = prepare(repo, "HEAD", "evidence.json", owner_source="campaign/FRONTIER.md")
+    prepared["objective_basis_content"]["objective_source"] = "Optimize only the recommended local proxy."
+    with pytest.raises(refs.ReferenceError, match="content differs"):
+        refs.bind_resolution(repo, prepared, feedback_result())
+
+
+def test_generic_owner_can_use_existing_relative_sections_without_new_documents(repo):
+    save(repo, {"notes/TASK.md": "---\nobjective_basis:\n  objective_source: ../GOAL.md#goal\n  evaluation_source: ../GOAL.md#evaluation\n  current_work_source: '#pending'\nfeedback_not_due: The prerequisite remains incomplete.\n---\n# Work\n## Pending\nImplement the prerequisite.\n",
+                "GOAL.md": "# Task\n## Goal\nImprove the real outcome.\n## Evaluation\nUse observed outcomes.\n", "evidence.json": '{}'})
+    result = prepare(repo, "HEAD", "evidence.json", owner_source="notes/TASK.md")
+    assert result["objective_basis"]["objective_source"]["path"] == "GOAL.md"
+    assert result["objective_basis"]["current_work_source"]["section"] == "pending"
+
+
+def test_old_saved_revision_cannot_prepare_changed_current_owner(repo):
+    files = frontier_files()
+    original = save(repo, files)
+    save(repo, {"campaign/PROBLEM.md": files["campaign/PROBLEM.md"].replace("Improve the real outcome.", "A changed objective.")})
+    with pytest.raises(refs.ReferenceError, match="basis changed"):
+        prepare(repo, original, "evidence.json", owner_source="campaign/FRONTIER.md")
+
+
+@pytest.mark.parametrize("before,after", [
+    ('Accept exactly `red blue`.', 'Accept exactly `red  blue`.'),
+    ('```yaml\ncondition:\n  required: true\n```', '```yaml\ncondition:\nrequired: true\n```'),
+])
+def test_meaningful_source_whitespace_prevents_reuse_and_binding(repo, before, after):
+    files = frontier_files()
+    files["campaign/PROBLEM.md"] = files["campaign/PROBLEM.md"].replace(
+        "Compare outcomes under the named conditions.", before)
+    save(repo, files)
+    prepared = prepare(repo, "HEAD", "evidence.json", owner_source="campaign/FRONTIER.md")
+    result = refs.bind_resolution(repo, prepared, feedback_result())
+    save(repo, {"resolution.json": json.dumps(result),
+                "campaign/PROBLEM.md": files["campaign/PROBLEM.md"].replace(before, after)})
+    current = prepare(repo, "HEAD", "evidence.json", ["resolution.json"], owner_source="campaign/FRONTIER.md")
+    assert current["evidence_state_identity"] == prepared["evidence_state_identity"]
+    assert current["objective_basis_identity"] != prepared["objective_basis_identity"]
+    assert "reuse_resolution" not in current
+    with pytest.raises(refs.ReferenceError, match="basis changed"):
+        refs.bind_resolution(repo, prepared, feedback_result())

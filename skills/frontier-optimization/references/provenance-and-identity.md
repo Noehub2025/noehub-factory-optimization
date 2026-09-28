@@ -67,7 +67,7 @@ Use `scripts/frontier_references.py` for current W consumers and resolver assign
 # Prepare a current design subject; repeat --scope for each selected slice.
 python frontier_references.py design --repo PROJECT --revision SAVED_REF --path W_PATH --scope SLICE --output EXISTING_ASSIGNMENT
 # Prepare saved JSON evidence; repeat --prior for applicable prior resolutions.
-python frontier_references.py resolver --repo PROJECT --revision SAVED_REF --path EVIDENCE_PATH --prior PRIOR_RESULT_PATH --output EXISTING_ASSIGNMENT
+python frontier_references.py resolver --repo PROJECT --revision SAVED_REF --path EVIDENCE_PATH --owner-source OWNER_PATH --feedback-trigger EVENT --prior PRIOR_RESULT_PATH --output EXISTING_ASSIGNMENT
 # Attach generated input fields to the resolver's existing professional result.
 python frontier_references.py bind-resolution --repo PROJECT --path EXISTING_ASSIGNMENT --result RESULT_DRAFT --output RESULT_DRAFT
 ```
@@ -77,6 +77,10 @@ Run the installed script by its actual path. Input paths and design pointers are
 Design preparation resolves the Design map's pointer column and `design/traceability.yaml` at the chosen version. Pointers use `repository/path.md#section-anchor`; anchors are lowercased headings with punctuation removed and whitespace replaced by hyphens. Selected prerequisites must remain in scope, even when satisfied by retained evidence. Semantic completeness and review applicability remain professional judgments in the existing review.
 
 Resolver preparation derives the canonical JSON key with sorted object keys, compact separators, UTF-8 and no trailing newline. It preserves every supplied decision fact. Formatting and location are outside that key; metadata that changes no decision fact should remain outside the evidence object. Reuse and preparation-failure behavior are owned by [Learning Loop](learning-loop.md#resolver-input-preparation). This helper checks saved references and propagates bindings; it does not schedule or record worker invocations.
+
+New resolver preparations require the adopted owner and explicit timing input: `--feedback-trigger EVENT` or `--feedback-not-due REASON`, or the corresponding owner field. Objective and evaluation references derive from the owner's adopted Problem (or the actual generic task source); current work defaults to its current-state projection. Use `--current-work-source PATH#SECTION` only for work linked by the owner. An owner-authored `objective_basis` can select relevant sections in those sources. These source references are separate from the candidate menu, participate in reuse applicability, and are rechecked on binding. Missing required input returns a preparation error without publishing a usable assignment; repair it in place. See [Decision policy in the existing resolver path](worker-interfaces.md#decision-policy-in-the-existing-resolver-path) for substantive adoption and actual-task checks.
+
+The default reads the Problem itself, not every linked detail recursively. When a linked measurement detail or pending observation supplies a decision-critical fact, select that actual source in the owner's `objective_basis` (`objective_source`, `evaluation_source`, `current_work_source`) or current-work option before comparison. Paths are relative to the owner, with optional heading anchors; Frontier objective/evaluation selections must belong to the adopted Problem or its linked details. Source freshness covers those selected contents and saved revisions, not unseen linked documents or unsaved edits. The owner must reconcile known new facts into this basis before dependent work; optional Hook state cannot supply missing authority or facts.
 
 ### Shared saved-byte implementation
 

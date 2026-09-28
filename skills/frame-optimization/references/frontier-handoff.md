@@ -25,6 +25,8 @@ Keep content at the scope where it governs work:
 
 A fixed reference, dataset or parameter may define one reusable protocol without becoming the only permitted condition for all search. An instance change stays in the Batch while the method's meaning, applicability and supported use remain intact; a change to those premises goes to the existing professional owner. Keep D's objective separate from a particular diagnostic's result classes, and R8's search rules separate from its execution sequence. Frontier owns live campaign facts:
 
+When updating the current projection, D retains success meaning and E retains the evaluator's applicable aggregation and changing-value behavior; H points to reusable measurement meaning. Exact schedules, result branches and current candidates remain with their W or Batch. Correct an obsolete instance presented as the current contract without discarding its historical evidence or reopening unaffected reviews. Supply these adopted sources separately from a proposed route's recommendation when the next investment is prepared. Refresh a source fact when it could change that decision, not by a universal expiration timer.
+
 | Live fact | Current owner |
 |---|---|
 | Generation, campaign status and Selection | `FRONTIER.md` `current_state` |

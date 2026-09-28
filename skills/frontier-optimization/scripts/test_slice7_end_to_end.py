@@ -1060,7 +1060,7 @@ class Slice7ContractTests(unittest.TestCase):
         self.assert_contract_contains(
             "learning-loop.md",
             "Batch completion or failure does not establish route completion or failure",
-            "Compare preliminary analysis with direct design or realization where feasible",
+            "Choose research or diagnosis when its expected contribution to a concrete work or investment decision justifies its full cost relative to direct development or stronger outcome evidence",
             "Dependent strategic spend needs sufficient evidence",
             "A valid whole-treatment comparison may support that the bounded package caused the observed local effect",
             "This section is the only investment-direction resolver",

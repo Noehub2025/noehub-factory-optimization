@@ -10,7 +10,11 @@ The first participating commitment enters the check automatically. Later checks 
 
 Configured sessions supply the policy to the existing Coordinator and Resolver requests. Reuse that one applicable independent judgment through `update.resolved_invocation` (an accepted Resolver invocation in this run), or `resolved_by` (existing supplied source indices). The owner asserts substantive applicability; the runtime verifies references and records reuse without launching another model or fabricating a `no_finding` verdict. Enforce mode retains the existing current writeback check. Missing policy stays unavailable even when a judgment reference exists. New fields default to ordinary continuation/no reused invocation when reading older records.
 
-For the repository's normal reference-based Workflow, `frontier_references.py resolver` and `bind-resolution` now deliver this same policy and retain coverage within their existing assignment/result. See [the owner path](../../skills/frontier-optimization/references/worker-interfaces.md#decision-policy-in-the-existing-resolver-path). It does not require a harness session, a new native-hook identity, or migration to this runtime. Recorded policy delivery/handling is separate from native callbacks and from correctness of the decision.
+For the repository's normal reference-based Workflow, `frontier_references.py resolver` and `bind-resolution` deliver this same policy within the existing assignment/result. Preparation requires `--owner-source` and an explicit timing disposition (`--feedback-trigger` or `--feedback-not-due`, alternatively supplied by that owner). It derives `objective_basis` and readable content from the adopted objective, evaluation and current-work sources, separately from the recommendation packet. Frontier derives objective and evaluation from its adopted Problem; a generic task may use its owning task source. See [the owner path](../../skills/frontier-optimization/references/worker-interfaces.md#decision-policy-in-the-existing-resolver-path) for source selection and operation responsibilities.
+
+A due timing result needs `feedback_decision` with `trigger`, `action`, `basis` and `next_condition`; the basis points into the result's actual comparison. Binding checks source association and current decision facts. Recommendation identity alone cannot reuse a resolution after its objective basis changes. Missing required inputs yield no usable new binding. Historical results remain readable, but cannot become new decisions by omitting the required fields. These checks establish source delivery and a recorded decision, not its wisdom: the existing owner must compare actual adoption, dispatch, steering, direct work and resumed work with both the objective and the commitment. Missing optional native telemetry is a separate limitation and does not block otherwise valid work.
+
+This normal path does not require a harness session, a new native-hook identity, or migration to this optional runtime. Its required inputs are distinct from optional policy-observer coverage. Recorded policy delivery/handling is separate from native callbacks and from correctness of the decision.
 
 Use an existing research `Task` with its actual source excerpts, owner methods and limits. Start through `host start TASK.json NEW_RUN_DIRECTORY`. Configure before returning the participating Coordinator proposal. All commands below are `workflow-harness host COMMAND RUN_DIRECTORY` and read their input as JSON from stdin. Paths in inputs must be absolute.
 
@@ -61,26 +65,29 @@ participate in the new path. Other roots, unmapped children and workspaces canno
 borrow the pointer. Pause and completion stay visible without automatic resume.
 Missing or corrupt optional state never denies ordinary work.
 
-Research recovery follows the owner's existing plan for the whole-chain
-advantage hypothesis, its decisive prospective conditions, outstanding target
-feedback, and remaining path, not just its latest completed step. Use Learning
-Loop's `prospective-reasoning` rule in the existing investment judgment; native
-context does not evaluate future scenarios or require a forecasting stage. Keep
-that context in the owner's normal current-work summary or plan reference. The
-native reminder points to Learning Loop's
+Research recovery follows the owner's existing plan for the whole-chain advantage
+hypothesis, its decisive prospective conditions, outstanding target feedback and
+remaining path, not just its latest completed step. Use Learning Loop's
+`prospective-reasoning` rule in the existing investment judgment; native context
+does not evaluate future scenarios or require a forecasting stage. Keep that
+context in the owner's normal current-work summary or
+plan reference. The native reminder points to Learning Loop's
 `whole-chain-investment-and-target-feedback` rule; it does not parse the plan,
-decide readiness, or classify delays. At handoff, the owner compares the actual
+decide readiness or classify delays. At handoff, the owner compares the actual
 task with the selected feedback arrangement. An unsupported postponement must
 change the affected next task, not just its disclaimer. This reuses the existing
-judgment and adds no per-step review, model call, or automatic denial.
+judgment and adds no per-step review, model call or automatic denial.
 
 The root observer captures structured inputs only for `spawn_agent` and
 `followup_task` (including qualified names, the desktop's concatenated namespace
 names such as observed `collaborationfollowup_task`, and the native `Agent` alias),
 then matches `PostToolUse` by session, tool name, call ID and actual input. These
 are adapter-supported names; native host coverage requires real receipts.
-Every follow-up has its own call. Unknown response envelopes stay uncertain;
-successful structured handles establish dispatch, never worker completion.
+Every follow-up has its own call. The observer accepts an object response or one
+JSON string encoding an object, preserves the original response, and gives
+explicit errors precedence over handles. It does not recursively decode strings.
+Malformed, scalar and unknown response envelopes stay uncertain; successful
+structured handles establish dispatch, never worker completion.
 The observed desktop path can expose an opaque task body. Such a receipt retains
 host bytes and call identity but not readable assignment meaning. The adapter
 marks this limitation and leaves substantive comparison to the actual task in
