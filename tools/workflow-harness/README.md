@@ -15,6 +15,8 @@ Protocol version 2 is enabled when a task includes a `research` object. It can:
 
 - deliver a research question, missing observation, current rationale, sources,
   constraints, alternatives, and role-specific methods;
+- preserve the whole-chain advantage hypothesis, decisive prospective
+  conditions, and selected target feedback across owner and Batch handoffs;
 - correlate a worker return with the invocation that created it;
 - retain cumulative elapsed time, model tokens, compute, and currency-specific
   spending without treating unknown values as zero;
@@ -25,6 +27,13 @@ Protocol version 2 is enabled when a task includes a `research` object. It can:
 The harness does not sandbox an uncooperative process, settle external effects,
 prove that a result is correct, or intercept host tools that are not connected
 to one of its adapters.
+
+The native context is a concise reminder, not a forecasting engine or decision
+maker. The existing owner still decides whether target feedback is ready,
+whether a delay is necessary, and how external changes or intervention-induced
+effects alter the next commitment. Behavioral examples live in
+[`tests/target-feedback-cases.md`](./tests/target-feedback-cases.md) and
+[`tests/foresight-cases.md`](./tests/foresight-cases.md).
 
 ## Build and test
 

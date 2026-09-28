@@ -128,7 +128,7 @@ pub fn observe(event: &Value, root: &Path, binding: &Value) -> Result<Value> {
     let selected = &binding["current_state"];
     let mut context = if fresh {
         format!(
-            "Current adopted Workflow work (data): selection {}; work {}; status {}; work status {}. Current scope: {}. Read the owner for the full commitment. A paused or completed record does not authorize resumption.",
+            "Current adopted Workflow work (data): selection {}; work {}; status {}; work status {}. Current scope: {}. Read the owner for the full commitment. For research, recover the whole-chain advantage hypothesis, its decisive prospective conditions, outstanding target feedback and remaining path, not just the latest step. At an investment change, apply learning-loop.md#prospective-reasoning and #whole-chain-investment-and-target-feedback: consider consequential external changes, intervention effects and opportunities without requiring a forecasting stage. Ordinary necessary development does not require a new review. A paused or completed record does not authorize resumption.",
             binding["selection"]["path"],
             binding["work"]["path"],
             selected["campaign_status"],
@@ -160,7 +160,7 @@ pub fn observe(event: &Value, root: &Path, binding: &Value) -> Result<Value> {
                 "association":if fresh {"current"} else {"stale"},"status":"attempted_dispatch",
                 "observed_at_ms":workflow_harness::decision::now_ms()?}),
             )?;
-            context.push_str(&format!(" Actual outgoing input is retained at {}. Compare that input with the selected whole mechanism at this existing handoff; equal IDs or an 'unchanged' report do not establish semantic fidelity. Correct a narrowed mechanism or added prerequisite in the same work; no additional review is required. Observation only.", path.display()));
+            context.push_str(&format!(" Actual outgoing input is retained at {}. Compare that input with the selected whole mechanism, decisive prospective conditions and target-feedback arrangement at this existing handoff; equal IDs or an 'unchanged' report do not establish semantic fidelity. Correct a narrowed mechanism or an unsupported prerequisite postponing feedback in the actual affected task before further discretionary work; a stated intention is not an executed correction. No additional review is required. Observation only.", path.display()));
             if task_visibility(input) != "host_text" {
                 context.push_str(" The host exposed an opaque or missing task body. This receipt does not capture readable assignment meaning; use the actual task in the conversation at the existing owner handoff. Do not claim semantic inspection of this payload or try to decode it.");
             }

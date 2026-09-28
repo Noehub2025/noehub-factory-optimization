@@ -61,6 +61,19 @@ participate in the new path. Other roots, unmapped children and workspaces canno
 borrow the pointer. Pause and completion stay visible without automatic resume.
 Missing or corrupt optional state never denies ordinary work.
 
+Research recovery follows the owner's existing plan for the whole-chain
+advantage hypothesis, its decisive prospective conditions, outstanding target
+feedback, and remaining path, not just its latest completed step. Use Learning
+Loop's `prospective-reasoning` rule in the existing investment judgment; native
+context does not evaluate future scenarios or require a forecasting stage. Keep
+that context in the owner's normal current-work summary or plan reference. The
+native reminder points to Learning Loop's
+`whole-chain-investment-and-target-feedback` rule; it does not parse the plan,
+decide readiness, or classify delays. At handoff, the owner compares the actual
+task with the selected feedback arrangement. An unsupported postponement must
+change the affected next task, not just its disclaimer. This reuses the existing
+judgment and adds no per-step review, model call, or automatic denial.
+
 The root observer captures structured inputs only for `spawn_agent` and
 `followup_task` (including qualified names, the desktop's concatenated namespace
 names such as observed `collaborationfollowup_task`, and the native `Agent` alias),
