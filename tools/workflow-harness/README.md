@@ -21,6 +21,10 @@ Protocol version 2 is enabled when a task includes a `research` object. It can:
   current-work sources, including an explicit feedback-timing disposition;
 - carry validated current-use corrections into Worker preparation, reject stale
   queued work, and replace only requests that have not started;
+- keep reusable understanding, source bytes, and accepted returns once, then
+  provide exact retrieval locators instead of repeating the complete history;
+- keep a broader controlling objective separate from a local assignment and
+  bind optional current-use coverage to the exact saved objects a request uses;
 - retain delayed observations, delivery failures, capability limitations, and
   recoverable alternatives without converting them into automatic support work;
 - correlate a worker return with the invocation that created it;
@@ -39,6 +43,30 @@ request consumed by a cooperating host. They do not decide whether a correction
 is semantically sound. The existing owner must first validate and adopt the
 corrected work with the Skill helper; direct or unsupported dispatch paths still
 require that owner to inspect the actual outgoing task.
+
+## Reusable context and exact delivery
+
+The coordinator can retain one current explanation in `update.context` and name
+the invocations whose returns it incorporates. When a later return does not
+change that explanation, `context_unchanged` records the reuse without creating
+another summary. Unadopted returns remain available as evidence.
+
+The harness stores selected source and return bytes as shared SHA-256-addressed
+evidence. A prepared request includes verified retrieval instructions. A
+participating host can retrieve only the needed value with:
+
+```sh
+tools/workflow-harness/target/release/workflow-harness \
+  host context-read RUN_DIRECTORY SNAPSHOT_SHA256 /by_invocation/INVOCATION_ID
+```
+
+Other supported selectors include `/full_sources/0`, `/current_use`, and JSON
+pointers below a selected return. Before sending a prepared request, a
+cooperating host can run `host context-check RUN_DIRECTORY REQUEST.json` to
+verify its delivery identity and scoped source state. These checks establish
+which bytes were delivered; they do not establish their truth, relevance, or
+authority, and an opaque remote host must provide equivalent access before
+claiming coverage.
 
 The native context is a concise reminder, not a forecasting engine or decision
 maker. The existing owner still decides whether target feedback is ready,
@@ -115,11 +143,14 @@ effects or an uncertain dispatch.
 
 For a participating current-use correction, validate the owner and affected
 sources with `frontier_references.py check-current-use`, then pass that JSON
-report to `host current-use-adopt`. If an affected Worker request is queued but
-has not started, `host current-use-replace` emits a corrected replacement.
-Before external dispatch, `host current-use-check` compares the actual request
-with the retained binding. These operations preserve the owner's judgment; they
-do not create a new approval or infer correctness from hashes.
+report to `host current-use-adopt`. The coordinator identifies the saved task
+and dependency paths consumed by the next Worker request in `actual_use`. If an
+affected request is queued but has not started, `host current-use-replace` emits
+a corrected replacement and may accept the replacement's actual-use paths.
+Before external dispatch, `host current-use-check` compares the actual request,
+scope, and retained bytes with the binding. These operations preserve the
+owner's judgment; they do not create a new approval or infer correctness from
+hashes.
 
 This path orders participating calls but does not own the host's agent API and
 cannot safely stop arbitrary work already running outside its boundary.

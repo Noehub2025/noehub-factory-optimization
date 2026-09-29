@@ -13,6 +13,8 @@ Read the assigned research scope, current objective and real constraints, releva
 
 Keep reliable observations, support failures and unresolved interpretations distinct. An observation or parser failure teaches something about that implementation or measurement, not automatically about the mechanism's performance. A trustworthy whole-solution improvement remains useful without knowing every component's contribution.
 
+Reuse existing coherent explanations and identify only the meaningful changes for their owner under [Reuse understanding and deliver the actual input](../frontier-optimization/references/worker-interfaces.md#reuse-understanding-and-deliver-the-actual-input). Do not create a parallel summary for every recipient or make an unchanged handoff wait for Reflection.
+
 Proceed when the available material lets you reason about the assigned experience. A missing fact limits the affected interpretation, not the whole Reflection. Use the actual gaps in your reasoning; do not create tests, measurements or a research assignment merely to complete the document.
 
 ## 2. Develop technical insight

@@ -3,12 +3,16 @@
 
 use crate::{Result, contract::nonempty};
 use serde::{Deserialize, Serialize};
-use std::{fs, path::PathBuf};
+use std::{collections::BTreeSet, fs, path::PathBuf};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct CurrentUse {
     pub owner: PathBuf,
+    /// Explicit requested-use scope; other saved files are validation dependencies.
+    /// Old reports remain readable but cannot claim covered dispatch without scope.
+    #[serde(default)]
+    pub checked_sources: Vec<PathBuf>,
     /// Keep resolved and advisory references too, so transfer cannot erase history.
     pub correction_ids: Vec<String>,
     /// The existing owner checker determines which confirmed findings affect this use.
@@ -32,6 +36,7 @@ impl CurrentUse {
         correction_ids: Vec<String>,
         blocked_ids: Vec<String>,
     ) -> Result<Self> {
+        let checked_sources = normalized_sources(&affected_sources)?.into_iter().collect();
         let mut files = Vec::new();
         for path in std::iter::once(owner.clone()).chain(affected_sources) {
             if !path.is_absolute() {
@@ -42,6 +47,7 @@ impl CurrentUse {
         }
         let binding = Self {
             owner,
+            checked_sources,
             correction_ids,
             blocked_ids,
             files,
@@ -91,6 +97,23 @@ impl CurrentUse {
         Ok(())
     }
 
+    pub fn require_ready_for(&self, actual_use: &[PathBuf]) -> Result<()> {
+        self.require_ready()?;
+        if actual_use.is_empty() || self.checked_sources.is_empty() {
+            return Err("current-use coverage unavailable: actual request scope and checked source scope are required".into());
+        }
+        let actual = normalized_sources(actual_use)?;
+        let checked = normalized_sources(&self.checked_sources)?;
+        if actual != checked {
+            return Err("checked source scope differs from the actual request use".into());
+        }
+        let saved: Vec<_> = self.files.iter().map(|file| file.path.clone()).collect();
+        if !checked.is_subset(&normalized_sources(&saved)?) {
+            return Err("checked source scope is missing its saved object bytes".into());
+        }
+        Ok(())
+    }
+
     pub fn carries(&self, previous: &Self) -> Result<()> {
         if previous
             .correction_ids
@@ -109,4 +132,21 @@ impl CurrentUse {
 pub(crate) struct Bindings {
     pub adopted: Option<CurrentUse>,
     pub queued: Option<(usize, CurrentUse)>,
+}
+
+/// Paths are supplied by the owner, never inferred from arbitrary prompt words.
+pub fn normalized_sources(paths: &[PathBuf]) -> Result<BTreeSet<PathBuf>> {
+    paths
+        .iter()
+        .map(|path| {
+            if !path.is_absolute() {
+                return Err("actual-use source paths must be absolute".into());
+            }
+            let path = fs::canonicalize(path).map_err(|e| e.to_string())?;
+            if !path.is_file() {
+                return Err("actual-use sources must be saved files".into());
+            }
+            Ok(path)
+        })
+        .collect()
 }

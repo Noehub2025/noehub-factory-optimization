@@ -61,6 +61,7 @@ exit "$FIXTURE_EXIT"
             directory: d,
             request: Invocation {
                 contract: None,
+                actual_use: vec![],
                 protocol: "workflow-invocation/1".into(),
                 invocation_id: 1,
                 role: Role::Coordinator,

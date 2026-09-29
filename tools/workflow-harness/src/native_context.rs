@@ -234,6 +234,14 @@ pub fn observe(event: &Value, root: &Path, binding: &Value) -> Result<Value> {
     let temporary = directory.join(format!("{id}-{kind}-{}.tmp", std::process::id()));
     fs::write(&temporary, receipt.to_string()).map_err(|e| e.to_string())?;
     fs::rename(temporary, delivery).map_err(|e| e.to_string())?;
+    let notice = if context.chars().count() > 4000 {
+        format!(
+            "{} [Advisory notice shortened. This is not the complete task or evidence. Use the prepared delivery and exact source access at the actual handoff; this callback cannot enforce them.]",
+            context.chars().take(3750).collect::<String>()
+        )
+    } else {
+        context
+    };
     Ok(json!({"hookSpecificOutput":{"hookEventName":kind,
-        "additionalContext":context.chars().take(4000).collect::<String>()}}))
+        "additionalContext":notice}}))
 }

@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 
 import frontier_references as refs
 
@@ -34,6 +35,289 @@ def save(root, files):
     git(root, "add", "--", *files)
     git(root, "commit", "-m", "test checkpoint")
     return git(root, "rev-parse", "HEAD")
+
+
+def context_body(view, reference):
+    return view["sources"][reference["source_index"]]["contents"]
+
+
+def test_adoption_context_preserves_root_beside_misleading_section(tmp_path):
+    (tmp_path / "PROBLEM.md").write_text("---\nepoch: 2\n---\n# Problem\n## Goal\nImprove the whole outcome.\n## Old task\nKeep the old controller. Historical only.\n")
+    (tmp_path / "owner.md").write_text("---\ntype: Optimization Frontier\nproblem: PROBLEM.md\nobjective_basis:\n  objective_source: PROBLEM.md#old-task\ncurrent_state:\n  work_record: task.md\n---\n# Current work\n")
+    (tmp_path / "task.md").write_text("Only modify the old controller.")
+    view = refs.prepare_adoption_context(tmp_path, "owner.md")
+    assert "Improve the whole outcome" in context_body(view, view["controlling_context"])
+    assert view["controlling_context"]["basis"] == "adopted_problem"
+    assert view["selected_sources"]["objective_source"]["source"]["section"] == "old-task"
+    assert "Historical only" in view["selected_sources"]["objective_source"]["selected_contents"]
+    assert context_body(view, view["outgoing_tasks"][0]) == "Only modify the old controller."
+    assert "status" not in view  # Content delivery is not semantic acceptance.
+
+
+def test_adoption_context_keeps_input_only_restriction_and_complete_decision(tmp_path):
+    (tmp_path / "owner.md").write_text("Optimize the whole objective.")
+    (tmp_path / "incoming.json").write_text(json.dumps({"completion": "Every answer must preserve interface X."}))
+    (tmp_path / "decision.json").write_text(json.dumps({"alternatives": "Any architecture allowed.", "reason": "The incumbent is cheaper.", "reverse_when": "Only if no more costly."}))
+    (tmp_path / "task.md").write_text("Preserve X to complete the task.")
+    view = refs.prepare_adoption_context(tmp_path, "owner.md", assignment="incoming.json", decision="decision.json", task_sources=["task.md"])
+    assert "preserve interface X" in context_body(view, view["incoming_assignments"][0])
+    assert "Any architecture allowed" in context_body(view, view["decision"])
+    assert "Only if no more costly" in context_body(view, view["decision"])
+    assert context_body(view, view["outgoing_tasks"][0]) == "Preserve X to complete the task."
+
+
+def test_cold_recovery_without_git_result_finding_or_session(tmp_path, monkeypatch, capsys):
+    (tmp_path / "owner.md").write_text("---\ncurrent_state:\n  work_record: task.md\n---\n# Inherited task\nContinue unchanged.\n")
+    (tmp_path / "goal.md").write_text("The current user objective permits other approaches.")
+    (tmp_path / "task.md").write_text("Complete the incumbent only.")
+    with monkeypatch.context() as patch:
+        patch.setattr("sys.argv", ["frontier_references.py", "recover-work", "--repo", str(tmp_path), "--owner-source", "owner.md", "--controlling-source", "goal.md"])
+        assert refs.main() == 0
+    view = json.loads(capsys.readouterr().out)
+    assert view["phase"] == "recovery"
+    assert view["decision"] is None
+    assert view["controlling_context"]["basis"] == "explicit_controlling_source"
+    assert "other approaches" in context_body(view, view["controlling_context"])
+    assert "incumbent only" in context_body(view, view["outgoing_tasks"][0])
+    assert not (tmp_path / ".frontier").exists()
+
+
+def test_standalone_and_legitimate_goal_change_remain_owner_judgments(tmp_path):
+    (tmp_path / "owner.md").write_text("The user asks only to fix interface X.")
+    view = refs.prepare_adoption_context(tmp_path, "owner.md", phase="recovery")
+    assert view["controlling_context"]["basis"] == "owner_only"
+    assert any("standalone" in item for item in view["limitations"])
+    (tmp_path / "new-goal.md").write_text("The user now requests interface Y instead.")
+    updated = refs.prepare_adoption_context(tmp_path, "owner.md", controlling_source="new-goal.md")
+    assert "interface Y" in context_body(updated, updated["controlling_context"])
+    assert "interface X" in context_body(updated, updated["owner"])
+
+
+def test_explicit_controlling_source_is_repo_relative_with_nested_owner(tmp_path):
+    (tmp_path / "work").mkdir()
+    (tmp_path / "work/owner.md").write_text("Local task.")
+    (tmp_path / "goal.md").write_text("# Current goal\nThe broader user request.")
+    view = refs.prepare_adoption_context(tmp_path, str(tmp_path / "work/owner.md"), controlling_source="goal.md#current-goal")
+    assert view["controlling_context"]["source"] == {"path": "goal.md", "section": "current-goal"}
+    assert "broader user request" in context_body(view, view["controlling_context"])
+
+
+def test_context_keeps_full_body_for_missing_selector_and_reports_missing_basis(tmp_path):
+    (tmp_path / "owner.md").write_text("---\nobjective_basis:\n  objective_source: goal.md#missing\n---\nSelected local task.\n")
+    (tmp_path / "goal.md").write_text("# Real goal\nMeaning remains readable.")
+    view = refs.prepare_adoption_context(tmp_path, "owner.md")
+    assert "selection_unavailable" in view["selected_sources"]["objective_source"]
+    assert "Meaning remains readable" in context_body(view, view["controlling_context"])
+    (tmp_path / "goal.md").unlink()
+    missing = refs.prepare_adoption_context(tmp_path, "owner.md")
+    assert "unavailable" in missing["controlling_context"]
+    assert "source_index" not in missing["controlling_context"]
+    assert "Selected local task" in context_body(missing, missing["owner"])
+
+
+def test_context_detects_relevant_read_race_but_not_unrelated_save(tmp_path, monkeypatch):
+    (tmp_path / "owner.md").write_text("---\ncurrent_state:\n  work_record: task.md\n---\nCurrent objective.\n")
+    (tmp_path / "task.md").write_text("Original task.")
+    read = refs._working_text
+    seen = 0
+
+    def racing_read(root, path):
+        nonlocal seen
+        body = read(root, path)
+        if path == "task.md":
+            seen += 1
+            if seen == 1:
+                (tmp_path / path).write_text("Changed task.")
+        return body
+
+    with monkeypatch.context() as patch:
+        patch.setattr(refs, "_working_text", racing_read)
+        with pytest.raises(refs.ReferenceError, match="changed while reading"):
+            refs.prepare_adoption_context(tmp_path, "owner.md")
+
+    def unrelated_read(root, path):
+        (tmp_path / "unrelated.txt").write_text("Ordinary unrelated work.")
+        return read(root, path)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(refs, "_working_text", unrelated_read)
+        view = refs.prepare_adoption_context(tmp_path, "owner.md")
+        assert context_body(view, view["outgoing_tasks"][0]) == "Changed task."
+
+
+def test_context_preserves_research_task_alongside_primary_wait(tmp_path):
+    (tmp_path / "owner.md").write_text("---\ncurrent_state:\n  primary_batch: B7\n  work_record: inquiry.md\n---\nKeep independent research.\n")
+    (tmp_path / "inquiry.md").write_text("Investigate a different mechanism.")
+    view = refs.prepare_adoption_context(tmp_path, "owner.md")
+    assert context_body(view, view["outgoing_tasks"][0]) == "Investigate a different mechanism."
+    assert view["outgoing_tasks"][1]["source"]["path"] == "artifacts/frontier/B7/batch.yaml"
+    assert "unavailable" in view["outgoing_tasks"][1]
+
+
+def test_resolver_and_binding_include_source_context_on_normal_path(repo):
+    save(repo, {"evidence.json": '{"question":"Must preserve interface X"}'})
+    prepared = prepare(repo, "HEAD", "evidence.json")
+    view = prepared["adoption_context"]
+    assert "Must preserve interface X" in context_body(view, view["incoming_assignments"][0])
+    result = refs.bind_resolution(repo, prepared, {"reason": "Any architecture allowed", "assignment": "Implement using the selected interface."})
+    assert result["adoption_context"]["decision"]["provided_body"]["reason"] == "Any architecture allowed"
+    assert result["adoption_context"]["incoming_assignments"][-1]["provided_body"] == "Implement using the selected interface."
+
+
+def test_prepare_adoption_cli_uses_incoming_result_and_actual_task(tmp_path, monkeypatch, capsys):
+    for path, body in {"owner.md": "The user's original goal.", "incoming.md": "Only accept the existing interface.", "result.json": '{"reason":"Other architecture is allowed."}', "task.md": "Keep the existing interface."}.items():
+        (tmp_path / path).write_text(body)
+    with monkeypatch.context() as patch:
+        patch.setattr("sys.argv", ["frontier_references.py", "prepare-adoption", "--repo", str(tmp_path), "--owner-source", "owner.md", "--assignment", "incoming.md", "--result", "result.json", "--source", "task.md"])
+        assert refs.main() == 0
+    view = json.loads(capsys.readouterr().out)
+    assert "Only accept" in context_body(view, view["incoming_assignments"][0])
+    assert "Other architecture" in context_body(view, view["decision"])
+    assert "Keep the existing" in context_body(view, view["outgoing_tasks"][0])
+
+
+def test_adopt_work_required_report_survives_optional_pointer_failure(tmp_path, monkeypatch, capsys):
+    import frontier_context
+    import current_use
+    (tmp_path / "owner.md").write_text("Current controlling task.")
+    calls = []
+
+    def required(root, owner, **kwargs):
+        calls.append((owner, kwargs))
+        return {"status": "current", "current_use": {"checked_sources": kwargs["sources"]}, "coverage": "Object use only."}
+
+    def optional(*args, **kwargs):
+        raise OSError("optional pointer unavailable")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(current_use, "adopt_current_work", required)
+        patch.setattr(frontier_context, "register_adopted_work", optional)
+        patch.setattr("sys.argv", ["frontier_references.py", "adopt-work", "--repo", str(tmp_path), "--path", "owner.md"])
+        assert refs.main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert calls == [("owner.md", {"sources": []})]
+    assert report["current_use"] == {"checked_sources": []}
+    assert not report["registered"]
+    assert report["native_context_warning"] == "optional pointer unavailable"
+    view = report["adoption_context"]
+    assert context_body(view, view["owner"]) == "Current controlling task."
+
+
+def test_adopt_work_does_not_downgrade_required_failure(tmp_path, monkeypatch, capsys):
+    import frontier_context
+    import current_use
+
+    def failed(*args, **kwargs):
+        raise ValueError("required adoption incomplete")
+
+    def unexpected(*args, **kwargs):
+        pytest.fail("optional pointer must not publish before required adoption")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(current_use, "adopt_current_work", failed)
+        patch.setattr(frontier_context, "register_adopted_work", unexpected)
+        patch.setattr("sys.argv", ["frontier_references.py", "adopt-work", "--repo", str(tmp_path), "--path", "owner.md"])
+        assert refs.main() == 2
+    report = json.loads(capsys.readouterr().out)
+    assert report["status"] == "NOT_READY"
+    assert report["error"] == "required adoption incomplete"
+
+
+def test_adopt_work_cli_retains_then_replaces_without_native_session(tmp_path, monkeypatch, capsys):
+    (tmp_path / "owner.json").write_text(json.dumps({"current_state": {"campaign_status": "running", "work_record": "task.md"}}))
+    (tmp_path / "task.md").write_text("Only preserve the incumbent.")
+    (tmp_path / "finding.md").write_text("The owner found unsupported incumbent-only scope.")
+    (tmp_path / "adoption.md").write_text("The owner accepts the broader task within existing authority.")
+    request = {"corrections": [{"id": "scope", "finding": "finding.md", "effect": "repair", "affected_sources": ["task.md"], "status": "resolved", "resolution": {"reason": "Remove unsupported scope.", "evidence": "adoption.md"}}], "replacements": [{"path": "task.md", "contents": "Investigate the objective beyond this implementation."}]}
+    (tmp_path / "request.json").write_text(json.dumps(request))
+    with monkeypatch.context() as patch:
+        patch.delenv("CODEX_SESSION_ID", raising=False)
+        patch.delenv("CODEX_THREAD_ID", raising=False)
+        patch.setattr("sys.argv", ["frontier_references.py", "adopt-work", "--repo", str(tmp_path), "--path", "owner.json", "--source", "task.md", "--correction-request", str(tmp_path / "request.json")])
+        assert refs.main() == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["current_use"]["blocked_ids"] == []
+    assert report["current_use"]["checked_sources"] == [str(tmp_path / "task.md")]
+    assert report["registered"] is False
+    assert list((tmp_path / ".frontier/hook-context").glob("owner-*-corrections.json"))
+    assert (tmp_path / "task.md").read_text() == request["replacements"][0]["contents"]
+    view = report["adoption_context"]
+    assert context_body(view, view["outgoing_tasks"][0]) == request["replacements"][0]["contents"]
+
+
+def test_repeated_views_do_not_duplicate_sources_or_recurse_into_generated_context(tmp_path):
+    (tmp_path / "owner.md").write_text("---\nobjective_basis:\n  objective_source: goal.md\n  evaluation_source: goal.md\n---\nCurrent task.")
+    (tmp_path / "goal.md").write_text("The controlling objective. " * 100)
+    result = {"reason": "Preserve this substantive decision and condition.", "assignment": "Use interface X."}
+    sizes = []
+    for _ in range(4):
+        (tmp_path / "result.json").write_text(json.dumps(result))
+        view = refs.prepare_adoption_context(tmp_path, "owner.md", decision="result.json", phase="recovery")
+        assert len(view["sources"]) == 3
+        assert sum("The controlling objective" in source["contents"] for source in view["sources"]) == 1
+        assert "Preserve this substantive decision" in context_body(view, view["decision"])
+        assert "adoption_context" not in json.loads(context_body(view, view["decision"]))
+        sizes.append(len(json.dumps(view)))
+        result["adoption_context"] = view
+    # One explicit omitted-field note appears after the first saved view;
+    # subsequent views must not grow with prior generated context.
+    assert sizes[2:] == [sizes[1], sizes[1]]
+    # One exact snapshot locator is added when generated content is omitted.
+    assert sizes[1] - sizes[0] < 400
+
+
+def test_cold_recovery_scopes_history_without_losing_current_decision_or_effects(tmp_path):
+    owner = "---\ntype: Optimization Frontier\nproblem: goal.md\ncurrent_state:\n  primary_batch: B1\ncontinuation:\n  basis:\n    path: decision.json\n    field: reason\n---\n"
+    (tmp_path / "owner.md").write_text(owner + "## Brief\nCurrent understanding and open alternatives.\n## History\nOld history.")
+    (tmp_path / "goal.md").write_text("The full objective permits any implementation.")
+    (tmp_path / "incoming.json").write_text('{"completion":"Only accept the old interface."}')
+    (tmp_path / "decision.json").write_text(json.dumps({"assignment": {"path": "incoming.json"}, "reason": "Prefer the incumbent because it is cheap.", "reverse_when": "Only if the alternative costs no more."}))
+    batch = {"batch": "B1", "definition": {"objective": "Explore another mechanism", "completion": "Keep the old interface"},
+             "current": {"conclusion": "The objective gap remains", "observations": ["Current evidence"]},
+             "resource_limits": {"calls": 1}, "consumption": {"calls": 1},
+             "attempts": [{"attempt": 1, "status": "completed", "observations": ["Historical detail"],
+                           "result": {"learning": "Deferral recurred", "objective_gap": "Still unresolved"},
+                           "actual_consequences": ["One call consumed"], "recovery_condition": "Never repeat"},
+                          {"attempt": 2, "status": "completed", "observations": ["Latest complete evidence"], "result": {"claim": "Latest result"}},
+                          {"attempt": 3, "status": "uncertain", "observations": ["Uncertain effects must remain"]}]}
+    path = tmp_path / "artifacts/frontier/B1/batch.yaml"
+    path.parent.mkdir(parents=True)
+    path.write_text(yaml.safe_dump(batch))
+    first = refs.prepare_adoption_context(tmp_path, "owner.md", phase="recovery")
+    assert "any implementation" in context_body(first, first["controlling_context"])
+    assert "costs no more" in context_body(first, first["decision"])
+    assert "Only accept the old interface" in context_body(first, first["incoming_assignments"][0])
+    task = yaml.safe_load(context_body(first, first["outgoing_tasks"][0]))
+    assert task["definition"] == batch["definition"]
+    assert task["current"] == batch["current"]
+    assert task["attempts"][0]["result"] == batch["attempts"][0]["result"]
+    assert task["attempts"][0]["actual_consequences"] == ["One call consumed"]
+    assert task["attempts"][0]["recovery_condition"] == "Never repeat"
+    assert task["attempts"][-1] == batch["attempts"][-1]
+    source = first["sources"][first["outgoing_tasks"][0]["source_index"]]
+    assert source["omitted_source_parts"][0]["json_pointer"] == "/attempts/0/observations"
+    (tmp_path / "owner.md").write_text(owner + "## Brief\nCurrent understanding and open alternatives.\n## History\n" + "Unrelated old event. " * 30000)
+    batch["attempts"][0]["observations"] = ["Historical raw observation. " * 30000]
+    path.write_text(yaml.safe_dump(batch))
+    later = refs.prepare_adoption_context(tmp_path, "owner.md", phase="recovery")
+    assert len(json.dumps(later)) == len(json.dumps(first))
+    # Explicit task input and incoming records are never projected as history.
+    explicit = refs.prepare_adoption_context(tmp_path, "owner.md", task_sources=[path.relative_to(tmp_path).as_posix()])
+    assert "Historical raw observation" in context_body(explicit, explicit["outgoing_tasks"][0])
+    # A source also used as an incoming assignment is promoted to full content.
+    incoming_owner = refs.prepare_adoption_context(tmp_path, "owner.md", assignment="owner.md")
+    assert "Unrelated old event" in context_body(incoming_owner, incoming_owner["owner"])
+
+
+def test_latest_completed_attempt_remains_complete_in_recovery(tmp_path):
+    (tmp_path / "owner.md").write_text("---\ncurrent_state:\n  primary_batch: B1\n---\nCurrent task.")
+    path = tmp_path / "artifacts/frontier/B1/batch.yaml"
+    path.parent.mkdir(parents=True)
+    batch = {"batch": "B1", "definition": {}, "current": {}, "attempts": [
+        {"status": "completed", "observations": ["Result being adopted"], "checks": ["Latest check"], "result": {"reason": "Meaningful learning"}}]}
+    path.write_text(yaml.safe_dump(batch))
+    view = refs.prepare_adoption_context(tmp_path, "owner.md", phase="recovery")
+    assert yaml.safe_load(context_body(view, view["outgoing_tasks"][0])) == batch
 
 
 def test_resolver_uses_saved_bytes_and_repairs_derived_binding(repo):
@@ -569,13 +853,53 @@ def test_unrelated_source_sections_commits_and_dirty_files_preserve_reuse(repo):
     prepared = prepare(repo, "HEAD", "evidence.json", owner_source="campaign/FRONTIER.md")
     result = refs.bind_resolution(repo, prepared, feedback_result())
     save(repo, {"resolution.json": json.dumps(result), "unrelated.txt": "New unrelated work.",
-                "campaign/FRONTIER.md": files["campaign/FRONTIER.md"].replace("Unrelated past work.", "More unrelated history."),
-                "campaign/PROBLEM.md": files["campaign/PROBLEM.md"].replace("Earlier work.", "More old details.")})
+                "campaign/FRONTIER.md": files["campaign/FRONTIER.md"].replace("Unrelated past work.", "More unrelated history.")})
     (repo / "unrelated.txt").write_text("Unsaved unrelated changes.")
     reused = prepare(repo, "HEAD", "evidence.json", ["resolution.json"], owner_source="campaign/FRONTIER.md")
     assert reused["reuse_resolution"]["path"] == "resolution.json"
     assert refs.bind_resolution(repo, prepared, feedback_result())["objective_basis_identity"] == result["objective_basis_identity"]
     assert (repo / "unrelated.txt").read_text() == "Unsaved unrelated changes."
+
+
+@pytest.mark.parametrize("replacement", ["Current controlling target changed outside the selected excerpt.", "More unrelated historical detail."])
+def test_full_controlling_source_change_refreshes_context_without_forcing_reranking(repo, replacement):
+    files = frontier_files()
+    save(repo, files)
+    prepared = prepare(repo, "HEAD", "evidence.json", owner_source="campaign/FRONTIER.md")
+    result = refs.bind_resolution(repo, prepared, feedback_result())
+    save(repo, {"resolution.json": json.dumps(result),
+                "campaign/PROBLEM.md": files["campaign/PROBLEM.md"].replace("Earlier work.", replacement)})
+    with pytest.raises(refs.ReferenceError, match="refresh owner context"):
+        refs.bind_resolution(repo, prepared, feedback_result())
+    fresh = prepare(repo, "HEAD", "evidence.json", ["resolution.json"], owner_source="campaign/FRONTIER.md")
+    assert "reuse_resolution" not in fresh
+    assert replacement in context_body(fresh["adoption_context"], fresh["adoption_context"]["controlling_context"])
+    assert fresh["objective_basis_identity"] == prepared["objective_basis_identity"]
+    # Explicit owner adoption can retain the same supported professional result.
+    rebound = refs.bind_resolution(repo, fresh, result)
+    assert rebound["feedback_decision"] == result["feedback_decision"]
+    assert rebound["comparison"] == result["comparison"]
+    assert rebound["controlling_objective_binding"] == fresh["controlling_objective_binding"]
+    assert rebound["controlling_objective_binding"]["sha256"] != result["controlling_objective_binding"]["sha256"]
+
+
+def test_generic_narrow_objective_refresh_and_legacy_result_need_no_new_parent(repo):
+    owner = "---\nobjective_basis:\n  objective_source: GOAL.md#local\nfeedback_not_due: The prerequisite remains necessary.\n---\nCurrent task."
+    goal = "# Goal\n## Local\nPreserve the selected legitimate interface.\n## Context\nThe wider user goal.\n"
+    save(repo, {"TASK.md": owner, "GOAL.md": goal, "evidence.json": '{"result":1}'})
+    prepared = prepare(repo, "HEAD", "evidence.json")
+    result = refs.bind_resolution(repo, prepared, {"reason": "Keep the supported focused task."})
+    legacy = {key: value for key, value in result.items() if key != "controlling_objective_binding"}
+    save(repo, {"legacy.json": json.dumps(legacy), "GOAL.md": goal.replace("wider user goal", "updated wider user goal")})
+    with pytest.raises(refs.ReferenceError, match="refresh owner context"):
+        refs.bind_resolution(repo, prepared, {"reason": "Keep the supported focused task."})
+    fresh = prepare(repo, "HEAD", "evidence.json", ["legacy.json"])
+    assert "reuse_resolution" not in fresh
+    assert fresh["objective_basis_identity"] == prepared["objective_basis_identity"]
+    assert "updated wider user goal" in context_body(fresh["adoption_context"], fresh["adoption_context"]["controlling_context"])
+    rebound = refs.bind_resolution(repo, fresh, legacy)
+    assert rebound["reason"] == result["reason"]
+    assert rebound["controlling_objective_binding"] == fresh["controlling_objective_binding"]
 
 
 @pytest.mark.parametrize("pointer", ["MISSING.md", "PROBLEM.md#missing", "UNRELATED.md"])

@@ -63,6 +63,13 @@ pub fn run() -> Result<()> {
     let Some(command) = args.first().and_then(|s| s.to_str()) else {
         return Err("host command required".into());
     };
+    if command == "context-read" && args.len() == 4 {
+        return emit(&Session::read_saved_context(
+            &PathBuf::from(&args[1]),
+            args[2].to_str().ok_or("invalid evidence identity")?,
+            args[3].to_str().ok_or("invalid evidence pointer")?,
+        )?);
+    }
     if command == "start" && args.len() == 3 {
         let task: Task = read_json(&PathBuf::from(&args[1]))?;
         return next(&mut Session::create(task, &PathBuf::from(&args[2]))?);
@@ -71,9 +78,10 @@ pub fn run() -> Result<()> {
         "current-use-adopt",
         "current-use-replace",
         "current-use-check",
+        "context-check",
     ]
     .contains(&command)
-        && args.len() == 3
+        && (args.len() == 3 || (command == "current-use-replace" && args.len() > 3))
     {
         let mut session = Session::open(&PathBuf::from(&args[1]))?;
         let path = PathBuf::from(&args[2]);
@@ -88,12 +96,24 @@ pub fn run() -> Result<()> {
             }
             "current-use-replace" => {
                 let assignment = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
-                emit(&session.replace_queued_work(assignment)?)
+                let request = if args.len() > 3 {
+                    session.replace_queued_work_for(
+                        assignment,
+                        args[3..].iter().map(PathBuf::from).collect(),
+                    )?
+                } else {
+                    session.replace_queued_work(assignment)?
+                };
+                emit(&request)
             }
-            "current-use-check" => {
+            "current-use-check" | "context-check" => {
                 let request = read_json(&path)?;
-                session.verify_queued_current_use(&request)?;
-                emit(&serde_json::json!({"event":"queued_current_use_verified",
+                if command == "context-check" {
+                    session.verify_queued_context(&request)?;
+                } else {
+                    session.verify_queued_current_use(&request)?;
+                }
+                emit(&serde_json::json!({"event":format!("{command}_verified"),
                     "invocation_id":request.invocation_id,
                     "instruction":"Saved bytes and request identity match now; this is not semantic acceptance or protection against later concurrent edits."}))
             }
@@ -123,7 +143,7 @@ pub fn run() -> Result<()> {
         ]
         .contains(&command)
     {
-        return Err("usage: workflow-harness host start TASK.json NEW_RUN_DIRECTORY\n       workflow-harness host bind|return|status|continue|begin|event|continuation|pause|resume|drive RUN_DIRECTORY\nOptional decisions: decision-config|decision-bind|decision-result|decision-resolve|decision-publish|decision-abandon|decision-status|next RUN_DIRECTORY. Current use: current-use-adopt RUN_DIRECTORY REPORT.json | current-use-replace RUN_DIRECTORY ASSIGNMENT.txt | current-use-check RUN_DIRECTORY REQUEST.json. Other commands with input read JSON from stdin; status never redispatches work. drive executes only the pending invocation using a stream adapter configuration.".into());
+        return Err("usage: workflow-harness host start TASK.json NEW_RUN_DIRECTORY\n       workflow-harness host bind|return|status|continue|begin|event|continuation|pause|resume|drive RUN_DIRECTORY\nOptional decisions: decision-config|decision-bind|decision-result|decision-resolve|decision-publish|decision-abandon|decision-status|next RUN_DIRECTORY. Current use: current-use-adopt RUN_DIRECTORY REPORT.json | current-use-replace RUN_DIRECTORY ASSIGNMENT.txt [ACTUAL_SOURCE ...] | current-use-check RUN_DIRECTORY REQUEST.json. Other commands with input read JSON from stdin; status never redispatches work. drive executes only the pending invocation using a stream adapter configuration.".into());
     }
     if command == "pause" {
         Session::request_pause(&PathBuf::from(&args[1]), input::<String>()?)?;

@@ -24,7 +24,7 @@ Claude Code also offers two conversion helpers. With `CLAUDE_CODE_NEW_INIT=1`, `
 
 3. Put any Claude Code-specific instructions below the import.
 4. Keep personal project preferences in `CLAUDE.local.md` and exclude that file from version control.
-5. Start a new Claude Code session. For direct loading, confirm the session reports `AGENTS.md loaded` or ask Claude to summarize its project instructions; directly loaded `AGENTS.md` does not appear in `/context`. For the import adapter, use `/context` to confirm that `CLAUDE.md` and its imported `AGENTS.md` are loaded.
+5. Start a new Claude Code session. For direct loading, confirm the session reports `AGENTS.md loaded` or ask Claude to summarize its project instructions. For the import adapter, use `/context` to confirm that `CLAUDE.md` and its imported `AGENTS.md` are loaded.
 
 ## Repository that already has AGENTS.md
 

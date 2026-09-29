@@ -90,10 +90,14 @@ def _publish(path: Path, value: dict) -> None:
 def register_adopted_work(root: Path, selection: Path, session_id: str | None = None,
                           *, expected_binding: dict | None = None) -> bool:
     """Read adoption from its owner; proposals cannot publish this pointer."""
+    # Required finding retention is independent of optional native pointers.
+    # An open finding may be presented during preparation, but not consumed.
+    from current_use import inspect_current_use
+    root = root.resolve()
+    inspect_current_use(root, str(selection))
     session = root_session(session_id)
     if session is None:
         return False
-    root = root.resolve()
     directory = root / ".frontier/hook-context"
     directory.mkdir(parents=True, exist_ok=True)
     pointer = directory / f"{session}.json"

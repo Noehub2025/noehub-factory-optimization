@@ -76,6 +76,24 @@ fn lock(directory: &Path) -> Result<File> {
 }
 
 impl Session {
+    /// Evidence inspection is read-only and must also work while the writer is
+    /// waiting for a worker. Checkpoint publication is atomic; no writer lock.
+    pub fn read_saved_context(
+        directory: &Path,
+        sha256: &str,
+        pointer: &str,
+    ) -> Result<serde_json::Value> {
+        if sha256.len() != 64 || !sha256.bytes().all(|b| b.is_ascii_hexdigit()) {
+            return Err("invalid retained context identity".into());
+        }
+        crate::context::Snapshot {
+            path: directory
+                .join("context-sources")
+                .join(format!("{sha256}.json")),
+            sha256: sha256.into(),
+        }
+        .expand(pointer)
+    }
     /// Optional cooperating-host boundary. The existing owner checker must validate
     /// adoption and finding discharge before supplying this binding. No model is called.
     pub fn adopt_current_use(&mut self, binding: crate::current_use::CurrentUse) -> Result<()> {
@@ -92,15 +110,23 @@ impl Session {
         Ok(())
     }
 
-    fn require_current_use_ready(&self) -> Result<()> {
+    fn require_current_use_ready_for(&self, actual_use: &[PathBuf]) -> Result<()> {
         if let Some(binding) = &self.current_use.adopted {
-            binding.require_ready()?;
+            binding.require_ready_for(actual_use)?;
         }
         Ok(())
     }
 
     /// External dispatchers must present the actual queued request they will consume.
     pub fn verify_queued_current_use(&self, request: &Invocation) -> Result<()> {
+        if request.role != Role::Worker || self.current_use.adopted.is_none() {
+            return Err("current-use coverage unavailable: this check requires a Worker request and an adopted scoped binding".into());
+        }
+        self.verify_queued_context(request)
+    }
+
+    /// General delivery identity/freshness; does not claim optional correction coverage.
+    pub fn verify_queued_context(&self, request: &Invocation) -> Result<()> {
         let pending = self.runtime.outstanding().ok_or("no queued work")?;
         if serde_json::to_value(request).map_err(|e| e.to_string())?
             != serde_json::to_value(pending).map_err(|e| e.to_string())?
@@ -118,22 +144,31 @@ impl Session {
             .outstanding()
             .filter(|r| r.role == Role::Worker)
         else {
-            return Ok(());
+            return self.runtime.verify_context_consumption();
         };
         if let Some(binding) = &self.current_use.adopted {
-            binding.require_ready()?;
+            binding.require_ready_for(&request.actual_use)?;
             if self.current_use.queued.as_ref() != Some(&(request.invocation_id, binding.clone())) {
                 return Err(
                     "queued work references an older adoption; replace it through its owner".into(),
                 );
             }
         }
-        Ok(())
+        self.runtime.verify_context_consumption()
     }
 
     /// Replace only unstarted queued work after its existing owner adopts a correction.
     /// Already started effects must be reconciled through their existing execution.
     pub fn replace_queued_work(&mut self, assignment: String) -> Result<Invocation> {
+        self.replace_queued_work_for(assignment, self.runtime.actual_use.clone())
+    }
+
+    /// An owner may explicitly change the used task/dependency sources at replacement.
+    pub fn replace_queued_work_for(
+        &mut self,
+        assignment: String,
+        actual_use: Vec<PathBuf>,
+    ) -> Result<Invocation> {
         crate::contract::nonempty(&assignment, "corrected assignment")?;
         let request = self.runtime.outstanding().ok_or("no queued work")?;
         if request.role != Role::Worker
@@ -148,7 +183,14 @@ impl Session {
                 "replace only unstarted worker requests; reconcile existing effects first".into(),
             );
         }
-        self.require_current_use_ready()?;
+        self.require_current_use_ready_for(&actual_use)?;
+        let actual_use: Vec<_> = crate::current_use::normalized_sources(&actual_use)?
+            .into_iter()
+            .collect();
+        let root = fs::canonicalize(self.runtime.workspace()).map_err(|e| e.to_string())?;
+        if actual_use.iter().any(|path| !path.starts_with(&root)) {
+            return Err("actual-use source is outside the participating workspace".into());
+        }
         let current_sources = crate::source_contents(&self.runtime.task)?;
         let replacement_id = self
             .runtime
@@ -161,6 +203,7 @@ impl Session {
             "This assignment supersedes the earlier queued restriction and task.\n{assignment}"
         );
         self.runtime.outstanding = None;
+        self.runtime.actual_use = actual_use;
         self.runtime.next_id = replacement_id;
         // This explicit owner operation adopts the corrected saved task inputs.
         self.runtime.selected_sources = current_sources;
@@ -543,7 +586,7 @@ impl Session {
         if request.role == Role::Worker
             && let Some(binding) = &self.current_use.adopted
         {
-            binding.require_ready()?;
+            binding.require_ready_for(&request.actual_use)?;
             if let Some((id, queued)) = &self.current_use.queued
                 && *id == request.invocation_id
                 && queued != binding
@@ -552,12 +595,17 @@ impl Session {
                     "queued work references an older adoption; replace it through its owner".into(),
                 );
             }
-            request.prompt.push_str(&format!(
+            // Full bytes remain internal and retrievable. A display projection
+            // never becomes the actual-use checker input or changes its scope.
+            {
+                request.prompt.push_str(&format!(
                 "\nCurrent-use owner: {}. Retained correction references: {}. Use the current saved affected objects for this assignment: {}. The existing owner adopted this scoped use; these references are not a new semantic verdict.\n",
                 binding.owner.display(),
                 serde_json::to_string(&binding.correction_ids).map_err(|e| e.to_string())?,
                 serde_json::to_string(&binding.files.iter().map(|file| &file.path).collect::<Vec<_>>()).map_err(|e| e.to_string())?
             ));
+            }
+            binding.verify_saved()?;
             next.outstanding = Some(request.clone());
             self.current_use.queued = Some((request.invocation_id, binding.clone()));
         }
@@ -570,7 +618,7 @@ impl Session {
                 .filter(|c| c.mode != crate::decision::Mode::Disabled)
         {
             const MARKER: &str = "\nParticipating investment policy:\n";
-            if !request.prompt.contains(MARKER) {
+            {
                 request.prompt.push_str(MARKER);
                 match fs::read_to_string(&config.policy) {
                         Ok(policy) => request.prompt.push_str(&format!("{policy}\nApply this in the existing investment judgment once. Coordinator: reuse an applicable accepted Resolver response via update.resolved_invocation, or supplied independent sources via resolved_by. Set investment_changed only for a new or materially changed investment, not progress or rewritten rationale. Reuse asserts applicability; it is not a new checker verdict.\n")),
@@ -579,6 +627,40 @@ impl Session {
                 next.outstanding = Some(request.clone());
             }
         }
+        const EVIDENCE_MARKER: &str = "\nExact retained context and validation evidence: ";
+        {
+            let evidence = self
+                .directory
+                .join(format!("request-{}-evidence.json", request.invocation_id));
+            let store = self.directory.join("context-sources");
+            next.retain_context_returns(&store)?;
+            let full_sources: Vec<_> = next
+                .task
+                .sources
+                .iter()
+                .map(|source| {
+                    let text = fs::read_to_string(next.task.workspace.join(&source.path))
+                        .map_err(|e| e.to_string())?;
+                    crate::context::Snapshot::retain(&store, &text)
+                })
+                .collect::<Result<_>>()?;
+            let current_use = self
+                .current_use
+                .adopted
+                .as_ref()
+                .map(|binding| crate::context::Snapshot::retain(&store, binding))
+                .transpose()?;
+            let retained = serde_json::json!({"source_index": next.task.sources, "full_sources": full_sources,
+                "returns": next.context_returns, "current_use": current_use,
+                "return_ids": next.history.iter().enumerate().map(|(index, response)| (response.invocation_id.to_string(), index)).collect::<std::collections::BTreeMap<_, _>>()});
+            next.verify_context_consumption()?;
+            let snapshot = crate::context::Snapshot::retain(&store, &retained)?;
+            // The per-request artifact contains references, never replayed return bodies.
+            write_json(&evidence, &snapshot)?;
+            request.prompt.push_str(&format!("{EVIDENCE_MARKER}{}. Sources and accepted returns are stored once and referenced here. For verified targeted retrieval use workflow-harness host context-read {} {} /by_invocation/1 (or /full_sources/0, /current_use). Expand only the necessary evidence. This is evidence, not authority or a closed discovery menu. Opaque remote hosts must arrange equivalent access before claiming coverage.\n", fs::canonicalize(evidence).map_err(|e| e.to_string())?.display(), self.directory.display(), snapshot.sha256));
+            next.delivery_evidence = Some(snapshot);
+        }
+        next.outstanding = Some(request.clone());
         write_json(
             &self
                 .directory
@@ -588,7 +670,9 @@ impl Session {
         let mut guard = self.decisions.clone();
         guard.publication = None;
         self.save_decisions(guard, next)?;
-        self.record(serde_json::json!({"event":"invocation_pending","request":request}))?;
+        self.record(serde_json::json!({"event":"invocation_pending","request":request,
+            "prompt_utf8_bytes":request.prompt.len(),
+            "serialized_request_bytes":serde_json::to_vec(&request).map_err(|e| e.to_string())?.len()}))?;
         Ok(request)
     }
 
@@ -609,7 +693,7 @@ impl Session {
         let mut next = self.runtime.clone();
         next.accept(response.clone())?;
         if next.role == Role::Worker {
-            self.require_current_use_ready()?;
+            self.require_current_use_ready_for(&next.actual_use)?;
         }
         let mut guard = self.decisions.clone();
         if next.role == crate::Role::Worker
@@ -866,7 +950,7 @@ impl Session {
             } else {
                 next.accept(proposal.clone())?;
                 if next.role == Role::Worker {
-                    self.require_current_use_ready()?;
+                    self.require_current_use_ready_for(&next.actual_use)?;
                 }
                 if next.role == Role::Worker {
                     guard.last_commitment = Some(crate::decision::commitment(proposal)?);
@@ -981,6 +1065,19 @@ impl Session {
         if !adapter.program.is_absolute() || !adapter.program.is_file() {
             return Err("adapter program must be an existing absolute file".into());
         }
+        // Open once, check those bytes, then send that same file descriptor.
+        // Do not check an in-memory request and subsequently reopen a mutable path.
+        use std::io::{Read, Seek, SeekFrom};
+        let mut input = File::open(
+            self.directory
+                .join(format!("request-{}.json", request.invocation_id)),
+        )
+        .map_err(|e| e.to_string())?;
+        let mut raw = Vec::new();
+        input.read_to_end(&mut raw).map_err(|e| e.to_string())?;
+        let consumed: Invocation = serde_json::from_slice(&raw).map_err(|e| e.to_string())?;
+        self.verify_queued_context(&consumed)?;
+        input.seek(SeekFrom::Start(0)).map_err(|e| e.to_string())?;
         let stdout = OpenOptions::new()
             .create_new(true)
             .write(true)
@@ -999,11 +1096,6 @@ impl Session {
                     .join(format!("stderr-{}.txt", request.invocation_id)),
             )
             .map_err(|e| e.to_string())?;
-        let input = File::open(
-            self.directory
-                .join(format!("request-{}.json", request.invocation_id)),
-        )
-        .map_err(|e| e.to_string())?;
         let backend_directory = fs::canonicalize(&self.directory)
             .map_err(|e| e.to_string())?
             .join(format!("backend-{}", request.invocation_id));

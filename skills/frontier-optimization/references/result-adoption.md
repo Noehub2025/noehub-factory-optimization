@@ -2,6 +2,8 @@
 
 Load after a current Batch action returns or after completed raw measurement is proposed for derived use. The Coordinator adopts meaning from the Batch-owned Measurement Definition, Attempt and retained evidence. A worker result creates no E, Selection, promotion or claim by itself.
 
+When the result changes current understanding, incorporate its supported meaning into the existing explanation under [Reuse understanding and deliver the actual input](worker-interfaces.md#reuse-understanding-and-deliver-the-actual-input). Preserve conditions, contrary evidence and unadopted disagreements. Record which exact results are incorporated so later preparation can reuse the account without replaying all history. No meaningful change means no account rewrite; a useful next action does not wait for unrelated synthesis or Reflection.
+
 ## Validate the current result
 
 Use [Evaluation, implementation and continuation](learning-loop.md#evaluation-implementation-and-continuation) to separate result receipt, factual adoption and changed allocation. Preserve the evaluated version and relevant conditions; a result does not certify changes made during its execution. Apply context, exposure and further-observation requirements only when the measurement meaning needs them. A sufficient fixed result needs no extra stabilization, and repeated or insufficient arrivals need not repeatedly interrupt continuing work.

@@ -161,3 +161,24 @@ def test_return_rejects_mismatched_post_without_mutating_result(owner, changed):
     with pytest.raises(ValueError, match="response does not match"):
         context.bind_dispatch_return(root, result, "call1")
     assert result.read_text() == '{"finding":"original"}'
+
+
+@pytest.mark.parametrize("native", ["missing", "child"])
+def test_required_finding_retention_does_not_need_native_session(owner, monkeypatch, native):
+    import current_use as use
+    root, selection, work = owner
+    (root / "finding.md").write_text("Confirmed unsupported task restriction")
+    meta = context._document(selection.read_bytes())
+    meta["current_use_corrections"] = [{"id": "scope", "finding": "finding.md", "effect": "repair",
+                                      "status": "open", "affected_sources": [str(work.relative_to(root))]}]
+    selection.write_text("---\n" + yaml.safe_dump(meta) + "---\nPreserved owner body\n")
+    monkeypatch.delenv("CODEX_SESSION_ID", raising=False)
+    monkeypatch.delenv("CODEX_THREAD_ID", raising=False)
+    if native == "child":
+        monkeypatch.setenv("CODEX_SESSION_ID", "owner")
+        monkeypatch.setenv("CODEX_AGENT_ID", "child")
+    assert not context.register_adopted_work(root, selection)
+    assert use._receipt(root, str(selection.relative_to(root))).exists()
+    with pytest.raises(ValueError, match="requires owner correction"):
+        use.check_current_use(root, str(selection), [str(work)])
+    assert not pointer(root).exists()

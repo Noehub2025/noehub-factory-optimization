@@ -35,6 +35,8 @@ The mechanism guidance below applies when a mechanism can be proposed. Discovery
 
 Keep observed findings separate from prospective hypotheses under [Hypothesis and mechanism interpretation](../frontier-optimization/references/learning-loop.md#hypothesis-and-mechanism-interpretation). Return one synthesis for adoption and reuse, not another report for the Coordinator to rewrite.
 
+Reuse applicable understanding and supply consequential changes through [Reuse understanding and deliver the actual input](../frontier-optimization/references/worker-interfaces.md#reuse-understanding-and-deliver-the-actual-input). Keep conditions and contrary evidence with the explanation; a cached account does not bound discovery or require another summary at each handoff.
+
 ## Authority
 
 Return Q or D content through the assigned packet. It remains a proposal until the Coordinator writes Q to `frontier/ledger.md` or D to `frontier/bounds.md`. Professional comparison, ranking and recommendations are allowed; they neither adopt Selection nor authorize execution, spend or claims. Research cannot establish exhaustive coverage or originality. Only the Coordinator may change F1-F8, assign spend, adopt Selection or promotion, stop the campaign, or approve claim wording. Report a conflict with `PROBLEM.md` or `REPRESENTATION.md` instead of repairing either file.

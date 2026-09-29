@@ -59,7 +59,7 @@ impl Fixture {
         session.configure_decisions(self.config(mode)).unwrap();
         let request = session.request().unwrap();
         let response = serde_json::from_value(json!({"invocation_id":request.invocation_id,"role":"coordinator","decision":"work",
-            "summary":"Mechanical test only", "assignment":"Develop the complete mechanism", "evidence":[self.0.join("method.txt")],
+            "summary":"Mechanical test only", "assignment":"Develop the complete mechanism", "actual_use":[self.0.join("method.txt")], "evidence":[self.0.join("method.txt")],
             "update":{"remaining_work":[],"interpretation":"No optimization claim", "selected":"joint allocation",
                 "options":[{"name":"joint allocation","question":"Can joint choices improve the objective?","mechanism":"Replan coupled decisions", "useful_result":"Objective-related comparison", "work":[{"work":"Develop integrated behavior","estimate":{},"condition":""}],"prerequisites":[]}],
                 "rationale":"Test a substantive alternative", "reverse_when":"Evidence undermines its remaining value",
@@ -1070,6 +1070,7 @@ fn current_use_legacy_process_consumption_checks_before_creating_dispatch_files(
         decision: workflow_harness::Decision::Work,
         summary: "Owner selected bounded work".into(),
         assignment: "Use the saved adopted assignment".into(),
+        actual_use: vec![f.0.join("method.txt")],
         evidence: vec![],
         update: None,
     };
@@ -1353,4 +1354,368 @@ fn changed_current_use_returns_started_actions_without_claiming_settlement() {
         })
         .unwrap();
     assert!(!session.runtime.execution().unwrap().effects_settled);
+}
+
+#[test]
+fn checked_independent_scope_cannot_clear_an_affected_assignment() {
+    use workflow_harness::current_use::CurrentUse;
+    let f = Fixture::new();
+    let (mut session, mut response) = f.start(Mode::Disabled);
+    fs::write(f.0.join("independent.md"), "Independent useful task").unwrap();
+    let independent = CurrentUse::capture(
+        f.0.join("policy.md"),
+        vec![f.0.join("independent.md")],
+        vec!["confirmed-restriction".into()],
+        vec![],
+    )
+    .unwrap();
+    session.adopt_current_use(independent).unwrap();
+    // Assignment scope comes from the owner, not from the passing report's files.
+    assert!(
+        session
+            .accept(response.clone())
+            .unwrap_err()
+            .contains("scope differs")
+    );
+    response.actual_use = vec![f.0.join("independent.md")];
+    response.assignment = "Complete only the independently selected task".into();
+    session.accept(response).unwrap();
+    let request = session.request().unwrap();
+    assert_eq!(
+        request.actual_use,
+        vec![fs::canonicalize(f.0.join("independent.md")).unwrap()]
+    );
+    assert!(
+        request
+            .prompt
+            .contains("Exact retained context and validation evidence")
+    );
+    assert!(
+        session
+            .runtime
+            .read_context_evidence("/current_use/files")
+            .unwrap()
+            .to_string()
+            .contains("Independent useful task")
+    );
+    session.verify_queued_current_use(&request).unwrap();
+    let mut substituted = request.clone();
+    substituted.actual_use = vec![f.0.join("method.txt")];
+    assert!(
+        session
+            .verify_queued_current_use(&substituted)
+            .unwrap_err()
+            .contains("different queued request")
+    );
+}
+
+#[test]
+fn participating_request_without_actual_scope_is_not_implicitly_covered() {
+    let f = Fixture::new();
+    let (mut session, mut response) = f.start(Mode::Disabled);
+    session.adopt_current_use(current_use(&f, false)).unwrap();
+    response.actual_use.clear();
+    assert!(
+        session
+            .accept(response)
+            .unwrap_err()
+            .contains("coverage unavailable")
+    );
+    // A legacy report is readable for retention but does not invent checked scope.
+    let mut legacy = serde_json::to_value(current_use(&f, false)).unwrap();
+    legacy.as_object_mut().unwrap().remove("checked_sources");
+    let legacy: workflow_harness::current_use::CurrentUse = serde_json::from_value(legacy).unwrap();
+    assert!(
+        legacy
+            .require_ready_for(&[f.0.join("method.txt")])
+            .unwrap_err()
+            .contains("coverage unavailable")
+    );
+}
+
+#[test]
+fn actual_scope_is_retained_across_queue_refresh_and_started_return() {
+    use workflow_harness::control::{Continuation, Event, EventKind};
+    use workflow_harness::current_use::CurrentUse;
+    let f = Fixture::new();
+    let (mut session, response) = f.start(Mode::Disabled);
+    session.adopt_current_use(current_use(&f, false)).unwrap();
+    session.accept(response).unwrap();
+    let old = session.request().unwrap();
+    fs::write(
+        f.0.join("successor.md"),
+        "Owner-selected corrected successor task",
+    )
+    .unwrap();
+    // Python establishes the successor relation; Rust receives that scoped result.
+    let successor = CurrentUse::capture(
+        f.0.join("policy.md"),
+        vec![f.0.join("successor.md")],
+        vec!["confirmed-restriction".into()],
+        vec![],
+    )
+    .unwrap();
+    session.adopt_current_use(successor).unwrap();
+    assert!(
+        session
+            .verify_queued_current_use(&old)
+            .unwrap_err()
+            .contains("scope differs")
+    );
+    assert!(
+        session
+            .replace_queued_work("Use successor".into())
+            .unwrap_err()
+            .contains("scope differs")
+    );
+    drop(session);
+    let assignment = f.0.join("successor-assignment.txt");
+    fs::write(&assignment, "Use the adopted successor task").unwrap();
+    let replacement = std::process::Command::new(env!("CARGO_BIN_EXE_workflow-harness"))
+        .args(["host", "current-use-replace"])
+        .arg(f.run())
+        .arg(&assignment)
+        .arg(f.0.join("successor.md"))
+        .output()
+        .unwrap();
+    assert!(
+        replacement.status.success(),
+        "{}",
+        String::from_utf8_lossy(&replacement.stderr)
+    );
+    let request: workflow_harness::Invocation =
+        serde_json::from_slice(&replacement.stdout).unwrap();
+    let session = Session::open(&f.run()).unwrap();
+    assert!(session.verify_queued_current_use(&old).is_err());
+    session.verify_queued_current_use(&request).unwrap();
+    drop(session);
+    let mut session = Session::open(&f.run()).unwrap();
+    session.verify_queued_current_use(&request).unwrap();
+    session
+        .begin_execution(workflow_harness::control::Capabilities {
+            fresh_context: true,
+            events: true,
+            controlled_continuation: true,
+            ..Default::default()
+        })
+        .unwrap();
+    session.adopt_current_use(current_use(&f, false)).unwrap();
+    session
+        .event(Event {
+            invocation_id: request.invocation_id,
+            sequence: 1,
+            event: EventKind::Boundary {
+                reason: "Existing work returns".into(),
+                return_due: false,
+                effects_settled: false,
+            },
+        })
+        .unwrap();
+    let decision = session.continuation().unwrap();
+    assert!(
+        matches!(decision, Continuation::Return { reasons } if reasons.iter().any(|reason| reason.contains("scope differs")))
+    );
+    assert!(!session.runtime.execution().unwrap().effects_settled);
+}
+
+#[test]
+fn actual_scoped_bytes_changed_after_preparation_reject_dispatch_without_new_review() {
+    let f = Fixture::new();
+    let (mut session, response) = f.start(Mode::Disabled);
+    session.adopt_current_use(current_use(&f, false)).unwrap();
+    session.accept(response).unwrap();
+    let request = session.request().unwrap();
+    fs::write(f.0.join("unrelated.txt"), "Unrelated change").unwrap();
+    session.verify_queued_current_use(&request).unwrap();
+    fs::write(
+        f.0.join("method.txt"),
+        "Scope source changed after preparation\n",
+    )
+    .unwrap();
+    assert!(
+        session
+            .begin_execution(Default::default())
+            .unwrap_err()
+            .contains("source changed")
+    );
+    assert!(session.runtime.execution().is_none());
+    assert!(session.decisions.pending.is_none());
+}
+
+#[test]
+fn deciding_roles_receive_full_controlling_context_despite_local_excerpt_and_role_filter() {
+    let f = Fixture::new();
+    fs::write(f.0.join("objective.md"), "Historical method: stay with the incumbent.\nCurrent objective: maximize the overall useful outcome, with alternative methods allowed.\n").unwrap();
+    let mut task = f.task();
+    task.controlling_objective = Some(task.sources.len());
+    task.sources.push(workflow_harness::Source {
+        path: "objective.md".into(),
+        first_line: 1,
+        last_line: 1,
+        purpose: "controlling objective".into(),
+        roles: vec![Role::Worker],
+    });
+    let mut session = Session::create(task, &f.run()).unwrap();
+    let request = session.request().unwrap();
+    for text in [
+        "Declared controlling objective source",
+        "Current objective: maximize",
+        "Full source context follows once",
+        "Historical method:",
+        "local task",
+    ] {
+        assert!(request.prompt.contains(text));
+    }
+    let response: Response = serde_json::from_value(json!({"invocation_id":request.invocation_id,"role":"coordinator","decision":"reconsider",
+        "summary":"Resolve objective-level question", "update":{"remaining_work":[],"interpretation":"Retain current controlling source"}})).unwrap();
+    session.accept(response).unwrap();
+    // Cold resumption needs no fresh returned decision or correction enrollment.
+    drop(session);
+    let mut session = Session::open(&f.run()).unwrap();
+    let resolver = session.request().unwrap();
+    assert_eq!(resolver.role, Role::Resolver);
+    assert!(resolver.prompt.contains("Current objective: maximize"));
+    assert!(
+        resolver
+            .prompt
+            .contains("Judge the current source role and authority")
+    );
+}
+
+#[test]
+fn standalone_task_keeps_ordinary_source_delivery_and_invalid_controlling_reference_fails() {
+    let f = Fixture::new();
+    let mut session = Session::create(f.task(), &f.run()).unwrap();
+    assert!(
+        !session
+            .request()
+            .unwrap()
+            .prompt
+            .contains("Declared controlling objective source")
+    );
+    let mut invalid = f.task();
+    invalid.controlling_objective = Some(99);
+    assert!(
+        workflow_harness::Runtime::new(invalid)
+            .unwrap_err()
+            .contains("existing supplied source")
+    );
+}
+
+#[test]
+fn controlling_body_changes_outside_excerpt_reach_existing_source_checks() {
+    use workflow_harness::control::{Capabilities, Continuation};
+    for phase in ["return", "request", "started"] {
+        let f = Fixture::new();
+        let objective = f.0.join("objective.md");
+        fs::write(
+            &objective,
+            "Historical method.\nCurrent authority permits A.\n",
+        )
+        .unwrap();
+        let mut task = f.task();
+        task.research = None;
+        task.controlling_objective = Some(task.sources.len());
+        task.sources.push(workflow_harness::Source {
+            path: "objective.md".into(),
+            first_line: 1,
+            last_line: 1,
+            purpose: "objective".into(),
+            roles: vec![Role::Worker],
+        });
+        let mut session = Session::create(task, &f.run()).unwrap();
+        let coordinator = session.request().unwrap();
+        assert!(coordinator.prompt.contains("Current authority permits A."));
+        let response: Response = serde_json::from_value(json!({
+            "invocation_id": coordinator.invocation_id, "role": "coordinator",
+            "decision": "work", "summary": "Use delivered objective", "assignment": "Perform A"
+        }))
+        .unwrap();
+        if phase != "return" {
+            session.accept(response.clone()).unwrap();
+        }
+        if phase == "started" {
+            assert_eq!(session.request().unwrap().role, Role::Worker);
+            session
+                .begin_execution(Capabilities {
+                    events: true,
+                    controlled_continuation: true,
+                    ..Default::default()
+                })
+                .unwrap();
+        }
+        // Persist the snapshot across restart before the previously omitted body changes.
+        drop(session);
+        fs::write(
+            &objective,
+            "Historical method.\nCurrent authority prohibits A; use B.\n",
+        )
+        .unwrap();
+        let mut session = Session::open(&f.run()).unwrap();
+        if phase == "return" {
+            session.accept(response).unwrap();
+        }
+        if phase == "started" {
+            assert!(
+                matches!(session.check_action().unwrap(), Continuation::Return { reasons }
+                if reasons.iter().any(|reason| reason.contains("Selected decision inputs")))
+            );
+            assert!(!session.runtime.execution().unwrap().effects_settled);
+        } else {
+            let next = session.request().unwrap();
+            assert_eq!(next.role, Role::Coordinator, "phase {phase}");
+            assert!(
+                next.prompt
+                    .contains("Current authority prohibits A; use B.")
+            );
+        }
+    }
+}
+
+#[test]
+fn unselected_noncontrolling_body_change_keeps_supported_assignment() {
+    let f = Fixture::new();
+    fs::write(
+        f.0.join("method.txt"),
+        "Selected method.\nUnselected historical note.\n",
+    )
+    .unwrap();
+    let mut task = f.task();
+    task.research = None;
+    let mut session = Session::create(task, &f.run()).unwrap();
+    let request = session.request().unwrap();
+    fs::write(
+        f.0.join("method.txt"),
+        "Selected method.\nDifferent historical note.\n",
+    )
+    .unwrap();
+    let response: Response = serde_json::from_value(json!({
+        "invocation_id": request.invocation_id, "role": "coordinator",
+        "decision": "work", "summary": "Selected method still applies", "assignment": "Continue useful work"
+    })).unwrap();
+    session.accept(response).unwrap();
+    assert_eq!(session.request().unwrap().role, Role::Worker);
+}
+
+#[test]
+fn explicit_current_use_check_cannot_report_coverage_for_an_unbound_run() {
+    let f = Fixture::new();
+    let (mut session, response) = f.start(Mode::Disabled);
+    session.accept(response).unwrap();
+    let request = session.request().unwrap();
+    assert!(
+        session
+            .verify_queued_current_use(&request)
+            .unwrap_err()
+            .contains("coverage unavailable")
+    );
+    // Optional enforcement is not installed merely by requesting a status check.
+    session
+        .begin_execution(workflow_harness::control::Capabilities {
+            fresh_context: true,
+            events: true,
+            controlled_continuation: true,
+            ..Default::default()
+        })
+        .unwrap();
 }

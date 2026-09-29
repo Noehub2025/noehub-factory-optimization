@@ -1311,6 +1311,7 @@ class EntryPacketSchemaTests(unittest.TestCase):
             "references/replan-review.md",
             "references/user-decisions.md",
             "references/user-facing-handoff.md",
+            "scripts/context_delivery.py",
             "scripts/current_use.py",
             "scripts/engineering_check_plan.py",
             "scripts/evaluation_target_contract.py",

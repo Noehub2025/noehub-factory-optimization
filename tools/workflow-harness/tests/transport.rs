@@ -119,6 +119,7 @@ fn response(request: &workflow_harness::Invocation, decision: Decision) -> Respo
         decision,
         summary: "Mechanical state transition evidence only".into(),
         assignment: "One bounded check".into(),
+        actual_use: vec![],
         evidence: vec![std::env::current_dir().unwrap().join("Cargo.toml")],
         update: None,
     }

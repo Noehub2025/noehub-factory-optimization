@@ -129,6 +129,13 @@ pub struct Segment {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct WorkUpdate {
+    /// Optional meaningful update to the existing adopted understanding.
+    /// Absence reuses the current account without another synthesis pass.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context: Option<ContextAccount>,
+    /// Owner confirms these exact returns add no change to the existing account.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub context_unchanged: Vec<usize>,
     /// Invocations whose return conditions were addressed in this adoption.
     #[serde(default)]
     pub addresses: Vec<usize>,
@@ -152,6 +159,15 @@ pub struct WorkUpdate {
     /// Reuse an accepted Resolver invocation, rather than requesting another judgment.
     #[serde(default)]
     pub resolved_invocation: Option<usize>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ContextAccount {
+    /// Source-grounded understanding, conditions, contradictions and open routes.
+    pub understanding: String,
+    /// Exact accepted returns whose meaning this account incorporates.
+    pub incorporates: Vec<usize>,
 }
 
 pub fn nonempty(value: &str, name: &str) -> Result<()> {
