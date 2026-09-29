@@ -19,6 +19,8 @@ Protocol version 2 is enabled when a task includes a `research` object. It can:
   conditions, and selected target feedback across owner and Batch handoffs;
 - bind a consequential decision to its adopted objective, evaluation, and
   current-work sources, including an explicit feedback-timing disposition;
+- carry validated current-use corrections into Worker preparation, reject stale
+  queued work, and replace only requests that have not started;
 - retain delayed observations, delivery failures, capability limitations, and
   recoverable alternatives without converting them into automatic support work;
 - correlate a worker return with the invocation that created it;
@@ -31,6 +33,12 @@ Protocol version 2 is enabled when a task includes a `research` object. It can:
 The harness does not sandbox an uncooperative process, settle external effects,
 prove that a result is correct, or intercept host tools that are not connected
 to one of its adapters.
+
+Current-use checks verify retained finding identity, saved source bytes, and the
+request consumed by a cooperating host. They do not decide whether a correction
+is semantically sound. The existing owner must first validate and adopt the
+corrected work with the Skill helper; direct or unsupported dispatch paths still
+require that owner to inspect the actual outgoing task.
 
 The native context is a concise reminder, not a forecasting engine or decision
 maker. The existing owner still decides whether target feedback is ready,
@@ -104,6 +112,14 @@ handle and structured response to `host return RUN_DIRECTORY`. Use `host status`
 to recover an existing pending invocation and `host continue` only when no
 invocation remains pending. Never use a new run directory to bypass unresolved
 effects or an uncertain dispatch.
+
+For a participating current-use correction, validate the owner and affected
+sources with `frontier_references.py check-current-use`, then pass that JSON
+report to `host current-use-adopt`. If an affected Worker request is queued but
+has not started, `host current-use-replace` emits a corrected replacement.
+Before external dispatch, `host current-use-check` compares the actual request
+with the retained binding. These operations preserve the owner's judgment; they
+do not create a new approval or infer correctness from hashes.
 
 This path orders participating calls but does not own the host's agent API and
 cannot safely stop arbitrary work already running outside its boundary.

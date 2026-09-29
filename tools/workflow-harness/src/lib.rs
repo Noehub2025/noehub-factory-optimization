@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 
 pub mod contract;
 pub mod control;
+pub mod current_use;
 pub mod decision;
 pub mod session;
 pub mod stream;

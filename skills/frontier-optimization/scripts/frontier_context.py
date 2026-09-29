@@ -67,7 +67,10 @@ def _snapshot(root: Path, selection: Path, session: str) -> dict:
             if state.get("batch") != batch:
                 raise ValueError("selected Batch does not match its saved work")
             work_status = state.get("current", {}).get("status")
-    return {"kind": "adopted_work", "workspace": str(root), "session_id": session,
+    from current_use import inspect_current_use
+    current_use = inspect_current_use(root, str(selection), [work_path] if work_path else [])
+    corrections = {"current_use": current_use} if current_use is not None else {}
+    return {"kind": "adopted_work", "workspace": str(root), "session_id": session, **corrections,
             "selection": source, "work": work, "current_state": current,
             "work_status": work_status, "mode": "observe"}
 
@@ -99,6 +102,14 @@ def register_adopted_work(root: Path, selection: Path, session_id: str | None = 
         if expected_binding is not None and json.loads(pointer.read_text()) != expected_binding:
             return False
         value = _snapshot(root, selection, session)
+        if pointer.exists():
+            previous = json.loads(pointer.read_text())
+            previous_use = previous.get("current_use")
+            if previous_use and previous_use["owner"] != value["selection"]["path"]:
+                from current_use import inspect_current_use
+                actual = [value["work"]["path"]] if value["work"] else []
+                value["current_use"] = inspect_current_use(root, value["selection"]["path"], actual,
+                                                          previous_owner=previous_use["owner"])
         for ref in (value["selection"], value["work"]):
             if ref and _read(root, Path(ref["path"]))[0] != ref:
                 raise ValueError("owner changed during registration; refresh from current work")

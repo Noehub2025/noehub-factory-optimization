@@ -26,6 +26,8 @@ If the revision Agent already read, wrote, or helped design the current protocol
 
 ### 1. Target and claim
 
+Evaluation location, statistical uncertainty, changing conditions, delivery timing and external effects are separate properties. Establish only those relevant to the proposed use; an immediate local evaluation can measure the objective directly and a delayed result can be final and fixed. Do not project dynamic-score exposure or refresh requirements onto all protocols. Keep implementation readiness for an observation separate from evidence sufficient for adoption under [Evaluation, implementation and continuation](../../frontier-optimization/references/learning-loop.md#evaluation-implementation-and-continuation).
+
 Reconstruct the actual evaluation chain rather than relying on a metric label or displayed value. Use Slot D for the final evaluated entity, objective and material threshold, and Slot E for the elementary outcome, cross-instance aggregation and inferential target. Establish how an observable value is initialized, which events update it, when it is intermediate, and which state or aggregation is decision-ready. State the context needed to interpret each materially different state.
 
 For every decision-critical fact in that chain, record one lightweight source-coverage entry that names the supporting source and the D, E, or H facts it supports. Keep unsupported facts explicit as unresolved. A source that establishes execution, initialization or availability cannot establish later performance, aggregation or target linkage unless it actually covers those facts.

@@ -141,6 +141,11 @@ def _source_metadata(text: str) -> dict:
 
 def _source_text(root: Path, ref: dict) -> str:
     text = read_reference(root, ref).decode("utf-8")
+    return _selected_text(text, ref)
+
+
+def _selected_text(text: str, ref: dict) -> str:
+    """Select the same meaningful bytes from Git or saved working sources."""
     if ref.get("field"):
         metadata = _source_metadata(text)
         if ref["field"] not in metadata:
@@ -156,6 +161,122 @@ def _source_text(root: Path, ref: dict) -> str:
         end = next((item.start() for item in headings[index + 1:] if len(item[1]) <= len(start[1])), len(text))
         return text[start.start():end]
     return text
+
+
+def _working_text(root: Path, path: str) -> str:
+    root = root.resolve()
+    target = (root / normalize_path(path)).resolve(strict=True)
+    if not target.is_relative_to(root):
+        raise ReferenceError("working source is outside the workspace")
+    return target.read_text(encoding="utf-8")
+
+
+def _continuation_refs(owner_path: str, block: dict) -> list[dict]:
+    """Resolve only declared direct dependencies, never crawl linked records."""
+    if not isinstance(block, dict):
+        raise ReferenceError("continuation must be a mapping")
+    for name in ("waiting_on", "affected_work"):
+        if not isinstance(block.get(name), list) or not block[name]:
+            raise ReferenceError(f"continuation requires nonempty {name}")
+    next_work = block.get("next")
+    if not isinstance(next_work, dict) or next_work.get("kind") not in {"work", "idle"}:
+        raise ReferenceError("continuation next.kind must be work or idle")
+    work = next_work.get("work", [])
+    if not isinstance(work, list) or (next_work["kind"] == "work" and not work) or (next_work["kind"] == "idle" and work):
+        raise ReferenceError("continuation next.work must match its kind")
+    condition = block.get("reconsider_when")
+    if not isinstance(condition, str) or not condition.strip():
+        raise ReferenceError("continuation requires reconsider_when")
+    for item in block["affected_work"]:
+        if not isinstance(item, dict) or not isinstance(item.get("reason"), str) or not item["reason"].strip():
+            raise ReferenceError("affected_work needs a reason for each dependency or displacement")
+    items = [block.get("owner_state"), block.get("basis"), *block["waiting_on"], *block["affected_work"], *work]
+    refs = []
+    for item in items:
+        if not isinstance(item, dict) or not isinstance(item.get("path"), str):
+            raise ReferenceError("continuation sources require a workspace-relative path")
+        ref = {"path": normalize_path(item["path"])}
+        selectors = [key for key in ("field", "section") if key in item]
+        if len(selectors) > 1 or any(not isinstance(item[key], str) or not item[key].strip() for key in selectors):
+            raise ReferenceError("source uses at most one nonempty field or section")
+        ref.update({key: item[key] for key in selectors})
+        if ref["path"] == owner_path and (not selectors or ref.get("field") == "continuation"):
+            raise ReferenceError("owner source must select state or rationale outside continuation")
+        if ref not in refs:
+            refs.append(ref)
+    if block["owner_state"]["path"] != owner_path:
+        raise ReferenceError("owner_state must reference the adopted owner")
+    return refs
+
+
+def collect_continuation_sources(root: Path, owner_path: str, block: dict) -> list[dict]:
+    """Derive source baselines during normal owner writing, not a new approval."""
+    owner_path = normalize_path(owner_path)
+    return [{**ref, "sha256": sha256_bytes(_selected_text(_working_text(root, ref["path"]), ref).replace("\r\n", "\n").encode())}
+            for ref in _continuation_refs(owner_path, block)]
+
+
+def check_continuation(root: Path, owner_path: str, block: dict | None = None, *, required: bool = False) -> dict:
+    """Check current source applicability; never select work or refresh a baseline."""
+    owner_path = normalize_path(owner_path)
+    owner = _source_metadata(_working_text(root, owner_path))
+    block = owner.get("continuation") if block is None else block
+    if block is None:
+        if required:
+            raise ReferenceError("idle/wait disposition requires continuation in the existing owner or result")
+        return {"status": "not_applicable"}
+    current = collect_continuation_sources(root, owner_path, block)
+    if block.get("source_basis") != current:
+        raise ReferenceError("continuation source basis is missing or changed; reconcile current direct sources through the owner")
+    basis = block["basis"]
+    basis_text = _working_text(root, basis["path"])
+    meaning = _source_metadata(basis_text).get(basis["field"]) if basis.get("field") else _selected_text(basis_text, basis).strip()
+    if not meaning or (isinstance(meaning, str) and not meaning.strip()):
+        raise ReferenceError("continuation comparison basis is empty")
+    state = owner.get("current_state")
+    if "current_state" in owner and (not isinstance(state, dict) or not state):
+        raise ReferenceError("adopted current_state must be a nonempty mapping")
+    if owner.get("type") == "Optimization Frontier" and (not isinstance(state, dict) or state.get("campaign_status") != "running"):
+        raise ReferenceError("Frontier continuation requires an adopted running current_state")
+    if isinstance(state, dict) and owner.get("campaign_status") is not None and owner["campaign_status"] != state.get("campaign_status"):
+        raise ReferenceError("owner and current_state disagree on campaign status")
+    if isinstance(state, dict):
+        if block["owner_state"] != {"path": owner_path, "field": "current_state"}:
+            raise ReferenceError("owner_state must cover adopted current_state")
+        if state.get("campaign_status") in {"paused", "completed", "closed", "stopped", "halted"}:
+            raise ReferenceError("pause or closeout uses its own return path, not continuation")
+        selected = []
+        primary = state.get("primary_batch")
+        if primary:
+            selected.append(primary)
+        parallel = state.get("parallel_batches", state.get("parallel", []))
+        if not isinstance(parallel, list):
+            raise ReferenceError("current parallel work must be a list")
+        selected.extend(parallel)
+        paths = set()
+        for batch in selected:
+            if not isinstance(batch, str) or not re.fullmatch(r"B[0-9]+", batch):
+                raise ReferenceError("invalid selected Batch in current_state")
+            paths.add(f"artifacts/frontier/{batch}/batch.yaml")
+        if state.get("work_record"):
+            paths.add(normalize_path(state["work_record"]))
+        dispositioned = {item["path"] for item in block["affected_work"] + block["next"].get("work", [])}
+        if paths - dispositioned:
+            raise ReferenceError("selected work has no continuation disposition: " + ", ".join(sorted(paths - dispositioned)))
+    return {"status": "current", "next": block["next"]["kind"], "sources_checked": len(current),
+            "limit": "Structural applicability only; the owner judges value, dependencies and actual next work."}
+
+
+def _check_result_continuation(root: Path, owner_path: str, result: dict) -> None:
+    decision = result.get("feedback_decision", {})
+    if not isinstance(decision, dict):
+        raise ReferenceError("feedback_decision must be a mapping")
+    required = decision.get("action") == "wait"
+    block = result.get("continuation")
+    if required and block is None:
+        raise ReferenceError("wait result requires continuation associated with this result")
+    if block is not None or required:
+        check_continuation(root, owner_path, block, required=required)
 
 
 def _source_pointer(root: Path, commit: str, owner_path: str, value: str) -> dict:
@@ -308,6 +429,10 @@ def prepare_resolver(root: Path, revision: str, path: str, prior_paths=(), *, ow
     prepared = {"evidence_source": ref, "evidence_state_identity": identity,
                 "decision_policy": _decision_policy(root), **objective}
     _validate_objective_inputs(root, prepared)
+    from current_use import inspect_current_use
+    current_use = inspect_current_use(root, owner_source)
+    if current_use is not None:
+        prepared["current_use"] = current_use
     for prior_path in prior_paths:
         prior_ref = reference(root, ref["commit"], prior_path)
         prior = _document(read_reference(root, prior_ref))
@@ -319,6 +444,10 @@ def prepare_resolver(root: Path, revision: str, path: str, prior_paths=(), *, ow
             if not previous:
                 raise ReferenceError("prior resolution needs its original evidence reference or retained identity")
         if previous == identity and prior.get("objective_basis"):
+            # A live correction is independent of historical evidence identity.
+            # Open corrections remain visible to the resolver, never a reuse pass.
+            if (current_use and current_use["blocked_ids"]) or prior.get("current_use") != current_use:
+                continue
             old_owner = prior.get("objective_owner", {})
             old_basis = _objective_inputs(root, old_owner["commit"], old_owner["path"], **prior.get("objective_basis_options", {}))
             if prior["objective_basis"] != old_basis["objective_basis"]:
@@ -326,6 +455,7 @@ def prepare_resolver(root: Path, revision: str, path: str, prior_paths=(), *, ow
             if old_basis["objective_basis_identity"] != objective["objective_basis_identity"]:
                 continue
             _feedback_decision(objective, prior)
+            _check_result_continuation(root, owner_source, prior)
             prepared["reuse_resolution"] = prior_ref
             prepared["reused_policy_coverage"] = _policy_coverage(root, prior.get("decision_policy"), prior)
             break
@@ -345,7 +475,14 @@ def bind_resolution(root: Path, prepared: dict, result: dict, *, historical_sour
             raise ReferenceError("historical result belongs to different decision facts")
         return {**result, "evidence_state_identity": old_identity}
     objective = _validate_objective_inputs(root, prepared)
+    from current_use import inspect_current_use
+    current_use = inspect_current_use(root, objective["objective_owner"]["path"])
+    if current_use != prepared.get("current_use"):
+        raise ReferenceError("current-use correction changed; prepare from saved adopted objects")
+    if "current_use" in result and result["current_use"] != current_use:
+        raise ReferenceError("result cannot replace the prepared current-use association")
     _feedback_decision(objective, result)
+    _check_result_continuation(root, objective["objective_owner"]["path"], result)
     if result.get("objective_basis"):
         previous_basis = _validate_objective_inputs(root, result)
         if previous_basis["objective_basis_identity"] != objective["objective_basis_identity"]:
@@ -364,7 +501,8 @@ def bind_resolution(root: Path, prepared: dict, result: dict, *, historical_sour
     # Keep the supplied policy identity with this result; the full text stays in its assignment.
     retained_policy = {key: value for key, value in policy.items() if key not in {"text", "instruction"}} if isinstance(policy, dict) else {"status": "not_provided"}
     retained_objective = {key: value for key, value in objective.items() if key != "objective_basis_content"}
-    return {**result, **retained_objective, "evidence_source": ref, "evidence_state_identity": identity,
+    current_binding = {"current_use": current_use} if current_use is not None else {}
+    return {**result, **retained_objective, **current_binding, "evidence_source": ref, "evidence_state_identity": identity,
             "decision_policy": retained_policy, "policy_coverage": _policy_coverage(root, policy, result)}
 
 
@@ -438,8 +576,8 @@ def prepare_design(root: Path, revision: str, work: str, scope=()) -> dict:
 def _write(path: Path, value: dict, *, merge: bool = False) -> None:
     if merge and path.exists():
         existing = _document(path.read_bytes())
-        for key in ("evidence_source", "evidence_state_identity", "reuse_resolution", "reused_policy_coverage", "subject", "work_plan", "delivery_scope", "objective_owner", "objective_basis", "objective_basis_content", "objective_basis_identity", "objective_basis_options", "feedback_trigger", "feedback_not_due"):
-            if key in value or key in {"reuse_resolution", "reused_policy_coverage"}:
+        for key in ("evidence_source", "evidence_state_identity", "reuse_resolution", "reused_policy_coverage", "subject", "work_plan", "delivery_scope", "objective_owner", "objective_basis", "objective_basis_content", "objective_basis_identity", "objective_basis_options", "feedback_trigger", "feedback_not_due", "current_use"):
+            if key in value or key in {"reuse_resolution", "reused_policy_coverage", "current_use"}:
                 existing.pop(key, None)
         value = {**existing, **value}
     raw = json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
@@ -471,12 +609,13 @@ def register_hook_record(root: Path, output: Path, phase: str, session_id: str |
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("kind", choices=("design", "resolver", "bind-resolution", "adopt-work", "bind-return", "batch-review", "batch-update", "batch-view"))
+    parser.add_argument("kind", choices=("design", "resolver", "bind-resolution", "check-continuation", "check-current-use", "adopt-work", "bind-return", "batch-review", "batch-update", "batch-view"))
     parser.add_argument("--repo", type=Path, default=Path.cwd())
     parser.add_argument("--revision", help="chosen saved revision; defaults to HEAD for reference preparation")
     parser.add_argument("--path", help="W, evidence, review, or existing prepared assignment path")
     parser.add_argument("--owner-source", help="adopted Frontier or task source at the saved revision; required for resolver")
     parser.add_argument("--current-work-source", help="owner-linked work path#section, relative to owner")
+    parser.add_argument("--source", action="append", default=[], help="saved object used by the affected action; repeat for current-use checks")
     timing = parser.add_mutually_exclusive_group()
     timing.add_argument("--feedback-trigger", help="observed event requiring a feedback timing decision")
     timing.add_argument("--feedback-not-due", help="why current work does not require a timing decision")
@@ -496,7 +635,16 @@ def main() -> int:
     from frontier_batch import AdoptReview, Batch, BatchError, UpdateWorkingState, batch_facts
 
     try:
-        if args.kind == "bind-return":
+        if args.kind == "check-current-use":
+            if not args.owner_source or not args.source or args.result:
+                raise ReferenceError("check-current-use requires --owner-source and actual --source objects")
+            from current_use import check_current_use
+            value = check_current_use(args.repo, args.owner_source, args.source)
+        elif args.kind == "check-continuation":
+            if not args.path or args.output or args.result:
+                raise ReferenceError("check-continuation requires --path to the adopted owner and writes no output file")
+            value = check_continuation(args.repo, args.path, required=True)
+        elif args.kind == "bind-return":
             if not args.result or not args.call or args.output:
                 raise ReferenceError("bind-return requires --result and --call, without --output")
             from frontier_context import bind_dispatch_return

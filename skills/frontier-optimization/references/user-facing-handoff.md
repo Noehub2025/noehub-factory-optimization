@@ -2,9 +2,9 @@
 
 Load when [Continuing task and stage instructions](user-decisions.md#continuing-task-and-stage-instructions) selects a user return: the requested bounded deliverable is complete; the user explicitly pauses or requests reporting; a user-owned decision blocks every remaining worthwhile action; or no safe, reachable and worthwhile action remains and the campaign has entered closeout. A boundary affecting only one action does not end independent permitted work. Otherwise continue through the existing Coordinator route.
 
-This pass formats accepted persisted state. It does not rerun the router, resolver, Review or adoption.
+This pass formats accepted persisted state, including a justified temporary idle return described below. It does not rerun the router, resolver, Review or adoption; the applicable continuation check occurs before this formatting pass.
 
-A running campaign with no selected next action is transitional, not a return boundary. Continue direction resolution or close the campaign; do not present `preserve_frontier` as its investment or wait for the user to supply a technical target.
+A running campaign with no selected next action is transitional unless a justified temporary idle arrangement applies. That arrangement follows [Evaluation, implementation and continuation](learning-loop.md#evaluation-implementation-and-continuation): retain unfinished state, perform its applicable check, and state the actual delivery or resumption dependency. Do not infer it merely from empty selection or one pending observation. Otherwise continue direction resolution or supported closeout; do not wait for the user to supply a technical target.
 
 ## Completion check
 

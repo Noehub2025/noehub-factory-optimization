@@ -46,6 +46,8 @@ Disable with `decision-config` using `mode: "disabled"` and the existing other f
 
 ## Optional Codex context
 
+The normal `check-continuation --path <adopted-owner>` command and applicable resolver binding/reuse checks do not depend on this optional adapter. See Learning Loop's `evaluation-implementation-and-continuation` rule. Their saved source basis covers current direct observation and work sources; native pointer freshness does not substitute for it. The owner compares actual work, steering and return wording with the adopted arrangement. The command applies only to a new or challenged wait arrangement or whole-effort idle return; ordinary work and completed bounded-deliverable returns need no invocation merely because another observation remains pending. This adapter does not capture all messages or intercept final answers. Test omitted applicable invocation, unavailable registration and resumed old context separately from Hook event handling.
+
 The installed project definition now uses `workflow-codex-hook --record-context
 WORKSPACE`. It resolves only the native root session's pointer under
 `.frontier/hook-context/SESSION_ID.json` and reads that owner's existing decision
@@ -120,11 +122,12 @@ Configure this command as a synchronous command hook, with a two-second timeout,
 
 No `Stop` hook is installed: this implementation chooses zero automatic continuations, which respects user interruption without guessing cancellation from unstable transcript fields. Context-only hooks cannot themselves force correct decisions. Enforcement remains at the participating owner operation; the existing fixed-Worker adapter retains its separate tested behavior.
 
-This repository ships an observation-only project definition. Native loading,
-session identity, resume or compaction delivery, and latency remain unverified in
-each consuming environment until real receipts establish them. Subprocess tests
-exercise the event handler only. Trust the exact definition through Codex; do not
-edit trust storage or treat a retained receipt as proof of current coverage.
+This repository ships an observation-only Codex project definition. Native loading,
+root and child identity, resume or compaction delivery, and latency remain unverified
+for a consuming repository until its own receipts establish them. Subprocess tests
+exercise the event handler only. Review and trust the exact scoped definition through
+Codex; do not edit trust storage to bypass that review. Continue ordinary research
+without a separate validation campaign.
 
 ## Verification and interpretation
 

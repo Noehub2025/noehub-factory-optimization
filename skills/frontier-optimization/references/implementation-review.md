@@ -16,6 +16,8 @@ The assigned subject contains one full Git commit and explicit Candidate Revisio
 
 Write one R through `review-frontier`. Return the material findings already visible in the assigned scope together; distinguish optional improvements from required corrections. Preserve earlier R records at their Git versions. A corrected revision receives a new R only when the later Consequence still needs independent judgment; review the changed dependencies and affected conclusions rather than restarting unaffected work. A newly exposed defect remains reportable; one-pass perfection is not a readiness requirement.
 
+Before applying a restriction's fallback, use [Restriction ownership before fallback](learning-loop.md#restriction-ownership-before-fallback). A scoped failure to establish a promise does not eliminate a worthwhile action with truthfully disclosed uncertainty. A future identifier or Reflection is a prerequisite only where actual execution, authority, interpretation or ownership depends on it; an existing accountable owner retains responsibility until transfer.
+
 ## Supported use and constructed failures
 
 For a bypass, misuse or state-mismatch concern, connect its triggering conditions to the supported use through relevant callers, input sources, interface contracts or operating conditions. A reasonably foreseeable use needs grounds for why those conditions can arise in the current use; being able to write an extra caller is insufficient by itself. Names, callability and test injection alone do not establish a supported interface. A documented interface can matter without an existing repository caller, and supported use can include commands, library calls, scheduling, recovery or human operation.

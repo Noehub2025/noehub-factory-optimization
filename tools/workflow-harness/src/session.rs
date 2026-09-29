@@ -18,6 +18,8 @@ struct Checkpoint {
     runtime: Runtime,
     #[serde(default)]
     decisions: crate::decision::Guard,
+    #[serde(default)]
+    current_use: crate::current_use::Bindings,
 }
 
 #[derive(Clone, Deserialize)]
@@ -38,6 +40,7 @@ pub struct HostBinding {
 pub struct Session {
     pub runtime: Runtime,
     pub decisions: crate::decision::Guard,
+    current_use: crate::current_use::Bindings,
     directory: PathBuf,
     // The operating system releases this lock if the harness exits or crashes.
     _lock: File,
@@ -73,6 +76,105 @@ fn lock(directory: &Path) -> Result<File> {
 }
 
 impl Session {
+    /// Optional cooperating-host boundary. The existing owner checker must validate
+    /// adoption and finding discharge before supplying this binding. No model is called.
+    pub fn adopt_current_use(&mut self, binding: crate::current_use::CurrentUse) -> Result<()> {
+        binding.verify_saved()?;
+        if let Some(previous) = &self.current_use.adopted {
+            binding.carries(previous)?;
+        }
+        let previous = self.current_use.clone();
+        self.current_use.adopted = Some(binding);
+        if let Err(error) = self.persist(&self.runtime) {
+            self.current_use = previous;
+            return Err(error);
+        }
+        Ok(())
+    }
+
+    fn require_current_use_ready(&self) -> Result<()> {
+        if let Some(binding) = &self.current_use.adopted {
+            binding.require_ready()?;
+        }
+        Ok(())
+    }
+
+    /// External dispatchers must present the actual queued request they will consume.
+    pub fn verify_queued_current_use(&self, request: &Invocation) -> Result<()> {
+        let pending = self.runtime.outstanding().ok_or("no queued work")?;
+        if serde_json::to_value(request).map_err(|e| e.to_string())?
+            != serde_json::to_value(pending).map_err(|e| e.to_string())?
+        {
+            return Err("dispatcher supplied an obsolete or different queued request".into());
+        }
+        self.verify_current_use_consumption()
+    }
+
+    /// Verify at actual Session consumption, including a request prepared earlier.
+    /// External hosts use `verify_queued_current_use` with their actual request.
+    pub fn verify_current_use_consumption(&self) -> Result<()> {
+        let Some(request) = self
+            .runtime
+            .outstanding()
+            .filter(|r| r.role == Role::Worker)
+        else {
+            return Ok(());
+        };
+        if let Some(binding) = &self.current_use.adopted {
+            binding.require_ready()?;
+            if self.current_use.queued.as_ref() != Some(&(request.invocation_id, binding.clone())) {
+                return Err(
+                    "queued work references an older adoption; replace it through its owner".into(),
+                );
+            }
+        }
+        Ok(())
+    }
+
+    /// Replace only unstarted queued work after its existing owner adopts a correction.
+    /// Already started effects must be reconciled through their existing execution.
+    pub fn replace_queued_work(&mut self, assignment: String) -> Result<Invocation> {
+        crate::contract::nonempty(&assignment, "corrected assignment")?;
+        let request = self.runtime.outstanding().ok_or("no queued work")?;
+        if request.role != Role::Worker
+            || self.runtime.execution().is_some()
+            || self.host_binding()?.is_some()
+            || self
+                .directory
+                .join(format!("stdout-{}.json", request.invocation_id))
+                .exists()
+        {
+            return Err(
+                "replace only unstarted worker requests; reconcile existing effects first".into(),
+            );
+        }
+        self.require_current_use_ready()?;
+        let current_sources = crate::source_contents(&self.runtime.task)?;
+        let replacement_id = self
+            .runtime
+            .next_id
+            .checked_add(1)
+            .ok_or("invocation id overflow")?;
+        let previous_runtime = self.runtime.clone();
+        let previous_binding = self.current_use.clone();
+        self.runtime.assignment = format!(
+            "This assignment supersedes the earlier queued restriction and task.\n{assignment}"
+        );
+        self.runtime.outstanding = None;
+        self.runtime.next_id = replacement_id;
+        // This explicit owner operation adopts the corrected saved task inputs.
+        self.runtime.selected_sources = current_sources;
+        self.current_use.queued = None;
+        match self.request() {
+            Ok(request) => Ok(request),
+            Err(error) => {
+                self.runtime = previous_runtime;
+                self.current_use = previous_binding;
+                Err(error)
+            }
+        }
+    }
+
     pub fn directory(&self) -> &Path {
         &self.directory
     }
@@ -105,6 +207,7 @@ impl Session {
     /// Persist every control transition before allowing a backend to continue.
     pub fn begin_execution(&mut self, capabilities: Capabilities) -> Result<()> {
         self.observe_pause()?;
+        self.verify_current_use_consumption()?;
         let mut next = self.runtime.clone();
         next.begin_execution(capabilities)?;
         self.persist(&next)?;
@@ -123,9 +226,24 @@ impl Session {
         Ok(changed)
     }
 
+    /// Changed current use withholds more work, but must not prevent an already
+    /// started backend from completing its existing return and settlement handshake.
+    fn observe_current_use_return(&self, next: &mut Runtime) -> Result<()> {
+        if let Err(reason) = self.verify_current_use_consumption() {
+            if next.execution().is_none() {
+                return Err(reason);
+            }
+            next.execution_mut()?.require_return(format!(
+                "Current-use owner reconciliation required before more work: {reason}"
+            ));
+        }
+        Ok(())
+    }
+
     pub fn continuation(&mut self) -> Result<Continuation> {
         self.observe_pause()?;
         let mut next = self.runtime.clone();
+        self.observe_current_use_return(&mut next)?;
         let decision = next.continuation()?;
         self.persist(&next)?;
         self.runtime = next;
@@ -138,6 +256,7 @@ impl Session {
     pub fn check_action(&mut self) -> Result<Continuation> {
         self.observe_pause()?;
         let mut next = self.runtime.clone();
+        self.observe_current_use_return(&mut next)?;
         let decision = next.check_action()?;
         self.persist(&next)?;
         self.runtime = next;
@@ -353,6 +472,7 @@ impl Session {
         let session = Self {
             runtime,
             decisions: Default::default(),
+            current_use: Default::default(),
             directory: directory.to_path_buf(),
             _lock: lock(directory)?,
         };
@@ -372,6 +492,7 @@ impl Session {
         Ok(Self {
             runtime: checkpoint.runtime,
             decisions: checkpoint.decisions,
+            current_use: checkpoint.current_use,
             directory: directory.to_path_buf(),
             _lock: lock,
         })
@@ -385,6 +506,7 @@ impl Session {
                 format_version: 1,
                 runtime: runtime.clone(),
                 decisions: self.decisions.clone(),
+                current_use: self.current_use.clone(),
             },
         )?;
         fs::rename(temporary, self.directory.join("state.json")).map_err(|e| e.to_string())?;
@@ -418,6 +540,27 @@ impl Session {
         }
         let mut next = self.runtime.clone();
         let mut request = next.request()?;
+        if request.role == Role::Worker
+            && let Some(binding) = &self.current_use.adopted
+        {
+            binding.require_ready()?;
+            if let Some((id, queued)) = &self.current_use.queued
+                && *id == request.invocation_id
+                && queued != binding
+            {
+                return Err(
+                    "queued work references an older adoption; replace it through its owner".into(),
+                );
+            }
+            request.prompt.push_str(&format!(
+                "\nCurrent-use owner: {}. Retained correction references: {}. Use the current saved affected objects for this assignment: {}. The existing owner adopted this scoped use; these references are not a new semantic verdict.\n",
+                binding.owner.display(),
+                serde_json::to_string(&binding.correction_ids).map_err(|e| e.to_string())?,
+                serde_json::to_string(&binding.files.iter().map(|file| &file.path).collect::<Vec<_>>()).map_err(|e| e.to_string())?
+            ));
+            next.outstanding = Some(request.clone());
+            self.current_use.queued = Some((request.invocation_id, binding.clone()));
+        }
         // Deliver the policy to the existing owner/resolver, not a second reviewer.
         if matches!(request.role, Role::Coordinator | Role::Resolver)
             && let Some(config) = self
@@ -465,6 +608,9 @@ impl Session {
         }
         let mut next = self.runtime.clone();
         next.accept(response.clone())?;
+        if next.role == Role::Worker {
+            self.require_current_use_ready()?;
+        }
         let mut guard = self.decisions.clone();
         if next.role == crate::Role::Worker
             && guard.consider(
@@ -720,6 +866,9 @@ impl Session {
             } else {
                 next.accept(proposal.clone())?;
                 if next.role == Role::Worker {
+                    self.require_current_use_ready()?;
+                }
+                if next.role == Role::Worker {
                     guard.last_commitment = Some(crate::decision::commitment(proposal)?);
                     guard.last_policy = Some(p.policy.clone());
                     if let Some(path) = guard.config.as_ref().and_then(|c| c.publication.clone()) {
@@ -816,6 +965,7 @@ impl Session {
     }
 
     pub fn invoke(&self, adapter: &ProcessAdapter) -> Result<Response> {
+        self.verify_current_use_consumption()?;
         let request = self.runtime.outstanding().ok_or("no pending invocation")?;
         if request.protocol != "workflow-invocation/1" {
             return Err(

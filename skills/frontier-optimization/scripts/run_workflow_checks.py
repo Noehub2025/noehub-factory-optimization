@@ -39,7 +39,11 @@ ENTRY_TESTS = (
 )
 CURRENT_BATCH_TESTS = (FRONTIER_SCRIPTS / "test_frontier_batch.py",)
 EXECUTION_EXAMPLE_TEST = WORKFLOW_ROOT / "run-frontier-batch/scripts/test_batch_execution_example.py"
-REFERENCE_TESTS = (FRONTIER_SCRIPTS / "test_frontier_references.py",)
+REFERENCE_TESTS = (
+    FRONTIER_SCRIPTS / "test_frontier_references.py",
+    FRONTIER_SCRIPTS / "test_frontier_context.py",
+    FRONTIER_SCRIPTS / "test_current_use.py",
+)
 LEGACY_BATCH_TESTS = (
     FRONTIER_SCRIPTS / "test_validate_batch_packet.py",
     FRONTIER_SCRIPTS / "test_validate_batch_result.py",
@@ -97,6 +101,8 @@ REFERENCE_TESTS_BY_NAME = {
 }
 
 SCRIPT_TESTS = {
+    "current_use.py": REFERENCE_TESTS,
+    "frontier_context.py": REFERENCE_TESTS,
     "frontier_references.py": (*REFERENCE_TESTS, *CURRENT_BATCH_TESTS),
     "saved_git.py": (*CURRENT_BATCH_TESTS, EXECUTION_EXAMPLE_TEST, *REFERENCE_TESTS, FRONTIER_SCRIPTS / "test_saved_git.py"),
     "authorization_target_contract.py": ENTRY_TESTS,

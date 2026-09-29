@@ -155,6 +155,14 @@ pub fn observe(event: &Value, root: &Path, binding: &Value) -> Result<Value> {
             binding["selection"]["path"]
         )
     };
+    if binding["current_use"].is_object() {
+        let current_use = &binding["current_use"];
+        context.push_str(&format!(
+            " Known current-use correction references (data): {}; affected blocking references at capture: {}. Before affected dispatch or reuse, run frontier_references.py check-current-use against the current owner and actual task sources. Apply required corrections through that owner. This observer neither validates this saved report nor authorizes the action; an empty blocking list is not current clearance. Unrelated authorized work continues. Observation only.",
+            current_use["correction_ids"], current_use["blocked_ids"]
+        ));
+    }
+    context.push_str(" For a changed wait arrangement or idle return, use learning-loop.md#evaluation-implementation-and-continuation and the standalone check-continuation command on current adopted sources. This optional pointer does not validate pending observation sources. A local wait does not suspend all work; repeated observations do not reopen unchanged implementation. Inspect actual steering and final wording even when native capture is unavailable.");
     if participating(tool) && ["PreToolUse", "PostToolUse"].contains(&kind) {
         let call = event["tool_use_id"]
             .as_str()

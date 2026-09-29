@@ -47,6 +47,148 @@ def test_resolver_uses_saved_bytes_and_repairs_derived_binding(repo):
     assert result["exact_action"] == body["exact_action"]
 
 
+def continuation_fixture(root, kind="idle"):
+    owner = {"feedback_not_due": "Already selected observation is pending.",
+             "current_state": {"campaign_status": "running", "work_record": "work.yaml"},
+             "comparison": "A brief wait costs less than switching; resume on the result."}
+    (root / "owner.yaml").write_text(json.dumps(owner))
+    (root / "work.yaml").write_text('current: waiting\n')
+    (root / "observation.yaml").write_text('current: pending\n')
+    block = {"owner_state": {"path": "owner.yaml", "field": "current_state"},
+             "waiting_on": [{"path": "observation.yaml", "field": "current"}],
+             "affected_work": [{"path": "work.yaml", "field": "current", "reason": "The next dependent step needs this observation."}],
+             "next": {"kind": kind}, "basis": {"path": "owner.yaml", "field": "comparison"},
+             "reconsider_when": "The selected result arrives or useful compatible work becomes available."}
+    if kind == "work":
+        (root / "independent.md").write_text("Continue the selected inquiry; owner is the Coordinator; yield before integration.")
+        block["next"]["work"] = [{"path": "independent.md"}]
+    block["source_basis"] = refs.collect_continuation_sources(root, "owner.yaml", block)
+    owner["continuation"] = block
+    (root / "owner.yaml").write_text(json.dumps(owner))
+    return owner, block
+
+
+@pytest.mark.parametrize("kind", ["idle", "work"])
+def test_continuation_current_working_sources_without_git_or_session(tmp_path, kind):
+    _, block = continuation_fixture(tmp_path, kind)
+    result = refs.check_continuation(tmp_path, "owner.yaml")
+    assert result["status"] == "current" and result["next"] == kind
+    assert result["sources_checked"] == (5 if kind == "work" else 4)
+    assert block["source_basis"] == refs.collect_continuation_sources(tmp_path, "owner.yaml", block)
+
+
+@pytest.mark.parametrize("changed", ["observation", "owner", "work"])
+def test_continuation_rejects_dirty_direct_sources_without_owner_commit(tmp_path, changed):
+    owner, _ = continuation_fixture(tmp_path)
+    if changed == "owner":
+        owner["current_state"]["work_record"] = "new.md"
+        (tmp_path / "owner.yaml").write_text(json.dumps(owner))
+    else:
+        (tmp_path / f"{changed}.yaml").write_text("current: ready\n")
+    with pytest.raises(refs.ReferenceError, match="source basis"):
+        refs.check_continuation(tmp_path, "owner.yaml")
+
+
+def test_continuation_reuses_unrelated_history_and_requires_selected_disposition(tmp_path):
+    owner, block = continuation_fixture(tmp_path)
+    with (tmp_path / "observation.yaml").open("a") as out:
+        out.write("history: unrelated annotation\n")
+    assert refs.check_continuation(tmp_path, "owner.yaml")["status"] == "current"
+    owner["current_state"]["parallel_batches"] = ["B12"]
+    (tmp_path / "owner.yaml").write_text(json.dumps(owner))
+    block["source_basis"] = refs.collect_continuation_sources(tmp_path, "owner.yaml", block)
+    with pytest.raises(refs.ReferenceError, match="no continuation disposition"):
+        refs.check_continuation(tmp_path, "owner.yaml", block)
+
+
+@pytest.mark.parametrize("bad", ["missing_basis", "missing_reason", "empty_work", "owner_whole", "outside"])
+def test_continuation_rejects_unsupported_arrangements(tmp_path, bad):
+    _, block = continuation_fixture(tmp_path)
+    if bad == "missing_basis": block.pop("source_basis")
+    elif bad == "missing_reason": block["affected_work"][0].pop("reason")
+    elif bad == "empty_work": block["next"] = {"kind": "work", "work": []}
+    elif bad == "owner_whole": block["owner_state"] = {"path": "owner.yaml"}
+    else: block["waiting_on"] = [{"path": "../outside"}]
+    with pytest.raises((refs.ReferenceError, OSError)):
+        refs.check_continuation(tmp_path, "owner.yaml", block)
+
+
+def test_continuation_binding_and_reuse_validate_live_dependencies(repo):
+    owner, block = continuation_fixture(repo)
+    save(repo, {"owner.yaml": json.dumps(owner), "evidence.json": '{"result":1}',
+                "work.yaml": (repo / "work.yaml").read_text(), "observation.yaml": (repo / "observation.yaml").read_text()})
+    prepared = prepare(repo, "HEAD", "evidence.json", owner_source="owner.yaml")
+    result = refs.bind_resolution(repo, prepared, {"row": 11, "continuation": block})
+    save(repo, {"resolution.json": json.dumps(result)})
+    assert "reuse_resolution" in prepare(repo, "HEAD", "evidence.json", ["resolution.json"], owner_source="owner.yaml")
+    (repo / "observation.yaml").write_text("current: complete\n")
+    with pytest.raises(refs.ReferenceError, match="source basis"):
+        refs.bind_resolution(repo, prepared, {"row": 11, "continuation": block})
+    with pytest.raises(refs.ReferenceError, match="source basis"):
+        prepare(repo, "HEAD", "evidence.json", ["resolution.json"], owner_source="owner.yaml")
+
+
+def test_wait_requires_arrangement_but_ordinary_result_does_not(repo):
+    save(repo, {"evidence.json": '{}'})
+    prepared = prepare(repo, "HEAD", "evidence.json", feedback_trigger="observation due")
+    body = {"rationale": "Wait for a useful observation.", "feedback_decision": {
+        "trigger": "observation due", "action": "wait", "basis": "/rationale", "next_condition": "result arrives"}}
+    with pytest.raises(refs.ReferenceError, match="requires continuation"):
+        refs.bind_resolution(repo, prepared, body)
+    body["feedback_decision"]["action"] = "observe"
+    assert refs.bind_resolution(repo, prepared, body)["feedback_decision"]["action"] == "observe"
+
+
+def test_continuation_cli_reads_owner_without_optional_registration(tmp_path):
+    import sys
+    continuation_fixture(tmp_path)
+    command = [sys.executable, str(Path(refs.__file__)), "check-continuation", "--repo", str(tmp_path), "--path", "owner.yaml"]
+    before = sorted(p.name for p in tmp_path.iterdir())
+    result = subprocess.run(command, text=True, capture_output=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert json.loads(result.stdout)["status"] == "current"
+    assert sorted(p.name for p in tmp_path.iterdir()) == before
+    (tmp_path / "observation.yaml").write_text("current: complete\n")
+    failed = subprocess.run(command, text=True, capture_output=True)
+    assert failed.returncode == 2
+    assert json.loads(failed.stdout)["status"] == "NOT_READY"
+
+
+def test_wait_result_cannot_borrow_owner_arrangement(tmp_path):
+    continuation_fixture(tmp_path)
+    with pytest.raises(refs.ReferenceError, match="associated with this result"):
+        refs._check_result_continuation(tmp_path, "owner.yaml", {"feedback_decision": {"action": "wait"}})
+    for invalid in (None, [], "wait"):
+        with pytest.raises(refs.ReferenceError, match="mapping"):
+            refs._check_result_continuation(tmp_path, "owner.yaml", {"feedback_decision": invalid})
+
+
+def test_halted_owner_cannot_validate_continuation(tmp_path):
+    owner, block = continuation_fixture(tmp_path)
+    owner["current_state"]["campaign_status"] = "halted"
+    (tmp_path / "owner.yaml").write_text(json.dumps(owner))
+    block["source_basis"] = refs.collect_continuation_sources(tmp_path, "owner.yaml", block)
+    with pytest.raises(refs.ReferenceError, match="pause or closeout"):
+        refs.check_continuation(tmp_path, "owner.yaml", block)
+
+
+@pytest.mark.parametrize("defect", ["empty_basis", "blank_basis", "scalar_state", "empty_state", "frontier_status", "conflicting_status"])
+def test_continuation_rejects_empty_meaning_and_malformed_state(tmp_path, defect):
+    owner, block = continuation_fixture(tmp_path)
+    if defect == "empty_basis": owner["comparison"] = ""
+    elif defect == "blank_basis": owner["comparison"] = "  "
+    elif defect == "scalar_state": owner["current_state"] = "running"
+    elif defect == "empty_state": owner["current_state"] = {}
+    elif defect == "conflicting_status": owner["campaign_status"] = "halted"
+    else:
+        owner["type"] = "Optimization Frontier"
+        owner["current_state"].pop("campaign_status")
+    (tmp_path / "owner.yaml").write_text(json.dumps(owner))
+    block["source_basis"] = refs.collect_continuation_sources(tmp_path, "owner.yaml", block)
+    with pytest.raises(refs.ReferenceError, match="empty|current_state"):
+        refs.check_continuation(tmp_path, "owner.yaml", block)
+
+
 def test_same_facts_reuse_result_after_format_location_and_commit_change(repo):
     save(repo, {"evidence.json": '{"a":1,"b":[2,3]}'})
     prepared = prepare(repo, "HEAD", "evidence.json")

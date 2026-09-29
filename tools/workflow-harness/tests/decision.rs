@@ -892,3 +892,465 @@ fn owner_boundary_uses_existing_pause_without_stranding_original_return() {
     s.runtime.unpause().unwrap();
     assert_ne!(s.request().unwrap().role, Role::Worker);
 }
+
+fn current_use(f: &Fixture, blocked: bool) -> workflow_harness::current_use::CurrentUse {
+    workflow_harness::current_use::CurrentUse::capture(
+        f.0.join("policy.md"),
+        vec![f.0.join("method.txt")],
+        vec!["confirmed-restriction".into()],
+        if blocked {
+            vec!["confirmed-restriction".into()]
+        } else {
+            vec![]
+        },
+    )
+    .unwrap()
+}
+
+#[test]
+fn current_use_survives_restart_omission_and_owner_transfer() {
+    let f = Fixture::new();
+    let (mut session, response) = f.start(Mode::Disabled);
+    session.adopt_current_use(current_use(&f, true)).unwrap();
+    drop(session);
+    let mut session = Session::open(&f.run()).unwrap();
+    assert!(
+        session
+            .accept(response.clone())
+            .unwrap_err()
+            .contains("unresolved")
+    );
+    let mut omitted = current_use(&f, false);
+    omitted.correction_ids.clear();
+    assert!(
+        session
+            .adopt_current_use(omitted)
+            .unwrap_err()
+            .contains("dropped")
+    );
+    let mut transfer = current_use(&f, true);
+    transfer.owner = f.0.join("successor.md");
+    fs::write(&transfer.owner, "Successor owns the same affected work").unwrap();
+    transfer
+        .files
+        .push(workflow_harness::current_use::SavedFile {
+            path: transfer.owner.clone(),
+            contents: fs::read_to_string(&transfer.owner).unwrap(),
+        });
+    session.adopt_current_use(transfer).unwrap();
+    assert!(
+        session
+            .accept(response.clone())
+            .unwrap_err()
+            .contains("unresolved")
+    );
+    // A scoped advisory/unrelated binding carries the association without a hold.
+    session.adopt_current_use(current_use(&f, false)).unwrap();
+    session.accept(response).unwrap();
+    assert_eq!(session.request().unwrap().role, Role::Worker);
+}
+
+#[test]
+fn current_use_rejects_stale_queue_at_consumption_and_owner_can_replace_it() {
+    let f = Fixture::new();
+    let (mut session, response) = f.start(Mode::Disabled);
+    session.adopt_current_use(current_use(&f, false)).unwrap();
+    session.accept(response).unwrap();
+    let old = session.request().unwrap();
+    assert!(
+        old.prompt
+            .contains(f.0.join("method.txt").to_str().unwrap())
+    );
+    assert!(old.prompt.contains("Retained correction references"));
+    fs::write(f.0.join("unrelated.txt"), "Unrelated progress").unwrap();
+    session.verify_current_use_consumption().unwrap();
+    fs::write(
+        f.0.join("method.txt"),
+        "Saved corrected assignment, not committed\n",
+    )
+    .unwrap();
+    assert!(
+        session
+            .begin_execution(Default::default())
+            .unwrap_err()
+            .contains("changed")
+    );
+    assert!(session.check_action().unwrap_err().contains("changed"));
+    assert!(session.continuation().unwrap_err().contains("changed"));
+    session.adopt_current_use(current_use(&f, false)).unwrap();
+    // Updating only the native/owner pointer cannot authorize the stale queued task.
+    assert!(
+        session
+            .verify_current_use_consumption()
+            .unwrap_err()
+            .contains("older")
+    );
+    assert!(session.request().is_err());
+    drop(session);
+    let mut session = Session::open(&f.run()).unwrap();
+    assert!(session.verify_current_use_consumption().is_err());
+    let replacement = session
+        .replace_queued_work(
+            "Investigate the unrestricted objective using the saved corrected task".into(),
+        )
+        .unwrap();
+    assert_ne!(old.invocation_id, replacement.invocation_id);
+    assert!(replacement.prompt.contains("supersedes"));
+    assert!(
+        session
+            .verify_queued_current_use(&old)
+            .unwrap_err()
+            .contains("obsolete")
+    );
+    session.verify_queued_current_use(&replacement).unwrap();
+    session.verify_current_use_consumption().unwrap();
+    session
+        .begin_execution(workflow_harness::control::Capabilities {
+            fresh_context: true,
+            events: true,
+            controlled_continuation: true,
+            ..Default::default()
+        })
+        .unwrap();
+    assert!(
+        session
+            .replace_queued_work("Do not duplicate started work".into())
+            .is_err()
+    );
+}
+
+#[test]
+fn current_use_cannot_be_released_by_revised_or_contested_owner_labels() {
+    for disposition in [Disposition::Revised, Disposition::Contested] {
+        let f = Fixture::new();
+        let (mut session, response) = f.submit(Mode::Enforce);
+        session.decision_result(f.result(Verdict::Revise)).unwrap();
+        session.adopt_current_use(current_use(&f, true)).unwrap();
+        let proposal = (disposition == Disposition::Revised).then_some(response);
+        assert!(
+            session
+                .resolve_decision(f.owner(disposition, proposal))
+                .unwrap_err()
+                .contains("unresolved")
+        );
+        assert!(session.decisions.pending.is_some());
+    }
+}
+
+#[test]
+fn current_use_bypasses_no_new_investment_flag_without_an_extra_checker() {
+    let f = Fixture::new();
+    let (mut session, response) = f.start(Mode::Enforce);
+    session.decisions.last_commitment = Some("Prior accepted commitment".into());
+    assert!(!response.update.as_ref().unwrap().investment_changed);
+    session.adopt_current_use(current_use(&f, true)).unwrap();
+    assert!(
+        session
+            .accept(response.clone())
+            .unwrap_err()
+            .contains("unresolved")
+    );
+    assert!(session.decisions.pending.is_none());
+    session.adopt_current_use(current_use(&f, false)).unwrap();
+    session.accept(response).unwrap();
+    assert!(session.decisions.pending.is_none());
+    assert_eq!(session.request().unwrap().role, Role::Worker);
+}
+
+#[test]
+fn current_use_legacy_process_consumption_checks_before_creating_dispatch_files() {
+    let f = Fixture::new();
+    let mut task = f.task();
+    task.research = None;
+    let mut session = Session::create(task, &f.run()).unwrap();
+    let coordinator = session.request().unwrap();
+    let response = Response {
+        invocation_id: coordinator.invocation_id,
+        role: Role::Coordinator,
+        decision: workflow_harness::Decision::Work,
+        summary: "Owner selected bounded work".into(),
+        assignment: "Use the saved adopted assignment".into(),
+        evidence: vec![],
+        update: None,
+    };
+    session.adopt_current_use(current_use(&f, false)).unwrap();
+    session.accept(response).unwrap();
+    let request = session.request().unwrap();
+    assert_eq!(request.protocol, "workflow-invocation/1");
+    fs::write(
+        f.0.join("policy.md"),
+        "Correction superseded the saved owner record",
+    )
+    .unwrap();
+    let adapter = workflow_harness::session::ProcessAdapter {
+        program: "/nonexistent".into(),
+        args: vec![],
+    };
+    assert!(session.invoke(&adapter).unwrap_err().contains("changed"));
+    assert!(
+        !f.run()
+            .join(format!("stdout-{}.json", request.invocation_id))
+            .exists()
+    );
+}
+
+#[test]
+fn native_current_use_pointer_is_advisory_even_for_known_blocking_findings() {
+    let f = Fixture::new();
+    let (directory, event) = adopted_fixture(&f);
+    let path = directory.join("owner.json");
+    let mut binding: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    binding["current_use"] =
+        json!({"correction_ids":["known-restriction"], "blocked_ids":["known-restriction"]});
+    fs::write(path, binding.to_string()).unwrap();
+    let output = context_mode(&f, event, true);
+    let message = output["hookSpecificOutput"]["additionalContext"]
+        .as_str()
+        .unwrap();
+    assert!(message.contains("known-restriction"));
+    assert!(message.contains("check-current-use"));
+    assert!(message.contains("neither validates"));
+    assert!(output["hookSpecificOutput"]["permissionDecision"].is_null());
+}
+
+fn current_use_cli(f: &Fixture, command: &str, file: &std::path::Path) -> std::process::Output {
+    std::process::Command::new(env!("CARGO_BIN_EXE_workflow-harness"))
+        .args(["host", command])
+        .arg(f.run())
+        .arg(file)
+        .output()
+        .unwrap()
+}
+
+#[test]
+fn host_cli_imports_owner_report_and_replaces_only_unstarted_current_request() {
+    let f = Fixture::new();
+    let (mut session, response) = f.start(Mode::Disabled);
+    session.accept(response).unwrap();
+    let old = session.request().unwrap();
+    let old_file = f.0.join("old-request.json");
+    fs::write(&old_file, serde_json::to_vec(&old).unwrap()).unwrap();
+    drop(session);
+    let report = f.0.join("owner-report.json");
+    fs::write(
+        &report,
+        json!({"current_use":current_use(&f, false), "scope":"existing owner validation"})
+            .to_string(),
+    )
+    .unwrap();
+    assert!(
+        current_use_cli(&f, "current-use-adopt", &report)
+            .status
+            .success()
+    );
+    // Attaching a new current binding does not silently update a queued request.
+    assert!(
+        !current_use_cli(&f, "current-use-check", &old_file)
+            .status
+            .success()
+    );
+    let assignment = f.0.join("corrected-assignment.txt");
+    fs::write(
+        &assignment,
+        "Inspect the corrected saved task and acquire the selected observation",
+    )
+    .unwrap();
+    let replacement = current_use_cli(&f, "current-use-replace", &assignment);
+    assert!(
+        replacement.status.success(),
+        "{}",
+        String::from_utf8_lossy(&replacement.stderr)
+    );
+    let request: workflow_harness::Invocation =
+        serde_json::from_slice(&replacement.stdout).unwrap();
+    assert_ne!(request.invocation_id, old.invocation_id);
+    assert!(request.prompt.contains("supersedes"));
+    let replacement_file = f.0.join("replacement-request.json");
+    fs::write(&replacement_file, replacement.stdout).unwrap();
+    assert!(
+        current_use_cli(&f, "current-use-check", &replacement_file)
+            .status
+            .success()
+    );
+    assert!(
+        !current_use_cli(&f, "current-use-check", &old_file)
+            .status
+            .success()
+    );
+    let mut session = Session::open(&f.run()).unwrap();
+    session
+        .begin_execution(workflow_harness::control::Capabilities {
+            fresh_context: true,
+            events: true,
+            controlled_continuation: true,
+            ..Default::default()
+        })
+        .unwrap();
+    drop(session);
+    assert!(
+        !current_use_cli(&f, "current-use-replace", &assignment)
+            .status
+            .success()
+    );
+}
+
+#[test]
+fn host_cli_import_retains_blocking_findings_and_rejects_stale_saved_report() {
+    let f = Fixture::new();
+    let (session, response) = f.start(Mode::Disabled);
+    drop(session);
+    let report = f.0.join("snapshot.json");
+    fs::write(&report, serde_json::to_vec(&current_use(&f, true)).unwrap()).unwrap();
+    assert!(
+        current_use_cli(&f, "current-use-adopt", &report)
+            .status
+            .success()
+    );
+    let mut session = Session::open(&f.run()).unwrap();
+    assert!(session.accept(response).unwrap_err().contains("unresolved"));
+    drop(session);
+    fs::write(f.0.join("method.txt"), "Changed after report preparation\n").unwrap();
+    assert!(
+        !current_use_cli(&f, "current-use-adopt", &report)
+            .status
+            .success()
+    );
+}
+
+#[test]
+fn refreshed_current_use_preserves_started_host_return_handshake() {
+    use workflow_harness::control::{Event, EventKind};
+    for blocked in [false, true] {
+        let f = Fixture::new();
+        let (mut session, mut response) = f.start(Mode::Disabled);
+        session.adopt_current_use(current_use(&f, false)).unwrap();
+        session.accept(response.clone()).unwrap();
+        let worker = session.request().unwrap();
+        session
+            .bind_host(workflow_harness::session::HostBinding {
+                invocation_id: worker.invocation_id,
+                backend_handle: "existing-worker".into(),
+            })
+            .unwrap();
+        session
+            .begin_execution(workflow_harness::control::Capabilities {
+                fresh_context: true,
+                events: true,
+                controlled_continuation: true,
+                ..Default::default()
+            })
+            .unwrap();
+        session
+            .event(Event {
+                invocation_id: worker.invocation_id,
+                sequence: 1,
+                event: EventKind::Boundary {
+                    reason: "Selected observation is ready".into(),
+                    return_due: true,
+                    effects_settled: true,
+                },
+            })
+            .unwrap();
+        fs::write(
+            f.0.join("policy.md"),
+            "Owner saved an ordinary metadata update\n",
+        )
+        .unwrap();
+        drop(session);
+        let report = f.0.join("refreshed-report.json");
+        fs::write(
+            &report,
+            json!({"current_use":current_use(&f, blocked)}).to_string(),
+        )
+        .unwrap();
+        assert!(
+            current_use_cli(&f, "current-use-adopt", &report)
+                .status
+                .success()
+        );
+        let decision = host(&f, "continuation", json!("existing-worker"));
+        assert_eq!(decision["decision"], "return");
+        let reasons = decision["reasons"].as_array().unwrap();
+        assert!(reasons.iter().any(|r| {
+            r.as_str()
+                .unwrap()
+                .contains("Selected observation is ready")
+        }));
+        assert!(reasons.iter().any(|r| {
+            r.as_str()
+                .unwrap()
+                .contains("Current-use owner reconciliation")
+        }));
+        let mut session = Session::open(&f.run()).unwrap();
+        let execution = session.runtime.execution().unwrap();
+        assert!(!execution.awaiting_continuation);
+        assert!(execution.continuation_withheld);
+        assert!(execution.effects_settled);
+        assert!(
+            session
+                .replace_queued_work("Do not restart settled work".into())
+                .is_err()
+        );
+        session
+            .event(Event {
+                invocation_id: worker.invocation_id,
+                sequence: 2,
+                event: EventKind::Stopped {
+                    effects_settled: true,
+                },
+            })
+            .unwrap();
+        response.invocation_id = worker.invocation_id;
+        response.role = Role::Worker;
+        response.decision = workflow_harness::Decision::Observed;
+        session
+            .accept_host_return("existing-worker", response)
+            .unwrap();
+        assert_eq!(session.request().unwrap().role, Role::Coordinator);
+    }
+}
+
+#[test]
+fn changed_current_use_returns_started_actions_without_claiming_settlement() {
+    use workflow_harness::control::{Continuation, Event, EventKind};
+    let f = Fixture::new();
+    let (mut session, response) = f.start(Mode::Disabled);
+    session.adopt_current_use(current_use(&f, false)).unwrap();
+    session.accept(response).unwrap();
+    let worker = session.request().unwrap();
+    session
+        .begin_execution(workflow_harness::control::Capabilities {
+            fresh_context: true,
+            events: true,
+            controlled_continuation: true,
+            ..Default::default()
+        })
+        .unwrap();
+    fs::write(
+        f.0.join("policy.md"),
+        "Owner changed after execution started\n",
+    )
+    .unwrap();
+    let decision = session.check_action().unwrap();
+    assert!(
+        matches!(decision, Continuation::Return { reasons } if reasons.iter().any(|reason| reason.contains("Current-use owner reconciliation")))
+    );
+    assert!(!session.runtime.execution().unwrap().effects_settled);
+    drop(session);
+    let mut session = Session::open(&f.run()).unwrap();
+    assert!(session.runtime.execution().unwrap().continuation_withheld);
+    assert!(matches!(
+        session.check_action().unwrap(),
+        Continuation::Return { .. }
+    ));
+    session
+        .event(Event {
+            invocation_id: worker.invocation_id,
+            sequence: 1,
+            event: EventKind::Stopped {
+                effects_settled: false,
+            },
+        })
+        .unwrap();
+    assert!(!session.runtime.execution().unwrap().effects_settled);
+}

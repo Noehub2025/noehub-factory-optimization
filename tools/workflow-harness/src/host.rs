@@ -67,6 +67,39 @@ pub fn run() -> Result<()> {
         let task: Task = read_json(&PathBuf::from(&args[1]))?;
         return next(&mut Session::create(task, &PathBuf::from(&args[2]))?);
     }
+    if [
+        "current-use-adopt",
+        "current-use-replace",
+        "current-use-check",
+    ]
+    .contains(&command)
+        && args.len() == 3
+    {
+        let mut session = Session::open(&PathBuf::from(&args[1]))?;
+        let path = PathBuf::from(&args[2]);
+        return match command {
+            "current-use-adopt" => {
+                let report: serde_json::Value = read_json(&path)?;
+                let snapshot = report.get("current_use").unwrap_or(&report).clone();
+                let binding = serde_json::from_value(snapshot).map_err(|e| e.to_string())?;
+                session.adopt_current_use(binding)?;
+                emit(&serde_json::json!({"event":"current_use_adopted",
+                    "instruction":"Owner validation remains with the producing checker; verify the actual queued request before dispatch."}))
+            }
+            "current-use-replace" => {
+                let assignment = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+                emit(&session.replace_queued_work(assignment)?)
+            }
+            "current-use-check" => {
+                let request = read_json(&path)?;
+                session.verify_queued_current_use(&request)?;
+                emit(&serde_json::json!({"event":"queued_current_use_verified",
+                    "invocation_id":request.invocation_id,
+                    "instruction":"Saved bytes and request identity match now; this is not semantic acceptance or protection against later concurrent edits."}))
+            }
+            _ => unreachable!(),
+        };
+    }
     if args.len() != 2
         || ![
             "bind",
@@ -90,7 +123,7 @@ pub fn run() -> Result<()> {
         ]
         .contains(&command)
     {
-        return Err("usage: workflow-harness host start TASK.json NEW_RUN_DIRECTORY\n       workflow-harness host bind|return|status|continue|begin|event|continuation|pause|resume|drive RUN_DIRECTORY\nOptional decisions: decision-config|decision-bind|decision-result|decision-resolve|decision-publish|decision-abandon|decision-status|next RUN_DIRECTORY. Commands with input read JSON from stdin; status never redispatches work. drive executes only the pending invocation using a stream adapter configuration.".into());
+        return Err("usage: workflow-harness host start TASK.json NEW_RUN_DIRECTORY\n       workflow-harness host bind|return|status|continue|begin|event|continuation|pause|resume|drive RUN_DIRECTORY\nOptional decisions: decision-config|decision-bind|decision-result|decision-resolve|decision-publish|decision-abandon|decision-status|next RUN_DIRECTORY. Current use: current-use-adopt RUN_DIRECTORY REPORT.json | current-use-replace RUN_DIRECTORY ASSIGNMENT.txt | current-use-check RUN_DIRECTORY REQUEST.json. Other commands with input read JSON from stdin; status never redispatches work. drive executes only the pending invocation using a stream adapter configuration.".into());
     }
     if command == "pause" {
         Session::request_pause(&PathBuf::from(&args[1]), input::<String>()?)?;

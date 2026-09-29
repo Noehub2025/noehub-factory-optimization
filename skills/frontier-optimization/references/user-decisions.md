@@ -12,6 +12,8 @@ Continue necessary in-scope work after each stage completes. Return control when
 
 An exhausted resource limit blocks the work it governs. Other work still needs sufficient resources and applicable permission; zero proposal cost is not zero total cost.
 
+A justified temporary idle return follows [Evaluation, implementation and continuation](learning-loop.md#evaluation-implementation-and-continuation): compare remaining worthwhile work, check the current arrangement and retain unfinished state with its actual resumption dependency. A local wait, observer window or empty selection alone is insufficient. This path creates no user pause, closeout, new permission or automatic wakeup.
+
 ## Ask only for a user-owned decision
 
 The user decides:
@@ -23,6 +25,8 @@ The user decides:
 The Coordinator decides research, routes, technical design, local implementation and repair, checks, measurement, result adoption, internal resource allocation, and B or Generation progression inside those boundaries. A new identifier, changed working path, technical uncertainty, Review checkpoint, local time limit, internal run count or workflow-owned single-use unit is not a user decision.
 
 Additional reading, local repair, implementation replacement or maintenance differences within the existing grant do not by themselves create a value question. Correct an unsupported internal proof requirement through its owner rather than asking the user to waive it. Ask only when an actual user-owned choice remains unresolved; a user answer cannot supply missing third-party rights or override an applicable external prohibition.
+
+Use [Restriction ownership before fallback](learning-loop.md#restriction-ownership-before-fallback) when a desired guarantee excludes a worthwhile option. Compare the action with its actual disclosed consequences; do not treat absent assurance as a user demand for zero risk or ask again when existing authority already covers that risk.
 
 Before asking, inspect the current request and applicable V. Reuse an answer that already settles the same objective, resource, access and Consequence boundary. Ask once for a missing boundary and its intended continuing scope, not for each dependent action. Continue other permitted work while the affected action waits.
 

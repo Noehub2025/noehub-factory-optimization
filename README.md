@@ -104,6 +104,7 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 - Budget owns governing campaign-wide capacity, reservations, actual and unknown governed consumption, and remaining balance. Batch operational limits are separate: the coordinator may revise them within the same independently judged result and existing boundaries, but cannot turn protected reserve into routine capacity or expand the campaign ceiling.
 - A working assignment supplies the current research problem, enough context and ownership to begin useful work, and source references as starting points rather than a read whitelist. Open direction research may combine different professional perspectives around the same problem instead of dividing a preset route menu; workers report concrete assumption failures, expanding dependencies, and promising alternatives that may change investment.
 - The coordinator orders early research, prerequisites, implementation, feedback, and long-task recovery around the current research commitment and the missing observation. An ordinary step may be necessary without independently improving the metric or changing direction. Internal process, audit, authorization, or identity machinery that blocks feasible authorized work is a workflow defect: the responsible owner corrects it and work resumes, while real limits and effects already incurred remain binding.
+- A known correction must change the affected current task, dependency, dispatch, or return before that work continues. Stable identifiers, status labels, updated records, or disclaimers do not establish current use by themselves. The owner retains the finding, saves the corrected objects, and checks the actual next action; unrelated work remains available.
 - The research chain carries its advantage hypothesis and selected target feedback across Batches, versions, and owners. Once the necessary state exists, the coordinator obtains that feedback by default; repeated delay must resolve into feedback, necessary repair, real waiting, or a changed allocation before dependent optional work continues. This uses the existing plan and decision owner rather than adding another ledger, gate, or Review.
 - Delayed or changing observations retain an owner, delivery path, due condition, accumulated exposure, and intended decision use across worker returns and context changes. A scheduled or promised read is not a completed observation; failed delivery preserves uncertainty, and unrelated useful work may continue without duplicating an unsettled effect.
 - A poor result is interpreted at the scope actually tested. When evidence identifies a concrete mismatch between the proposed capability and its operator, evaluator, or supporting arrangement, the owner compares bounded capability acquisition and remeasurement with a more direct observation, another method, or stopping. Novelty or disappointment alone does not justify support work.
@@ -176,11 +177,13 @@ Define the problem
   -> independently approve an exact search scope
   -> choose a starting approach and budget
   -> recover the current research commitment, missing observation, and relevant new facts
+  -> retain a reachable discovery point and resolve it when due, even while local work succeeds
   -> resolve consequential implementation design in a fresh context only when existing agreements are insufficient
   -> save the exact project subject in Git and obtain only the Review needed by the next actual consequence
   -> reuse an applicable V, or ask once for an uncovered user tradeoff or protected consequence
   -> open one Batch for one independently judged result
   -> order preparation, research, implementation, feedback, and recovery around the research commitment
+  -> apply known corrections to the actual current task and affected next action
   -> apply routine preparation, editing, checking, and repair without creating Attempts or identity chains
   -> perform measurement or consequential actions through a bound operation, recording actual use and effects
   -> review exact implementations when required and measure under the approved comparison rules
