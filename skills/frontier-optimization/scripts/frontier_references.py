@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+from contextvars import ContextVar
+from functools import wraps
 import json
 import os
 import posixpath
@@ -20,6 +22,38 @@ from saved_git import SavedGitError, normalize_path, read_file, resolve_revision
 
 
 ReferenceError = SavedGitError
+
+
+_REFERENCE_OPERATION_CACHE: ContextVar[dict[str, dict[tuple[str, ...], Any]] | None] = (
+    ContextVar("frontier_reference_operation_cache", default=None)
+)
+
+
+def _cached_reference_operation(function):
+    """Share immutable Git reads only within one public operation."""
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        if _REFERENCE_OPERATION_CACHE.get() is not None:
+            return function(*args, **kwargs)
+        token = _REFERENCE_OPERATION_CACHE.set({"revisions": {}, "files": {}})
+        try:
+            return function(*args, **kwargs)
+        finally:
+            _REFERENCE_OPERATION_CACHE.reset(token)
+
+    return wrapped
+
+
+def _resolved_revision(root: Path, revision: str) -> str:
+    cache = _REFERENCE_OPERATION_CACHE.get()
+    # Symbolic names such as HEAD remain live observations within the operation.
+    # Only immutable full commit identities are reused.
+    if cache is None or re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", revision) is None:
+        return resolve_revision(root, revision)
+    key = (str(root.resolve()), revision)
+    if key not in cache["revisions"]:
+        cache["revisions"][key] = resolve_revision(root, revision)
+    return cache["revisions"][key]
 
 
 class _UniqueLoader(yaml.SafeLoader):
@@ -51,15 +85,24 @@ def _document(raw: bytes) -> dict[str, Any]:
 
 def reference(root: Path, revision: str, path: str) -> dict[str, str]:
     """Resolve a revision once; consumers retain the returned full commit."""
-    ref = {"commit": resolve_revision(root, revision), "path": normalize_path(path)}
+    ref = {"commit": _resolved_revision(root, revision), "path": normalize_path(path)}
     read_reference(root, ref)
     return ref
 
 
 def read_reference(root: Path, ref: dict[str, str]) -> bytes:
-    return read_file(root, ref.get("commit", ""), ref.get("path", ""))
+    commit = ref.get("commit", "")
+    path = normalize_path(ref.get("path", ""))
+    cache = _REFERENCE_OPERATION_CACHE.get()
+    if cache is None:
+        return read_file(root, commit, path)
+    key = (str(root.resolve()), commit, path)
+    if key not in cache["files"]:
+        cache["files"][key] = read_file(root, commit, path)
+    return cache["files"][key]
 
 
+@_cached_reference_operation
 def prepare_review_reference(root: Path, revision: str, path: str, handle: str | None = None) -> dict:
     """Read a selected R; adoption and professional applicability are separate."""
     ref = reference(root, revision, path)
@@ -418,6 +461,7 @@ def _feedback_decision(prepared: dict, result: dict) -> None:
         raise ReferenceError("feedback_decision basis is empty")
 
 
+@_cached_reference_operation
 def prepare_resolver(root: Path, revision: str, path: str, prior_paths=(), *, owner_source: str,
                      current_work_source: str | None = None, feedback_trigger: str | None = None, feedback_not_due: str | None = None) -> dict:
     """Return input binding or reuse an existing resolution; never choose a row."""
@@ -462,6 +506,7 @@ def prepare_resolver(root: Path, revision: str, path: str, prior_paths=(), *, ow
     return prepared
 
 
+@_cached_reference_operation
 def bind_resolution(root: Path, prepared: dict, result: dict, *, historical_source: dict | None = None) -> dict:
     """Bind an existing result body to saved input without transcribing a digest."""
     if prepared.get("reuse_resolution"):
@@ -510,6 +555,7 @@ def _anchor(text: str) -> str:
     return re.sub(r"\s+", "-", re.sub(r"[^\w\s-]", "", text.lower().strip()))
 
 
+@_cached_reference_operation
 def prepare_design(root: Path, revision: str, work: str, scope=()) -> dict:
     """Resolve the current Design map and stable-slice traceability at one commit."""
     ref = reference(root, revision, work)
@@ -607,6 +653,7 @@ def register_hook_record(root: Path, output: Path, phase: str, session_id: str |
     return True
 
 
+@_cached_reference_operation
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("kind", choices=("design", "resolver", "bind-resolution", "check-continuation", "check-current-use", "adopt-work", "bind-return", "batch-review", "batch-update", "batch-view"))

@@ -17,12 +17,13 @@ assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
+WORKFLOW = MODULE.WORKFLOW_ROOT.as_posix()
 
 
 class WorkflowCheckSelectionTests(unittest.TestCase):
     def test_expansion_and_release_preserve_affected_compatibility_tests(self) -> None:
-        preparation = ".agents/skills/frontier-optimization/scripts/frontier_review/preparation.py"
-        core = ".agents/skills/frontier-optimization/references/frontier-core.md"
+        preparation = f"{WORKFLOW}/frontier-optimization/scripts/frontier_review/preparation.py"
+        core = f"{WORKFLOW}/frontier-optimization/references/frontier-core.md"
         affected = set(MODULE.select_checks((preparation,), "affected").tests)
         for paths in ((preparation, core), (core, preparation)):
             for mode in ("affected", "release"):
@@ -38,14 +39,14 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
     def test_reference_ownership_and_unknown_contracts_never_silently_skip(self) -> None:
         for name in ("user-decisions.md", "new-current-contract.md"):
             plan = MODULE.select_checks(
-                (f".agents/skills/frontier-optimization/references/{name}",), "affected",
+                (f"{WORKFLOW}/frontier-optimization/references/{name}",), "affected",
             )
             self.assertTrue(plan.tests)
             self.assertTrue(plan.run_bundle_validator)
 
     def test_shared_git_change_selects_all_current_consumers_without_legacy(self) -> None:
         plan = MODULE.select_checks(
-            (".agents/skills/frontier-optimization/scripts/saved_git.py",), "affected",
+            (f"{WORKFLOW}/frontier-optimization/scripts/saved_git.py",), "affected",
         )
         self.assertLessEqual(
             {"test_frontier_batch.py", "test_frontier_references.py", "test_saved_git.py", "test_batch_execution_example.py"},
@@ -54,7 +55,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
         self.assertNotIn("test_frontier_provenance.py", {Path(test).name for test in plan.tests})
 
     def test_fixture_changes_select_their_current_or_legacy_consumers(self) -> None:
-        fixtures = ".agents/skills/frontier-optimization/scripts/fixtures/"
+        fixtures = f"{WORKFLOW}/frontier-optimization/scripts/fixtures/"
         for relative, expected in (
             ("direction-resolver-scenarios.yaml", MODULE.DIRECTION_TESTS),
             ("slice7/scenarios.yaml", MODULE.RECOVERY_TESTS),
@@ -74,7 +75,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
 
     def test_frame_change_selects_only_frame_contract_tests(self) -> None:
         plan = MODULE.select_checks(
-            (".agents/skills/frame-optimization/references/task-documents.md",),
+            (f"{WORKFLOW}/frame-optimization/references/task-documents.md",),
             "affected",
         )
 
@@ -84,7 +85,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
 
     def test_measurement_designer_change_selects_only_frame_contract_tests(self) -> None:
         plan = MODULE.select_checks(
-            (".agents/skills/design-measurement/SKILL.md",),
+            (f"{WORKFLOW}/design-measurement/SKILL.md",),
             "affected",
         )
 
@@ -94,7 +95,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
 
     def test_implementation_designer_change_selects_only_design_contract_tests(self) -> None:
         plan = MODULE.select_checks(
-            (".agents/skills/design-implementation/SKILL.md",),
+            (f"{WORKFLOW}/design-implementation/SKILL.md",),
             "affected",
         )
 
@@ -107,7 +108,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
 
     def test_direction_change_does_not_select_provenance_or_recovery(self) -> None:
         plan = MODULE.select_checks(
-            (".agents/skills/frontier-optimization/references/learning-loop.md",),
+            (f"{WORKFLOW}/frontier-optimization/references/learning-loop.md",),
             "affected",
         )
 
@@ -131,13 +132,13 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
     def test_execution_example_stays_focused_and_tracks_batch_api(self) -> None:
         example = MODULE.EXECUTION_EXAMPLE_TEST.as_posix()
         plan = MODULE.select_checks(
-            (".agents/skills/run-frontier-batch/scripts/batch_execution_example.py",),
+            (f"{WORKFLOW}/run-frontier-batch/scripts/batch_execution_example.py",),
             "affected",
         )
         self.assertEqual(plan.tests, (example,))
         self.assertFalse(plan.release)
         batch_plan = MODULE.select_checks(
-            (".agents/skills/frontier-optimization/scripts/frontier_batch.py",),
+            (f"{WORKFLOW}/frontier-optimization/scripts/frontier_batch.py",),
             "affected",
         )
         self.assertIn(example, batch_plan.tests)
@@ -146,7 +147,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
 
     def test_validator_change_selects_its_group_and_end_to_end_seam(self) -> None:
         plan = MODULE.select_checks(
-            (".agents/skills/frontier-optimization/scripts/validate_batch_result.py",),
+            (f"{WORKFLOW}/frontier-optimization/scripts/validate_batch_result.py",),
             "affected",
         )
 
@@ -165,7 +166,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
 
     def test_shared_provenance_change_selects_all_downstream_contract_groups(self) -> None:
         plan = MODULE.select_checks(
-            (".agents/skills/frontier-optimization/scripts/frontier_provenance/graph.py",),
+            (f"{WORKFLOW}/frontier-optimization/scripts/frontier_provenance/graph.py",),
             "affected",
         )
 
@@ -180,7 +181,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
 
     def test_review_preparation_change_selects_only_its_interface_tests(self) -> None:
         plan = MODULE.select_checks(
-            (".agents/skills/frontier-optimization/scripts/frontier_review/preparation.py",),
+            (f"{WORKFLOW}/frontier-optimization/scripts/frontier_review/preparation.py",),
             "affected",
         )
 
@@ -193,7 +194,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
     def test_review_subject_contract_uses_the_same_focused_tests(self) -> None:
         plan = MODULE.select_checks(
             (
-                ".agents/skills/frontier-optimization/scripts/"
+                f"{WORKFLOW}/frontier-optimization/scripts/"
                 "frontier_provenance/review_contract.py",
             ),
             "affected",
@@ -207,7 +208,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
 
     def test_cross_cutting_contract_escalates_to_complete_suite(self) -> None:
         plan = MODULE.select_checks(
-            (".agents/skills/frontier-optimization/references/frontier-core.md",),
+            (f"{WORKFLOW}/frontier-optimization/references/frontier-core.md",),
             "affected",
         )
 
@@ -219,7 +220,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
 
     def test_unknown_workflow_python_escalates_instead_of_skipping(self) -> None:
         plan = MODULE.select_checks(
-            (".agents/skills/frontier-optimization/scripts/new_validator.py",),
+            (f"{WORKFLOW}/frontier-optimization/scripts/new_validator.py",),
             "affected",
         )
 
@@ -228,7 +229,7 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
 
     def test_fast_mode_runs_no_pytest_group(self) -> None:
         plan = MODULE.select_checks(
-            (".agents/skills/frontier-optimization/SKILL.md",),
+            (f"{WORKFLOW}/frontier-optimization/SKILL.md",),
             "fast",
         )
 
@@ -245,8 +246,8 @@ class WorkflowCheckSelectionTests(unittest.TestCase):
 
     def test_same_paths_produce_the_same_plan(self) -> None:
         paths = (
-            ".agents/skills/frontier-optimization/references/learning-loop.md",
-            ".agents/skills/frame-optimization/SKILL.md",
+            f"{WORKFLOW}/frontier-optimization/references/learning-loop.md",
+            f"{WORKFLOW}/frame-optimization/SKILL.md",
         )
 
         self.assertEqual(

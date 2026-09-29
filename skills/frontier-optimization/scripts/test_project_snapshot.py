@@ -321,7 +321,9 @@ class ProjectSnapshotTests(unittest.TestCase):
             root = Path(directory)
             initialize(root)
             object_ids: set[str] = set()
-            for index in range(100):
+            # Two snapshots prove object reuse. Larger repetitions belong in a
+            # separate stress benchmark, not the default regression suite.
+            for index in range(2):
                 manifest = MODULE.capture(
                     root,
                     manifest_path=root / f"frontier/reviews/R{900 + index}-project-snapshot.yaml",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from functools import lru_cache
 import json
 import os
 import subprocess
@@ -28,6 +29,25 @@ def git_bytes(root: Path, *args: str) -> bytes:
     if result.returncode:
         raise ProvenanceError(result.stderr.decode(errors="replace").strip())
     return result.stdout
+
+
+@lru_cache(maxsize=8192)
+def _read_immutable_git_file(
+    root_value: str, commit: str, relative: str
+) -> tuple[bytes, bool]:
+    """Reuse bytes addressed by one immutable commit without caching live refs."""
+    root = Path(root_value)
+    listing = git_bytes(root, "--literal-pathspecs", "ls-tree", "-z", commit, "--", relative)
+    rows = [item for item in listing.split(b"\0") if item]
+    if len(rows) != 1:
+        raise ProvenanceError(
+            f"save a normal Git checkpoint containing {relative} before citing it"
+        )
+    metadata, name = rows[0].split(b"\t", 1)
+    mode, kind, oid = metadata.decode().split()
+    if name.decode() != relative or kind != "blob" or mode not in {"100644", "100755"}:
+        raise ProvenanceError(f"reference is not a regular project file: {relative}")
+    return git_bytes(root, "cat-file", "blob", oid), mode == "100755"
 
 
 def repository_root(path: Path) -> Path:
@@ -169,15 +189,7 @@ class GitReferenceStore:
 
     def _read(self, commit: str, relative: str) -> tuple[bytes, bool]:
         relative = self._project_path(relative)
-        listing = git_bytes(self.root, "--literal-pathspecs", "ls-tree", "-z", commit, "--", relative)
-        rows = [item for item in listing.split(b"\0") if item]
-        if len(rows) != 1:
-            raise ProvenanceError(f"save a normal Git checkpoint containing {relative} before citing it")
-        metadata, name = rows[0].split(b"\t", 1)
-        mode, kind, oid = metadata.decode().split()
-        if name.decode() != relative or kind != "blob" or mode not in {"100644", "100755"}:
-            raise ProvenanceError(f"reference is not a regular project file: {relative}")
-        return git_bytes(self.root, "cat-file", "blob", oid), mode == "100755"
+        return _read_immutable_git_file(str(self.root), commit, relative)
 
     def verify(
         self, destination: Path, *, manifest: dict[str, Any] | None = None,

@@ -13,7 +13,19 @@ from typing import Iterable, Sequence
 import yaml
 
 
-WORKFLOW_ROOT = PurePosixPath(".agents/skills")
+INSTALLED_SKILLS_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _installed_workflow_root() -> PurePosixPath:
+    """Find this installed Skill bundle relative to its owning Git repository."""
+    for candidate in (INSTALLED_SKILLS_ROOT, *INSTALLED_SKILLS_ROOT.parents):
+        if (candidate / ".git").exists():
+            return PurePosixPath(INSTALLED_SKILLS_ROOT.relative_to(candidate).as_posix())
+    # Preserve the conventional project installation path outside a checkout.
+    return PurePosixPath(".agents/skills")
+
+
+WORKFLOW_ROOT = _installed_workflow_root()
 FRONTIER_SCRIPTS = WORKFLOW_ROOT / "frontier-optimization/scripts"
 FRAME_TEST = WORKFLOW_ROOT / "frame-optimization/scripts/test_validate_frame_skill_bundle.py"
 BUNDLE_TEST = FRONTIER_SCRIPTS / "test_validate_current_frontier_skill_bundle.py"
@@ -146,7 +158,8 @@ def _as_posix(path: str | PurePosixPath) -> str:
 
 def _is_workflow_path(path: str) -> bool:
     parts = PurePosixPath(path).parts
-    return len(parts) >= 3 and parts[:2] == WORKFLOW_ROOT.parts
+    prefix = WORKFLOW_ROOT.parts
+    return len(parts) > len(prefix) and parts[: len(prefix)] == prefix
 
 
 def _add_tests(
@@ -196,7 +209,8 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
     for raw_path in workflow:
         path = PurePosixPath(raw_path)
         parts = path.parts
-        skill = parts[2]
+        prefix_length = len(WORKFLOW_ROOT.parts)
+        skill = parts[prefix_length]
 
         if path.name.startswith("test_") and path.suffix == ".py":
             _add_tests(selected, reasons, (path,), f"changed test: {raw_path}")
@@ -228,17 +242,17 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
             reasons.add(f"unclassified workflow Skill changed: {skill}")
             continue
 
-        if len(parts) < 4:
+        if len(parts) < prefix_length + 2:
             escalate = True
             reasons.add(f"unclassified Frontier path: {raw_path}")
             continue
 
-        if path.name == "SKILL.md" or parts[3] == "agents":
+        if path.name == "SKILL.md" or parts[prefix_length + 1] == "agents":
             escalate = True
             reasons.add("Frontier coordinator entrypoint changed")
             continue
 
-        area = parts[3]
+        area = parts[prefix_length + 1]
         if area == "references":
             focused = REFERENCE_TESTS_BY_NAME.get(path.name)
             owners = _SOURCE_OWNERS.get(raw_path, set())
@@ -253,10 +267,10 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
             continue
 
         if area == "scripts":
-            if parts[4:6] == ("fixtures", "slice7"):
+            if parts[prefix_length + 2 : prefix_length + 4] == ("fixtures", "slice7"):
                 _add_tests(selected, reasons, RECOVERY_TESTS, "legacy recovery fixture changed")
                 continue
-            if len(parts) >= 5 and parts[4] == "frontier_review":
+            if len(parts) >= prefix_length + 3 and parts[prefix_length + 2] == "frontier_review":
                 _add_tests(
                     selected,
                     reasons,
@@ -264,7 +278,7 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
                     "review preparation module changed",
                 )
                 continue
-            if len(parts) >= 5 and parts[4] == "frontier_provenance":
+            if len(parts) >= prefix_length + 3 and parts[prefix_length + 2] == "frontier_provenance":
                 if path.name in {"review_contract.py", "review_subject.py"}:
                     _add_tests(
                         selected,

@@ -12,7 +12,7 @@
     {
       "name": "noehub-factory-optimization",
       "source": "./",
-      "version": "0.41.0",
+      "version": "0.41.1",
       "description": "Frame optimization problems, pursue core-mechanism advances, and turn measured experience into better next work.",
       "category": "engineering",
       "keywords": [

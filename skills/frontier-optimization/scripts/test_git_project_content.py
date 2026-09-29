@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+import frontier_provenance.git_content as git_content
 from frontier_provenance import NodeRepository, ProvenanceError, freeze_decision
 from frontier_provenance.content import PROJECT_ROLE_DOMAINS
 from frontier_provenance.git_content import (
@@ -114,6 +115,30 @@ def test_session_reads_each_member_once(repo: Path, monkeypatch: pytest.MonkeyPa
     session.read(manifest["content_root"])
     session.read(manifest["content_root"])
     assert calls == ["input.txt"]
+
+
+def test_store_reuses_bytes_for_the_same_immutable_commit(
+    repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    commit = git(repo, "rev-parse", "HEAD")
+    original = git_content.git_bytes
+    calls = []
+
+    def counted(root, *args):
+        calls.append(args)
+        return original(root, *args)
+
+    git_content._read_immutable_git_file.cache_clear()
+    monkeypatch.setattr(git_content, "git_bytes", counted)
+    store = GitReferenceStore(repo)
+    assert store._read(commit, "input.txt")[0] == b"retained input\n"
+    first_operation = list(calls)
+    assert len(first_operation) == 3
+    assert first_operation[0] == ("rev-parse", "--show-toplevel")
+
+    assert store._read(commit, "input.txt")[0] == b"retained input\n"
+    assert calls == first_operation
+    git_content._read_immutable_git_file.cache_clear()
 
 
 def test_legacy_bundle_is_readable_through_current_cli_without_migration(repo: Path) -> None:

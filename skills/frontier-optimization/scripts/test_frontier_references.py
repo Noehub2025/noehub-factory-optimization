@@ -47,6 +47,25 @@ def test_resolver_uses_saved_bytes_and_repairs_derived_binding(repo):
     assert result["exact_action"] == body["exact_action"]
 
 
+def test_resolver_reuses_saved_reads_only_within_one_operation(repo, monkeypatch):
+    save(repo, {"evidence.json": '{"goal":"improve","result":1}'})
+    original = refs.read_file
+    calls = []
+
+    def counted(root, commit, path):
+        calls.append((commit, path))
+        return original(root, commit, path)
+
+    monkeypatch.setattr(refs, "read_file", counted)
+    prepare(repo, "HEAD", "evidence.json")
+    first_operation = list(calls)
+    assert first_operation
+    assert len(first_operation) == len(set(first_operation))
+
+    prepare(repo, "HEAD", "evidence.json")
+    assert calls == first_operation + first_operation
+
+
 def continuation_fixture(root, kind="idle"):
     owner = {"feedback_not_due": "Already selected observation is pending.",
              "current_state": {"campaign_status": "running", "work_record": "work.yaml"},
