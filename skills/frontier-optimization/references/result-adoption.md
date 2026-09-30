@@ -6,6 +6,8 @@ When the result changes current understanding, incorporate its supported meaning
 
 ## Validate the current result
 
+At a meaningful candidate comparison or replacement, apply [Complete candidates and research relationships](provenance-and-identity.md#complete-candidates-and-research-relationships): surface newly useful non-winners before filtering to the winner, distinguish selected material from research substitution, and retain useful exact alternatives in the existing view. Validate the originating mechanism through the actual consumer when the claim depends on it; complete files and successful execution alone do not establish complete behavior. Partial feedback remains useful at its supported scope.
+
 Use [Evaluation, implementation and continuation](learning-loop.md#evaluation-implementation-and-continuation) to separate result receipt, factual adoption and changed allocation. Preserve the evaluated version and relevant conditions; a result does not certify changes made during its execution. Apply context, exposure and further-observation requirements only when the measurement meaning needs them. A sufficient fixed result needs no extra stabilization, and repeated or insufficient arrivals need not repeatedly interrupt continuing work.
 
 Read the current B, the exact Attempt when one exists, and the referenced parent H measurement and R8 rule. Adopt factual meaning once without choosing the next consequence. Use [Assurance by consequence](batch-evaluation.md#assurance-by-consequence) and reuse applicable checks and R conclusions; a separate `RESULT_VALID` review is not an adoption prerequisite. Check only:

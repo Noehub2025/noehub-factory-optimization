@@ -98,7 +98,9 @@ def model_view(root: Path, value: dict) -> dict:
         if {"checked_sources", "blocked_ids", "files"} <= item.keys():
             return {**{key: project(part) for key, part in item.items() if key != "files"},
                     "validation_sources": [{"source_path": part["path"],
-                                            "retrieval": retain_source(root, part["contents"])}
+                                            **({"retrieval": retain_source(root, part["contents"])}
+                                               if "contents" in part else
+                                               {"sha256": part["sha256"], "size_bytes": part["size_bytes"]})}
                                            for part in item["files"]],
                     "coverage": "Internal validation bytes retained separately; this display is not a checker binding."}
         # Decoding an embedded JSON document preserves meaning but not its exact

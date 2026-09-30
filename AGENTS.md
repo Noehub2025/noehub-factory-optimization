@@ -17,3 +17,11 @@ When coordinating optimization work, recover the current research question, miss
 Whenever any workflow returns control to the user, lead with what materially changed, why it matters to the objective, the strongest supported conclusion and its important limit, the remaining objective gap or the observation needed to determine it, and every material next choice with its recorded ordering and switching conditions.
 
 Put record identifiers, reviews, gates, budget accounting, and repository status afterward as audit detail. A stop, authorization, or permission boundary limits what the agent may do; it does not justify omitting legal next choices or their consequences.
+
+## Common project capabilities
+
+At project planning, a material scope change, or first construction of an execution path, identify foreseeable common needs such as evaluation, packaging, submission, storage, recovery, and external-service adapters. Arrange reuse, construction, investigation, or justified deferral with the existing technical owner before dependent work makes later reuse unnecessarily fragile. Do not require duplicate code, a second consumer, or an incident before planning a need that the objective and expected work already make concrete.
+
+Keep each maintained capability's supported entry, intended scope, important defaults, responsible owner, affected checks, known gaps, and next reconsideration point in effective project instructions or a linked project document. Preserve applicable arrangements and deferrals across tasks and recovery. A new Batch, task name, or worker does not make the same need a first-time exception. This does not require a central registry, a platform-building stage, or an abstraction for imagined consumers.
+
+When a capability changes, verify the effective implementation, consequential configuration and dependencies, adapters, and an actual receiving consumer. Reuse applicable evidence for unchanged use. Keep capability version, candidate behavior, evaluation meaning, and external execution separate so that a support change neither silently invalidates unrelated evidence nor borrows authority for a new submission or other protected effect.

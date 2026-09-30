@@ -73,3 +73,27 @@ def read_file(root: Path, commit: str, path: str) -> bytes:
     if len(metadata) != 3 or metadata[0] not in {b"100644", b"100755"} or metadata[1] != b"blob":
         raise SavedGitError(f"saved document must be a regular file: {path!r}")
     return _git(root, "cat-file", "blob", metadata[2].decode())
+
+
+def read_files(root: Path, commit: str, path: str) -> dict[str, tuple[bytes, int]]:
+    """Read a selected file or tree, rejecting symlinks and nested repositories.
+
+    Keys are repository-relative paths. Callers choose destination layout; this
+    helper neither checks out a branch nor modifies the working tree.
+    """
+    path = normalize_path(path)
+    commit = resolve_revision(root, commit, exact=True)
+    rows = _git(root, "ls-tree", "-rz", "--full-tree", commit, "--", path)
+    result = {}
+    for row in rows.split(b"\0"):
+        if not row:
+            continue
+        metadata, raw_name = row.split(b"\t", 1)
+        mode, kind, object_id = metadata.split()
+        if kind != b"blob" or mode not in {b"100644", b"100755"}:
+            raise SavedGitError("selected material contains a symlink or nested repository; resolve it explicitly")
+        name = normalize_path(raw_name.decode())
+        result[name] = (_git(root, "cat-file", "blob", object_id.decode()), int(mode, 8) & 0o777)
+    if not result:
+        raise SavedGitError(f"selected material is absent: {path!r}")
+    return result

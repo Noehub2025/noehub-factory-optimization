@@ -130,6 +130,8 @@ Keep unresolved strategic meaning, nonpositive replan review, unknown spend, and
 
 ## Settle retained results and gap
 
+Apply [Complete candidates and research relationships](provenance-and-identity.md#complete-candidates-and-research-relationships) when retiring representatives or preserving future research value. Final delivery selection need not include every useful research parent, comparator or component. Retain concise grounds and recoverable exact material for the useful alternatives; record supported redundancy without creating an ongoing maintenance obligation.
+
 Set F4 to exactly the result relation authorized by parent Slots D, E, H, and R8: one best option with applicable ties, a lexicographic best, a confirmed non-dominated set, a threshold-qualified set, or another exact parent-defined relation. Retain only valid E identities with their uncertainty, comparison validity, candidate and experiment identities, and promotion evidence.
 
 For F5 and F6, use only active D records compatible with the final baseline, retained E, epoch, objective, scope, assumptions, direction, and tolerance. Report a scalar gap only when that complete comparison is valid. Otherwise record `gap: Unknown` with the exact missing authority. An unresolved bound contradiction forces halted closeout and bars the affected bound, gap, promotion, and claim.

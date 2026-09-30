@@ -6,6 +6,8 @@ Load only when the selected B may change executable project material. This refer
 
 Inspect the current Git structure, established interface, source and dependency conventions, relevant callers, tests, mutable working scope, worker-forbidden paths, required outputs and any real external publication seam.
 
+Use the effective project instructions to find supported capability entries and their applicability, not just historical task scripts. At first construction or a material scope change, apply [Common project capabilities](technical-design.md#common-project-capabilities), including proactive need identification and inherited deferrals. Ordinary supported use proceeds directly; a concrete gap can select investigation before an alternative is fully implemented.
+
 Record one disposition:
 
 - `existing-integrated`: use the established structure and seam;

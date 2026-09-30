@@ -88,6 +88,34 @@ The default reads the Problem itself, not every linked detail recursively. When 
 
 Current reference preparation, Batch selection and maintained operation callers share this implementation. Working-file reads remain an explicit caller choice when no Candidate Revision is selected. Review applicability, project parsing and measurement meaning are not Git mechanics.
 
+## Common components and realized identity
+
+Classify a component by its actual role in this use, not its path or support label. A shared policy or runtime solver can change candidate behavior; an evaluator can change result meaning without changing the candidate; transport repair may change neither. An offline builder is related to its output, but a builder revision does not automatically change an unchanged delivered artifact. Conceptual route or Batch continuity does not establish exact realization identity or comparability. Use existing version, measurement and execution records, not another identity hierarchy.
+
+Before relying on retained checks or fixed-input claims, the implementation owner covers consequential actual dependencies, configuration and adapters at the consuming entry, including relevant transitive inputs. Reuse saved selections, package/build information and environment references. Recording a current version is not a check that earlier evidence applies. Ensure loaded implementation and consumed inputs agree with the checked material; where live imports or a long-running process make path hashes insufficient, use appropriate saved materialization, process isolation or a consumption check. This is not a universal dependency scanner or a whole-repository freeze. Ordinary exploratory observation may use new inputs while preserving their actual identity and limiting inherited claims.
+
+Keep the common component's version, candidate realization, evaluation basis and execution event distinguishable. A behavior change may preserve the route and B while requiring changed selected inputs or affected checks. Support-only or unrelated changes do not automatically create proposals, charges or full revalidation. A remote result belongs to the actual published material and external reference, not the latest local name. Recovery preserves consumed versions, effective configuration and incurred or uncertain effects; it must not replay an old operation through a new default. Preserve historical records and correct only affected current uses, including old results still supporting decisions. Shared source and Workflow guidance changes remain outside candidate identity unless code actually serves a behavior-bearing project role.
+
+## Complete candidates and research relationships
+
+A candidate is the complete realization needed for the selected use: coordinated behavior, private/shared components, configuration, offline preparation and retained outputs, runtime requirements and observation boundary. A file, directory, Git revision or parameter change may locate that realization but does not define its research meaning. Use existing source selections, build records, environment definitions and asset references; add only a missing connection required by the next use, not a universal manifest or another identity hierarchy.
+
+Keep source ancestry, component composition and research relationships distinct. Code ancestry explains origin; composition identifies what runs; research relationships identify assumptions, mechanisms and capabilities retained, changed or combined. A support-only component donor need not be a research parent. Independent implementations can share the same premise while providing useful implementation checks; ideas can transfer without copied code. A combination does not inherit its parents' measured whole-system benefit. Reuse unchanged relationships and applicable evidence rather than classifying every edit.
+
+At consequential replacement or retirement, record the selected realization, the scope in which it covers its predecessor, and any surviving distinct value in the existing decision. Better average score, lower implementation cost or shared Git history alone cannot establish general replacement. Supported refinement or redundancy can justify replacement without universal dominance proof. Funding, research retention, material availability and deployment readiness are different facts; neither lower score nor deferral silently eliminates a useful alternative, and difference alone does not require permanent funding or maintenance.
+
+The Coordinator keeps useful representatives in existing route/Selection knowledge, with concise mechanism differences, applicable evidence/limits, exact recovery pointers and retention reasons. Add a linked view only when needed, without a second authoritative ledger. At first meaningful adoption, the producer surfaces newly observed useful differences or partial components, including never-selected non-winners; the Coordinator retains them or records why existing coverage or the objective makes them unnecessary. Equivalent routine trials can remain grouped in history. Do not require a prior representative label or delivery readiness for this judgment.
+
+At relevant investment reconsideration, baseline selection, combination or recovery, retrieve by mechanism, assumptions and conditions, not only score or recency. Deliver the relevant adopted relationship and its grounds through the existing summary/reference path. The receiving owner uses or revises it for the actual purpose, without reconstructing it from Git parents or component donors. A filtered view exposes its limits and a bounded expansion path. Missing consequential meaning returns to its owner; no full-history scan or unrelated pause is required.
+
+The implementation owner retains accessible selected source and needed exact outputs; a hash or recipe alone is not recoverability. Keep Git objects reachable through ordinary retention where required. Preserve selected shared versions for old baselines. Store large outputs once, distinguish exact retained stochastic output from reproducible regeneration, and isolate mutable execution state. Temporary execution copies and generated publication packages are valid; avoid independently maintained full project copies per candidate and forced common abstractions. A justified one-off copy needs no invented future consumer; reassess it at an actual next use.
+
+Before dependent preparation or execution, connect selected material to the actual consumer through the supported project entry and applicable current-use checks. Optional missing hooks/bindings cannot remove a known applicable correction. Keep a comparison's baseline fixed even when the recommended-candidate alias changes. Reuse preparation only for matching inputs; reuse observations only when participants, conditions and measurement meaning permit, never as additional independent samples. Preserve completed observations and unresolved effects on interruption; do not replay through new defaults. A missing artifact or integration failure limits dependent execution, not the hypothesis.
+
+Material integrity does not establish mechanism fidelity. Carry the originating critical behavior into adapter construction under [Preserve the mechanism](technical-design.md#preserve-the-mechanism-in-the-first-realization), including relevant state, shared resources or use of prepared outputs. Observe an interaction where it matters; an omitted-behavior variant must not pass as the complete realization, while a faithful compact implementation can. Reuse existing examples and target observations; no benefit proof, extra explanatory experiment or new review stage is required.
+
+When validating a change to these capabilities, connect the relevant checks on the same complete retained alternative: initial comparison/adoption, recovery without hidden disposable state, actual comparison against the fixed subject, and result adoption. Inspect later selection/combination/evidence use with source, component and research relationships pointing in different directions. Correct labels, restoration of only an easy baseline, or separate passing examples do not demonstrate this connection. Use disposable fixtures, not deletion of live material. This is scoped change validation, not a recurring ceremony, all-candidate migration or prerequisite to useful unrelated research. Leave unexercised claims open.
+
 ## Selected input references
 
 The current writer is `GitReferenceStore` in
@@ -109,12 +137,16 @@ A closed collection means all behavior-relevant members of that selected
 collection, not all files in the repository.
 
 Workflow source, Skills, validators, release identifiers, deployment paths, and
-worker versions are outside project identity. This includes nested deployments
+worker versions serving guidance or execution management are outside project identity. This includes nested deployments
 at `.agents/skills/`, `.codex/skills/`, and Claude Code's
 `.claude/skills/`, `.claude/commands/`, and `.claude/agents/`.
 Other project data is not excluded merely because its name contains
 `skills`, `validator`, or `.claude`. A workflow can change during project
 work without invalidating a review, authorization, candidate, or saved result.
+If code at such a location actually determines candidate behavior or measurement,
+retain its relevant version in that realization or evaluation basis under
+[Common components and realized identity](#common-components-and-realized-identity).
+This does not incorporate the entire Workflow release into candidate identity.
 
 ## Historical typed decision relationships
 

@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from saved_git import SavedGitError, read_file, resolve_revision, validate_selection
+from saved_git import SavedGitError, read_file, read_files, resolve_revision, validate_selection
 
 
 def git(root: Path, *args: str) -> bytes:
@@ -59,3 +59,13 @@ def test_candidate_objects_and_document_files_keep_different_rules(saved):
     for paths in ((), ("plain", "plain"), ("absent\nfile",)):
         with pytest.raises(SavedGitError):
             validate_selection(repo, commit, paths)
+
+
+def test_selected_file_or_tree_reads_exact_saved_regular_files(saved):
+    repo, commit, _ = saved
+    assert read_files(repo, commit, "dir") == {"dir/child": (b"child", 0o644)}
+    assert read_files(repo, commit, "plain") == {
+        "plain": (b"plain\0saved bytes", 0o644)
+    }
+    with pytest.raises(SavedGitError):
+        read_files(repo, commit, "link")

@@ -26,6 +26,8 @@ For a material shared research-premise change, use [Research-basis transitions](
 
 ## Action references
 
+At project planning, materially changed scope or first construction of an execution path, arrange foreseeable needs under [Common project capabilities](references/technical-design.md#common-project-capabilities). Recover applicable deferrals at the next relevant use; do not require duplicate code, a second consumer or an incident before recognizing demand. Existing owners perform this in ordinary planning, without a platform preparation stage.
+
 | Current action | Read |
 |---|---|
 | Verify, retain or restore project inputs | [Provenance and Git](references/provenance-and-identity.md) |

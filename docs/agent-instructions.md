@@ -31,7 +31,7 @@ Claude Code also offers two conversion helpers. With `CLAUDE_CODE_NEW_INIT=1`, `
 Do not replace the existing file.
 
 1. Preserve all repository-specific build, safety, authority, and contribution rules.
-2. Merge the `## Frontier-seeking workflow behavior` and `## User-facing workflow returns` sections from this repository exactly once each at the root or at the narrowest directory where they should apply.
+2. Merge the `## Frontier-seeking workflow behavior`, `## User-facing workflow returns`, and `## Common project capabilities` sections from this repository exactly once each at the root or at the narrowest directory where they should apply.
 3. Treat existing task-specific authority, safety, resource, evidence, and validation rules as controlling. The shared section guides route selection inside those boundaries; it never broadens permission or removes a hard limit.
 4. Resolve contradictory instructions explicitly instead of relying on file order. Codex gives closer files greater precedence, but a clear, non-conflicting rule is safer for every agent.
 
@@ -60,7 +60,7 @@ Claude loads ancestor `CLAUDE.md` files at startup and nested ones when it reads
 
 ## Repository that already has both files
 
-Merge both shared sections into `AGENTS.md`, then confirm that `CLAUDE.md` imports `AGENTS.md` once. Keep environment-specific additions in `CLAUDE.md`; keep cross-agent behavior in `AGENTS.md`.
+Merge all three shared sections into `AGENTS.md`, then confirm that `CLAUDE.md` imports `AGENTS.md` once. Keep environment-specific additions in `CLAUDE.md`; keep cross-agent behavior in `AGENTS.md`. Preserve any existing project capability catalog and adapt the shared section to point to that source rather than creating a second authoritative list.
 
 After installation, start a new agent session and verify the loaded instruction sources. Codex rebuilds its instruction chain at session start. In Claude Code, use the startup `AGENTS.md loaded` report or ask Claude to summarize direct project instructions; for adapter-based deployments, run `/context` and confirm that the project `CLAUDE.md` and imported `AGENTS.md` are present.
 

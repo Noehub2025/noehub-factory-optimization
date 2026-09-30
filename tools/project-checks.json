@@ -1,0 +1,46 @@
+{
+  "schema": "project-checks/1",
+  "rules": [
+    {
+      "name": "shared instructions and plugin packaging",
+      "paths": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "docs/agent-instructions.md",
+        "docs/project-capabilities.md",
+        "README.md",
+        ".claude-plugin/plugin.json",
+        ".claude-plugin/marketplace.json",
+        "tools/project-checks.json"
+      ],
+      "commands": [
+        [
+          "{python}",
+          "-m",
+          "pytest",
+          "-q",
+          "skills/frontier-optimization/scripts/test_validate_current_frontier_skill_bundle.py",
+          "skills/frontier-optimization/scripts/test_run_workflow_checks.py"
+        ]
+      ]
+    },
+    {
+      "name": "Codex Hook and workflow harness",
+      "paths": [
+        ".codex/hooks.json",
+        "tools/workflow-harness/**"
+      ],
+      "commands": [
+        [
+          "cargo",
+          "test",
+          "--locked",
+          "--manifest-path",
+          "tools/workflow-harness/Cargo.toml",
+          "--",
+          "--test-threads=1"
+        ]
+      ]
+    }
+  ]
+}

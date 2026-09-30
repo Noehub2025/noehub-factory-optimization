@@ -45,6 +45,41 @@ def test_affected_use_held_but_independent_action_available(case):
     assert check_current_use(root, "owner.json", ["other.md"])["status"] == "current"
 
 
+def test_saved_consumption_cannot_borrow_a_live_correction(case):
+    root, owner = case
+    old = (root / "task.md").read_bytes()
+    inspect_current_use(root, "owner.json", ["task.md"])
+    resolve(root, owner)
+    with pytest.raises(ValueError, match="requires owner correction"):
+        check_current_use(
+            root,
+            "owner.json",
+            consumed_sources=[("task.md", old)],
+        )
+    current = (root / "task.md").read_bytes()
+    assert check_current_use(
+        root,
+        "owner.json",
+        consumed_sources=[("task.md", current)],
+    )["status"] == "current"
+
+
+def test_binary_sources_are_retained_by_identity(case):
+    root, owner = case
+    owner["current_use_corrections"][0]["effect"] = "advisory"
+    owner["current_use_corrections"][0]["affected_sources"] = ["asset.bin"]
+    write(root / "owner.json", owner)
+    raw = b"\xff\x00\x80selected"
+    (root / "asset.bin").write_bytes(raw)
+    view = inspect_current_use(root, "owner.json", ["asset.bin"])
+    asset = next(item for item in view["files"] if item["path"].endswith("asset.bin"))
+    assert asset == {
+        "path": str(root / "asset.bin"),
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "size_bytes": len(raw),
+    }
+
+
 def test_maintained_account_retains_derived_correction_and_exact_replay(case):
     root, owner = case
     old = (root / "task.md").read_text()

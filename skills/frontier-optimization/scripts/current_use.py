@@ -13,6 +13,14 @@ def _digest(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
+def _file_record(path: str, raw: bytes) -> dict:
+    """Keep readable text or a binary identity, never decode arbitrary assets."""
+    try:
+        return {"path": path, "contents": raw.decode()}
+    except UnicodeDecodeError:
+        return {"path": path, "sha256": _digest(raw), "size_bytes": len(raw)}
+
+
 def _path(root: Path, path: str) -> str:
     if not isinstance(path, str) or not path:
         raise ValueError("current-use source needs a path")
@@ -86,13 +94,21 @@ def _closure(paths, relations, *, successors_only=False):
 
 def inspect_current_use(root: Path, owner: str, sources=(), *, previous_owner: str | None = None,
                         _corrections=(), _relations_added=(), _pending=None,
-                        _complete_pending=False) -> dict | None:
+                        _complete_pending=False, consumed_sources=()) -> dict | None:
     """Load live corrections, retain known associations, and scope affected use.
 
     Preparation may inspect an open finding. Only an affected action is held.
     A missing known record cannot release that action. No Git/session is needed.
     """
     root = root.resolve()
+    # Actual consumption can use retained Git bytes absent from the checkout.
+    # Keep these separate from live correction enrollment and discharge inputs.
+    # A path can be consumed at several versions in the same comparison.
+    snapshots = {}
+    for path, raw in consumed_sources:
+        if not isinstance(raw, bytes):
+            raise ValueError("consumed source must supply its actual bytes")
+        snapshots.setdefault(_path(root, path), []).append(raw)
     owner, owner_raw = _file(root, owner)
     meta = _metadata(owner_raw, owner)
     declared = meta.get("current_use_corrections", [])
@@ -153,8 +169,9 @@ def inspect_current_use(root: Path, owner: str, sources=(), *, previous_owner: s
                     return path, None
             return path, files[path]
 
-        requested = {_file(root, path)[0] for path in sources}
-        for path in requested:
+        live_requested = {_path(root, path) for path in sources}
+        requested = live_requested | set(snapshots)
+        for path in live_requested:
             capture(path)
         for item in declared:
             if not isinstance(item, dict):
@@ -186,7 +203,8 @@ def inspect_current_use(root: Path, owner: str, sources=(), *, previous_owner: s
             files[finding] = raw
             affected = {}
             for path in sorted(_closure(paths, links, successors_only=True)):
-                path, raw = capture(path, optional=bool((previous or path not in paths) and path not in requested))
+                path, raw = capture(path, optional=bool((previous or path not in paths) and
+                                                       (path not in requested or path in snapshots)))
                 if raw is None:
                     continue
                 if path == owner or path == finding or path in affected:
@@ -236,18 +254,21 @@ def inspect_current_use(root: Path, owner: str, sources=(), *, previous_owner: s
             relevant = not requested or bool(scope & requested)
             if relevant:
                 for path in scope:
-                    capture(path, optional=path not in requested)
+                    if path not in snapshots:
+                        capture(path, optional=path not in requested)
                 capture(item["core"]["finding"])
                 if item["resolution"]:
                     capture(item["resolution"]["evidence"])
             if relevant and item["core"]["effect"] != "advisory":
-                available = any(path in files for path in _closure(item["core"]["affected_sources"], links, successors_only=True))
+                available = any(path in files or path in snapshots for path in _closure(item["core"]["affected_sources"], links, successors_only=True))
                 if item["status"] == "open" or not available or (pending and not _complete_pending and key in pending.get("ids", [])):
                     blocked.append(key)
                 elif item["status"] == "resolved":
                     # Exact replay of a superseded object is detectable; a new
                     # semantic defect still needs the existing owner judgment.
-                    if any(path in files and _digest(files[path]) == before_hash
+                    if any(any(_digest(raw) == before_hash for raw in (
+                               snapshots.get(path, []) + ([files[path]] if path in files and
+                               (path in live_requested or path not in snapshots) else [])))
                            and (path != original or item["current"].get(path) != before_hash)
                            for original, before_hash in item["before"].items()
                            for path in _closure([original], links)):
@@ -293,16 +314,21 @@ def inspect_current_use(root: Path, owner: str, sources=(), *, previous_owner: s
                     consumed.add(item["resolution"]["evidence"])
         checked = requested or {path for item in records.values()
                                 for path in _closure(item["core"]["affected_sources"], links)}
-        return {"owner": str(root / owner), "checked_sources": [str(root / path) for path in sorted(checked)],
+        result = {"owner": str(root / owner), "checked_sources": [str(root / path) for path in sorted(checked)],
                 "correction_ids": sorted(records),
                 "blocked_ids": sorted(blocked),
-                "files": [{"path": str(root / path), "contents": raw.decode()}
+                "files": [_file_record(str(root / path), raw)
                           for path, raw in sorted(files.items()) if path in consumed]}
+        if snapshots:
+            result["consumed_sources"] = [{"path": str(root / path), "sha256": _digest(raw)}
+                                          for path in sorted(snapshots) for raw in snapshots[path]]
+        return result
 
 
-def check_current_use(root: Path, owner: str, sources=(), prepared: dict | None = None) -> dict:
+def check_current_use(root: Path, owner: str, sources=(), prepared: dict | None = None,
+                      *, consumed_sources=()) -> dict:
     """Check an actual use; labels cannot discharge a known affected finding."""
-    current = inspect_current_use(root, owner, sources)
+    current = inspect_current_use(root, owner, sources, consumed_sources=consumed_sources)
     if current and current["blocked_ids"]:
         raise ValueError("current use requires owner correction: " + ", ".join(current["blocked_ids"]))
     if prepared is not None and current != prepared:

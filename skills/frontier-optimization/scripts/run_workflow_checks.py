@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import fnmatch
+import json
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Iterable, Sequence
+from typing import Any, Iterable, Mapping, Sequence
 
 import yaml
 
@@ -147,6 +149,7 @@ class CheckPlan:
     reasons: tuple[str, ...]
     run_bundle_validator: bool
     release: bool
+    project_commands: tuple[tuple[str, ...], ...] = ()
 
 
 def _as_posix(path: str | PurePosixPath) -> str:
@@ -172,24 +175,71 @@ def _add_tests(
     reasons.add(reason)
 
 
-def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
+def select_checks(
+    paths: Iterable[str], mode: str, project_checks: Mapping[str, Any] | None = None,
+) -> CheckPlan:
     """Return a deterministic check plan without reading or changing repository state."""
     if mode not in {"fast", "affected", "release"}:
         raise ValueError(f"unsupported mode: {mode}")
 
     changed = tuple(sorted({_as_posix(path) for path in paths if str(path).strip()}))
     workflow = tuple(path for path in changed if _is_workflow_path(path))
+    project_commands: set[tuple[str, ...]] = set()
+    project_reasons: set[str] = set()
+    if project_checks is not None:
+        if (
+            not isinstance(project_checks, Mapping)
+            or project_checks.get("schema") != "project-checks/1"
+            or not isinstance(project_checks.get("rules"), list)
+        ):
+            raise ValueError("Invalid project check map")
+        for rule in project_checks["rules"]:
+            if not isinstance(rule, dict):
+                raise ValueError("Project check rule must be an object")
+            patterns, commands = rule.get("paths"), rule.get("commands")
+            if (
+                not isinstance(patterns, list)
+                or not patterns
+                or any(not isinstance(pattern, str) or not pattern for pattern in patterns)
+                or not isinstance(commands, list)
+                or not commands
+                or any(
+                    not isinstance(command, list)
+                    or not command
+                    or any(not isinstance(argument, str) or not argument for argument in command)
+                    for command in commands
+                )
+            ):
+                raise ValueError(
+                    "Project check rule needs path patterns and nonempty command arguments"
+                )
+            if mode != "fast" and any(
+                fnmatch.fnmatchcase(path, pattern)
+                for path in changed
+                for pattern in patterns
+            ):
+                project_commands.update(tuple(command) for command in commands)
+                project_reasons.add("project check: " + str(rule.get("name", patterns)))
     if mode == "release":
-        affected = select_checks(changed, "affected")
+        affected = select_checks(changed, "affected", project_checks)
         tests = set(affected.tests) | {path.as_posix() for path in CURRENT_RELEASE_TESTS}
         return CheckPlan(
             mode, changed, workflow, tuple(sorted(tests)),
             tuple(sorted({*affected.reasons, "release mode requires current tests plus affected compatibility tests"})),
-            True, True,
+            True, True, affected.project_commands,
         )
 
     if not workflow:
-        return CheckPlan(mode, changed, (), (), (), False, False)
+        return CheckPlan(
+            mode,
+            changed,
+            (),
+            (),
+            tuple(sorted(project_reasons)),
+            False,
+            False,
+            tuple(sorted(project_commands)),
+        )
 
     if mode == "fast":
         return CheckPlan(
@@ -203,7 +253,7 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
         )
 
     selected: set[str] = set()
-    reasons: set[str] = set()
+    reasons: set[str] = set(project_reasons)
     escalate = False
 
     for raw_path in workflow:
@@ -316,6 +366,7 @@ def select_checks(paths: Iterable[str], mode: str) -> CheckPlan:
         reasons=tuple(sorted(reasons)),
         run_bundle_validator=True,
         release=escalate,
+        project_commands=tuple(sorted(project_commands)),
     )
 
 
@@ -362,6 +413,10 @@ def _commands(plan: CheckPlan, repo_root: Path, base: str | None) -> list[tuple[
             pytest.extend(("--durations=20",))
         pytest.extend(str(repo_root / path) for path in plan.tests)
         commands.append(tuple(pytest))
+    for command in plan.project_commands:
+        commands.append(
+            tuple(sys.executable if argument == "{python}" else argument for argument in command)
+        )
     return commands
 
 
@@ -411,12 +466,30 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--base", help="include committed changes from BASE...HEAD")
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--path",
+        action="append",
+        help="Check an explicit affected path; repeat for scoped working changes.",
+    )
+    parser.add_argument(
+        "--project-checks",
+        type=Path,
+        help="Optional project-owned check map (default: tools/project-checks.json when present).",
+    )
     args = parser.parse_args(argv)
 
     repo_root = args.repo_root.resolve()
     try:
-        paths = collect_changed_paths(repo_root, args.base)
-        plan = select_checks(paths, args.mode)
+        paths = tuple(args.path) if args.path is not None else collect_changed_paths(repo_root, args.base)
+        check_map = args.project_checks or repo_root / "tools/project-checks.json"
+        if not check_map.is_absolute():
+            check_map = repo_root / check_map
+        project_checks = json.loads(check_map.read_text()) if check_map.exists() else None
+        if check_map.exists() and not isinstance(project_checks, dict):
+            raise ValueError("Project check map must contain an object")
+        if (args.project_checks or "tools/project-checks.json" in paths) and project_checks is None:
+            raise ValueError(f"Project check map is missing: {check_map}")
+        plan = select_checks(paths, args.mode, project_checks)
         commands = _commands(plan, repo_root, args.base)
         _print_plan(plan, commands)
         if args.dry_run:

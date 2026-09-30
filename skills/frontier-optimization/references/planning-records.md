@@ -59,6 +59,8 @@ Arrange checks at the scale of the current research commitment, including the co
 
 Preserve a useful non-winner's distinct capability, mechanism evidence, or plausible transfer in existing evidence. Retention creates no ongoing funding, maintenance, review, or retest obligation. Adjust measurement only when its limitation can change the pending selection or claim.
 
+Connect that preservation to first adoption and later actual use under [Complete candidates and research relationships](provenance-and-identity.md#complete-candidates-and-research-relationships). A never-selected candidate can have useful research or component value. Keep its concise retained reason and exact recovery pointer in existing route/Selection knowledge; source parentage or a lower score does not settle its disposition.
+
 ## V: user decision
 
 ```markdown

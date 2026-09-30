@@ -51,6 +51,8 @@ Recovery alone does not establish a performance claim, promote a candidate or re
 
 ## 2. Initialize the campaign
 
+At initial project planning or a material scope change, arrange foreseeable shared needs through [Common project capabilities](technical-design.md#common-project-capabilities). The existing technical owner identifies needs from the objective and expected work before dependent construction; absence of consumer code or a stable interface does not suppress planning. Reuse an applicable prior arrangement on recovery, including deferred needs and their current reasons. This creates no preliminary platform stage or prerequisite to independent research.
+
 For generation 1, create only the canonical paths from `frontier-core.md`, append `FRONTIER_STARTED`, and initialize F1-F8, Budget, and E001. For post-closeout recovery, use the recovery procedure above and append within the existing canonical files. Record Entry planning and research cost separately when the governing accounting rule charges it.
 
 Keep E001 as the current-epoch reference baseline. F1 must reproduce the exact reviewed scope. F2 must distinguish total budget, prior spend, reservations, actual spend, required follow-up reserve, and remaining balance. F7 and F8 must preserve every inherited stop, halt, reachability, comparison, and claim limit.
@@ -101,7 +103,7 @@ The plan separates worker write surfaces from exact project bytes selected later
 
 Use [Entry review](entry-review.md) only after ordinary structural checks pass and the complete subject is saved in Git. A failed draft stays mutable within the same B and creates no R, packet, snapshot, identity, or successor B. The reviewed decision must cover the objective, scope, applicable R and V, governing campaign limits, protected reserve, strategic allocation, any interpretation-bearing Measurement Definition ceiling, delivery obligations, earliest useful check, result meaning, and recovery needed by the next Consequence. A planning estimate and exact Batch operational cap do not become frozen review semantics.
 
-Keep preparation tied to the selected useful result under [Reuse working knowledge](batch-current.md#reuse-working-knowledge). Expand support only for a concrete need of that use.
+Keep preparation tied to the selected useful result and concrete project demand under [Reuse working knowledge](batch-current.md#reuse-working-knowledge) and [Common project capabilities](technical-design.md#common-project-capabilities). A next known need may justify early support; imagined generality does not.
 
 If the B may change executable candidate code, complete `entry-code-planning.md` before selection. A design, research, or isolated prototype B must explicitly state `changes_executable_candidate: false`; it authorizes no candidate code.
 

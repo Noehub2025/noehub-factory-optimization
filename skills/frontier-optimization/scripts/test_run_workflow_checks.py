@@ -9,6 +9,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).with_name("run_workflow_checks.py")
@@ -21,6 +22,87 @@ WORKFLOW = MODULE.WORKFLOW_ROOT.as_posix()
 
 
 class WorkflowCheckSelectionTests(unittest.TestCase):
+    def test_project_map_covers_instruction_only_and_host_only_changes(self) -> None:
+        config = {
+            "schema": "project-checks/1",
+            "rules": [
+                {
+                    "paths": ["AGENTS.md", "src/shared.py"],
+                    "commands": [["{python}", "-m", "pytest", "tests/test_shared.py"]],
+                },
+                {
+                    "paths": ["tools/host/*"],
+                    "commands": [["cargo", "test", "--manifest-path", "tools/host/Cargo.toml"]],
+                },
+            ],
+        }
+        for path in ("AGENTS.md", "src/shared.py", "tools/host/src/lib.rs"):
+            plan = MODULE.select_checks([path], "affected", config)
+            self.assertTrue(plan.project_commands)
+            self.assertFalse(plan.tests)
+            self.assertFalse(plan.run_bundle_validator)
+            commands = MODULE._commands(plan, Path("/tmp/project"), None)
+            self.assertEqual(
+                commands[-1][0], "cargo" if path.startswith("tools/") else sys.executable
+            )
+        self.assertFalse(
+            MODULE.select_checks(["unrelated.txt"], "affected", config).project_commands
+        )
+        self.assertFalse(MODULE.select_checks(["AGENTS.md"], "fast", config).project_commands)
+        self.assertTrue(MODULE.select_checks(["AGENTS.md"], "release", config).project_commands)
+
+    def test_invalid_project_map_does_not_silently_drop_checks(self) -> None:
+        invalid = (
+            {},
+            {
+                "schema": "project-checks/1",
+                "rules": [{"paths": ["*"], "commands": ["shell string"]}],
+            },
+        )
+        for config in invalid:
+            with self.assertRaises(ValueError):
+                MODULE.select_checks(["AGENTS.md"], "affected", config)
+
+    def test_main_rejects_missing_null_and_malformed_required_map(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            check_map = root / "checks.json"
+            arguments = [
+                "--repo-root",
+                str(root),
+                "--project-checks",
+                "checks.json",
+                "--path",
+                "AGENTS.md",
+                "--dry-run",
+            ]
+            with patch.object(MODULE, "_run") as run:
+                self.assertEqual(MODULE.main(arguments), 2)
+                for contents in (
+                    "null",
+                    "[]",
+                    "{",
+                    '{"schema":"project-checks/1","rules":[{}]}',
+                ):
+                    check_map.write_text(contents)
+                    self.assertEqual(MODULE.main(arguments), 2)
+                run.assert_not_called()
+
+    def test_deleted_default_map_is_not_treated_as_unconfigured(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            self.assertEqual(
+                MODULE.main(
+                    [
+                        "--repo-root",
+                        temporary,
+                        "--path",
+                        "tools/project-checks.json",
+                        "--dry-run",
+                    ]
+                ),
+                2,
+            )
+
     def test_expansion_and_release_preserve_affected_compatibility_tests(self) -> None:
         preparation = f"{WORKFLOW}/frontier-optimization/scripts/frontier_review/preparation.py"
         core = f"{WORKFLOW}/frontier-optimization/references/frontier-core.md"

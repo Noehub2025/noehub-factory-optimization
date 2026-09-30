@@ -20,6 +20,8 @@ Preserve explicit user and sensitive-access limits, the reviewer's assigned judg
 
 ### Write and adoption ownership
 
+For work using common capabilities, deliver the applicable project default, supported scope, relevant version/configuration basis and any inherited deferred need or exception through the existing assignment. Use [Common project capabilities](technical-design.md#common-project-capabilities); an unbuilt need still has an existing responsible owner. Project instruction edits are not assumed to reach a running worker automatically. Correct the affected queued assignment or supply the concise applicable update on continuation/recovery; preserve the normal return of started work. Verify actual subsequent use where claiming adoption, not merely an acknowledgment or file-read report. The public entry's owner handles consequential underlying dependencies; a missing maintainer returns to the Coordinator for scoped assignment, not a permanent new role.
+
 Every current worker assignment cites the owning B, R, V, W, or other human handles plus only the full Git commits, repository-relative paths, external artifact references, limits, and completion condition needed by that worker. It does not create or recompute decision, attestation, authority, execution, or outcome roots. Workflow source, Skills, validators, releases, and deployment paths are not project inputs. Historical typed chains and `workflow_source_binding` remain readable only for retained records that already use them.
 
 Prepare W references under [Work Plan](work-plan.md#saved-design-references) and resolver inputs under [Learning Loop](learning-loop.md#resolver-input-preparation). Pass generated bindings as structured data or write them into the existing assignment with the tool. A textual dispatch names that assignment's location; it does not transcribe digests. The receiver reads the binding rather than recreating it from prose.
@@ -150,6 +152,8 @@ Use the plan to dispatch and resume, not merely as a record after the work. The 
 Use ordinary file or task operations and Git retention; require neither a commit per step nor a new task tool, identity or frozen plan. If the plan is missing, establish the next useful step in the same working context and continue. No completeness certificate or user approval is needed for this internal decomposition.
 
 ### Integration and continuation
+
+When retained candidates are involved, deliver the relevant [research relationship and complete recovery pointers](provenance-and-identity.md#complete-candidates-and-research-relationships) with the current assignment. Inspect actual receiving selection, combination and evidence use after context recovery; correct labels in an earlier record do not establish uptake. Preserve the same complex subject through a recovery/comparison validation rather than substituting an easier candidate. This uses existing summaries, owners and checks, not full-history injection or another handoff receipt.
 
 When handing work into a new use, the Coordinator points to the current verification entry point and any uncovered prerequisite under [Reuse working knowledge](batch-current.md#reuse-working-knowledge), not just prior verdicts. The implementation owner connects the affected check to that entry point.
 

@@ -123,6 +123,8 @@ A research-basis transition uses an interim update and retains outstanding reser
 
 ## Selection
 
+For consequential candidate selection, replacement, combination or changed-premise recovery, use the concise retained alternatives and [research relationships](provenance-and-identity.md#complete-candidates-and-research-relationships) in existing route/Selection records. Carry grounds and limits into the receiving assignment; do not reconstruct them from Git ancestry or component reuse. Choosing one realization for funding/deployment does not itself retire another useful representative. Update changed judgments only, without a separate candidate ledger or per-edit lifecycle.
+
 For the Entry Selection, use the Entry gate before any B exists. During an active task, the Coordinator may update the selected B references and current progress within the research problem under [Active learning chain](learning-loop.md#active-learning-chain). Preserve applicable investment rationale by reference; ordinary continuation creates no new direction resolution. A different independently judged result uses another B, not a broader acceptance for the old B.
 
 Keep the outstanding target feedback and any material change to its remaining path visible in the existing current-work summary or its plan reference under [Whole-chain investment and target feedback](learning-loop.md#whole-chain-investment-and-target-feedback). A latest-step completion alone is insufficient recovery context. Do not add a parallel feedback ledger or required schema.

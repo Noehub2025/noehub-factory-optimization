@@ -127,6 +127,7 @@ The agent stores the task under `docs/skills/optimization/<task-name>/` and resu
 - Parent revisions affect only decisions that depend on the changed meaning. Unaffected work and historical conclusions remain usable; a new revision number alone does not force campaign closeout or a new generation. A generation advances only when a material shared-premise change makes the existing research agenda unsuitable or incomplete.
 - Project evidence and workflow releases remain separate. Updating an installed Skill does not rewrite or invalidate an existing project decision, Review, Permission, result, or handoff.
 - Current automation reads saved Git inputs through one literal-path helper and exposes named Batch facts to ordinary callers. Release checks use the maintained source-module inventory to select current tests and the compatibility tests affected by a change, while unclassified source changes escalate to the full release suite.
+- Foreseeable shared capabilities such as evaluation, packaging, submission, storage, and recovery are planned before dependent work makes reuse fragile. A project records the supported entry, scope, defaults, owner, checks, known gaps, and justified deferrals without requiring a central registry or a second consumer first.
 - Budget, stopping rules, known limits, and permitted claims remain visible in the main campaign document.
 - One ordered direction resolver is used only when choosing the next research problem or when evidence, cost, opportunity, time, resources, or scope may justify changing the current investment. Ordinary implementation, repair, integration, measurement, and technical diagnosis remain with their existing owners.
 - A persisted direction resolution governs only the investment it actually selected. The coordinator may reconsider that investment before a Batch ends when repeated support work is not approaching the needed observation, an assumption fails, dependencies materially expand, or a credible higher-value opportunity appears.
@@ -208,12 +209,20 @@ This repository includes a task-neutral [`AGENTS.md`](./AGENTS.md) for outcome-o
 When adding the workflow to another repository:
 
 - if no agent instruction file exists, copy `AGENTS.md`; modern Claude Code can use it directly, while a `CLAUDE.md` containing `@AGENTS.md` provides the broadest compatibility;
-- if `AGENTS.md` already exists, merge the `Frontier-seeking workflow behavior` and `User-facing workflow returns` sections once each and preserve all repository-specific rules;
+- if `AGENTS.md` already exists, merge the `Frontier-seeking workflow behavior`, `User-facing workflow returns`, and `Common project capabilities` sections once each and preserve all repository-specific rules and capability records;
 - if `CLAUDE.md` already exists, add `@AGENTS.md` once without replacing its Claude Code-specific content; for `.claude/CLAUDE.md`, use `@../AGENTS.md` instead;
 - inspect nested instruction files and `AGENTS.override.md` before choosing where the shared rules should apply; and
 - resolve conflicts explicitly. Shared optimization behavior never broadens existing authority or weakens task-specific safety, resource, evidence, or validation rules.
 
 Claude Code plugins provide Skills but do not load a plugin-root project instruction file for the consuming repository, so deploy or merge the instruction files separately. See [Deploying shared agent instructions](./docs/agent-instructions.md) for direct `AGENTS.md` support, compatibility adapters, existing-file handling, nested instructions, and verification.
+
+## Reusable project capabilities
+
+The workflow now treats predictable shared modules as project capabilities that should be planned at project start, on a material scope change, or before the first dependent execution path is built. The project can keep a small capability table in its existing architecture or development documentation; no new service or global registry is required.
+
+The shared record should identify the public entry, supported use, important defaults, implementation owner, focused checks, known gaps, and the next point at which a deferred need must be reconsidered. Evaluation engines, package builders, and submission adapters may be maintained this way, while each project still owns measurement meaning and each protected external action still requires its own permission and effect record.
+
+An optional `tools/project-checks.json` lets the workflow's affected-check command select project-owned checks for instruction files, shared modules, and host adapters. See [Managing reusable project capabilities](./docs/project-capabilities.md) for the record shape, deployment guidance, and check-map example.
 
 ## Optional Codex Hook and execution harness
 
@@ -290,6 +299,7 @@ AGENTS.md             shared cross-agent workflow behavior
 CLAUDE.md             Claude Code adapter that imports AGENTS.md
 docs/
   agent-instructions.md
+  project-capabilities.md
 .codex/
   hooks.json           Codex-only project Hook definition
 skills/<skill-name>/
@@ -300,6 +310,8 @@ skills/<skill-name>/
 tools/workflow-harness/
   Cargo.toml           host-neutral runtime and Codex adapter
   run-codex-hook       portable launcher for the built Hook binary
+tools/project-checks.json
+                       project-owned affected-check map
 .claude-plugin/
   plugin.json
   marketplace.json
