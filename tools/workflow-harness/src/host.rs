@@ -40,6 +40,7 @@ fn next(session: &mut Session) -> Result<()> {
         );
     }
     if let Some(outcome) = session.runtime.terminal() {
+        session.verify_judgment_consumption()?;
         emit(&serde_json::json!({"event":"pilot_terminal","outcome":outcome}))
     } else {
         let invocation = session.request()?;
@@ -140,10 +141,11 @@ pub fn run() -> Result<()> {
             "decision-publish",
             "decision-abandon",
             "decision-status",
+            "judgment-view",
         ]
         .contains(&command)
     {
-        return Err("usage: workflow-harness host start TASK.json NEW_RUN_DIRECTORY\n       workflow-harness host bind|return|status|continue|begin|event|continuation|pause|resume|drive RUN_DIRECTORY\nOptional decisions: decision-config|decision-bind|decision-result|decision-resolve|decision-publish|decision-abandon|decision-status|next RUN_DIRECTORY. Current use: current-use-adopt RUN_DIRECTORY REPORT.json | current-use-replace RUN_DIRECTORY ASSIGNMENT.txt [ACTUAL_SOURCE ...] | current-use-check RUN_DIRECTORY REQUEST.json. Other commands with input read JSON from stdin; status never redispatches work. drive executes only the pending invocation using a stream adapter configuration.".into());
+        return Err("usage: workflow-harness host start TASK.json NEW_RUN_DIRECTORY\n       workflow-harness host bind|return|status|continue|begin|event|continuation|pause|resume|drive RUN_DIRECTORY\nOptional decisions: decision-config|decision-bind|decision-result|decision-resolve|decision-publish|decision-abandon|decision-status|judgment-view|next RUN_DIRECTORY. Current use: current-use-adopt RUN_DIRECTORY REPORT.json | current-use-replace RUN_DIRECTORY ASSIGNMENT.txt [ACTUAL_SOURCE ...] | current-use-check RUN_DIRECTORY REQUEST.json. Other commands with input read JSON from stdin; status never redispatches work. drive executes only the pending invocation using a stream adapter configuration.".into());
     }
     if command == "pause" {
         Session::request_pause(&PathBuf::from(&args[1]), input::<String>()?)?;
@@ -193,6 +195,7 @@ pub fn run() -> Result<()> {
                 &serde_json::json!({"event":"stale_proposal_returned","decisions":session.decisions.status()}),
             )
         }
+        "judgment-view" => emit(&session.judgment_view(&input::<Response>()?)?),
         "decision-status" => {
             session.expire_decision()?;
             emit(

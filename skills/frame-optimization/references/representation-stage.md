@@ -24,7 +24,7 @@ If the review file has open findings, select the first safe open finding. Otherw
 
 Draft or repair the Brief, every R1 through R8 row, Open decisions, and Known limits against `representation-contracts.md`. Keep problem rules in `PROBLEM.md`. Write one concise decision in each Contract cell and use a second short sentence only when its direct consequence would otherwise be unclear. Never write a request to fill in information. Put derivations, evidence, exhaustive parameters, validation logs, and multi-step procedures in `representation/<item>.md`, but summarize every decision-changing rule in one of the two main documents. Keep the Detail cell to one link.
 
-Keep R5-R7 at `-` while search treats the candidate as one whole. Do not prewrite modules, interfaces, or coupling for possible future decomposition. Create a module `PROBLEM.md` only for actual separate optimization, proof, review, or delegation.
+Keep R5-R7 at `-` when search has no separately optimized modules under [R5](representation-contracts.md#r5-module-decomposition). Necessary internal design and coordination still belong to the technical and implementation owners. Create a module `PROBLEM.md` only for an actual search decomposition whose separate optimization, proof, review or delegation needs that contract; ordinary implementation delegation does not qualify by itself.
 
 Apply [Readability and review scope](task-documents.md#readability-and-review-scope) when the task or search story is new, materially changed or genuinely unclear. Use the current documents and linked rules; do not add a separate reader, Brief-only reconstruction or presentation gate before the requested technical review.
 

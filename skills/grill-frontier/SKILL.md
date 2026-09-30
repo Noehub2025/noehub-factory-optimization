@@ -7,6 +7,8 @@ description: "Ask one unresolved Frontier user decision: a value tradeoff or per
 
 Collect one Coordinator-assigned user choice. Apply [User decisions](../frontier-optimization/references/user-decisions.md) first. Return an applicable recorded answer instead of asking again.
 
+For tool choices, apply [Intended use, tools and payment](../frontier-optimization/references/user-decisions.md#intended-use-tools-and-payment). Suitable free use already covered by the actual project and license returns to execution without a question; uncovered paid commitments or real unresolved user tradeoffs retain this Skill's normal question path.
+
 ## Accept one decision
 
 Require:

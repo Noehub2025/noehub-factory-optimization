@@ -45,6 +45,41 @@ def test_affected_use_held_but_independent_action_available(case):
     assert check_current_use(root, "owner.json", ["other.md"])["status"] == "current"
 
 
+def test_maintained_account_retains_derived_correction_and_exact_replay(case):
+    root, owner = case
+    old = (root / "task.md").read_text()
+    (root / "summary.md").write_text(old)
+    owner["context_account"] = {"source": {"path": "summary.md"}, "actual_use": ["task.md"]}
+    write(root / "owner.json", owner)
+    with pytest.raises(ValueError, match="requires owner correction"):
+        check_current_use(root, "owner.json", ["summary.md"])
+    # Losing an observable maintained association cannot erase the retained
+    # relationship. Exact replay is mechanical; paraphrase is a semantic case.
+    owner.pop("context_account")
+    write(root / "owner.json", owner)
+    with pytest.raises(ValueError, match="requires owner correction"):
+        check_current_use(root, "owner.json", ["summary.md"])
+    resolve(root, owner)
+    with pytest.raises(ValueError, match="requires owner correction"):
+        check_current_use(root, "owner.json", ["summary.md"])
+    (root / "summary.md").write_text("The mechanism remains available for justified inquiry.")
+    assert check_current_use(root, "owner.json", ["summary.md"])["status"] == "current"
+    (root / "summary.md").write_text("Only incumbent architecture is eligible; all others are out.")
+    assert check_current_use(root, "owner.json", ["summary.md"])["status"] == "current"
+    # This pass establishes saved-object currency, never semantic correctness.
+
+
+def test_terminal_delivery_checks_known_correction_without_worker_task(case):
+    from context_delivery import model_view, verify_prepared
+    root, owner = case
+    owner.pop("current_state")
+    write(root / "owner.json", owner)
+    terminal = refs.prepare_adoption_context(root, "owner.json", decision={"disposition": "stop"})
+    assert terminal["outgoing_tasks"] == []
+    with pytest.raises(ValueError, match="requires owner correction"):
+        verify_prepared(root, model_view(root, terminal))
+
+
 def test_lost_field_and_context_refresh_do_not_erase_finding(case, monkeypatch):
     root, owner = case
     monkeypatch.delenv("CODEX_AGENT_ID", raising=False)

@@ -30,7 +30,11 @@ This step is complete when the remaining professional question and affected scop
 
 ## Reconstruct the implementation design
 
-Inspect the current modules, callers, state, dependencies, runtime flow, failures, tests, and deployment or migration facts that bear on the target. Apply [Ground consequential design choices](../frontier-optimization/references/technical-design.md#ground-consequential-design-choices) when selecting the realization. Keep parent-owned decisions with their owners:
+Inspect the current modules, callers, state, dependencies, runtime flow, failures, tests, and deployment or migration facts that bear on the target. Apply [Ground consequential design choices](../frontier-optimization/references/technical-design.md#ground-consequential-design-choices) when selecting the realization.
+
+Use its [first-realization guidance](../frontier-optimization/references/technical-design.md#preserve-the-mechanism-in-the-first-realization), [implementation-path comparison](../frontier-optimization/references/technical-design.md#choose-a-realization-on-the-same-required-behavior) and [parameter choices](../frontier-optimization/references/technical-design.md#design-consequential-parameter-choices) where material. Supply the concrete relationship or explicit investigation before dependent construction; preserve the originating problem even if an adopted selection already narrowed it. These are design responsibilities, not additional gates.
+
+Keep parent-owned decisions with their owners:
 
 - a change to the research problem or substantive investment returns `PARENT_REVIEW_REQUIRED`; refine tentative technical choices through [Working assignments](../frontier-optimization/references/worker-interfaces.md#working-assignments);
 - a measurement meaning change returns to the measurement owner;
@@ -64,6 +68,8 @@ Apply [Technical design's assignment ownership rule](../frontier-optimization/re
 When W is used, the Coordinator owns maps, traceability, lifecycle fields and the consuming saved reference under [Work Plan](../frontier-optimization/references/work-plan.md#saved-design-references). Keep V, B, Selection, Budget, review artifacts, candidate code and campaign records with their existing owners.
 
 This step is complete when the assigned content answers the professional question, relevant decision-bearing thresholds retain their grounds and owners, and no consequential meaning needed by the promised use remains implicit.
+
+Keep completion scoped to that question. A local answer does not settle another unresolved cross-part decision or establish implemented coordination. Preserve any requested observation and its receiving design question through the existing Coordinator return; invocation completion does not end that work. The Coordinator arranges adoption, and the implementer owns subsequent integration under the agreed meaning.
 
 ## Finish at cold-read implementability
 

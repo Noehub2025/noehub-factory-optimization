@@ -42,6 +42,14 @@ Technical readiness remains with the applicable checks and any required Review u
 
 Internal campaign spend within the adopted total budget does not require another V. Workflow-owned single-use consumption is protected by the Measurement Definition, Attempt and adapter. User-controlled private, scarce or unrecoverable consumption requires an applicable V.
 
+## Intended use, tools and payment
+
+Determine license suitability from the project's actual intended use, including academic research and competitions; do not assume commercial deployment. Check the applicable version and terms only where they affect the choice, reuse verified facts, and fulfill notice or attribution obligations as ordinary implementation work. Free MIT, Apache-2.0 and other terms permitting the actual use need no new user question within existing task authority. A free research-only or competition-only tool may likewise be used when those terms cover this project; technical uncertainty alone is not a license conflict.
+
+Match the relevant conditions of the terms to established project facts. A noncommercial purpose alone does not establish academic status, competition eligibility or every other restricted-use condition. If a missing fact changes permission to use the selected tool, resolve that fact through available project evidence or the one necessary user question before that use; continue permitted alternatives. Do not ask when the applicable use is already established or the distinction cannot affect the current action.
+
+Prefer suitable free options. Paid use requires applicable existing approval or a concrete user question before committing the cost; a general research budget alone does not establish that approval. Recommend paid use first only for a concrete capability or full-cost advantage. Investigate unknown terms before escalating a real mismatch or unresolved user value tradeoff. An answer cannot grant third-party rights. A later change of intended use reopens affected terms only, not previously lawful work. Runtime and offline use must each respect their actual restrictions; no recurring legal audit or approval for every dependency is introduced.
+
 ## Historical compatibility
 
 Retained target, answer, adoption, authority-node, receipt and exact-only records remain readable under their original rules. Current work does not create or extend that chain. A workflow update cannot widen a historical exact-only answer, but the historical format is not a current writer or a prerequisite for work covered by a current V.

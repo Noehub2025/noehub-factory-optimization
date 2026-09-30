@@ -145,6 +145,34 @@ def test_long_repeated_dependency_paths_keep_their_machine_shape(tmp_path):
     assert view["source"]["path"] == view["actual_use"][0] == view["copy"]["path"] == path
 
 
+def test_judgment_cannot_lose_all_decision_carriers_even_with_new_display_digest(tmp_path):
+    (tmp_path / "owner.md").write_text("The current task owner.")
+    view = refs.prepare_adoption_context(tmp_path, "owner.md")
+    view["judgment_binding"] = {"version": 1, "uses": [], "decision_sha256": digest("obsolete decision")}
+    view["delivery_identity"] = digest(json.dumps({key: part for key, part in view.items()
+                                                  if key != "delivery_identity"}, ensure_ascii=False, sort_keys=True))
+    with pytest.raises(ValueError, match="no actual decision carrier"):
+        verify_prepared(tmp_path, view)
+
+
+def test_batch_projection_retains_operative_current_restrictions():
+    batch = {"batch": "B1", "definition": {"objective": "Test the mechanism"},
+             "current": {"status": "prepared", "measurement_definition": {"resource_ceiling": 1}}, "attempts": []}
+    first = refs._use_projection(yaml.safe_dump(batch))
+    batch["current"]["status"] = "running"
+    batch["current"]["checks"] = ["Support repair passed"]
+    assert refs._use_projection(yaml.safe_dump(batch)) == first
+    batch["current"]["measurement_definition"]["resource_ceiling"] = 0
+    assert refs._use_projection(yaml.safe_dump(batch)) != first
+    batch["current"]["measurement_definition"]["resource_ceiling"] = 1
+    batch["current"]["status"] = "rejected"
+    assert refs._use_projection(yaml.safe_dump(batch)) != first
+    batch["current"]["status"] = "completed"
+    assert refs._use_projection(yaml.safe_dump(batch)) == first
+    batch["current"]["conclusion"] = "Exclude this mechanism permanently."
+    assert refs._use_projection(yaml.safe_dump(batch)) != first
+
+
 def test_decoded_source_retains_its_exact_original_bytes(tmp_path):
     text = json.dumps({"fact": "Conditional evidence. " * 50}, indent=4) + "\r\n"
     value = {"sources": [{"source": {"path": "mutable.json"}, "contents": text, "sha256": digest(text)}]}

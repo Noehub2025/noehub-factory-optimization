@@ -658,6 +658,15 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
         assignments.append(document(pointer(inherited_assignment), "decision's incoming assignment"))
     elif inherited_assignment is not None:
         assignments.append({"provided_body": inherited_assignment})
+    judgment = decision_body.get("judgment_binding")
+    if judgment is not None:
+        check_judgment_use(root, judgment)
+        objective = _validate_objective_inputs(root, decision_body)
+        _, evidence_identity = _evidence(root, decision_body["evidence_source"])
+        expected = _judgment_binding(root, objective, evidence_identity, decision_body,
+            task_sources=task_sources or judgment["task_sources"], assignment=judgment["assignment"])
+        if judgment != expected:
+            raise ReferenceError("judgment correspondence changed; adopt the affected consequence and actual assignment")
 
     # Current work is separate from the controlling objective. Preserve all
     # selected tasks; a pending primary observation may coexist with research.
@@ -676,7 +685,20 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
     if not tasks:
         limitations.append("No separate outgoing task was supplied or selected; the owner body is the available current work context.")
 
-    actual_use = list(dict.fromkeys([*paths, *(association or {}).get("actual_use", [])]))
+    actual_use = list(dict.fromkeys([*paths, *(association or {}).get("actual_use", []),
+                                   *(item["path"] for item in (judgment or {}).get("uses", []))]))
+    # Exact delivery checks use live carriers even when the evidence and owner
+    # input were prepared at a saved revision. This is separate from the narrow
+    # projection used to reuse unchanged substantive judgment after progress.
+    current_sources = []
+    for path in dict.fromkeys([owner_path, *actual_use]):
+        try:
+            body = _working_text(root, path)
+        except (OSError, ValueError):
+            continue  # Source availability remains visible in the main context.
+        current_sources.append({"path": path, "sha256": digest(body)})
+    from current_use import inspect_current_use
+    current_use = inspect_current_use(root, owner_path, actual_use)
     # Supporting evidence and action dependencies remain distinct, but both
     # declared bases must be captured before they can be checked at delivery.
     dependencies = [*actual_use, *(item["path"] for item in (association or {}).get("incorporates", []))]
@@ -719,6 +741,8 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
             "selected_sources": selected, "incoming_assignments": assignments,
             "decision": decision_context, "outgoing_tasks": tasks, "limitations": limitations,
             "current_account": adopted_account, "actual_use": actual_use,
+            "current_sources": current_sources, "current_use": current_use,
+            **({"judgment_binding": judgment} if judgment is not None else {}),
             "instruction": "Each source_index refers to one presentation in sources. Reuse the applicable owner-associated account; unincorporated results remain evidence, not adopted meaning. Current Frontier metadata and Brief remain visible. Omitted material is available through exact retrieval snapshots; inspect surrounding evidence independently and pursue new external evidence when useful. A delivered_content_ref is a JSON pointer to identical text in this input. Original task dependencies remain actual_use even when their presentation changes. Determine the controlling objective and source qualifications separately from local scope. A hash, focused label or cached account establishes neither semantic authority nor research completeness. Preserve real limits, pending effects and independent choices. Native hosts must verify the exact prepared input immediately before sending; opaque host paths remain advisory. This view supplies evidence, not a verdict or permission."}
     if adopted_account is not None and account_body is not None:
         # Include its version in the same scoped source checks as other inputs.
@@ -756,9 +780,87 @@ def _feedback_decision(prepared: dict, result: dict) -> None:
         raise ReferenceError("feedback_decision basis is empty")
 
 
+_JUDGMENT_DERIVED = {
+    "adoption_context", "judgment_binding", "judgment_reuse", "decision_policy", "policy_coverage",
+    "evidence_source", "evidence_state_identity", "objective_owner", "objective_basis",
+    "objective_basis_content", "objective_basis_identity", "objective_basis_options",
+    "controlling_objective_binding", "feedback_trigger", "feedback_not_due", "current_use", "judgment_scope", "delivery_identity",
+}
+
+
+def _use_projection(text: str):
+    """Separate maintained Batch progress from its operative definition.
+
+    Unknown carriers retain their whole text. This projection detects drift;
+    it does not decide whether changed wording has the same meaning.
+    """
+    value = _source_metadata(text)
+    if (isinstance(value.get("batch"), str) and isinstance(value.get("definition"), dict)
+            and isinstance(value.get("current"), dict) and isinstance(value.get("attempts"), list)):
+        projected = {key: part for key, part in value.items() if key not in {"current", "attempts", "consumption", "events"}}
+        projected["current"] = {key: part for key, part in value["current"].items()
+                                if key not in {"checks", "observations", "candidate_rationale", "revision_rationale"}
+                                and not (key == "status" and part in {"prepared", "running", "completed", "active", "ready", "waiting"})}
+        return projected
+    return text
+
+
+def _judgment_uses(root: Path, owner_path: str, decision: dict, task_sources=(), assignment=None) -> list[dict]:
+    """Derive operative carriers from the live owner and actual supplied task."""
+    owner = _source_metadata(_working_text(root, owner_path))
+    state = owner.get("current_state", {})
+    paths = list(task_sources)
+    if isinstance(state, dict):
+        if state.get("work_record"):
+            paths.append(state["work_record"])
+        paths.extend(f"artifacts/frontier/{batch}/batch.yaml" for batch in
+                     [state.get("primary_batch"), *state.get("parallel_batches", [])]
+                     if isinstance(batch, str) and re.fullmatch(r"B[0-9]+", batch))
+    configured = owner.get("objective_basis", {}).get("current_work_source")
+    if configured:
+        ref = configured if isinstance(configured, dict) else {"path": configured.split("#", 1)[0]}
+        configured_path = posixpath.normpath(str(Path(owner_path).parent / ref["path"])) if ref["path"] else owner_path
+        if configured_path != owner_path:
+            paths.append(configured_path)
+    if assignment:
+        paths.append(assignment)
+    inherited = decision.get("assignment")
+    if isinstance(inherited, dict) and inherited.get("path"):
+        paths.append(inherited["path"])
+    association = owner.get("context_account") or {}
+    paths.extend(association.get("actual_use", []))
+    result = []
+    for path in dict.fromkeys(paths):
+        path = normalize_path(str(Path(path).resolve().relative_to(root)) if Path(path).is_absolute() else path)
+        text = _working_text(root, path)
+        result.append({"path": path, "sha256": sha256_bytes(canonical_json(_use_projection(text)))})
+    return sorted(result, key=lambda item: item["path"])
+
+
+def _judgment_binding(root: Path, objective: dict, evidence_identity: str, decision: dict,
+                      *, task_sources=(), assignment=None) -> dict:
+    body = {key: part for key, part in decision.items() if key not in _JUDGMENT_DERIVED}
+    return {"version": 1, "decision_sha256": sha256_bytes(canonical_json(body)),
+            "evidence_state_identity": evidence_identity,
+            "objective_basis_identity": objective["objective_basis_identity"],
+            "uses": _judgment_uses(root, objective["objective_owner"]["path"], decision, task_sources, assignment),
+            "task_sources": list(task_sources), "assignment": assignment}
+
+
+def check_judgment_use(root: Path, binding: dict) -> None:
+    """Check only saved correspondence, never the merit of the owner judgment."""
+    if not isinstance(binding, dict) or binding.get("version") != 1 or not isinstance(binding.get("uses"), list):
+        raise ReferenceError("judgment reuse needs its saved current-use correspondence")
+    for source in binding["uses"]:
+        current = sha256_bytes(canonical_json(_use_projection(_working_text(root, source["path"]))))
+        if current != source["sha256"]:
+            raise ReferenceError("judgment correspondence changed; adopt the affected consequence and actual assignment")
+
+
 @_cached_reference_operation
 def prepare_resolver(root: Path, revision: str, path: str, prior_paths=(), *, owner_source: str,
-                     current_work_source: str | None = None, feedback_trigger: str | None = None, feedback_not_due: str | None = None) -> dict:
+                     current_work_source: str | None = None, feedback_trigger: str | None = None,
+                     feedback_not_due: str | None = None, task_sources=(), assignment=None) -> dict:
     """Return input binding or reuse an existing resolution; never choose a row."""
     ref = reference(root, revision, path)
     _, identity = _evidence(root, ref)
@@ -766,9 +868,11 @@ def prepare_resolver(root: Path, revision: str, path: str, prior_paths=(), *, ow
         raise ReferenceError("objective owner must be separate from the recommendation evidence")
     objective = _objective_inputs(root, ref["commit"], owner_source, current_work_source, feedback_trigger, feedback_not_due)
     prepared = {"evidence_source": ref, "evidence_state_identity": identity,
-                "decision_policy": _decision_policy(root), **objective}
+                "decision_policy": _decision_policy(root), **objective,
+                "judgment_scope": {"task_sources": list(task_sources), "assignment": assignment,
+                                   "uses": _judgment_uses(root, owner_source, {}, task_sources, assignment)}}
     _validate_objective_inputs(root, prepared)
-    from current_use import inspect_current_use
+    from current_use import inspect_current_use, same_corrections
     current_use = inspect_current_use(root, owner_source)
     if current_use is not None:
         prepared["current_use"] = current_use
@@ -785,7 +889,7 @@ def prepare_resolver(root: Path, revision: str, path: str, prior_paths=(), *, ow
         if previous == identity and prior.get("objective_basis"):
             # A live correction is independent of historical evidence identity.
             # Open corrections remain visible to the resolver, never a reuse pass.
-            if (current_use and current_use["blocked_ids"]) or prior.get("current_use") != current_use:
+            if (current_use and current_use["blocked_ids"]) or not same_corrections(prior.get("current_use"), current_use):
                 continue
             old_owner = prior.get("objective_owner", {})
             old_basis = _objective_inputs(root, old_owner["commit"], old_owner["path"], **prior.get("objective_basis_options", {}))
@@ -797,6 +901,11 @@ def prepare_resolver(root: Path, revision: str, path: str, prior_paths=(), *, ow
                 # Refresh the owner input instead of silently reusing stale full
                 # goal context. The owner may retain the same supported decision.
                 continue
+            if prior.get("judgment_binding") != _judgment_binding(
+                    root, objective, identity, prior, task_sources=task_sources, assignment=assignment):
+                # An old valid judgment is not authority for a changed consuming
+                # task. The existing owner can account for the delta at adoption.
+                continue
             _feedback_decision(objective, prior)
             _check_result_continuation(root, owner_source, prior)
             prepared["reuse_resolution"] = prior_ref
@@ -804,7 +913,8 @@ def prepare_resolver(root: Path, revision: str, path: str, prior_paths=(), *, ow
             break
     prepared["adoption_context"] = prepare_adoption_context(
         root, owner_source, revision=ref["commit"], assignment=ref["path"],
-        decision=prior if prepared.get("reuse_resolution") else None, phase="investment_preparation")
+        task_sources=task_sources, decision=prior if prepared.get("reuse_resolution") else None,
+        phase="investment_preparation")
     return prepared
 
 
@@ -822,12 +932,17 @@ def bind_resolution(root: Path, prepared: dict, result: dict, *, historical_sour
             raise ReferenceError("historical result belongs to different decision facts")
         return {**result, "evidence_state_identity": old_identity}
     objective = _validate_objective_inputs(root, prepared)
-    from current_use import inspect_current_use
+    from current_use import inspect_current_use, same_corrections
     current_use = inspect_current_use(root, objective["objective_owner"]["path"])
-    if current_use != prepared.get("current_use"):
+    if not same_corrections(current_use, prepared.get("current_use")):
         raise ReferenceError("current-use correction changed; prepare from saved adopted objects")
-    if "current_use" in result and result["current_use"] != current_use:
+    if "current_use" in result and not same_corrections(result["current_use"], current_use):
         raise ReferenceError("result cannot replace the prepared current-use association")
+    scope = prepared.get("judgment_scope", {"task_sources": [], "assignment": None})
+    uses = _judgment_uses(root, objective["objective_owner"]["path"], {},
+                          scope["task_sources"], scope["assignment"])
+    if "uses" in scope and uses != scope["uses"]:
+        raise ReferenceError("prepared effective assignment changed; refresh the affected use")
     _feedback_decision(objective, result)
     _check_result_continuation(root, objective["objective_owner"]["path"], result)
     if result.get("objective_basis"):
@@ -842,6 +957,24 @@ def bind_resolution(root: Path, prepared: dict, result: dict, *, historical_sour
         _, previous = _evidence(root, result["evidence_source"])
         if previous != identity:
             raise ReferenceError("result belongs to different decision facts")
+    binding = _judgment_binding(root, objective, identity, result,
+                                task_sources=scope["task_sources"], assignment=scope["assignment"])
+    if result.get("judgment_binding") and result["judgment_binding"] != binding:
+        raise ReferenceError("judgment correspondence changed; adopt the affected consequence and actual assignment")
+    reuse = result.get("judgment_reuse")
+    if reuse is not None:
+        if not isinstance(reuse, dict) or not isinstance(reuse.get("source"), dict) or not isinstance(reuse.get("reason"), str) or not reuse["reason"].strip():
+            raise ReferenceError("judgment_reuse needs a saved source and the owner's equivalence reason")
+        prior = _document(read_reference(root, reuse["source"]))
+        prior_binding = prior.get("judgment_binding", {})
+        if (prior_binding.get("version") != 1 or
+                prior_binding.get("evidence_state_identity") != identity or
+                prior_binding.get("objective_basis_identity") != objective["objective_basis_identity"] or
+                prior_binding.get("decision_sha256") != sha256_bytes(canonical_json(
+                    {key: part for key, part in prior.items() if key not in _JUDGMENT_DERIVED}))):
+            raise ReferenceError("reused judgment does not cover these decision facts and objective basis")
+    from current_use import check_current_use
+    check_current_use(root, objective["objective_owner"]["path"], [item["path"] for item in binding["uses"]])
     # Derived fields are owned here. Professional result fields are preserved.
     # Rebinding an existing judgment does not retroactively apply new guidance to it.
     policy = result.get("decision_policy", prepared.get("decision_policy"))
@@ -849,11 +982,14 @@ def bind_resolution(root: Path, prepared: dict, result: dict, *, historical_sour
     retained_policy = {key: value for key, value in policy.items() if key not in {"text", "instruction"}} if isinstance(policy, dict) else {"status": "not_provided"}
     retained_objective = {key: value for key, value in objective.items() if key != "objective_basis_content"}
     current_binding = {"current_use": current_use} if current_use is not None else {}
-    return {**result, **retained_objective, **current_binding, "evidence_source": ref, "evidence_state_identity": identity,
-            "decision_policy": retained_policy, "policy_coverage": _policy_coverage(root, policy, result),
-            "adoption_context": prepare_adoption_context(root, objective["objective_owner"]["path"],
-                revision=objective["objective_owner"]["commit"], decision=result, incoming=prepared,
-                phase="result_adoption")}
+    bound = {**{key: part for key, part in result.items() if key != "judgment_scope"},
+             **retained_objective, **current_binding, "evidence_source": ref, "evidence_state_identity": identity,
+             "judgment_binding": binding, "decision_policy": retained_policy,
+             "policy_coverage": _policy_coverage(root, policy, result)}
+    bound["adoption_context"] = prepare_adoption_context(root, objective["objective_owner"]["path"],
+        revision=objective["objective_owner"]["commit"], decision=bound, incoming=prepared,
+        task_sources=scope["task_sources"], phase="result_adoption")
+    return bound
 
 
 def _anchor(text: str) -> str:
@@ -927,8 +1063,8 @@ def prepare_design(root: Path, revision: str, work: str, scope=()) -> dict:
 def _write(path: Path, value: dict, *, merge: bool = False) -> None:
     if merge and path.exists():
         existing = _document(path.read_bytes())
-        for key in ("evidence_source", "evidence_state_identity", "reuse_resolution", "reused_policy_coverage", "subject", "work_plan", "delivery_scope", "objective_owner", "objective_basis", "objective_basis_content", "objective_basis_identity", "objective_basis_options", "controlling_objective_binding", "feedback_trigger", "feedback_not_due", "current_use", "adoption_context"):
-            if key in value or key in {"reuse_resolution", "reused_policy_coverage", "current_use"}:
+        for key in ("evidence_source", "evidence_state_identity", "reuse_resolution", "reused_policy_coverage", "subject", "work_plan", "delivery_scope", "objective_owner", "objective_basis", "objective_basis_content", "objective_basis_identity", "objective_basis_options", "controlling_objective_binding", "feedback_trigger", "feedback_not_due", "current_use", "adoption_context", "judgment_binding", "judgment_scope"):
+            if key in value or key in {"reuse_resolution", "reused_policy_coverage", "current_use", "judgment_binding", "judgment_scope"}:
                 existing.pop(key, None)
         value = {**existing, **value}
     raw = json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
@@ -1078,7 +1214,8 @@ def main() -> int:
                 raise ReferenceError("resolver requires --owner-source")
             value = prepare_resolver(args.repo, args.revision or "HEAD", args.path, args.prior,
                                      owner_source=args.owner_source, current_work_source=args.current_work_source,
-                                     feedback_trigger=args.feedback_trigger, feedback_not_due=args.feedback_not_due)
+                                     feedback_trigger=args.feedback_trigger, feedback_not_due=args.feedback_not_due,
+                                     task_sources=args.source, assignment=args.assignment)
         else:
             if args.result is None:
                 raise ReferenceError("bind-resolution requires --result")

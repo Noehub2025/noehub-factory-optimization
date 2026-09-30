@@ -241,7 +241,8 @@ def direction_resolver_contract_findings(skills_root: Path) -> list[str]:
             "Do not ask the user to choose a technical diagnostic",
             "Public repeatable development evidence may guide hypothesis generation",
             "make no trajectory, route, or parent inference that depends on the unresolved validity",
-            "There is no fixed round cap",
+            # Discovery ends on current value and real limits, not the retired
+            # one-additional-round quota. The bounded-ending check below stays.
             "further reading is repetitive or less useful than reasoning or a practical probe",
             "Unrelated landscape gaps do not veto it",
             "A comparison that retains current work creates no extra research or follow-up resolution",

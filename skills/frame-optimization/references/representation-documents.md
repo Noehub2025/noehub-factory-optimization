@@ -70,8 +70,8 @@ generated: { by: frame-optimization/1, at: "<ISO-8601 datetime>" }
 | R3 | Effect of problem size | O | How problem size changes proposal size and scoring cost is undecided, so results cannot claim efficient search. | |
 | R4 | Allowed changes | O | Allowed changes, invalid-option handling, and whether repeated changes can reach every allowed option are undecided, so search cannot start. | |
 | R5 | Split into parts | - | Search treats each option as one whole; no split is active. | |
-| R6 | Part boundaries | - | No rules for joining separately changed parts apply while search treats each option as one whole. | |
-| R7 | Cross-part effects | - | No cross-part rule applies because search does not split the option into parts. | |
+| R6 | Part boundaries | - | No separate search-module composition contract applies; necessary internal interfaces remain part of implementation design. | |
+| R7 | Cross-part effects | - | No separate search-module coupling contract applies; whole-option search still handles consequential internal interactions. | |
 | R8 | Search run and old work | O | The start, budget, feedback use, selection, scoped stopping, harness checks, and old-work reuse are not decided. | |
 
 ## Open decisions
@@ -249,7 +249,7 @@ Keep adopted normative rules, research records, and user-decision records under 
 
 Proposed Contract text and candidate representations remain nonnormative until the Primary Framing Agent adopts them. Neither worker edits the representation Brief, Open decisions, Known limits, core Contract cells, R1-R8 status, adopted normative rules, `representation_revision`, lifecycle assurance metadata, or normative module-contract content.
 
-Create `modules/<module-slug>/PROBLEM.md` only for actual separate optimization, proof, review, or delegation. Use the A-H template and add:
+Create `modules/<module-slug>/PROBLEM.md` only for actual search decomposition whose separate optimization, proof, review, or delegation needs that contract. Ordinary delegated implementation of a shared design is not sufficient. Use the A-H template and add:
 
 ```yaml
 scope: module

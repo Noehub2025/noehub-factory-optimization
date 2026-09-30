@@ -153,7 +153,14 @@ pub struct WorkUpdate {
     /// An already applicable resolution can avoid a redundant resolver call.
     #[serde(default)]
     pub resolved_by: Vec<usize>,
-    /// Existing investment trigger; prose edits and ordinary progress leave this false.
+    /// A new exclusion or route-ending condition is an investment change, even
+    /// when the selected route is unchanged. False never overrides correspondence.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub judgment_reuse: Option<crate::decision::JudgmentReuse>,
+    /// Completion and mandatory stops are owner-declared scopes, not inferred semantics.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub terminal_scope: Option<crate::decision::TerminalScope>,
+    /// Existing investment trigger; routine deltas may reuse with current bindings.
     #[serde(default)]
     pub investment_changed: bool,
     /// Reuse an accepted Resolver invocation, rather than requesting another judgment.

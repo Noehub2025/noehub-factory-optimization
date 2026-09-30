@@ -139,6 +139,7 @@ impl Session {
     /// Verify at actual Session consumption, including a request prepared earlier.
     /// External hosts use `verify_queued_current_use` with their actual request.
     pub fn verify_current_use_consumption(&self) -> Result<()> {
+        self.verify_judgment_consumption()?;
         let Some(request) = self
             .runtime
             .outstanding()
@@ -155,6 +156,49 @@ impl Session {
             }
         }
         self.runtime.verify_context_consumption()
+    }
+
+    /// Verify the maintained assignment or terminal disposition at consumption.
+    /// This detects drift; semantic equivalence belongs to the adopting owner.
+    pub fn verify_judgment_consumption(&self) -> Result<()> {
+        if !self
+            .decisions
+            .config
+            .as_ref()
+            .is_some_and(|c| c.mode == crate::decision::Mode::Enforce)
+        {
+            return Ok(());
+        }
+        let Some(response) = self.runtime.history.iter().rev().find(|r| {
+            r.role == Role::Coordinator
+                && matches!(r.decision, crate::Decision::Work | crate::Decision::Finish)
+        }) else {
+            return Ok(());
+        };
+        if !crate::decision::consequential(response) {
+            return Ok(());
+        }
+        if self.runtime.role != Role::Worker && self.runtime.terminal().is_none() {
+            return Ok(());
+        }
+        if self.decisions.last_commitment.as_ref()
+            != Some(&crate::decision::commitment(
+                response,
+                &crate::source_contents(&self.runtime.task)?,
+            )?)
+            || (response.decision == crate::Decision::Work
+                && (self.runtime.assignment != response.assignment
+                    || crate::current_use::normalized_sources(&self.runtime.actual_use)?
+                        != crate::current_use::normalized_sources(&response.actual_use)?))
+            || self.decisions.last_sources.as_ref()
+                != Some(&crate::source_contents(&self.runtime.task)?)
+        {
+            return Err("judged consequence or actual assignment changed; reconcile through its adopting owner".into());
+        }
+        if response.decision == crate::Decision::Finish {
+            self.require_current_use_ready_for(&response.actual_use)?;
+        }
+        Ok(())
     }
 
     /// Replace only unstarted queued work after its existing owner adopts a correction.
@@ -578,6 +622,7 @@ impl Session {
             return Err("decision or publication is pending; inspect host decision-status".into());
         }
         self.observe_pause()?;
+        self.verify_judgment_consumption()?;
         if let Some(publication) = &self.decisions.publication {
             publication.verify()?;
         }
@@ -621,7 +666,7 @@ impl Session {
             {
                 request.prompt.push_str(MARKER);
                 match fs::read_to_string(&config.policy) {
-                        Ok(policy) => request.prompt.push_str(&format!("{policy}\nApply this in the existing investment judgment once. Coordinator: reuse an applicable accepted Resolver response via update.resolved_invocation, or supplied independent sources via resolved_by. Set investment_changed only for a new or materially changed investment, not progress or rewritten rationale. Reuse asserts applicability; it is not a new checker verdict.\n")),
+                        Ok(policy) => request.prompt.push_str(&format!("{policy}\nApply this in the existing investment judgment once. Coordinator: reuse an applicable accepted Resolver response via update.resolved_invocation, or supplied independent sources via resolved_by. Set investment_changed for a new exclusion or changed investment, including terminal investment. Reuse requires exact current correspondence, including the outgoing assignment and evidence. For routine wording edits use judgment_reuse with previous/current identities and a reason in this same owner turn. Obtain identities with host judgment-view RUN_DIRECTORY (the proposed Response on stdin); this read-only preparation performs no judgment. External resolved_by sources can contain a saved judged_proposal projection; free-text sources use judgment_reuse.previous from source_judgment_identity with the owner's applicability reason. For Finish, terminal_scope completion means the already selected bounded deliverable completed; mandatory_stop means only the affected operation must stop under a real limit. Neither declares a mechanism rejected. Missing terminal_scope is consequential. Projection equality and owner equivalence are not semantic verdicts.\n")),
                         Err(_) => request.prompt.push_str("\nOptional decision policy unavailable; coverage is degraded, not passed.\n"),
                     }
                 next.outstanding = Some(request.clone());
@@ -694,9 +739,14 @@ impl Session {
         next.accept(response.clone())?;
         if next.role == Role::Worker {
             self.require_current_use_ready_for(&next.actual_use)?;
+        } else if response.decision == crate::Decision::Finish
+            && crate::decision::consequential(&response)
+        {
+            self.require_current_use_ready_for(&response.actual_use)?;
         }
         let mut guard = self.decisions.clone();
-        if next.role == crate::Role::Worker
+        guard.reference_matches = self.runtime.reference_matches(&response)?;
+        if (next.role == crate::Role::Worker || response.decision == crate::Decision::Finish)
             && guard.consider(
                 &response,
                 crate::source_contents(&self.runtime.task)?,
@@ -728,6 +778,47 @@ impl Session {
         }
         self.runtime = runtime;
         Ok(())
+    }
+
+    /// Read-only preparation within the current owner's adoption. No judgment,
+    /// model invocation, source rewrite or new persistent record is created.
+    pub fn judgment_view(&self, response: &Response) -> Result<serde_json::Value> {
+        use crate::decision::{projection, projection_identity, source_judgment_identity};
+        let current = projection(response, &crate::source_contents(&self.runtime.task)?)?;
+        let u = response
+            .update
+            .as_ref()
+            .ok_or("judgment view needs WorkUpdate")?;
+        let previous = if let Some(id) = u.resolved_invocation {
+            self.runtime
+                .judged_uses
+                .get(&id)
+                .and_then(|v| v.get("proposal"))
+                .map(projection_identity)
+                .transpose()?
+        } else if !u.resolved_by.is_empty() {
+            for index in &u.resolved_by {
+                crate::contract::supplied(&self.runtime.task, *index, response.role)?;
+            }
+            Some(source_judgment_identity(
+                &crate::source_contents(&self.runtime.task)?,
+                &u.resolved_by,
+            )?)
+        } else {
+            self.decisions
+                .last_commitment
+                .as_ref()
+                .map(|text| {
+                    let value = serde_json::from_str(text)
+                        .map_err(|e| format!("legacy judgment has no current projection: {e}"))?;
+                    projection_identity(&value)
+                })
+                .transpose()?
+        };
+        Ok(
+            serde_json::json!({"current":projection_identity(&current)?,"previous":previous,
+            "projection":current,"instruction":"Only if meaning remains applicable, record previous/current with your substantive reason in update.judgment_reuse. Identity is not semantic acceptance."}),
+        )
     }
 
     pub fn configure_decisions(&mut self, config: crate::decision::Config) -> Result<()> {
@@ -928,7 +1019,8 @@ impl Session {
         let mut next = self.runtime.clone();
         if !p.observed_only {
             if p.owner.is_none()
-                && (crate::source_contents(&self.runtime.task).ok().as_ref() != Some(&p.sources)
+                && (!p.projection_is_current()
+                    || crate::source_contents(&self.runtime.task).ok().as_ref() != Some(&p.sources)
                     || std::fs::read_to_string(
                         &guard.config.as_ref().ok_or("missing config")?.policy,
                     )
@@ -952,8 +1044,27 @@ impl Session {
                 if next.role == Role::Worker {
                     self.require_current_use_ready_for(&next.actual_use)?;
                 }
-                if next.role == Role::Worker {
-                    guard.last_commitment = Some(crate::decision::commitment(proposal)?);
+                if next.role == Role::Worker || proposal.decision == crate::Decision::Finish {
+                    if proposal.decision == crate::Decision::Finish {
+                        self.require_current_use_ready_for(&proposal.actual_use)?;
+                    }
+                    guard.last_sources = Some(crate::source_contents(&self.runtime.task)?);
+                    guard.last_commitment = Some(if p.owner.is_none() {
+                        // Preserve what the checker actually saw. Recomputing here
+                        // could silently associate its verdict with changed files.
+                        serde_json::to_string(
+                            p.judged_projection
+                                .as_ref()
+                                .ok_or("pending judgment has no captured consequence")?,
+                        )
+                        .map_err(|e| e.to_string())?
+                    } else {
+                        // This existing owner disposition adopts its current correction.
+                        crate::decision::commitment(
+                            proposal,
+                            &crate::source_contents(&self.runtime.task)?,
+                        )?
+                    });
                     guard.last_policy = Some(p.policy.clone());
                     if let Some(path) = guard.config.as_ref().and_then(|c| c.publication.clone()) {
                         guard.publication = Some(Publication {
@@ -981,7 +1092,8 @@ impl Session {
         {
             return Err("a concrete finding needs its owner disposition, not abandonment".into());
         }
-        if crate::source_contents(&self.runtime.task).ok().as_ref() == Some(&p.sources)
+        if p.projection_is_current()
+            && crate::source_contents(&self.runtime.task).ok().as_ref() == Some(&p.sources)
             && std::fs::read_to_string(&guard.config.as_ref().unwrap().policy)
                 .ok()
                 .as_ref()
@@ -1012,6 +1124,7 @@ impl Session {
             return Err("publication check is stale".into());
         }
         p.verify()?;
+        self.verify_judgment_consumption()?;
         p.confirmed = true;
         self.save_decisions(guard, self.runtime.clone())
     }

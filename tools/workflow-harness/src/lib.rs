@@ -103,6 +103,8 @@ pub struct Runtime {
     next_id: usize,
     outstanding: Option<Invocation>,
     history: Vec<Response>,
+    #[serde(default)]
+    judged_uses: std::collections::BTreeMap<usize, serde_json::Value>,
     assignment: String,
     #[serde(default)]
     actual_use: Vec<PathBuf>,
@@ -150,6 +152,7 @@ impl Runtime {
             next_id: 1,
             outstanding: None,
             history: vec![],
+            judged_uses: Default::default(),
             assignment: String::new(),
             actual_use: vec![],
             reassessment_due: false,
@@ -572,6 +575,55 @@ impl Runtime {
         Ok(invocation)
     }
 
+    /// Reuse requires the saved judgment's maintained content, not just identity.
+    /// External sources expose their retained projection as `judged_proposal`.
+    pub(crate) fn reference_matches(&self, response: &Response) -> Result<bool> {
+        let Some(u) = &response.update else {
+            return Ok(false);
+        };
+        if let Some(id) = u.resolved_invocation {
+            return self
+                .judged_uses
+                .get(&id)
+                .map(|saved| {
+                    saved
+                        .get("proposal")
+                        .map(|prior| {
+                            decision::corresponds(response, prior, &source_contents(&self.task)?)
+                        })
+                        .transpose()
+                        .map(|v| v.unwrap_or(false))
+                })
+                .transpose()
+                .map(|v| v.unwrap_or(false));
+        }
+        if u.resolved_by.is_empty() {
+            return Ok(false);
+        }
+        let sources = source_contents(&self.task)?;
+        for index in &u.resolved_by {
+            contract::supplied(&self.task, *index, response.role)?;
+        }
+        let structured_match = u.resolved_by.iter().all(|index| {
+            serde_json::from_str::<serde_json::Value>(&sources[*index])
+                .ok()
+                .and_then(|v| v.get("judged_proposal").cloned())
+                .is_some_and(|prior| {
+                    decision::corresponds(response, &prior, &sources).unwrap_or(false)
+                })
+        });
+        if structured_match {
+            return Ok(true);
+        }
+        // Free-text sources stay unchanged. The current owner may explain their
+        // applicability in this adoption; that semantic assertion is not inferred.
+        let previous = decision::source_judgment_identity(&sources, &u.resolved_by)?;
+        let current = decision::projection_identity(&decision::projection(response, &sources)?)?;
+        Ok(u.judgment_reuse.as_ref().is_some_and(|r| {
+            r.previous == previous && r.current == current && !r.reason.trim().is_empty()
+        }))
+    }
+
     pub fn accept(&mut self, response: Response) -> Result<()> {
         let request = self
             .outstanding
@@ -670,10 +722,8 @@ impl Runtime {
                     .into(),
             );
         }
-        let resolved_directly = response.role == Role::Coordinator
-            && response.update.as_ref().is_some_and(|update| {
-                !update.resolved_by.is_empty() || update.resolved_invocation.is_some()
-            });
+        let resolved_directly =
+            response.role == Role::Coordinator && self.reference_matches(&response)?;
         if response.decision == Decision::Finish {
             if self.reassessment_due && !resolved_directly {
                 return Err("an unresolved reassessment cannot be closed by a finish label".into());
@@ -719,6 +769,17 @@ impl Runtime {
             paths.into_iter().collect()
         } else {
             vec![]
+        };
+        let judged_use = if response.role == Role::Resolver
+            && response.decision == Decision::Work
+            && response.update.is_some()
+        {
+            Some(
+                serde_json::json!({"proposal":decision::projection(&response, &source_contents(&self.task)?)?,
+                "sources":source_contents(&self.task)?}),
+            )
+        } else {
+            None
         };
         let previous_assignment = self.assignment.clone();
         let previous_actual_use = self.actual_use.clone();
@@ -787,6 +848,9 @@ impl Runtime {
                 self.pending_reviews
                     .retain(|id| !update.addresses.contains(id));
             }
+        }
+        if let Some(judged_use) = judged_use {
+            self.judged_uses.insert(response.invocation_id, judged_use);
         }
         self.history.push(response);
         self.outstanding = None;

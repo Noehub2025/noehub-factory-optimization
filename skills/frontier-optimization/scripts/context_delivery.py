@@ -73,7 +73,12 @@ def delivery_view(value):
         if isinstance(item, dict):
             # Keep machine-consumed locator/scope shapes even for long paths.
             # References replace repeated prose, never an execution dependency.
-            structural = {"path", "source_path", "source", "retrieval", "actual_use", "checked_sources", "sha256", "delivery_identity"}
+            structural = {"path", "source_path", "source", "retrieval", "actual_use", "checked_sources", "sha256", "delivery_identity", "judgment_binding", "current_sources"}
+            if item.get("judgment_binding") and "sources" not in item:
+                # These are the actual judged values. Keep their exact shape so
+                # consumption can compare the decision digest as well as uses.
+                from frontier_references import _JUDGMENT_DERIVED
+                structural.update(set(item) - _JUDGMENT_DERIVED)
             return {key: part if key in structural else visit(part, pointer + "/" + str(key).replace("~", "~0").replace("/", "~1"))
                     for key, part in item.items()}
         if isinstance(item, list):
@@ -129,6 +134,43 @@ def verify_prepared(root: Path, view: dict) -> None:
     context = view if "sources" in view else view.get("adoption_context")
     if not isinstance(context, dict) or "sources" not in context:
         raise ValueError("this output has no prepared source context; coverage is unavailable")
+    if context is not view and view.get("judgment_binding") is not None:
+        if view["judgment_binding"] != context.get("judgment_binding"):
+            raise ValueError("prepared decision lost its judgment correspondence")
+    elif context is not view and "policy_coverage" in view:
+        # This is a generated result with its binding removed, not an ordinary
+        # unbound resolver input. Other preparation metadata remains supported.
+        raise ValueError("prepared result needs its own judgment correspondence")
+    for source in context.get("current_sources", []):
+        if digest(_working_text(root, source["path"])) != source["sha256"]:
+            raise ValueError(f"prepared current source changed: {source['path']}")
+    if context.get("judgment_binding"):
+        from frontier_references import (check_judgment_use, _JUDGMENT_DERIVED,
+                                         _judgment_uses, _validate_objective_inputs, _source_metadata)
+        from identity_bindings import canonical_json, sha256_bytes
+        check_judgment_use(root, context["judgment_binding"])
+        decisions = [view] if context is not view and view.get("judgment_binding") else []
+        provided = (context.get("decision") or {}).get("provided_body")
+        if isinstance(provided, dict) and provided.get("judgment_binding"):
+            decisions.append(provided)
+        decision_ref = (context.get("decision") or {}).get("source")
+        if decision_ref:
+            decisions.append(_source_metadata(read_reference(root, decision_ref).decode("utf-8")
+                             if decision_ref.get("commit") else _working_text(root, decision_ref["path"])))
+        if not decisions:
+            raise ValueError("prepared judgment has no actual decision carrier")
+        if {item["path"] for item in context["judgment_binding"]["uses"]} - set(context.get("actual_use", [])):
+            raise ValueError("prepared judgment lost an actual task association")
+        for decision in decisions:
+            body = {key: part for key, part in decision.items() if key not in _JUDGMENT_DERIVED}
+            if sha256_bytes(canonical_json(body)) != context["judgment_binding"]["decision_sha256"]:
+                raise ValueError("prepared decision differs from its judged consequence")
+            _validate_objective_inputs(root, decision)
+            binding = context["judgment_binding"]
+            actual = _judgment_uses(root, context["owner"]["source"]["path"], decision,
+                                   binding["task_sources"], binding["assignment"])
+            if actual != binding["uses"]:
+                raise ValueError("prepared actual task differs from its judgment correspondence")
     for item in context["sources"]:
         ref = item["source"]
         current = (read_reference(root, ref).decode("utf-8") if ref.get("commit")
@@ -137,6 +179,7 @@ def verify_prepared(root: Path, view: dict) -> None:
             raise ValueError(f"prepared source changed: {ref['path']}")
         if item.get("retrieval"):
             read_retained(root, item["retrieval"])
-    if context.get("actual_use"):
-        from current_use import check_current_use
-        check_current_use(root, context["owner"]["source"]["path"], context["actual_use"])
+    # Terminal adoption has no Worker task, but still consumes the owner's
+    # known corrections. It must not escape through an empty task list.
+    from current_use import check_current_use
+    check_current_use(root, context["owner"]["source"]["path"], context.get("actual_use", []))

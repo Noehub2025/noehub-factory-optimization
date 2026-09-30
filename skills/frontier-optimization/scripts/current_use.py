@@ -112,7 +112,16 @@ def inspect_current_use(root: Path, owner: str, sources=(), *, previous_owner: s
         state = _state(receipt)
         retained = state["records"]
         inherited_pending = None
-        links = _relations(root, state.get("relations", []) + meta.get("current_use_relations", []) + list(_relations_added))
+        derived = []
+        account = meta.get("context_account")
+        if isinstance(account, dict) and isinstance(account.get("source"), dict):
+            target = account["source"].get("path")
+            # This maintained association already declares the derivation.
+            # Retain it with known findings even if a later summary drops it.
+            inputs = [*account.get("actual_use", []), *(item["path"] for item in account.get("incorporates", []))]
+            derived = [{"source": source, "target": target, "kind": "dependency"}
+                       for source in inputs if source != target]
+        links = _relations(root, state.get("relations", []) + meta.get("current_use_relations", []) + derived + list(_relations_added))
         if predecessor:
             predecessor_path = _path(root, predecessor)
             if predecessor_path == owner:
@@ -241,7 +250,7 @@ def inspect_current_use(root: Path, owner: str, sources=(), *, previous_owner: s
                     if any(path in files and _digest(files[path]) == before_hash
                            and (path != original or item["current"].get(path) != before_hash)
                            for original, before_hash in item["before"].items()
-                           for path in _closure([original], links, successors_only=True)):
+                           for path in _closure([original], links)):
                         blocked.append(key)
 
         def verify():
@@ -300,6 +309,22 @@ def check_current_use(root: Path, owner: str, sources=(), prepared: dict | None 
         raise ValueError("prepared current use is stale; use the saved adopted objects")
     return {"status": "current", "current_use": current,
             "coverage": "Saved-object checks only; the existing owner judges semantic correction."}
+
+
+def same_corrections(left: dict | None, right: dict | None) -> bool:
+    """Compare retained correction meaning without freezing ordinary task bytes.
+
+    Delivery still checks exact bytes. Judgment reuse separately checks its
+    substantive task projection, while this comparison retains finding state.
+    """
+    def association(value):
+        if value is None:
+            return None
+        return {"owner": value.get("owner"), "correction_ids": value.get("correction_ids"),
+                "blocked_ids": value.get("blocked_ids"),
+                "retained": [item for item in value.get("files", [])
+                             if Path(item["path"]).name.endswith("-corrections.json")]}
+    return association(left) == association(right)
 
 
 def _replace_bytes(path: Path, raw: bytes) -> None:

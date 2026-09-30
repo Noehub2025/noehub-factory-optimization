@@ -104,7 +104,9 @@ Completion test: Every move has a cost, information boundary, legality mode, and
 
 A module is an optimization unit with owned decisions, a small interface, and independently changeable choices. A source directory or document section is not sufficient.
 
-Keep R5, R6, and R7 at `-` while search treats the candidate as one whole. Do not design modules, interfaces, or coupling rules for a decomposition that is not currently proposed.
+Keep R5, R6, and R7 at `-` when search has no separately optimized modules. This exemption concerns formal search-module contracts, not necessary internal design, interfaces or coordination within a whole candidate. Those remain with the existing technical and implementation owners. Do not invent a search decomposition merely to document internal construction.
+
+Classify the actual authority to propose, compare and select candidate alternatives. Independently selecting component variants and composing their winners is separate search even when the final evaluation covers the whole candidate. Workers implementing settled parts, and runtime action selection inside one candidate, do not by themselves create search modules. Use the applicable representation scope rather than worker count or file layout.
 
 For each proposed module, record:
 

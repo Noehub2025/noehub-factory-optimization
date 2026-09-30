@@ -805,11 +805,20 @@ fn prose_and_progress_reuse_judgment_but_material_investment_changes_do_not() {
     };
     assert!(!g.consider(&p, vec![], "role evidence".into()).unwrap());
     g.pending = None;
+    let previous = workflow_harness::decision::projection(&p, &[]).unwrap();
     p.assignment = "Implement the next internal step".into();
     p.update.as_mut().unwrap().remaining_work.clear();
     p.update.as_mut().unwrap().rationale = "Restated reasoning without a new investment".into();
     p.update.as_mut().unwrap().reverse_when = "Clarified wording of the same switch".into();
     p.update.as_mut().unwrap().options[0].work[0].work = "Clarified internal work".into();
+    p.update.as_mut().unwrap().judgment_reuse = Some(workflow_harness::decision::JudgmentReuse {
+        previous: workflow_harness::decision::projection_identity(&previous).unwrap(),
+        current: workflow_harness::decision::projection_identity(
+            &workflow_harness::decision::projection(&p, &[]).unwrap(),
+        )
+        .unwrap(),
+        reason: "The internal step and wording preserve the selected consequence".into(),
+    });
     assert!(!g.consider(&p, vec![], "role evidence".into()).unwrap());
     assert_eq!(g.next_id, 1);
     assert!(g.pending.is_none());
@@ -855,7 +864,7 @@ fn accepted_resolver_judgment_is_reused_without_a_second_model_check() {
 }
 
 #[test]
-fn external_judgment_reuse_needs_delivered_sources_and_survives_restart() {
+fn supplied_but_unassociated_judgment_cannot_silently_skip_the_checker() {
     let f = Fixture::new();
     let (mut s, mut p) = f.start(Mode::Observe);
     p.update.as_mut().unwrap().resolved_by = vec![99];
@@ -864,9 +873,9 @@ fn external_judgment_reuse_needs_delivered_sources_and_survives_restart() {
     s.accept(p).unwrap();
     drop(s);
     let mut s = Session::open(&f.run()).unwrap();
-    assert!(s.decisions.pending.is_none());
-    assert_eq!(s.decisions.receipts[0].reused_sources, vec![0]);
-    assert!(s.decisions.receipts[0].result.is_none());
+    assert!(s.decisions.pending.is_some());
+    assert!(s.decisions.receipts.is_empty());
+    // Observe mode records the coverage gap without becoming an enforcement path.
     assert_eq!(s.request().unwrap().role, Role::Worker);
 }
 
@@ -1041,7 +1050,16 @@ fn current_use_cannot_be_released_by_revised_or_contested_owner_labels() {
 fn current_use_bypasses_no_new_investment_flag_without_an_extra_checker() {
     let f = Fixture::new();
     let (mut session, response) = f.start(Mode::Enforce);
-    session.decisions.last_commitment = Some("Prior accepted commitment".into());
+    session.decisions.last_commitment = Some(
+        workflow_harness::decision::commitment(
+            &response,
+            &["Actual role method for mechanical verification.".into()],
+        )
+        .unwrap(),
+    );
+    session.decisions.last_sources = Some(vec![
+        "Actual role method for mechanical verification.".into(),
+    ]);
     assert!(!response.update.as_ref().unwrap().investment_changed);
     session.adopt_current_use(current_use(&f, true)).unwrap();
     assert!(
@@ -1718,4 +1736,517 @@ fn explicit_current_use_check_cannot_report_coverage_for_an_unbound_run() {
             ..Default::default()
         })
         .unwrap();
+}
+
+// These cases exercise real Session adoption and outgoing requests. They verify
+// correspondence, not the truth of the owner's semantic equivalence argument.
+fn complete_worker(s: &mut Session, p: &Response) -> usize {
+    use workflow_harness::control::{Capabilities, Event, EventKind};
+    let request = s
+        .runtime
+        .outstanding()
+        .cloned()
+        .unwrap_or_else(|| s.request().unwrap());
+    assert_eq!(request.role, Role::Worker);
+    s.begin_execution(Capabilities {
+        fresh_context: true,
+        events: true,
+        controlled_continuation: true,
+        ..Default::default()
+    })
+    .unwrap();
+    s.event(Event {
+        invocation_id: request.invocation_id,
+        sequence: 1,
+        event: EventKind::Stopped {
+            effects_settled: true,
+        },
+    })
+    .unwrap();
+    let mut result = p.clone();
+    result.invocation_id = request.invocation_id;
+    result.role = Role::Worker;
+    result.decision = workflow_harness::Decision::Observed;
+    result.update.as_mut().unwrap().resolved_invocation = None;
+    result.update.as_mut().unwrap().resolved_by.clear();
+    s.accept(result).unwrap();
+    s.request().unwrap().invocation_id
+}
+
+fn cleared_session(f: &Fixture) -> (Session, Response) {
+    let (mut s, p) = f.submit(Mode::Enforce);
+    s.decision_result(f.result(Verdict::NoFinding)).unwrap();
+    f.publish(&s);
+    s.confirm_publication(1).unwrap();
+    (s, p)
+}
+
+#[test]
+fn false_flag_and_assignment_only_exclusions_cannot_reuse_old_clearance() {
+    for assignment_only in [false, true] {
+        let f = Fixture::new();
+        let (mut s, mut p) = cleared_session(&f);
+        p.invocation_id = complete_worker(&mut s, &p);
+        if assignment_only {
+            p.assignment
+                .push_str(" Any setup failure permanently excludes this mechanism.");
+        } else {
+            p.update.as_mut().unwrap().reverse_when =
+                "Any next wrapper failure ends the route".into();
+        }
+        assert!(!p.update.as_ref().unwrap().investment_changed);
+        s.accept(p.clone()).unwrap();
+        assert!(s.decisions.holds());
+        assert!(s.request().is_err());
+        drop(s);
+        let mut s = Session::open(&f.run()).unwrap();
+        assert!(s.request().is_err());
+        assert_eq!(
+            s.decisions.pending.as_ref().unwrap().proposal.assignment,
+            p.assignment
+        );
+    }
+}
+
+#[test]
+fn old_accepted_resolver_does_not_cover_changed_assignment_or_terminal_exclusion() {
+    for finish in [false, true] {
+        let f = Fixture::new();
+        let (mut s, mut p) = f.start(Mode::Enforce);
+        p.decision = workflow_harness::Decision::Reconsider;
+        s.accept(p.clone()).unwrap();
+        let resolver = s.request().unwrap();
+        let mut r = p.clone();
+        r.role = Role::Resolver;
+        r.invocation_id = resolver.invocation_id;
+        r.decision = workflow_harness::Decision::Work;
+        s.accept(r).unwrap();
+        p.invocation_id = s.request().unwrap().invocation_id;
+        p.decision = if finish {
+            workflow_harness::Decision::Finish
+        } else {
+            workflow_harness::Decision::Work
+        };
+        p.assignment = "Reject the mechanism after any further setup failure".into();
+        p.summary = "The failed prerequisite ends investment in this mechanism".into();
+        p.update.as_mut().unwrap().investment_changed = true;
+        p.update.as_mut().unwrap().resolved_invocation = Some(resolver.invocation_id);
+        s.accept(p).unwrap();
+        assert!(s.decisions.holds());
+        assert!(s.runtime.terminal().is_none());
+        assert!(s.request().is_err());
+    }
+}
+
+#[test]
+fn structured_external_judgment_reuses_only_its_current_actual_consequence() {
+    for changed in [false, true] {
+        let f = Fixture::new();
+        let (_unused, mut p) = f.start(Mode::Disabled);
+        let judged = workflow_harness::decision::projection(
+            &p,
+            &["Actual role method for mechanical verification.".into()],
+        )
+        .unwrap();
+        fs::write(
+            f.0.join("judgment.json"),
+            json!({"judged_proposal":judged}).to_string(),
+        )
+        .unwrap();
+        let mut task = f.task();
+        task.sources.push(workflow_harness::Source {
+            path: "judgment.json".into(),
+            first_line: 1,
+            last_line: 1,
+            purpose: "independent judgment".into(),
+            roles: vec![Role::Coordinator],
+        });
+        let run = f.0.join("external-run");
+        let mut s = Session::create(task, &run).unwrap();
+        s.configure_decisions(f.config(Mode::Enforce)).unwrap();
+        p.invocation_id = s.request().unwrap().invocation_id;
+        p.update.as_mut().unwrap().resolved_by = vec![1];
+        if changed {
+            p.assignment
+                .push_str(" Eliminate the mechanism on any error.");
+        }
+        s.accept(p).unwrap();
+        drop(s);
+        let mut s = Session::open(&run).unwrap();
+        if changed {
+            assert!(s.decisions.pending.is_some());
+            assert!(s.request().is_err());
+        } else {
+            assert!(s.decisions.pending.is_none());
+            assert_eq!(s.decisions.receipts[0].reused_sources, vec![1]);
+            f.publish(&s);
+            s.confirm_publication(1).unwrap();
+            assert_eq!(s.request().unwrap().role, Role::Worker);
+        }
+    }
+}
+
+#[test]
+fn ordinary_repair_reuses_same_judgment_across_return_handoff_and_reload() {
+    let f = Fixture::new();
+    let (mut s, mut p) = cleared_session(&f);
+    p.invocation_id = complete_worker(&mut s, &p);
+    let previous = workflow_harness::decision::projection(
+        &p,
+        &["Actual role method for mechanical verification.".into()],
+    )
+    .unwrap();
+    p.assignment = "Repair the known interface name and obtain the selected observation".into();
+    p.update.as_mut().unwrap().interpretation =
+        "Wrapper failed before execution; same affordable selected commitment".into();
+    let current = workflow_harness::decision::projection(
+        &p,
+        &["Actual role method for mechanical verification.".into()],
+    )
+    .unwrap();
+    p.update.as_mut().unwrap().judgment_reuse = Some(workflow_harness::decision::JudgmentReuse {
+        previous: workflow_harness::decision::projection_identity(&previous).unwrap(),
+        current: workflow_harness::decision::projection_identity(&current).unwrap(),
+        reason: "Known support repair remains within the selected observation and limits".into(),
+    });
+    s.accept(p.clone()).unwrap();
+    assert_eq!(s.decisions.next_id, 1);
+    drop(s);
+    let mut s = Session::open(&f.run()).unwrap();
+    let request = s.request().unwrap();
+    assert!(request.prompt.contains("Repair the known interface name"));
+    assert!(s.decisions.pending.is_none());
+    p.invocation_id = complete_worker(&mut s, &p);
+    p.update.as_mut().unwrap().judgment_reuse = None;
+    p.summary = "Ordinary next progress, no changed consequence".into();
+    s.accept(p).unwrap();
+    assert_eq!(s.decisions.next_id, 1);
+    assert_eq!(s.request().unwrap().role, Role::Worker);
+}
+
+#[test]
+fn stale_equivalence_cannot_bind_a_later_assignment_change() {
+    let f = Fixture::new();
+    let (mut s, mut p) = cleared_session(&f);
+    p.invocation_id = complete_worker(&mut s, &p);
+    let id = workflow_harness::decision::projection_identity(
+        &workflow_harness::decision::projection(
+            &p,
+            &["Actual role method for mechanical verification.".into()],
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    p.update.as_mut().unwrap().judgment_reuse = Some(workflow_harness::decision::JudgmentReuse {
+        previous: id.clone(),
+        current: id,
+        reason: "Wording-only edit".into(),
+    });
+    p.assignment
+        .push_str(" Stop all research after another setup failure.");
+    s.accept(p).unwrap();
+    assert!(s.decisions.holds());
+}
+
+#[test]
+fn terminal_investment_is_checked_but_bounded_completion_and_mandatory_stop_are_immediate() {
+    use workflow_harness::decision::TerminalScope;
+    for scope in [
+        None,
+        Some(TerminalScope::Investment),
+        Some(TerminalScope::Completion),
+        Some(TerminalScope::MandatoryStop),
+    ] {
+        let f = Fixture::new();
+        let (mut s, mut p) = f.start(Mode::Enforce);
+        p.decision = workflow_harness::Decision::Finish;
+        p.assignment.clear();
+        let u = p.update.as_mut().unwrap();
+        u.options.clear();
+        u.selected.clear();
+        u.terminal_scope = scope;
+        s.accept(p).unwrap();
+        if matches!(
+            scope,
+            Some(TerminalScope::Completion | TerminalScope::MandatoryStop)
+        ) {
+            assert!(s.runtime.terminal().is_some());
+            assert_eq!(s.decisions.next_id, 0);
+        } else {
+            assert!(s.runtime.terminal().is_none());
+            assert!(s.decisions.holds());
+            s.bind_decision(1, "actual-checker".into()).unwrap();
+            s.decision_result(f.result(Verdict::NoFinding)).unwrap();
+            f.publish(&s);
+            s.confirm_publication(1).unwrap();
+            s.verify_judgment_consumption().unwrap();
+            fs::write(f.0.join("method.txt"), "Changed terminal evidence\n").unwrap();
+            assert!(s.verify_judgment_consumption().is_err());
+        }
+    }
+}
+
+#[test]
+fn known_correction_blocks_terminal_investment_but_not_a_required_scoped_stop() {
+    let f = Fixture::new();
+    let (mut s, mut p) = f.start(Mode::Enforce);
+    s.adopt_current_use(current_use(&f, true)).unwrap();
+    p.decision = workflow_harness::Decision::Finish;
+    assert!(s.accept(p.clone()).unwrap_err().contains("unresolved"));
+    p.update.as_mut().unwrap().terminal_scope =
+        Some(workflow_harness::decision::TerminalScope::MandatoryStop);
+    s.accept(p).unwrap();
+    assert!(s.runtime.terminal().is_some());
+    assert_eq!(s.decisions.next_id, 0);
+}
+
+#[test]
+fn cleared_assignment_cannot_be_changed_through_queued_replacement() {
+    let f = Fixture::new();
+    let (mut s, _) = cleared_session(&f);
+    let old = s.request().unwrap();
+    assert!(
+        s.replace_queued_work("Now reject the mechanism on the next setup error".into())
+            .unwrap_err()
+            .contains("judged consequence")
+    );
+    s.verify_queued_context(&old).unwrap();
+}
+
+#[test]
+fn free_text_judgment_uses_same_turn_owner_association_without_new_checker() {
+    let f = Fixture::new();
+    let (mut s, mut p) = f.start(Mode::Enforce);
+    p.update.as_mut().unwrap().resolved_by = vec![0];
+    let current = workflow_harness::decision::projection_identity(
+        &workflow_harness::decision::projection(
+            &p,
+            &["Actual role method for mechanical verification.".into()],
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    p.update.as_mut().unwrap().judgment_reuse = Some(workflow_harness::decision::JudgmentReuse {
+        previous: workflow_harness::decision::source_judgment_identity(
+            &["Actual role method for mechanical verification.".into()], &[0]).unwrap(),
+        current,
+        reason: "This fixture owner associates the supplied evidence with the current consequence; semantic correctness is not tested".into(),
+    });
+    s.accept(p).unwrap();
+    assert!(s.decisions.pending.is_none());
+    assert!(s.decisions.receipts[0].result.is_none());
+    f.publish(&s);
+    s.confirm_publication(1).unwrap();
+    assert_eq!(s.request().unwrap().role, Role::Worker);
+}
+
+#[test]
+fn mandatory_pause_does_not_wait_for_pending_terminal_judgment() {
+    let f = Fixture::new();
+    let (mut s, mut p) = f.start(Mode::Enforce);
+    p.decision = workflow_harness::Decision::Finish;
+    s.accept(p).unwrap();
+    assert!(s.decisions.holds());
+    s.pause("Real user resource limit exhausted; affected work stops immediately".into())
+        .unwrap();
+    assert!(s.request().is_err());
+    assert!(s.runtime.terminal().is_none());
+    assert!(s.decisions.pending.is_some());
+}
+
+#[test]
+fn host_judgment_view_prepares_same_turn_reuse_without_changing_saved_state() {
+    use std::{
+        io::Write,
+        process::{Command, Stdio},
+    };
+    let f = Fixture::new();
+    let (mut s, mut p) = cleared_session(&f);
+    p.invocation_id = complete_worker(&mut s, &p);
+    p.assignment = "Perform the next internal repair under the same selected commitment".into();
+    drop(s);
+    let before = fs::read(f.run().join("state.json")).unwrap();
+    let mut child = Command::new(env!("CARGO_BIN_EXE_workflow-harness"))
+        .args(["host", "judgment-view", f.run().to_str().unwrap()])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(&serde_json::to_vec(&p).unwrap())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(fs::read(f.run().join("state.json")).unwrap(), before);
+    let view: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    p.update.as_mut().unwrap().judgment_reuse = Some(workflow_harness::decision::JudgmentReuse {
+        previous: view["previous"].as_str().unwrap().into(),
+        current: view["current"].as_str().unwrap().into(),
+        reason: "Same supported repair scope and selected observation".into(),
+    });
+    let mut s = Session::open(&f.run()).unwrap();
+    s.accept(p).unwrap();
+    assert_eq!(s.decisions.next_id, 1);
+    assert!(s.request().unwrap().prompt.contains("next internal repair"));
+}
+
+#[test]
+fn pending_judgment_cannot_rebind_changed_evidence_or_actual_use_after_reload() {
+    for actual_use in [false, true] {
+        for reload in [false, true] {
+            let f = Fixture::new();
+            let (mut s, mut p) = f.start(Mode::Enforce);
+            let separate = f.0.join("separately-declared-result.json");
+            fs::write(&separate, "{\"available_units\":1}").unwrap();
+            if actual_use {
+                p.actual_use = vec![separate.clone()];
+            } else {
+                p.evidence = vec![separate.clone()];
+            }
+            s.accept(p).unwrap();
+            s.bind_decision(1, "actual-checker".into()).unwrap();
+            let captured = s
+                .decisions
+                .pending
+                .as_ref()
+                .unwrap()
+                .judged_projection
+                .clone();
+            if reload {
+                drop(s);
+                s = Session::open(&f.run()).unwrap();
+            }
+            fs::write(&separate, "{\"available_units\":0}").unwrap();
+            s.decision_result(f.result(Verdict::NoFinding)).unwrap();
+            assert_eq!(s.decisions.receipts[0].judged_projection, captured);
+            assert!(s.decisions.pending.is_none());
+            assert!(s.decisions.publication.is_none());
+            assert!(s.decisions.last_commitment.is_none());
+            assert_eq!(s.runtime.outstanding().unwrap().role, Role::Coordinator);
+            assert!(s.runtime.terminal().is_none());
+            assert!(s.request().is_err());
+        }
+    }
+}
+
+#[test]
+fn drifted_pending_use_can_be_abandoned_but_a_finding_still_requires_its_owner() {
+    for finding in [false, true] {
+        let f = Fixture::new();
+        let (mut s, mut p) = f.start(Mode::Enforce);
+        let separate = f.0.join("declared-task.txt");
+        fs::write(&separate, "Original actual task").unwrap();
+        p.actual_use = vec![separate.clone()];
+        s.accept(p).unwrap();
+        s.bind_decision(1, "actual-checker".into()).unwrap();
+        if finding {
+            s.decision_result(f.result(Verdict::Revise)).unwrap();
+        }
+        fs::remove_file(&separate).unwrap();
+        let result =
+            s.abandon_decision("Actual task disappeared; retain the return for its owner".into());
+        if finding {
+            assert!(result.unwrap_err().contains("concrete finding"));
+            assert!(s.decisions.holds());
+        } else {
+            result.unwrap();
+            assert!(s.decisions.pending.is_none());
+            assert!(s.decisions.publication.is_none());
+            assert_eq!(s.runtime.outstanding().unwrap().role, Role::Coordinator);
+        }
+    }
+}
+
+#[test]
+fn legacy_pending_without_captured_projection_returns_to_owner_without_adoption() {
+    let f = Fixture::new();
+    let (s, _) = f.submit(Mode::Enforce);
+    drop(s);
+    let path = f.run().join("state.json");
+    let mut state: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    state["decisions"]["pending"]
+        .as_object_mut()
+        .unwrap()
+        .remove("judged_projection");
+    fs::write(&path, serde_json::to_vec(&state).unwrap()).unwrap();
+    let mut s = Session::open(&f.run()).unwrap();
+    s.decision_result(f.result(Verdict::NoFinding)).unwrap();
+    assert!(s.decisions.publication.is_none());
+    assert!(s.decisions.last_commitment.is_none());
+    assert_eq!(s.runtime.outstanding().unwrap().role, Role::Coordinator);
+}
+
+#[test]
+fn existing_owner_can_adopt_current_correction_after_pending_evidence_drift() {
+    let f = Fixture::new();
+    let (mut s, mut p) = f.start(Mode::Enforce);
+    let separate = f.0.join("evidence.txt");
+    fs::write(&separate, "Original support evidence").unwrap();
+    p.evidence = vec![separate.clone()];
+    s.accept(p.clone()).unwrap();
+    s.bind_decision(1, "actual-checker".into()).unwrap();
+    s.decision_result(f.result(Verdict::Revise)).unwrap();
+    fs::write(
+        &separate,
+        "Current correction evidence reviewed by the existing owner",
+    )
+    .unwrap();
+    p.assignment = "Perform the currently corrected bounded assignment".into();
+    s.resolve_decision(f.owner(Disposition::Revised, Some(p)))
+        .unwrap();
+    assert_eq!(s.decisions.next_id, 1);
+    f.publish(&s);
+    s.confirm_publication(1).unwrap();
+    assert!(
+        s.request()
+            .unwrap()
+            .prompt
+            .contains("currently corrected bounded assignment")
+    );
+}
+
+#[test]
+fn same_assignment_replacement_cannot_change_judged_actual_use() {
+    let f = Fixture::new();
+    let (mut s, mut p) = f.start(Mode::Enforce);
+    let assignment = p.assignment.clone();
+    p.assignment = format!(
+        "This assignment supersedes the earlier queued restriction and task.\n{assignment}"
+    );
+    let equivalent = f.0.join("second-dependency.md");
+    fs::write(&equivalent, "Existing dependency").unwrap();
+    p.actual_use.push(equivalent.clone());
+    s.accept(p).unwrap();
+    s.bind_decision(1, "actual-checker".into()).unwrap();
+    s.decision_result(f.result(Verdict::NoFinding)).unwrap();
+    f.publish(&s);
+    s.confirm_publication(1).unwrap();
+    let original = s.request().unwrap();
+    let changed = f.0.join("different-task.md");
+    fs::write(
+        &changed,
+        "Any further setup error permanently excludes the mechanism",
+    )
+    .unwrap();
+    drop(s);
+    let mut s = Session::open(&f.run()).unwrap();
+    assert!(
+        s.replace_queued_work_for(assignment.clone(), vec![changed])
+            .unwrap_err()
+            .contains("judged consequence")
+    );
+    s.verify_queued_context(&original).unwrap();
+    // Reordering the same canonical dependency set is not a different use.
+    let replacement = s
+        .replace_queued_work_for(assignment, vec![equivalent, f.0.join("method.txt")])
+        .unwrap();
+    s.verify_queued_context(&replacement).unwrap();
 }

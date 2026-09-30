@@ -943,6 +943,71 @@ class BatchModuleTests(unittest.TestCase):
         self.assertEqual(attempt["actual_consequences"][0]["kind"], "spend")
         self.assertEqual(outcome.view.data["consumption"], {"runs": 1, "proposal": 1})
 
+    def test_first_measurement_can_compare_settings_and_retain_failure_without_reset(self) -> None:
+        # Exercise a real selected runner and the normal writer/reader, not a
+        # separate workflow per setting or an invented passing-result label.
+        runner = self.repo / "src" / "search.py"
+        runner.write_text(
+            "import json\n"
+            "rows = []\n"
+            "for setting in (0, 1, 2):\n"
+            "    try:\n"
+            "        score = 4 / (2 - setting) - 3\n"
+            "        rows.append({'setting': setting, 'status': 'completed', 'score': score})\n"
+            "    except ZeroDivisionError:\n"
+            "        rows.append({'setting': setting, 'status': 'failed', 'score': None})\n"
+            "print(json.dumps(rows))\n",
+            encoding="utf-8",
+        )
+        self._git("add", "src/search.py")
+        self._git("commit", "-qm", "bounded search procedure")
+        candidate = CandidateRevision(self._git("rev-parse", "HEAD"), ("src/search.py",))
+        executions = []
+
+        def measure(action, context):
+            completed = subprocess.run(
+                [sys.executable, "-B", str(runner)], cwd=self.repo,
+                check=True, capture_output=True, text=True,
+            )
+            executions.append(completed.stdout)
+            rows = json.loads(completed.stdout)
+            return OperationResult(
+                status="completed", resource_use={"runs": len(rows)},
+                result={"trials": rows, "stdout": completed.stdout},
+            )
+
+        batch = self._defined_batch(
+            operations={"search": self._operation(measure)},
+            resource_limits={"runs": 3}, expected_consequences=(),
+        )
+        batch.apply(SelectCandidate(candidate, "Select the initial multi-setting procedure."))
+        batch.apply(ReviseBatch(
+            rationale="Compare settings in the first observation.",
+            measurement_definition=self._measurement(resource_ceiling={"runs": 3}),
+        ))
+        action = Action(
+            key="initial-search", operation="search", kind="measurement",
+            candidate=candidate, requested_resources={"runs": 3}, repeatable=True,
+        )
+        batch.perform(action)
+        # Recovery must retain unfavorable results, technical failure, subject
+        # and all consumption without replaying the evaluations.
+        recovered = Batch.open(self.repo, "B001", state_path=self.state_path,
+                               operations={"search": self._operation(measure)})
+        data = recovered.view.data
+        self.assertEqual(len(data["attempts"]), 1)
+        attempt = data["attempts"][0]
+        self.assertEqual(attempt["candidate_revision"]["commit"], candidate.commit)
+        rows = attempt["result"]["trials"]
+        self.assertEqual(rows[0], {"setting": 0, "status": "completed", "score": -1.0})
+        self.assertEqual(rows[1]["score"], 1.0)
+        self.assertEqual(rows[2], {"setting": 2, "status": "failed", "score": None})
+        self.assertEqual(attempt["result"]["stdout"], executions[0])
+        self.assertEqual(data["consumption"], {"runs": 3})
+        with self.assertRaises(ConsequenceBlocked):
+            recovered.perform(replace(action, key="renamed-search"))
+        self.assertEqual(len(executions), 1)
+
     def test_permission_blocks_only_action_before_adapter_runs(self) -> None:
         calls: list[str] = []
 

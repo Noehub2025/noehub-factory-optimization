@@ -779,6 +779,7 @@ def test_cli_reusing_assignment_clears_prior_policy_coverage_when_facts_change(r
 def frontier_files(*, due=True):
     timing = 'feedback_trigger: The candidate can now produce useful objective evidence.\n' if due else 'feedback_not_due: The prerequisite still cannot produce useful evidence.\n'
     return {
+        "artifacts/frontier/B001/batch.yaml": "batch: B001\ndefinition:\n  objective: Obtain the selected observation.\ncurrent:\n  status: prepared\nattempts: []\n",
         "campaign/FRONTIER.md": '---\ntype: Optimization Frontier\nproblem: PROBLEM.md\nproblem_epoch: 2\nrepresentation: REPRESENTATION.md\nrepresentation_revision: 3\ncurrent_state:\n  primary_batch: B001\n  pending_observation: Result becomes usable after exposure.\nobjective_basis:\n  objective_source: PROBLEM.md#goal\n  evaluation_source: PROBLEM.md#evaluation\n' + timing + '---\n# Campaign\n[Work](WORK.md#pending)\n## History\nUnrelated past work.\n',
         "campaign/PROBLEM.md": '---\nepoch: 2\n---\n# Problem\n## Goal\nImprove the real outcome.\n## Evaluation\nCompare outcomes under the named conditions.\n## History\nEarlier work.\n',
         "campaign/REPRESENTATION.md": '---\nproblem: PROBLEM.md\nproblem_epoch: 2\nrepresentation_revision: 3\n---\n# Representation\nSearch translation.\n',
@@ -1006,3 +1007,146 @@ def test_meaningful_source_whitespace_prevents_reuse_and_binding(repo, before, a
     assert "reuse_resolution" not in current
     with pytest.raises(refs.ReferenceError, match="basis changed"):
         refs.bind_resolution(repo, prepared, feedback_result())
+
+
+def scoped_judgment_case(repo):
+    batch = {"batch": "B1", "definition": {"objective": "Test the economic mechanism.",
+             "stop_condition": "Return the failed wrapper to its owner; the mechanism remains untested."},
+             "current": {"status": "prepared"}, "attempts": []}
+    save(repo, {"TASK.md": "---\nfeedback_not_due: Repair is needed before the selected observation.\ncurrent_state:\n  work_record: batch.yaml\n---\n# Task\nImprove the objective.\n",
+                "batch.yaml": yaml.safe_dump(batch), "evidence.json": '{"wrapper":"failed","target_calls":0}'})
+    prepared = prepare(repo, "HEAD", "evidence.json")
+    decision = {"selected_route": "economic mechanism", "exact_action": "Repair the wrapper and obtain the selected observation.",
+                "switching_condition": "Reconsider when remaining recovery cost materially changes.",
+                "policy_disposition": {"status": "addressed", "reason": "No target observation supports mechanism rejection."}}
+    result = refs.bind_resolution(repo, prepared, decision)
+    save(repo, {"resolution.json": json.dumps(result)})
+    return batch, prepared, decision, result
+
+
+def test_formal_assignment_only_restriction_invalidates_old_judgment(repo):
+    batch, prepared, decision, result = scoped_judgment_case(repo)
+    batch["definition"]["stop_condition"] = "Reject the mechanism after any next wrapper failure."
+    (repo / "batch.yaml").write_text(yaml.safe_dump(batch))
+    fresh = prepare(repo, "HEAD", "evidence.json", ["resolution.json"])
+    assert "reuse_resolution" not in fresh
+    assert fresh["evidence_state_identity"] == result["evidence_state_identity"]
+    with pytest.raises(refs.ReferenceError, match="effective assignment changed"):
+        refs.bind_resolution(repo, prepared, decision)
+    with pytest.raises(refs.ReferenceError, match="correspondence changed"):
+        refs.bind_resolution(repo, fresh, result)
+
+
+@pytest.mark.parametrize("change", ["switching_condition", "exact_action", "assignment"])
+def test_formal_old_valid_result_cannot_cover_new_consequence(repo, change):
+    _, _, _, result = scoped_judgment_case(repo)
+    changed = {**result, change: "Terminate the untested mechanism after an unrelated wrapper failure."}
+    with pytest.raises(refs.ReferenceError, match="correspondence changed"):
+        refs.bind_resolution(repo, prepare(repo, "HEAD", "evidence.json"), changed)
+
+
+def test_ordinary_progress_reuses_judgment_but_old_delivery_is_stale(repo):
+    from context_delivery import model_view, verify_prepared
+    batch, _, _, result = scoped_judgment_case(repo)
+    delivered = model_view(repo, result)
+    verify_prepared(repo, delivered)
+    batch["current"]["status"] = "running"
+    batch["attempts"].append({"attempt": 1, "status": "completed", "result": "Local support repair passed."})
+    (repo / "batch.yaml").write_text(yaml.safe_dump(batch))
+    with pytest.raises(ValueError, match="current source changed"):
+        verify_prepared(repo, delivered)
+    reused = prepare(repo, "HEAD", "evidence.json", ["resolution.json"])
+    assert reused["reuse_resolution"]["path"] == "resolution.json"
+    verify_prepared(repo, model_view(repo, reused))
+    recovered = refs.prepare_adoption_context(repo, "TASK.md", decision="resolution.json", phase="recovery")
+    verify_prepared(repo, model_view(repo, recovered))
+    assert json.loads((repo / "resolution.json").read_text()) == result
+    assert "Repair the wrapper" in result["exact_action"]
+
+
+def test_owner_can_adopt_equivalent_task_wording_in_existing_bind_turn(repo):
+    from context_delivery import model_view, verify_prepared
+    batch, _, decision, _ = scoped_judgment_case(repo)
+    batch["definition"]["stop_condition"] = "Return wrapper errors for repair; no mechanism conclusion follows."
+    (repo / "batch.yaml").write_text(yaml.safe_dump(batch))
+    fresh = prepare(repo, "HEAD", "evidence.json", ["resolution.json"])
+    assert "reuse_resolution" not in fresh
+    adopted = refs.bind_resolution(repo, fresh, {**decision, "judgment_reuse": {
+        "source": refs.reference(repo, "HEAD", "resolution.json"),
+        "reason": "Only the return wording changed; the affected operation, recovery and observation remain the same."}})
+    verify_prepared(repo, model_view(repo, adopted))
+    assert adopted["exact_action"] == decision["exact_action"]
+    save(repo, {"evidence.json": '{"wrapper":"passed","target_calls":1}'})
+    with pytest.raises(refs.ReferenceError, match="does not cover"):
+        refs.bind_resolution(repo, prepare(repo, "HEAD", "evidence.json"), {**decision, "judgment_reuse": adopted["judgment_reuse"]})
+
+
+def test_formal_terminal_adoption_and_consumption_check_same_binding(repo):
+    from context_delivery import digest, model_view, verify_prepared
+    _, _, _, _ = scoped_judgment_case(repo)
+    terminal = refs.bind_resolution(repo, prepare(repo, "HEAD", "evidence.json"), {
+        "disposition": "stop", "reason": "The real opportunity window closed; remaining recovery cannot obtain useful evidence in time."})
+    verify_prepared(repo, model_view(repo, terminal))
+    altered = model_view(repo, {**terminal, "reason": "The second wrapper failure disproves the economic mechanism."})
+    # Even re-preparing the display checksum cannot turn the old judgment into
+    # correspondence for changed professional content.
+    altered["delivery_identity"] = digest(json.dumps({key: part for key, part in altered.items()
+                                                      if key != "delivery_identity"}, ensure_ascii=False, sort_keys=True))
+    with pytest.raises(ValueError, match="judged consequence"):
+        verify_prepared(repo, altered)
+
+
+@pytest.mark.parametrize("removed", [None, "judgment_binding", "objective_owner"])
+def test_result_cannot_borrow_prepared_scope_to_erase_its_binding(repo, removed):
+    from context_delivery import digest, model_view, verify_prepared
+    _, prepared, decision, result = scoped_judgment_case(repo)
+    rebound = refs.bind_resolution(repo, prepared, {**decision, "judgment_scope": prepared["judgment_scope"]})
+    assert "judgment_scope" not in rebound
+    # Reproduce an old mixed payload as it reaches actual delivery, including a
+    # new display digest. Scope metadata must never hide the operative result.
+    result["judgment_scope"] = prepared["judgment_scope"]
+    delivered = model_view(repo, result)
+    delivered["adoption_context"].pop("judgment_binding")
+    delivered["exact_action"] = "Permanently reject the untested mechanism."
+    if removed:
+        delivered.pop(removed)
+    delivered["delivery_identity"] = digest(json.dumps({key: part for key, part in delivered.items()
+                                                       if key != "delivery_identity"}, ensure_ascii=False, sort_keys=True))
+    with pytest.raises(ValueError, match="judgment correspondence"):
+        verify_prepared(repo, delivered)
+
+
+def test_resolver_cli_delivery_uses_its_generated_schema_after_internal_merge(repo, monkeypatch, capsys):
+    from context_delivery import verify_prepared
+    save(repo, {"evidence.json": '{"wrapper":"failed"}'})
+    output = repo / "prepared.json"
+    retained = {"subject": {"path": "old-task.md"}, "work_plan": "old-plan.md", "delivery_scope": ["old-slice"]}
+    output.write_text(json.dumps(retained))
+    monkeypatch.setattr("sys.argv", ["frontier_references.py", "resolver", "--repo", str(repo),
+                                    "--owner-source", "TASK.md", "--path", "evidence.json", "--output", str(output)])
+    assert refs.main() == 0
+    locator = json.loads(capsys.readouterr().out)
+    internal = json.loads(output.read_text())
+    delivered = json.loads(Path(locator["delivery"]).read_text())
+    assert all(internal[key] == part for key, part in retained.items())
+    assert not set(retained) & set(delivered)
+    verify_prepared(repo, delivered)
+
+
+def test_formal_delivery_rejects_new_or_unrelated_effective_task(repo):
+    from context_delivery import model_view, verify_prepared
+    _, _, _, result = scoped_judgment_case(repo)
+    (repo / "unrelated.md").write_text("A different independently valid task.")
+    with pytest.raises(refs.ReferenceError, match="correspondence changed"):
+        refs.prepare_adoption_context(repo, "TASK.md", decision=result, task_sources=["unrelated.md"])
+    delivered = model_view(repo, result)
+    (repo / "TASK.md").write_text((repo / "TASK.md").read_text().replace("batch.yaml", "unrelated.md"))
+    with pytest.raises(ValueError, match="current source changed"):
+        verify_prepared(repo, delivered)
+
+
+def test_legacy_judgment_is_readable_but_does_not_get_automatic_reuse(repo):
+    _, _, _, result = scoped_judgment_case(repo)
+    result.pop("judgment_binding")
+    save(repo, {"legacy.json": json.dumps(result)})
+    assert "reuse_resolution" not in prepare(repo, "HEAD", "evidence.json", ["legacy.json"])

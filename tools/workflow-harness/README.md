@@ -167,6 +167,15 @@ The bridge does not prove better optimization decisions. Evaluate it by whether
 it changes consequential work or reduces uncertainty at acceptable cost, not by
 the number of checks or receipts it creates.
 
+The current bridge also binds an adopted judgment to its objective, evidence,
+selected consequence, and actual outgoing assignment. Exact ordinary progress
+may reuse that binding. A changed assignment, route-ending restriction, or
+consequential terminal result must return to the existing owner; an old accepted
+reference or unchanged route label is not enough. Bounded completion and a real
+mandatory stop remain immediate owner declarations and do not become extra model
+calls. These checks establish recorded correspondence only. They do not prove
+that an owner's equivalence explanation is semantically correct.
+
 ## Codex Hook
 
 The repository includes [`.codex/hooks.json`](../../.codex/hooks.json). Codex
