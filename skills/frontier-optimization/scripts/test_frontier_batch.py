@@ -2159,8 +2159,43 @@ class BatchModuleTests(unittest.TestCase):
 
         valid_state["resource_limits"]["calls"] = 4
         self.state_path.write_text(yaml.safe_dump(valid_state, sort_keys=False))
-        with self.assertRaisesRegex(BatchFormatError, "capacity use.*exceeds"):
-            Batch.open(self.repo, "B001", state_path=self.state_path)
+        reopened = Batch.open(self.repo, "B001", state_path=self.state_path,
+            operations={"interrupted": self._operation(interrupted)})
+        self.assertEqual(reopened.view.remaining_capacity["calls"], -1)
+        with self.assertRaisesRegex(ConsequenceBlocked, "capacity use.*exceeds"):
+            reopened.perform(Action("blocked", "interrupted", "query"))
+
+    def test_recorded_overrun_can_be_read_and_repaired_without_erasing_facts(self) -> None:
+        invocations = []
+
+        def operation(action: Action, context: dict) -> OperationResult:
+            invocations.append(action.key)
+            return OperationResult("completed", resource_use={"calls": 3})
+
+        operations = {"operation": self._operation(operation)}
+        batch = self._defined_batch(operations=operations, resource_limits={"calls": 2})
+        with self.assertRaisesRegex(OperationContractViolation, "exceeded declared resource"):
+            batch.perform(Action("overrun", "operation", "query", requested_resources={"calls": 2}))
+        historical_attempt = batch.view.export_record()["attempts"][0]
+        self.assertEqual(historical_attempt["status"], "completed")
+        self.assertEqual(historical_attempt["resource_use"], {"calls": 3})
+        self.assertTrue(historical_attempt["contract_violations"])
+
+        reopened = Batch.open(self.repo, "B001", state_path=self.state_path, operations=operations)
+        self.assertEqual(reopened.view.remaining_capacity["calls"], -1)
+        with self.assertRaisesRegex(ConsequenceBlocked, "capacity use.*exceeds"):
+            reopened.perform(Action("blocked", "operation", "query"))
+        self.assertEqual(invocations, ["overrun"])
+        with self.assertRaisesRegex(ChangeRejected, "below recorded capacity"):
+            reopened.apply(ReviseBatch("Insufficient repair.", resource_limits={"calls": 2}))
+        reopened.apply(UpdateWorkingState("Coordinator adopted a sufficient allocation.",
+            resource_limits={"calls": 6}))
+        self.assertEqual(reopened.view.export_record()["attempts"][0], historical_attempt)
+        self.assertEqual(reopened.view.export_record()["consumption"], {"calls": 3})
+        self.assertEqual(reopened.view.remaining_capacity["calls"], 3)
+        reopened.perform(Action("next", "operation", "query", requested_resources={"calls": 3}))
+        self.assertEqual(invocations, ["overrun", "next"])
+        self.assertEqual(reopened.view.export_record()["attempts"][0], historical_attempt)
 
     def test_unexpected_effect_is_retained_as_an_attempt(self) -> None:
         def inspect(action: Action, context: dict) -> OperationResult:

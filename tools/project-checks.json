@@ -9,6 +9,8 @@
         "docs/agent-instructions.md",
         "docs/project-capabilities.md",
         "README.md",
+        "CHANGELOG.md",
+        "docs/releasing.md",
         ".claude-plugin/plugin.json",
         ".claude-plugin/marketplace.json",
         "tools/project-checks.json"

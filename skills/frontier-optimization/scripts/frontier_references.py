@@ -206,6 +206,20 @@ def _selected_text(text: str, ref: dict) -> str:
     return text
 
 
+def _decision_source_body(text: str, ref: dict) -> dict:
+    """Interpret the explicit decision selection, retaining full-source evidence elsewhere."""
+    if ref.get("field") and ref.get("section"):
+        raise ReferenceError("ambiguous decision selector: choose a field or section")
+    selected = _selected_text(text, ref)
+    if ref.get("field"):
+        value = json.loads(selected)
+        if isinstance(value, dict):
+            return value
+    # A reason or prose section is an excerpt of its containing decision,
+    # not a new decision that can discard the parent's assignment or binding.
+    return _source_metadata(text)
+
+
 def _working_text(root: Path, path: str) -> str:
     root = root.resolve()
     target = (root / normalize_path(path)).resolve(strict=True)
@@ -434,6 +448,18 @@ def _same_controlling_context(left: dict, right: dict) -> bool:
     return identity(left) == identity(right)
 
 
+def _owner_purpose(text: str):
+    """Exclude only the separately checked correction block, preserving prose."""
+    header = re.match(r"\A---\s*\n(.*?)\n---(?:\s*\n|\Z)", text, re.S)
+    try:
+        metadata = _document((header.group(1) if header else text).encode())
+        purpose = canonical_json({key: value for key, value in metadata.items()
+                                  if key != "current_use_corrections"})
+    except (TypeError, ValueError, yaml.YAMLError):
+        return text
+    return purpose, text[header.end():] if header else ""
+
+
 def _validate_objective_inputs(root: Path, prepared: dict, *, refresh_prior_context: bool = False) -> dict:
     owner = prepared.get("objective_owner")
     if not isinstance(owner, dict):
@@ -451,19 +477,39 @@ def _validate_objective_inputs(root: Path, prepared: dict, *, refresh_prior_cont
         raise ReferenceError("objective_basis differs from its adopted owner bindings")
     if any(prepared.get(key) != original[key] for key in ("feedback_trigger", "feedback_not_due")):
         raise ReferenceError("feedback timing differs from its prepared owner basis")
-    current = _objective_inputs(root, resolve_revision(root, "HEAD"), owner["path"], **options)
-    if current["objective_basis_identity"] != original["objective_basis_identity"]:
-        raise ReferenceError("decision-relevant objective basis changed; return affected facts to the owner")
-    if not refresh_prior_context and not _same_controlling_context(current, original):
-        raise ReferenceError("controlling objective context changed; refresh owner context before adoption; this does not require a different selection or a new experiment")
+    # Saved evidence can include an adopted correction without moving the user's
+    # branch. HEAD locates history; the actual owner and selected sources govern
+    # current applicability. Still reject every decision-relevant working drift.
+    saved_owner = _source_metadata(read_reference(root, owner).decode())
+    live_owner = _source_metadata(_working_text(root, owner["path"]))
+    owner_keys = ("type", "problem", "problem_epoch", "representation",
+                  "representation_revision", "objective_basis", "current_state",
+                  "feedback_trigger", "feedback_not_due")
+    if any(live_owner.get(key) != saved_owner.get(key) for key in owner_keys):
+        raise ReferenceError(f"decision-relevant objective basis changed: {owner['path']}; reconcile through the owner and prepare again")
+    for role, source in original["objective_basis"].items():
+        live = _selected_text(_working_text(root, source["path"]), source).replace("\r\n", "\n")
+        saved = original["objective_basis_content"][role].replace("\r\n", "\n")
+        owner_correction_only = (source["path"] == owner["path"] and not source.get("section") and not source.get("field")
+                                 and _owner_purpose(live) == _owner_purpose(saved))
+        if live != saved and not owner_correction_only:
+            raise ReferenceError(f"decision-relevant objective basis changed: {source['path']} ({role}); reconcile through the owner and prepare again")
+    controlling = original.get("controlling_objective_binding")
+    if controlling and not refresh_prior_context:
+        live = _working_text(root, controlling["source"]["path"])
+        owner_correction_only = (controlling["source"]["path"] == owner["path"]
+                                 and _owner_purpose(live) == _owner_purpose(read_reference(root, owner).decode()))
+        if sha256_bytes(live.encode()) != controlling["sha256"] and not owner_correction_only:
+            raise ReferenceError(f"controlling objective context changed: {controlling['source']['path']}; refresh owner context before adoption; this does not require a different selection or a new experiment")
     return original
 
 
 def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | None = None,
                              decision: str | dict | None = None, task_sources=(),
-                             controlling_source: str | None = None, phase: str = "adoption",
+                             controlling_source: str | dict | None = None, phase: str = "adoption",
                              revision: str | None = None, incoming: dict | None = None,
-                             account: dict | None = None) -> dict:
+                             account: dict | None = None, selected_basis: dict | None = None,
+                             incoming_sources=()) -> dict:
     """Present actual sources for owner judgment; neither choose scope nor certify it.
 
     Recovery reads saved working bytes without Git, a session, or a known finding.
@@ -486,7 +532,7 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
         return {"provided_body": {key: item for key, item in value.items() if key not in omitted},
                 **({"omitted_generated_fields": omitted} if omitted else {})}
 
-    def pointer(value, *, relative_to=None):
+    def pointer(value, *, relative_to=None, current=False):
         if isinstance(value, dict):
             ref = {key: value[key] for key in ("path", "section", "field", "commit") if key in value}
         elif isinstance(value, str) and value.strip():
@@ -502,7 +548,7 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
         if path.is_absolute():
             ref["path"] = path.resolve().relative_to(root).as_posix()
         ref["path"] = normalize_path(ref["path"])
-        if revision and "commit" not in ref:
+        if revision and not current and "commit" not in ref:
             ref["commit"] = revision
         return ref
 
@@ -625,7 +671,8 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
     selected = {}
     for role in ("objective_source", "evaluation_source", "current_work_source"):
         value = configured.get(role) or (problem if role != "current_work_source" else None)
-        ref = pointer(value, relative_to=owner_path) if value else owner_ref
+        ref = (pointer(selected_basis[role]) if selected_basis is not None else
+               pointer(value, relative_to=owner_path) if value else owner_ref)
         selected[role] = document(ref, role, "current_owner" if ref == owner_ref and role == "current_work_source" else
                                   "current_task" if role == "current_work_source" else "full")
     controlling = controlling_source or problem or configured.get("objective_source")
@@ -638,9 +685,11 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
     if not controlling:
         limitations.append("Only the task owner is supplied. Its relationship to any broader objective is not established by this view; a standalone task needs no invented parent.")
 
-    assignments = []
+    assignments = [document(pointer(source), "incoming evidence") for source in incoming_sources]
     if assignment:
-        assignments.append(document(pointer(assignment), "incoming assignment"))
+        # The explicit assignment is a current task, not historical evidence.
+        assignment_ref = pointer(assignment, current=True)
+        assignments.append(document(assignment_ref, "incoming assignment"))
     if incoming is not None:
         assignments.append(supplied_body(incoming, omit_objective_projection=True))
     decision_context = None
@@ -648,7 +697,13 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
     if isinstance(decision, str) or (decision is None and isinstance(retained_basis, dict) and retained_basis.get("path")):
         decision_ref = pointer(decision) if isinstance(decision, str) else pointer(retained_basis)
         decision_context = document(decision_ref, "decision")
-        decision_body = _source_metadata(catalog[decision_context["source_index"]]["contents"]) if "source_index" in decision_context else {}
+        if "source_index" in decision_context:
+            # A selected current decision does not inherit a historical container's binding.
+            decision_body = _decision_source_body(captured[(decision_ref["path"], decision_ref.get("commit"))], decision_ref)
+        elif decision_ref.get("field") or decision_ref.get("section"):
+            raise ReferenceError("selected decision source is unavailable")
+        else:
+            decision_body = {}
     else:
         decision_body = decision or {}
         if decision is not None:
@@ -671,6 +726,11 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
     # Current work is separate from the controlling objective. Preserve all
     # selected tasks; a pending primary observation may coexist with research.
     paths = list(task_sources)
+    selected_work = selected["current_work_source"]["source"]
+    if selected_work["path"] != owner_path:
+        # The normal request consumes this owner-selected step even without a
+        # redundant --source. Retain its actual-use relationship for corrections.
+        paths.append(selected_work["path"])
     state = metadata.get("current_state", {})
     if isinstance(state, dict):
         if state.get("work_record"):
@@ -679,13 +739,13 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
         paths.extend(f"artifacts/frontier/{batch}/batch.yaml" for batch in batches if isinstance(batch, str) and re.fullmatch(r"B[0-9]+", batch))
     tasks = []
     for path in dict.fromkeys(paths):
-        tasks.append(document(pointer(path), "outgoing or selected task", "full" if path in task_sources and not incorporated else "current_task"))
+        tasks.append(document(pointer(path, current=True), "outgoing or selected task", "full" if path in task_sources and not incorporated else "current_task"))
     if not assignments:
         limitations.append("No separate incoming assignment was supplied; inspect the owner's inherited question and completion conditions.")
     if not tasks:
         limitations.append("No separate outgoing task was supplied or selected; the owner body is the available current work context.")
 
-    actual_use = list(dict.fromkeys([*paths, *(association or {}).get("actual_use", []),
+    actual_use = list(dict.fromkeys([*paths, *([assignment_ref["path"]] if assignment else []), *(association or {}).get("actual_use", []),
                                    *(item["path"] for item in (judgment or {}).get("uses", []))]))
     # Exact delivery checks use live carriers even when the evidence and owner
     # input were prepared at a saved revision. This is separate from the narrow
@@ -703,7 +763,7 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
     # declared bases must be captured before they can be checked at delivery.
     dependencies = [*actual_use, *(item["path"] for item in (association or {}).get("incorporates", []))]
     for path in dict.fromkeys(dependencies):
-        ref = pointer(path)
+        ref = pointer(path, current=path in actual_use)
         key = (ref["path"], ref.get("commit"))
         if key not in captured:
             try:
@@ -717,7 +777,7 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
                             "retrieval": retain_source(root, captured[key]),
                             "purpose": "Declared supporting evidence or actual-use dependency; not new authority."})
     for item in (association or {}).get("incorporates", []):
-        body = captured.get((item["path"], pointer(item["path"]).get("commit")))
+        body = captured.get((item["path"], pointer(item["path"], current=item["path"] in actual_use).get("commit")))
         if body is None:
             continue
         observed = digest(body)
@@ -743,7 +803,7 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
             "current_account": adopted_account, "actual_use": actual_use,
             "current_sources": current_sources, "current_use": current_use,
             **({"judgment_binding": judgment} if judgment is not None else {}),
-            "instruction": "Each source_index refers to one presentation in sources. Reuse the applicable owner-associated account; unincorporated results remain evidence, not adopted meaning. Current Frontier metadata and Brief remain visible. Omitted material is available through exact retrieval snapshots; inspect surrounding evidence independently and pursue new external evidence when useful. A delivered_content_ref is a JSON pointer to identical text in this input. Original task dependencies remain actual_use even when their presentation changes. Determine the controlling objective and source qualifications separately from local scope. A hash, focused label or cached account establishes neither semantic authority nor research completeness. Preserve real limits, pending effects and independent choices. Native hosts must verify the exact prepared input immediately before sending; opaque host paths remain advisory. This view supplies evidence, not a verdict or permission."}
+            "instruction": "Each source_index refers to one presentation in sources. Reuse the applicable owner-associated account; unincorporated results remain evidence, not adopted meaning. Current Frontier metadata and Brief remain visible. Omitted material is available through exact retrieval snapshots; inspect surrounding evidence independently and pursue new external evidence when useful. A delivered_content_ref is a JSON pointer to identical text in this input. Original task dependencies remain actual_use even when their presentation changes. Determine the controlling objective and source qualifications separately from local scope. A hash, focused label or cached account establishes neither semantic authority nor research completeness. Preserve real limits, pending effects and independent choices. For actual handoff or direct work, save this prepared JSON and use deliver --repo <workspace> --path <delivery-file>; send its complete stdout without rewritten governing headers. Delivery checks cannot intercept an opaque host. This view supplies evidence, not a verdict or permission."}
     if adopted_account is not None and account_body is not None:
         # Include its version in the same scoped source checks as other inputs.
         key = (account_ref["path"], account_ref.get("commit"))
@@ -862,6 +922,9 @@ def prepare_resolver(root: Path, revision: str, path: str, prior_paths=(), *, ow
                      current_work_source: str | None = None, feedback_trigger: str | None = None,
                      feedback_not_due: str | None = None, task_sources=(), assignment=None) -> dict:
     """Return input binding or reuse an existing resolution; never choose a row."""
+    if assignment:
+        assignment = normalize_path(str(Path(assignment).resolve().relative_to(root.resolve()))
+                                    if Path(assignment).is_absolute() else assignment)
     ref = reference(root, revision, path)
     _, identity = _evidence(root, ref)
     if normalize_path(owner_source) == ref["path"]:
@@ -912,8 +975,10 @@ def prepare_resolver(root: Path, revision: str, path: str, prior_paths=(), *, ow
             prepared["reused_policy_coverage"] = _policy_coverage(root, prior.get("decision_policy"), prior)
             break
     prepared["adoption_context"] = prepare_adoption_context(
-        root, owner_source, revision=ref["commit"], assignment=ref["path"],
+        root, owner_source, revision=ref["commit"], assignment=assignment,
         task_sources=task_sources, decision=prior if prepared.get("reuse_resolution") else None,
+        selected_basis=objective["objective_basis"], incoming_sources=(ref,),
+        controlling_source=objective.get("controlling_objective_binding", {}).get("source"),
         phase="investment_preparation")
     return prepared
 
@@ -1097,7 +1162,7 @@ def register_hook_record(root: Path, output: Path, phase: str, session_id: str |
 @_cached_reference_operation
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("kind", choices=("design", "resolver", "bind-resolution", "prepare-adoption", "recover-work", "verify-delivery", "read-evidence", "check-continuation", "check-current-use", "adopt-work", "bind-return", "batch-review", "batch-update", "batch-view"))
+    parser.add_argument("kind", choices=("design", "resolver", "bind-resolution", "prepare-adoption", "recover-work", "deliver", "verify-delivery", "read-evidence", "check-continuation", "check-current-use", "adopt-work", "bind-return", "batch-review", "batch-update", "batch-view"))
     parser.add_argument("--repo", type=Path, default=Path.cwd())
     parser.add_argument("--revision", help="chosen saved revision; defaults to HEAD for reference preparation")
     parser.add_argument("--path", help="W, evidence, review, or existing prepared assignment path")
@@ -1128,7 +1193,14 @@ def main() -> int:
     from frontier_batch import AdoptReview, Batch, BatchError, UpdateWorkingState, batch_facts
 
     try:
-        if args.kind == "verify-delivery":
+        if args.kind == "deliver":
+            if not args.path or args.output or args.raw:
+                raise ReferenceError("deliver requires --path to a prepared delivery; emits the complete request on stdout")
+            from context_delivery import consume_request
+            value = _document((args.repo / args.path).read_bytes())
+            print(consume_request(args.repo.resolve(), value), end="")
+            return 0
+        elif args.kind == "verify-delivery":
             from context_delivery import verify_prepared
             value = _document((args.repo / args.path).read_bytes())
             verify_prepared(args.repo.resolve(), value)
@@ -1241,7 +1313,7 @@ def main() -> int:
                 _write(delivery, model_view(args.repo.resolve(), value))
                 print(json.dumps({"delivery": str(delivery), "internal_record": str(args.output),
                                   "serialized_bytes": delivery.stat().st_size,
-                                  "instruction": "Send the delivery file; the internal record is for exact checks or explicit audit."}))
+                                  "instruction": "For adoption/recovery context, run deliver --repo <workspace> --path <delivery> at the handoff and send its complete stdout as the request. Do not prepend rewritten governing conditions. Other preparation outputs keep their existing consumer. The internal record is for checks or audit."}))
         else:
             from context_delivery import model_view
             print(json.dumps(value if args.raw else model_view(args.repo.resolve(), value), ensure_ascii=False, indent=2))

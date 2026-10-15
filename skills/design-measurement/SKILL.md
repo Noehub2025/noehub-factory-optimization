@@ -23,6 +23,8 @@ Read [measurement-design.md](../frame-optimization/references/measurement-design
 
 This step is complete when the task, mode, evidence surface, consequence, and write scope are unambiguous.
 
+Apply [Professional preparation and reuse](../frame-optimization/references/measurement-design.md#professional-preparation-and-reuse) to evaluation needs, not only to the mechanism being evaluated. Under [Evidence access](../frontier-optimization/references/worker-interfaces.md#evidence-access), distinguish real access and resource limits, staged isolation of the old protocol, and starting references. Starting references are not a reading whitelist. Within real limits, obtain relevant professional and primary evidence independently; Phase A admits only evidence whose meaning does not depend on the old protocol. An internal whitelist that prevents needed preparation returns to its owner for correction, not permission to cross a real boundary or open Phase B early. If necessary evidence remains inaccessible, identify the affected use and uncertainty rather than certify it by default.
+
 ## 1. Reconstruct before comparing
 
 For `new`, work from the fixed Design Basis. There is no prior protocol to hide.

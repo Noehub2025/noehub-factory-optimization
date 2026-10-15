@@ -1162,7 +1162,7 @@ def _validate_state(state: Mapping[str, Any], expected_batch: str) -> None:
     _validate_measurement_definition(current["measurement_definition"])
     if not isinstance(current["checks"], dict) or not isinstance(current["observations"], dict):
         raise BatchFormatError("Batch checks and observations must be mappings")
-    resource_limits = _resource_mapping(state["resource_limits"], "resource_limits")
+    _resource_mapping(state["resource_limits"], "resource_limits")
     _resource_mapping(state["consumption"], "consumption")
     attempts = state["attempts"]
     if not isinstance(attempts, list):
@@ -1216,11 +1216,8 @@ def _validate_state(state: Mapping[str, Any], expected_batch: str) -> None:
         raise BatchFormatError("a concluded Batch cannot contain an unresolved Attempt")
     if _resource_mapping(state["consumption"], "consumption") != summed_consumption:
         raise BatchFormatError("Batch consumption must equal the sum of Attempt resource use")
-    for key, amount in _capacity_consumption(state).items():
-        if key in resource_limits and amount > resource_limits[key]:
-            raise BatchFormatError(
-                f"Batch capacity use for resource {key!r} exceeds its limit"
-            )
+    # Actual overruns remain readable facts. Execution checks enforce limits;
+    # the Coordinator must be able to apply an authorized allocation repair.
 
 
 def _validate_action(action: Action) -> None:
@@ -1281,6 +1278,11 @@ def _measurement_definition_for_action(
 
 
 def _verify_resources(state: Mapping[str, Any], requested: Mapping[str, float | int]) -> None:
+    for key, amount in _capacity_consumption(state).items():
+        if key in state["resource_limits"] and amount > state["resource_limits"][key]:
+            raise ConsequenceBlocked(
+                f"Batch recorded capacity use for resource {key!r} exceeds its limit"
+            )
     _verify_requested_within_limits(
         actual=_capacity_consumption(state),
         requested=requested,

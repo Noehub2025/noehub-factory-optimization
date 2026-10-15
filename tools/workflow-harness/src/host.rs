@@ -1,5 +1,5 @@
 //! Request/return bridge for Agent tools already available in the current host.
-//! Each command exits immediately; model work stays with the existing host.
+//! Bridge commands exit immediately. managed-drive owns its subprocess host.
 
 use crate::{StreamConfig, emit, read_json, stream_backend};
 use serde::Deserialize;
@@ -75,9 +75,28 @@ pub fn run() -> Result<()> {
         let task: Task = read_json(&PathBuf::from(&args[1]))?;
         return next(&mut Session::create(task, &PathBuf::from(&args[2]))?);
     }
+    if command == "managed-drive" && args.len() == 2 {
+        let backend: workflow_harness::session::ProcessAdapter = input()?;
+        return emit(&workflow_harness::session::drive_managed(
+            &PathBuf::from(&args[1]),
+            &backend,
+        )?);
+    }
+    if command == "managed-correct" && args.len() == 2 {
+        return emit(
+            &Session::open_managed(&PathBuf::from(&args[1]))?.correct_managed_work(input()?)?,
+        );
+    }
+    if command == "managed-reconcile" && args.len() == 2 {
+        Session::open_managed(&PathBuf::from(&args[1]))?.reconcile_managed_receipts()?;
+        return emit(
+            &serde_json::json!({"event":"managed_receipts_reconciled","note":"Missing receipts remain unresolved; no operation was replayed."}),
+        );
+    }
     if [
         "current-use-adopt",
         "current-use-replace",
+        "current-use-correct",
         "current-use-check",
         "context-check",
     ]
@@ -107,6 +126,10 @@ pub fn run() -> Result<()> {
                 };
                 emit(&request)
             }
+            "current-use-correct" => {
+                let correction = read_json(&path)?;
+                emit(&session.replace_queued_work_with_correction(correction)?)
+            }
             "current-use-check" | "context-check" => {
                 let request = read_json(&path)?;
                 if command == "context-check" {
@@ -124,6 +147,9 @@ pub fn run() -> Result<()> {
     if args.len() != 2
         || ![
             "bind",
+            "prepare-dispatch",
+            "reconcile-dispatch",
+            "retry-not-started",
             "return",
             "status",
             "continue",
@@ -133,6 +159,7 @@ pub fn run() -> Result<()> {
             "pause",
             "resume",
             "drive",
+            "recover",
             "next",
             "decision-config",
             "decision-bind",
@@ -145,7 +172,7 @@ pub fn run() -> Result<()> {
         ]
         .contains(&command)
     {
-        return Err("usage: workflow-harness host start TASK.json NEW_RUN_DIRECTORY\n       workflow-harness host bind|return|status|continue|begin|event|continuation|pause|resume|drive RUN_DIRECTORY\nOptional decisions: decision-config|decision-bind|decision-result|decision-resolve|decision-publish|decision-abandon|decision-status|judgment-view|next RUN_DIRECTORY. Current use: current-use-adopt RUN_DIRECTORY REPORT.json | current-use-replace RUN_DIRECTORY ASSIGNMENT.txt [ACTUAL_SOURCE ...] | current-use-check RUN_DIRECTORY REQUEST.json. Other commands with input read JSON from stdin; status never redispatches work. drive executes only the pending invocation using a stream adapter configuration.".into());
+        return Err("usage: workflow-harness host start TASK.json NEW_RUN_DIRECTORY\n       workflow-harness host bind|return|status|continue|begin|event|continuation|pause|resume|drive|recover RUN_DIRECTORY\nManaged subprocess: managed-drive|managed-correct|managed-reconcile RUN_DIRECTORY; backend/correction JSON on stdin.\nNative dispatch: prepare-dispatch|reconcile-dispatch|retry-not-started RUN_DIRECTORY\nOptional decisions: decision-config|decision-bind|decision-result|decision-resolve|decision-publish|decision-abandon|decision-status|judgment-view|next RUN_DIRECTORY. Current use: current-use-adopt RUN_DIRECTORY REPORT.json | current-use-replace RUN_DIRECTORY ASSIGNMENT.txt [ACTUAL_SOURCE ...] | current-use-correct RUN_DIRECTORY CORRECTION.json | current-use-check RUN_DIRECTORY REQUEST.json. CORRECTION.json contains assignment and optional objective, constraints, actual_use; omitted fields preserve the current task. Dispatch the returned role: an enforced header correction can return Coordinator for adoption before Worker work. Other commands with input read JSON from stdin; status never redispatches work. drive executes only the pending invocation using a stream adapter configuration.".into());
     }
     if command == "pause" {
         Session::request_pause(&PathBuf::from(&args[1]), input::<String>()?)?;
@@ -209,6 +236,15 @@ pub fn run() -> Result<()> {
             session.drive(&mut backend)?;
             next(&mut session)
         }
+        "recover" => {
+            let config: StreamConfig = input()?;
+            let mut backend = stream_backend(&session, &config)?;
+            let recovery = session.recover_backend(&mut backend)?;
+            emit(
+                &serde_json::json!({"event":"backend_recovery", "recovery":recovery,
+                "instruction":"No work was dispatched. Only not_started_confirmed permits an explicit retry-not-started for this invocation after its owner decides to retry. Running, unknown, unsupported, and legacy not_started do not permit replay."}),
+            )
+        }
         "begin" => {
             session.begin_execution(input::<Capabilities>()?)?;
             emit(&serde_json::json!({"event":"execution_registered"}))
@@ -242,6 +278,24 @@ pub fn run() -> Result<()> {
             session.bind_host(binding.clone())?;
             emit(&serde_json::json!({"event":"host_bound","binding":binding}))
         }
+        "prepare-dispatch" => {
+            #[derive(Deserialize)]
+            #[serde(deny_unknown_fields)]
+            struct Prepare {
+                invocation_id: usize,
+                call_id: String,
+            }
+            let prepare: Prepare = input()?;
+            emit(&session.prepare_host_dispatch(prepare.invocation_id, prepare.call_id)?)
+        }
+        "reconcile-dispatch" => {
+            session.reconcile_host_dispatch(input()?)?;
+            emit(
+                &serde_json::json!({"event":"host_dispatch_reconciled", "attempt":session.host_dispatch(),
+                "instruction":"This records the original host call only; no dispatch or capacity release is inferred."}),
+            )
+        }
+        "retry-not-started" => emit(&session.retry_not_started(input()?)?),
         "return" => {
             let result: HostReturn = input()?;
             session.accept_host_return(&result.backend_handle, result.response)?;
@@ -251,6 +305,7 @@ pub fn run() -> Result<()> {
             "pending":session.runtime.outstanding(),"binding":session.host_binding()?,
             "terminal":session.runtime.terminal(),
             "execution":session.runtime.execution(),
+            "host_dispatch":session.host_dispatch(),"host_dispatch_history":session.host_dispatch_history(),"retry_origin":session.retry_origin(),
             "cumulative_usage":session.runtime.cumulative_usage()?,
             "execution_status":"Inspect the recorded host handle; pending does not mean not started. This command does not dispatch."
         })),

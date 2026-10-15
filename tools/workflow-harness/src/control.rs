@@ -91,6 +91,12 @@ pub enum Recovery {
         effects_settled: bool,
     },
     NotStarted,
+    /// A backend's explicit, correlated evidence that this attempt never began.
+    /// The legacy unscoped NotStarted variant cannot authorize another attempt.
+    NotStartedConfirmed {
+        invocation_id: usize,
+        evidence: String,
+    },
     Unknown,
     Unsupported,
 }
@@ -112,6 +118,24 @@ pub trait Adapter {
     fn continue_work(&mut self, decision: &Continuation) -> Result<()>;
     fn cancel(&mut self, invocation_id: usize) -> Result<Cancellation>;
     fn recover(&mut self, invocation_id: usize) -> Result<Recovery>;
+}
+
+/// One participating native tool call, retained with its original invocation.
+/// These facts describe this call only, not host-wide capacity or authorization.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct HostDispatch {
+    pub invocation_id: usize,
+    pub call_id: String,
+    pub outcome: HostDispatchOutcome,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(tag = "status", rename_all = "snake_case", deny_unknown_fields)]
+pub enum HostDispatchOutcome {
+    Unknown { evidence: String },
+    Accepted { backend_handle: String },
+    NotStarted { evidence: String },
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -151,6 +175,12 @@ pub struct Execution {
     pub awaiting_continuation: bool,
     pub continuation_withheld: bool,
     pub cancellation: Option<Cancellation>,
+    #[serde(default)]
+    pub start_confirmed: bool,
+    #[serde(default)]
+    pub dispatch_intent: bool,
+    #[serde(default)]
+    pub not_started: Option<String>,
     segment: Option<Segment>,
     watched: BTreeMap<PathBuf, Option<Stamp>>,
 }
@@ -186,6 +216,9 @@ impl Execution {
             awaiting_continuation: false,
             continuation_withheld: false,
             cancellation: None,
+            start_confirmed: false,
+            dispatch_intent: false,
+            not_started: None,
             segment,
             watched,
         })
@@ -195,6 +228,25 @@ impl Execution {
         if !self.return_reasons.contains(&reason) {
             self.return_reasons.push(reason);
         }
+    }
+
+    pub fn confirm_not_started(&mut self, evidence: String) -> Result<()> {
+        nonempty(&evidence, "not-started evidence")?;
+        if self.start_confirmed || !self.events.is_empty() {
+            return Err("not-started claim contradicts observed execution".into());
+        }
+        if let Some(previous) = &self.not_started {
+            return if previous == &evidence {
+                Ok(())
+            } else {
+                Err("not-started evidence already recorded for this attempt".into())
+            };
+        }
+        self.not_started = Some(evidence);
+        self.stopped = true;
+        self.effects_settled = true;
+        self.continuation_withheld = true;
+        Ok(())
     }
 
     pub fn observe(&mut self) -> Result<()> {
@@ -222,6 +274,9 @@ impl Execution {
     }
 
     pub fn event(&mut self, event: Event) -> Result<bool> {
+        if self.not_started.is_some() {
+            return Err("event contradicts confirmed not-started attempt".into());
+        }
         if event.invocation_id != self.invocation_id {
             return Err("event has wrong invocation".into());
         }

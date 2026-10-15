@@ -56,6 +56,21 @@ pub struct Task {
     pub research: Option<Research>,
 }
 
+/// An existing owner's explicit correction of unstarted queued work.
+/// Omitted fields preserve the current task; this is not a Worker return or
+/// a semantic authorization verdict.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct QueuedWorkCorrection {
+    pub assignment: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub objective: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub constraints: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub actual_use: Option<Vec<PathBuf>>,
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum Decision {
@@ -117,6 +132,10 @@ pub struct Runtime {
     #[serde(default)]
     executions: Vec<Execution>,
     #[serde(default)]
+    pub(crate) host_dispatches: Vec<control::HostDispatch>,
+    #[serde(default)]
+    pub(crate) retry_origins: std::collections::BTreeMap<usize, usize>,
+    #[serde(default)]
     paused: Option<String>,
     #[serde(default)]
     pending_reviews: Vec<usize>,
@@ -161,6 +180,8 @@ impl Runtime {
             context_notice: String::new(),
             segment: None,
             executions: vec![],
+            host_dispatches: vec![],
+            retry_origins: Default::default(),
             paused: None,
             pending_reviews: vec![],
             adopted_context: None,
@@ -425,7 +446,7 @@ impl Runtime {
                 "Adopt actual findings and select the next useful bounded work in one response. Reuse sufficient evidence; do not repeat answered questions. A worker's repair suggestion does not itself justify continuation. Use decision work with a concrete assignment, reconsider for an unresolved allocation question, finish only when the requested research outcome is supported, or blocked with the exact missing condition. Do not manufacture work to exercise this interface."
             }
             Role::Resolver => {
-                "Resolve the affected allocation question from original evidence, without another literature review or routine reviewer. Compare each option's next sufficient commitment, separating immediate work from conditional later development. Check the four observed errors: waiting for support completion before reconsidering; requiring incumbent failure before an opportunity probe; charging a small probe for all conditional development; treating a separate variant as destruction of its retained reference. Select work with a concrete assignment, or blocked with the exact boundary. Continue the existing route when supported; novelty has no quota."
+                "Form the worthwhile comparison from the governing objective, original evidence and relevant professional knowledge; the supplied menu is provisional. Separate real requirements from working choices. Develop a grounded change or inquiry, including beyond that menu, and compare the next sufficient commitments at their actual maturity and remaining cost. Distinguish objective improvement, decision value and useful research cost. Reuse sufficient grounds; proportionate inquiry can compete before a replacement or empirical gain exists. At replacement or retirement, compare what returned work makes available, what the incumbent consumes and the remaining objective gap before excluding another use. Select actual work with its intended benefit, decisive question, useful observation and switching conditions, or blocked with the exact boundary. Supported continuation is valid; novelty, another survey and a routine reviewer are not required."
             }
             Role::Worker => {
                 "Complete the assigned bounded local research using real repository sources and native tools. Return observed with the actual evidence file paths, reconsider if findings materially challenge the selected commitment before expanding discretionary repair, or blocked with the exact boundary. Do not adopt campaign meaning, change the objective, or invoke another Workflow role. A negative discriminating result is useful; do not invent a success."
@@ -575,6 +596,22 @@ impl Runtime {
         Ok(invocation)
     }
 
+    /// Include the task header in judgment correspondence without changing the
+    /// selected source indices or the context actually delivered to workers.
+    pub(crate) fn judgment_sources(&self) -> Result<Vec<String>> {
+        let mut sources = source_contents(&self.task)?;
+        sources.push(format!(
+            "{}{}",
+            decision::TASK_HEADER_PREFIX,
+            serde_json::to_string(&serde_json::json!({
+                "task_objective": self.task.objective,
+                "task_constraints": self.task.constraints
+            }))
+            .map_err(|e| e.to_string())?
+        ));
+        Ok(sources)
+    }
+
     /// Reuse requires the saved judgment's maintained content, not just identity.
     /// External sources expose their retained projection as `judged_proposal`.
     pub(crate) fn reference_matches(&self, response: &Response) -> Result<bool> {
@@ -589,7 +626,7 @@ impl Runtime {
                     saved
                         .get("proposal")
                         .map(|prior| {
-                            decision::corresponds(response, prior, &source_contents(&self.task)?)
+                            decision::corresponds(response, prior, &self.judgment_sources()?)
                         })
                         .transpose()
                         .map(|v| v.unwrap_or(false))
@@ -600,7 +637,7 @@ impl Runtime {
         if u.resolved_by.is_empty() {
             return Ok(false);
         }
-        let sources = source_contents(&self.task)?;
+        let sources = self.judgment_sources()?;
         for index in &u.resolved_by {
             contract::supplied(&self.task, *index, response.role)?;
         }
@@ -625,6 +662,12 @@ impl Runtime {
     }
 
     pub fn accept(&mut self, response: Response) -> Result<()> {
+        if self.execution().is_some_and(|e| e.not_started.is_some()) {
+            return Err(
+                "confirmed not-started attempt cannot return work; explicitly retry its work"
+                    .into(),
+            );
+        }
         let request = self
             .outstanding
             .as_ref()
@@ -775,8 +818,8 @@ impl Runtime {
             && response.update.is_some()
         {
             Some(
-                serde_json::json!({"proposal":decision::projection(&response, &source_contents(&self.task)?)?,
-                "sources":source_contents(&self.task)?}),
+                serde_json::json!({"proposal":decision::projection(&response, &self.judgment_sources()?)?,
+                "sources":self.judgment_sources()?}),
             )
         } else {
             None

@@ -20,11 +20,15 @@ Read [User decisions](references/user-decisions.md) when interpreting the reques
 3. Load action references only at their trigger below. Keep unrelated stage procedures and historical formats unloaded.
 4. Complete necessary adoption and accounting, then use [Active learning chain](references/learning-loop.md#active-learning-chain) to order the next work, including first preparation, early queries and long-task recovery. Load the direction resolver only at its investment trigger. A worker return or Batch outcome does not by itself end the research problem. Read [User-facing handoff](references/user-facing-handoff.md) when the completion boundary in User decisions requires a user return.
 
+At initial planning, consequential adoption and affected recovery, apply [Evidence use and continuing feedback](references/learning-loop.md#evidence-use-and-continuing-feedback) before accepting an inherited evaluator or supplied route menu as sufficient. Recover actual and cumulative use even when labels and sources are unchanged. Carry the resulting choice into current work and the actual receiving action; sufficient unchanged grounds permit ordinary continuation without another reviewer or search.
+
 For a continuing open objective, first entry, resumption and reuse recover or establish its reachable next discovery point under [Discovery allocation](references/learning-loop.md#discovery-allocation), even when local work succeeds and no missing fact is named. Initial direction formation and material reconsideration use actual proportionate discovery, applicable prior discovery, explicit deferral or a real access/resource limit. A focused task needs no wider survey. At recovery, use [Current-use correction](references/worker-interfaces.md#current-use-correction) to recover the controlling objective separately from inherited question and completion restrictions, even without a new result or known finding; reuse an applicable basis and continue ordinary work. Correct unsupported scope in the actual assignment; changing policy text or reporting `addressed` is not adoption.
 
 For a material shared research-premise change, use [Research-basis transitions](references/frontier-core.md#research-basis-transitions); retain applicable work without full closeout. For a changed parent or retained result, apply [Change impact](references/frontier-core.md#change-impact-and-retained-results). Report only the exact unresolved dependency; a version difference alone does not end the campaign.
 
 ## Action references
+
+Before settling a consequential realization or narrowing its assignment, apply [Professional engineering knowledge](references/technical-design.md#apply-professional-engineering-knowledge). Let applicable practice expose missing questions as well as answer supplied ones; sufficient retained grounds allow direct continuation. Use existing technical and measurement owners only for questions needing their judgment.
 
 At project planning, materially changed scope or first construction of an execution path, arrange foreseeable needs under [Common project capabilities](references/technical-design.md#common-project-capabilities). Recover applicable deferrals at the next relevant use; do not require duplicate code, a second consumer or an incident before recognizing demand. Existing owners perform this in ordinary planning, without a platform preparation stage.
 
@@ -46,6 +50,7 @@ At project planning, materially changed scope or first construction of an execut
 | Select or use exact project bytes | [Current Batch](references/batch-current.md), then [Candidate lifecycle](references/candidate-lifecycle.md) only for historical or specialized publication |
 | Reuse calibration or a conditional routine screen | [Evaluation protocol](references/evaluation-protocol.md) |
 | Review Entry, design, implementation or claims | [Review branch](references/review-branches.md) |
+| Define, inherit or execute measurement, including a direct call to an existing runner | Read [Professional preparation and reuse](../frame-optimization/references/measurement-design.md#professional-preparation-and-reuse) before selecting the definition or invoking the evaluator, then use [Current Batch measurement](references/batch-evaluation.md). Reuse sufficient grounds without new research or review. |
 | Open, revise, perform or continue a current B | [Current Batch](references/batch-current.md) |
 | Adopt a saved R, update working inputs or operational limits, or read Batch facts | [Maintained Batch operations](references/batch-current.md#maintained-batch-operations) |
 | Read an identity-heavy historical B | [Historical Batch interface](references/batch-interface.md), and [Historical Batch result](references/batch-result.md) when present |
@@ -57,6 +62,12 @@ At project planning, materially changed scope or first construction of an execut
 | Interpret a finding | [Finding effects](references/finding-effects.md) |
 
 ## Delegate and adopt
+
+At direction formation, a due discovery point or consequential allocation, use [Form the worthwhile comparison](references/learning-loop.md#form-the-worthwhile-comparison). The actual assignment forms or revises worthwhile options from the objective and relevant grounds; the inherited menu is provisional. Adopt the chosen question with its receiving task, and use the return in subsequent allocation. Supported focused continuation remains unchanged.
+
+At the existing planning, adoption and recovery points, apply [Audit consequential meaning](references/worker-interfaces.md#audit-consequential-meaning) to consequential inherited choices and selected independent samples. Reuse applicable coverage; this is not another stage or a review of every assignment.
+
+For delegation, follow-up, direct work or recovery, apply [Agent capacity and continuation](references/worker-interfaces.md#agent-capacity-and-continuation). A capacity failure changes the execution arrangement through the existing owner, not the research conclusion.
 
 Create the assignment using [Working assignments](references/worker-interfaces.md#working-assignments): enough context to start the next useful work, not a complete future specification. That section owns implementation responsibility, including simple work performed directly. Use the existing specialist:
 

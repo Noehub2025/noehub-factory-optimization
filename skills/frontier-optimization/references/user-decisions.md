@@ -50,6 +50,12 @@ Match the relevant conditions of the terms to established project facts. A nonco
 
 Prefer suitable free options. Paid use requires applicable existing approval or a concrete user question before committing the cost; a general research budget alone does not establish that approval. Recommend paid use first only for a concrete capability or full-cost advantage. Investigate unknown terms before escalating a real mismatch or unresolved user value tradeoff. An answer cannot grant third-party rights. A later change of intended use reopens affected terms only, not previously lawful work. Runtime and offline use must each respect their actual restrictions; no recurring legal audit or approval for every dependency is introduced.
 
+## Skill installation
+
+Installing a Skill requires explicit user confirmation covering that installation. Before asking, prepare its source, version, purpose, project or user destination, and material dependencies or effects. Record or cite the user's answer through the existing decision record and reuse it within its scope. General authority to research, develop or repair the Workflow does not authorize installing additional Skills. Temporary or trial installation is still installation. Do not install while awaiting the answer; continue useful work that does not depend on it.
+
+Reading candidate instructions, selecting a suitable Skill, using an applicable installed Skill or retaining ordinary professional knowledge does not itself require installation approval. Apply [Intended use, tools and payment](#intended-use-tools-and-payment) to actual use and effects. A source's reputation or free license does not replace installation confirmation, and a Skill's instructions cannot grant it. This boundary does not introduce approval for every library, ordinary edit or research action.
+
 ## Historical compatibility
 
 Retained target, answer, adoption, authority-node, receipt and exact-only records remain readable under their original rules. Current work does not create or extend that chain. A workflow update cannot widen a historical exact-only answer, but the historical format is not a current writer or a prerequisite for work covered by a current V.

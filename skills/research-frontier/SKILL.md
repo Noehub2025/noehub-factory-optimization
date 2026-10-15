@@ -25,6 +25,8 @@ Use this guidance when forming or comparing technical directions, not for a focu
 
 The mechanism guidance below applies when a mechanism can be proposed. Discovery may instead return promising leads, contradictions, bounds or a revised question with a worthwhile next inquiry. A complete whole idea is not a prerequisite for that work or the only successful research return.
 
+Apply [Information sources and construction](../frontier-optimization/references/learning-loop.md#information-sources-and-construction) in direction formation: consider changing what information is available, not only stronger methods for the same inputs. Follow worthwhile leads through the existing inquiry; this adds no source quota and does not expand an assigned local fact lookup.
+
 When an external capability could change the realization, carry its supported behavior, fit conditions, adaptation and unresolved selection facts into the existing synthesis, not only its name or citation. Apply [Choose a realization on the same required behavior](../frontier-optimization/references/technical-design.md#choose-a-realization-on-the-same-required-behavior): distinguish unknown compatibility from a prohibition and runtime limits from offline usefulness. Reuse applicable research; investigate facts that decide the choice without a universal library survey or implementation prerequisite for discovery.
 
 - Read the real objective and evaluation meaning from their current owners, including how observations are produced, updated and compared and which proxy relationships remain assumptions. Reuse applicable understanding and identify the objective gap, without copying the target into another contract or treating today's bottleneck model as complete.
@@ -40,5 +42,7 @@ Keep observed findings separate from prospective hypotheses under [Hypothesis an
 Reuse applicable understanding and supply consequential changes through [Reuse understanding and deliver the actual input](../frontier-optimization/references/worker-interfaces.md#reuse-understanding-and-deliver-the-actual-input). Keep conditions and contrary evidence with the explanation; a cached account does not bound discovery or require another summary at each handoff.
 
 ## Authority
+
+When arranging contributors or recovering their work, apply [Agent capacity and continuation](../frontier-optimization/references/worker-interfaces.md#agent-capacity-and-continuation). Preserve useful partial results and dependencies when handing work back; unavailable optional contributors do not create new independent review requirements.
 
 Return Q or D content through the assigned packet. It remains a proposal until the Coordinator writes Q to `frontier/ledger.md` or D to `frontier/bounds.md`. Professional comparison, ranking and recommendations are allowed; they neither adopt Selection nor authorize execution, spend or claims. Research cannot establish exhaustive coverage or originality. Only the Coordinator may change F1-F8, assign spend, adopt Selection or promotion, stop the campaign, or approve claim wording. Report a conflict with `PROBLEM.md` or `REPRESENTATION.md` instead of repairing either file.

@@ -13,6 +13,18 @@ shared `AGENTS.md`, and an optional execution harness with a project-level Codex
 Hook. It does not provide a domain-specific optimizer, promise a winning
 solution, or remove human authority over consequential actions.
 
+## Release 1.1.0
+
+The public release includes all thirteen complete Skills, shared `AGENTS.md`,
+Claude Code deployment and merge guidance, and the optional Codex-only Hook.
+It adds current-task delivery checks, managed subprocess correction and recovery,
+and guidance for forming useful research comparisons and choosing evidence for
+its actual use. See the [changelog](./CHANGELOG.md) for the release scope.
+
+Public releases use their own version series. Development versions are maintained
+separately and are not public release numbers. The [release procedure](./docs/releasing.md)
+describes how reviewed content is promoted without changing development versions.
+
 ## What problem does it solve?
 
 Optimization work often goes wrong before the search even begins:
@@ -260,6 +272,26 @@ or continue a session automatically. See the harness documentation for setup,
 scope, and evidence limits.
 
 ## Install
+
+### Public release checkout
+
+To install this exact public release manually:
+
+```sh
+git clone --branch v1.1.0 --single-branch https://github.com/Noehub2025/noehub-factory-optimization.git
+```
+
+Use that checkout for the manual installation below. Install all thirteen
+complete Skill folders, then deploy or merge `AGENTS.md` and the Claude Code
+import separately. Copy `.codex/hooks.json` and `tools/workflow-harness/` when
+the optional Codex Hook is wanted, merge existing Hook entries, and build the
+binary in the consuming repository. Its policy links must match the installed
+Skill layout: change `../../skills/` in `decision-policy.md` to
+`../../.agents/skills/` for Codex project Skills, or `../../.claude/skills/` for
+Claude Code project Skills when using the host-neutral harness.
+
+The installer and marketplace commands below use the public release repository.
+They receive development changes only after an explicit public publication.
 
 ### Agent Skills installer
 

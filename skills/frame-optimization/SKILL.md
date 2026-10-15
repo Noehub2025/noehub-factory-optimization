@@ -29,7 +29,7 @@ Use [Task documents](references/task-documents.md) for the path, ownership and d
 
 Read [references/frontier-handoff.md](references/frontier-handoff.md) completely immediately before emitting or repairing a Frontier handoff. That reference owns the boundary between durable framing and live campaign state, including returning delegated work and first entry into Frontier.
 
-Read [references/measurement-design.md](references/measurement-design.md) completely before creating, adopting, or repairing measurement semantics. Do not use it for execution-only work under an unchanged protocol.
+Read [references/measurement-design.md](references/measurement-design.md) completely before creating, adopting, or repairing measurement semantics. Before classifying execution as unchanged, use its [Professional preparation and reuse](references/measurement-design.md#professional-preparation-and-reuse) section to match retained grounds to actual and cumulative use. Supported unchanged execution needs neither the full design reference nor a new design task.
 
 At framing completion, follow the handoff's continuation route. Read [references/user-facing-return.md](references/user-facing-return.md) completely only when Steps 1–9 select a genuine user return. Steps 1–9 remain the only work route; the return interface explains their selected outcome.
 
@@ -39,13 +39,19 @@ Keep project state independent from workflow deployment. Project documents, revi
 
 Create or select the exact detail before delegating. The coordinator owns the file path, initial frontmatter, core Detail link, and any normative section.
 
+For first delegation, follow-up or recovery, apply [Agent capacity and continuation](../frontier-optimization/references/worker-interfaces.md#agent-capacity-and-continuation), preserving each worker's existing context and independence requirements.
+
+When writing or summarizing a consequential restriction for a worker, use [Reuse understanding and deliver the actual input](../frontier-optimization/references/worker-interfaces.md#reuse-understanding-and-deliver-the-actual-input) to preserve its basis and scope. This applies to the first question as well as later handoffs; placing a technical choice in the question does not make it part of the user's objective. Apply [Audit consequential meaning](../frontier-optimization/references/worker-interfaces.md#audit-consequential-meaning) at the existing owner checks and selected independent samples; reuse applicable coverage rather than adding a framing review.
+
+When forming a direction, bound the investigation's effort without turning familiar methods or current inputs into answer restrictions. Distinguish actual limits, supported prior choices and tentative starting points in the question and its existing context. Connect it to the controlling objective and the choice it should inform; use [Information sources and construction](../frontier-optimization/references/learning-loop.md#information-sources-and-construction) when forming the inquiry. A selected route's local question stays local. If a bounded inquiry leaves a consequential part of the open direction unanswered, retain that scope limit for adoption and handoff rather than treating the answer as broad coverage.
+
 Pass `research-optimization` only the canonical task path, exact target, one bounded research question, and the exact existing detail path. Accept its result only when the packet matches that record and contains labeled evidence, sources, applicability, disconfirming evidence, candidate representations, risks, unknowns, recommendations, and clearly nonnormative proposed Contract text. Reject adopted Contract changes, row-status decisions, protected metadata changes, normative module edits, or writes outside the selected detail's permitted research sections.
 
 Pass `grill-optimization` only the canonical task path, exact target, one user-owned question, evidence, alternatives, recommendation, consequence, and the exact existing detail path. Accept its result only when the packet matches the durable record and faithfully contains the user's answer, authorization, conditions, source, context, and unresolved choices. Reject defaults, adopted Contract wording, row-status decisions, protected metadata changes, normative module edits, follow-up coordination, or writes outside the selected detail's permitted decision sections.
 
 Pass `design-measurement` only the canonical task path, mode, fixed Design Basis, intended consequence, allowed evidence paths, exact existing Slot H detail, permitted nonnormative sections, and any complete `measurement-design` finding set. Accept the design and its complete affected professional change under [Contract projection](references/measurement-design.md#contract-projection). Reject edits to adopted sections, core documents, row status, lifecycle metadata, reviews, logs, handoffs, implementation, results, or project identity.
 
-After accepting a research record and packet, assess evidence sufficiency, alternatives, risks, recommendations, and proposed wording. Then decide whether and how to write the adopted Contract meaning and row status.
+After accepting a research record and packet, assess evidence sufficiency, alternatives, risks, recommendations, and proposed wording. Resolve a consequential question-scope finding in the actual question or its intended use before relying on the answer; receiving the recommendation alone does not correct the narrowing. Then decide whether and how to write the adopted Contract meaning and row status.
 
 After accepting a grill record and packet, interpret the user's answer or authorization. Then write the adopted Contract effect, row status, next action, or blocker.
 

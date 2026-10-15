@@ -4,6 +4,8 @@ Read when interpreting a validator or review finding, not before unrelated plann
 
 ## Finding effects
 
+When a proposed check or existing receiver imposes an execution prerequisite, apply [Adopt verification prerequisites for the intended use](technical-design.md#adopt-verification-prerequisites-for-the-intended-use) at its existing owner. A generic possibility, missing preferred file or prior adoption is not itself a necessary-evidence gap. Keep observed failures truthful; revise an unsupported coded dependency through its owner rather than relabeling the machine finding.
+
 This section is the sole semantic owner of finding effects. Validators derive the effect from a stable code through `finding_effects.py`; callers and reviewers cannot supply or weaken it. An unknown code defaults to `block`.
 
 For a human finding, judge fitness for the current use: the selected observation or deliverable and its unavoidable follow-up, including necessary accounting, recovery and interpretation. This covers more than the next command, but excludes unrelated future facilities or final-delivery requirements from an exploratory observation. Connect credible triggering conditions to the practical consequence, considering existing protection and the cost of repair and delayed useful feedback. Reuse sufficient applicable grounds; explain only a decision-relevant gap or change in the existing finding, without another checklist, cost model or proof of zero risk. A constructible failure alone does not require repair, and a serious possible consequence does not establish that its trigger applies. An incident need not have happened, and low probability alone does not excuse violating a real boundary.

@@ -1,6 +1,6 @@
 # Measurement design
 
-Read this reference when `design-measurement` designs or repairs a protocol, when `frame-optimization` adopts its projection, or when `review-optimization` reviews measurement fitness. It defines one professional interface without adding a review branch, verdict, gate, identity, or persistent workflow mode.
+Read this reference when `design-measurement` designs or repairs a protocol, when `frame-optimization` adopts its projection, or when `review-optimization` reviews measurement fitness. Ordinary Batch work uses the linked professional preparation and evidence-use sections without opening a formal design task. This reference adds no review branch, verdict, gate, identity, or persistent workflow mode.
 
 ## Ownership and adoption
 
@@ -9,6 +9,16 @@ Read this reference when `design-measurement` designs or repairs a protocol, whe
 After adoption, `PROBLEM.md`, its adopted Slot details, and `REPRESENTATION.md` are the runtime contract. The Designer record remains design evidence, not a second source of authority. A later semantic change returns to `design-measurement`.
 
 `review-optimization` checks fitness through its existing readiness branch. It reports defects and closure conditions without writing the protocol or requiring one named technique. `review-representation` checks only whether R8 stays within adopted measurement constraints. Measurement-support review checks implementation fidelity and the real dependencies needed to obtain the intended evidence; a material fitness defect returns to the measurement owner rather than becoming a new interpretation in support code.
+
+## Professional preparation and reuse
+
+Before first establishing a consequential evaluation arrangement, or choosing materially different sampling, comparators, observation scope or feedback, derive the professional questions from the real objective, mechanism, operating conditions and intended decisions. Use applicable professional knowledge to discover needed observations and possible failure modes, including needs absent from the assignment. Do not begin only with the familiar tool's outputs or the questions already listed by its author. This responsibility applies to ordinary Batch work and direct execution as well as formal design; it does not require a separate research stage.
+
+Reuse grounds by the question and use they actually support. Knowledge about mechanism feasibility, implementation correctness or an observed outcome does not automatically establish suitable sampling, feedback or research diagnosis. No reported defect is not evidence of fitness. Draw on sufficient retained knowledge and relevant authoritative methods or primary evidence; obtain missing knowledge where it can change the arrangement. Preserve useful conclusions, reasons, applicability conditions and readable sources in the existing definition, design or maintained capability entry under [Reuse working knowledge](../../frontier-optimization/references/batch-current.md#reuse-working-knowledge). No source quota, knowledge registry, repeated literature search or proof of exhaustive understanding is required.
+
+Before selecting or inheriting a definition, adopting its result, or first relying on it after recovery, compare its basis with the actual intended use and cumulative uses since the last applicable judgment. Consider how repeated feedback has shaped later choices, not just the cost of the current run. An unchanged metric, mode, data hash or small individual allocation does not establish unchanged use; a new candidate, file or worker alone does not establish changed meaning. When the basis still covers the use, continue in the same turn without another record, search or review. When it does not, retain supported observations and resolve the affected gap through its existing owner: ordinary instances and faithful implementation repairs remain with the Batch; changed reusable meaning or a challenged fitness basis follows [Measurement design and support](measurement-work.md). Stop this check once the supported action and any unresolved dependency are clear.
+
+At existing planning or substantial learning points, use the bounded independent sampling in [Audit consequential meaning](../../frontier-optimization/references/worker-interfaces.md#audit-consequential-meaning). It can question omitted evaluation needs and an inherited fitness judgment even when no executor reports a problem. A different agent is useful only if it can inspect the objective, original basis and relevant independent knowledge rather than merely approve the supplied indicators. This is not a new review before each observation.
 
 ## Fresh-context execution
 

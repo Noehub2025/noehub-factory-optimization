@@ -1,6 +1,7 @@
 """Current reference preparation, propagation and retained-result reuse."""
 
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -609,6 +610,36 @@ def policy_file(repo, text="Use the same investment judgment; do not require ben
     return path
 
 
+def test_installed_policy_links_resolve_in_actual_resolver_delivery(repo):
+    from context_delivery import model_view, verify_prepared
+
+    installed_root = next(
+        parent for parent in Path(__file__).resolve().parents
+        if (parent / refs.DECISION_POLICY_PATH).is_file()
+    )
+    installed_policy = installed_root / refs.DECISION_POLICY_PATH
+    policy_file(repo, installed_policy.read_text(encoding="utf-8"))
+    save(repo, {"evidence.json": '{"result":1}'})
+    delivered = model_view(repo, prepare(repo, "HEAD", "evidence.json"))
+    verify_prepared(repo, delivered)
+    policy = delivered["decision_policy"]
+    assert policy["status"] == "provided"
+    assert policy["text"] == installed_policy.read_text(encoding="utf-8")
+
+    # Resolve the delivered policy against its real installed location, not a
+    # synthetic alias that could hide a broken deployment layout.
+    local_links = [target for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", policy["text"])
+                   if "://" not in target]
+    assert local_links
+    for target in local_links:
+        path, _, section = target.partition("#")
+        resolved = ((installed_root / policy["path"]).parent / path).resolve(strict=True)
+        assert resolved.is_relative_to(installed_root), target
+        contents = resolved.read_text(encoding="utf-8")
+        if section:
+            assert refs._selected_text(contents, {"section": section}).strip(), target
+
+
 def test_cli_keeps_proposals_separate_from_adopted_work(repo, monkeypatch):
     save(repo, {"evidence.json": '{"result":1}'})
     policy_file(repo)
@@ -1150,3 +1181,88 @@ def test_legacy_judgment_is_readable_but_does_not_get_automatic_reuse(repo):
     result.pop("judgment_binding")
     save(repo, {"legacy.json": json.dumps(result)})
     assert "reuse_resolution" not in prepare(repo, "HEAD", "evidence.json", ["legacy.json"])
+
+
+def selected_owner(repo, child):
+    parent = {"judgment_binding": {"obsolete_parent": True}, "reason": "Historical rationale", "current": child,
+              "other": {**child, "exact_action": "Exclude every untested realization."}}
+    (repo / "archive.json").write_text(json.dumps(parent))
+    owner = {"current_state": {"work_record": "batch.yaml"},
+             "continuation": {"basis": {"path": "archive.json", "field": "current"}}}
+    (repo / "resume.json").write_text(json.dumps(owner))
+    return owner
+
+
+def test_selected_unbound_update_does_not_borrow_parent_binding(repo):
+    from context_delivery import model_view, verify_prepared
+    scoped_judgment_case(repo)
+    selected_owner(repo, {"recommendation": "Compare the new evidence before allocating."})
+    view = refs.prepare_adoption_context(repo, "resume.json", phase="recovery")
+    assert not view.get("judgment_binding")
+    assert json.loads(view["decision"]["selected_contents"])["recommendation"].startswith("Compare")
+    assert "obsolete_parent" in view["sources"][view["decision"]["source_index"]]["contents"]
+    verify_prepared(repo, model_view(repo, view))
+
+
+@pytest.mark.parametrize("changed_selector", ["other", "reason"])
+def test_selected_bound_update_reaches_final_delivery_and_rejects_changed_selector(repo, changed_selector):
+    from context_delivery import digest, model_view, verify_prepared
+    _, _, _, result = scoped_judgment_case(repo)
+    selected_owner(repo, result)
+    view = refs.prepare_adoption_context(repo, "resume.json", phase="recovery")
+    delivered = model_view(repo, view)
+    verify_prepared(repo, delivered)
+    assert view["judgment_binding"] == result["judgment_binding"]
+    changed = json.loads(json.dumps(delivered))
+    changed["decision"]["source"]["field"] = changed_selector
+    changed["delivery_identity"] = digest(json.dumps({k: v for k, v in changed.items() if k != "delivery_identity"}, ensure_ascii=False, sort_keys=True))
+    with pytest.raises(ValueError, match="judged consequence"):
+        verify_prepared(repo, changed)
+    parent = json.loads((repo / "archive.json").read_text())
+    parent["current"]["exact_action"] = "Exclude every untested realization."
+    (repo / "archive.json").write_text(json.dumps(parent))
+    with pytest.raises(ValueError):
+        verify_prepared(repo, delivered)
+    with pytest.raises(ValueError):
+        refs.prepare_adoption_context(repo, "resume.json", phase="recovery")
+
+
+@pytest.mark.parametrize("selector,text", [
+    ({"field": "missing"}, '{"current": {"recommendation": "Continue"}}'),
+    ({"section": "missing"}, '# Decision\nContinue.'),
+    ({"section": "current"}, '## Current\nContinue.\n## Current\nReconsider.'),
+])
+def test_explicit_missing_or_ambiguous_decision_selection_never_falls_back(repo, selector, text):
+    (repo / "archive.txt").write_text(text)
+    (repo / "resume.json").write_text(json.dumps({"continuation": {"basis": {"path": "archive.txt", **selector}}}))
+    with pytest.raises(ValueError, match="missing|ambiguous"):
+        refs.prepare_adoption_context(repo, "resume.json", phase="recovery")
+
+
+def test_whole_decision_without_selector_still_checks_its_binding(repo):
+    _, _, _, result = scoped_judgment_case(repo)
+    result["exact_action"] = "Exclude every untested realization."
+    (repo / "resolution.json").write_text(json.dumps(result))
+    with pytest.raises(ValueError, match="correspondence"):
+        refs.prepare_adoption_context(repo, "TASK.md", decision="resolution.json")
+
+
+def test_scalar_decision_excerpt_cannot_discard_parent_binding(repo):
+    _, _, _, result = scoped_judgment_case(repo)
+    result["exact_action"] = "Exclude every untested realization."
+    (repo / "resolution.json").write_text(json.dumps(result))
+    (repo / "resume.json").write_text(json.dumps({"current_state": {"work_record": "batch.yaml"},
+        "continuation": {"basis": {"path": "resolution.json", "field": "exact_action"}}}))
+    with pytest.raises(ValueError, match="correspondence"):
+        refs.prepare_adoption_context(repo, "resume.json", phase="recovery")
+
+
+def test_bound_scalar_excerpt_preserves_parent_judgment_and_incoming_task(repo):
+    from context_delivery import model_view, verify_prepared
+    _, _, _, result = scoped_judgment_case(repo)
+    (repo / "resume.json").write_text(json.dumps({"current_state": {"work_record": "batch.yaml"},
+        "continuation": {"basis": {"path": "resolution.json", "field": "exact_action"}}}))
+    view = refs.prepare_adoption_context(repo, "resume.json", phase="recovery")
+    assert view["judgment_binding"] == result["judgment_binding"]
+    assert "batch.yaml" in view["actual_use"]
+    verify_prepared(repo, model_view(repo, view))

@@ -2,14 +2,19 @@
 //! No failed or uncertain process invocation is automatically repeated.
 
 use crate::control::{
-    Adapter, Cancellation, Capabilities, Continuation, Event, EventKind, Message, Recovery,
+    Adapter, Cancellation, Capabilities, Continuation, Event, EventKind, HostDispatch,
+    HostDispatchOutcome, Message, Recovery,
 };
-use crate::{Invocation, Response, Result, Role, Runtime, Task};
+use crate::{Invocation, QueuedWorkCorrection, Response, Result, Role, Runtime, Task};
 use serde::{Deserialize, Serialize};
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+
+#[path = "managed.rs"]
+mod managed;
+pub use managed::{ManagedCommand, ManagedCorrection, drive_managed};
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -20,6 +25,8 @@ struct Checkpoint {
     decisions: crate::decision::Guard,
     #[serde(default)]
     current_use: crate::current_use::Bindings,
+    #[serde(default)]
+    managed: managed::State,
 }
 
 #[derive(Clone, Deserialize)]
@@ -41,6 +48,7 @@ pub struct Session {
     pub runtime: Runtime,
     pub decisions: crate::decision::Guard,
     current_use: crate::current_use::Bindings,
+    managed: managed::State,
     directory: PathBuf,
     // The operating system releases this lock if the harness exits or crashes.
     _lock: File,
@@ -70,8 +78,10 @@ fn lock(directory: &Path) -> Result<File> {
         .write(true)
         .open(directory.join("writer.lock"))
         .map_err(|e| e.to_string())?;
-    file.try_lock()
-        .map_err(|e| format!("another harness may own this run: {e}"))?;
+    file.try_lock().map_err(|e| match e {
+        std::fs::TryLockError::WouldBlock => "another harness may own this run".to_string(),
+        std::fs::TryLockError::Error(error) => error.to_string(),
+    })?;
     Ok(file)
 }
 
@@ -181,17 +191,47 @@ impl Session {
         if self.runtime.role != Role::Worker && self.runtime.terminal().is_none() {
             return Ok(());
         }
-        if self.decisions.last_commitment.as_ref()
-            != Some(&crate::decision::commitment(
-                response,
-                &crate::source_contents(&self.runtime.task)?,
+        let mut judgment_sources = self.runtime.judgment_sources()?;
+        let legacy = self.decisions.last_commitment.as_ref().is_some_and(|text| {
+            serde_json::from_str::<serde_json::Value>(text)
+                .is_ok_and(|value| value.get("task_header").is_none())
+        });
+        if legacy {
+            // Older checkpoints had an immutable task header but no explicit
+            // header in the judgment projection. Reuse only with the actual
+            // adopting owner's saved request proving the same delivered header.
+            let path = self
+                .directory
+                .join(format!("request-{}.json", response.invocation_id));
+            let original: Invocation = serde_json::from_slice(&fs::read(path).map_err(
+                |_| "legacy judgment header is unavailable; reconcile through its adopting owner",
             )?)
+            .map_err(
+                |_| "legacy judgment request is invalid; reconcile through its adopting owner",
+            )?;
+            let header = format!(
+                "Role: Coordinator\nObjective: {}\nWorkspace: {}\nConstraints: {}\n\n",
+                self.runtime.task.objective,
+                self.runtime.task.workspace.display(),
+                self.runtime.task.constraints
+            );
+            if original.invocation_id != response.invocation_id
+                || original.role != Role::Coordinator
+                || !original.prompt.starts_with(&header)
+            {
+                return Err(
+                    "legacy judgment header changed; reconcile through its adopting owner".into(),
+                );
+            }
+            judgment_sources.pop();
+        }
+        if self.decisions.last_commitment.as_ref()
+            != Some(&crate::decision::commitment(response, &judgment_sources)?)
             || (response.decision == crate::Decision::Work
                 && (self.runtime.assignment != response.assignment
                     || crate::current_use::normalized_sources(&self.runtime.actual_use)?
                         != crate::current_use::normalized_sources(&response.actual_use)?))
-            || self.decisions.last_sources.as_ref()
-                != Some(&crate::source_contents(&self.runtime.task)?)
+            || self.decisions.last_sources.as_ref() != Some(&judgment_sources)
         {
             return Err("judged consequence or actual assignment changed; reconcile through its adopting owner".into());
         }
@@ -213,10 +253,43 @@ impl Session {
         assignment: String,
         actual_use: Vec<PathBuf>,
     ) -> Result<Invocation> {
+        self.replace_queued_work_with_correction(QueuedWorkCorrection {
+            assignment,
+            objective: None,
+            constraints: None,
+            actual_use: Some(actual_use),
+        })
+    }
+
+    /// Correct the task header and assignment together through the existing owner.
+    /// This preserves history and incurred effects; it does not judge authority.
+    /// Under enforced judgment coverage, a changed header or unsupported legacy
+    /// binding returns a Coordinator invocation before another Worker runs.
+    pub fn replace_queued_work_with_correction(
+        &mut self,
+        correction: QueuedWorkCorrection,
+    ) -> Result<Invocation> {
+        self.require_unmanaged_transport()?;
+        let QueuedWorkCorrection {
+            assignment,
+            objective,
+            constraints,
+            actual_use,
+        } = correction;
         crate::contract::nonempty(&assignment, "corrected assignment")?;
+        if let Some(value) = &objective {
+            crate::contract::nonempty(value, "corrected objective")?;
+        }
+        let actual_use = actual_use.unwrap_or_else(|| self.runtime.actual_use.clone());
         let request = self.runtime.outstanding().ok_or("no queued work")?;
         if request.role != Role::Worker
-            || self.runtime.execution().is_some()
+            || self
+                .runtime
+                .execution()
+                .is_some_and(|e| e.not_started.is_none())
+            || self
+                .host_dispatch()
+                .is_some_and(|a| !matches!(a.outcome, HostDispatchOutcome::NotStarted { .. }))
             || self.host_binding()?.is_some()
             || self
                 .directory
@@ -243,20 +316,60 @@ impl Session {
             .ok_or("invocation id overflow")?;
         let previous_runtime = self.runtime.clone();
         let previous_binding = self.current_use.clone();
-        self.runtime.assignment = format!(
-            "This assignment supersedes the earlier queued restriction and task.\n{assignment}"
-        );
+        let previous_decisions = self.decisions.clone();
+        let previous_checkpoint =
+            fs::read(self.directory.join("state.json")).map_err(|e| e.to_string())?;
+        let header_changed = objective
+            .as_ref()
+            .is_some_and(|v| *v != self.runtime.task.objective)
+            || constraints
+                .as_ref()
+                .is_some_and(|v| *v != self.runtime.task.constraints);
+        let legacy_judgment = self.decisions.last_commitment.as_ref().is_some_and(|text| {
+            serde_json::from_str::<serde_json::Value>(text)
+                .map_or(true, |value| value.get("task_header").is_none())
+        });
+        let owner_adoption = self
+            .decisions
+            .config
+            .as_ref()
+            .is_some_and(|c| c.mode == crate::decision::Mode::Enforce)
+            && (header_changed || (legacy_judgment && self.verify_judgment_consumption().is_err()));
+        if let Some(value) = objective {
+            self.runtime.task.objective = value;
+        }
+        if let Some(value) = constraints {
+            self.runtime.task.constraints = value;
+        }
+        self.runtime.assignment =
+            format!("This assignment supersedes the earlier queued assignment.\n{assignment}");
         self.runtime.outstanding = None;
         self.runtime.actual_use = actual_use;
         self.runtime.next_id = replacement_id;
         // This explicit owner operation adopts the corrected saved task inputs.
         self.runtime.selected_sources = current_sources;
         self.current_use.queued = None;
+        if owner_adoption {
+            // The guarded invocation was unstarted. Reuse its existing owner;
+            // do not fabricate a Worker result or reset execution history.
+            self.runtime.role = Role::Coordinator;
+            self.runtime.context_notice = "The existing owner corrected unstarted queued work. The current task header differs from, or was not bound to, the earlier judgment. Adopt the requested assignment under the current objective and constraints before another Worker runs. Preserve applicable history and real limits. Use the existing judgment-view and judgment_reuse path only if the earlier judgment still applies, with its reason; otherwise use the normal existing judgment path.".into();
+        }
         match self.request() {
             Ok(request) => Ok(request),
             Err(error) => {
                 self.runtime = previous_runtime;
                 self.current_use = previous_binding;
+                self.decisions = previous_decisions;
+                // request() may have saved the new checkpoint before a later
+                // journal write failed. Cold recovery must retain the old task too.
+                if fs::read(self.directory.join("state.json")).ok().as_ref()
+                    != Some(&previous_checkpoint)
+                {
+                    self.persist(&self.runtime).map_err(|rollback| {
+                        format!("{error}; restoring the previous queued state failed: {rollback}")
+                    })?;
+                }
                 Err(error)
             }
         }
@@ -293,6 +406,18 @@ impl Session {
     }
     /// Persist every control transition before allowing a backend to continue.
     pub fn begin_execution(&mut self, capabilities: Capabilities) -> Result<()> {
+        self.require_unmanaged_transport()?;
+        if self.decisions.holds() {
+            return Err("decision or publication is pending".into());
+        }
+        if self
+            .host_dispatch()
+            .is_some_and(|a| !matches!(a.outcome, HostDispatchOutcome::Accepted { .. }))
+        {
+            return Err(
+                "host dispatch is unresolved or not started; reconcile its original call".into(),
+            );
+        }
         self.observe_pause()?;
         self.verify_current_use_consumption()?;
         let mut next = self.runtime.clone();
@@ -391,6 +516,9 @@ impl Session {
     /// Start once and enforce the adapter continuation handshake. No project
     /// commands or model-provider APIs are embedded in the runtime.
     pub fn drive(&mut self, backend: &mut impl Adapter) -> Result<Response> {
+        if self.host_dispatch().is_some() {
+            return Err("invocation has a participating host dispatch; reconcile it before changing transports".into());
+        }
         if self.host_binding()?.is_some() {
             return Err("invocation already belongs to a host call".into());
         }
@@ -407,8 +535,14 @@ impl Session {
             return Err("legacy dispatch may exist; reconcile before changing transports".into());
         }
         self.begin_execution(backend.capabilities())?;
-        // A failure after this durable dispatch intent is unknown, never retryable.
+        let mut next = self.runtime.clone();
+        next.execution_mut()?.dispatch_intent = true;
+        self.persist_dispatch_state(next)?;
+        // A failure after this durable dispatch intent requires correlated recovery.
         backend.invoke(&request)?;
+        let mut next = self.runtime.clone();
+        next.execution_mut()?.start_confirmed = true;
+        self.persist_dispatch_state(next)?;
         self.collect(backend)
     }
 
@@ -444,6 +578,9 @@ impl Session {
     }
 
     pub fn recover_backend(&mut self, backend: &mut impl Adapter) -> Result<Recovery> {
+        if self.host_dispatch().is_some() || self.host_binding()?.is_some() {
+            return Err("recover this invocation through its original host call".into());
+        }
         let id = self
             .runtime
             .outstanding()
@@ -457,6 +594,36 @@ impl Session {
         } else {
             Recovery::Unsupported
         };
+        match &recovery {
+            Recovery::NotStartedConfirmed {
+                invocation_id,
+                evidence,
+            } => {
+                if *invocation_id != id {
+                    return Err("not-started receipt has a stale invocation".into());
+                }
+                if self.directory.join(format!("received-{id}.json")).exists()
+                    || self.directory.join(format!("stdout-{id}.json")).exists()
+                {
+                    return Err(
+                        "not-started receipt contradicts retained transport evidence".into(),
+                    );
+                }
+                let mut next = self.runtime.clone();
+                next.execution_mut()?
+                    .confirm_not_started(evidence.clone())?;
+                self.persist_dispatch_state(next)?;
+            }
+            Recovery::Running => {
+                let mut next = self.runtime.clone();
+                if next.execution_mut()?.not_started.is_some() {
+                    return Err("running receipt contradicts confirmed not-started attempt".into());
+                }
+                next.execution_mut()?.start_confirmed = true;
+                self.persist_dispatch_state(next)?;
+            }
+            _ => {}
+        }
         if let Recovery::Terminal {
             response,
             effects_settled,
@@ -480,10 +647,230 @@ impl Session {
             self.accept(*response.clone())?;
             self.recover_for_adoption()?;
         }
-        // Running, not-started and unknown never invoke or resend a continuation.
+        // Recovery only records facts. An explicit retry chooses the next time
+        // for a confirmed unstarted attempt; unknown results never authorize it.
         Ok(recovery)
     }
+
+    pub fn host_dispatch(&self) -> Option<&HostDispatch> {
+        let id = self.runtime.outstanding()?.invocation_id;
+        self.runtime
+            .host_dispatches
+            .iter()
+            .find(|a| a.invocation_id == id)
+    }
+
+    pub fn host_dispatch_history(&self) -> &[HostDispatch] {
+        &self.runtime.host_dispatches
+    }
+
+    pub fn retry_origin(&self) -> Option<usize> {
+        self.runtime
+            .retry_origins
+            .get(&self.runtime.outstanding()?.invocation_id)
+            .copied()
+    }
+
+    fn persist_dispatch_state(&mut self, next: Runtime) -> Result<()> {
+        if let Err(error) = self.persist(&next) {
+            // A directory-sync error can occur after checkpoint publication.
+            // Keep this live Session aligned with the authoritative saved state.
+            let restored = fs::read(self.directory.join("state.json"))
+                .ok()
+                .and_then(|bytes| serde_json::from_slice::<Checkpoint>(&bytes).ok());
+            if let Some(saved) = restored {
+                self.runtime = saved.runtime;
+                self.decisions = saved.decisions;
+                self.current_use = saved.current_use;
+            }
+            return Err(error);
+        }
+        self.runtime = next;
+        Ok(())
+    }
+
+    /// Persist a supported host correlation identifier before calling the host.
+    /// A second prepare is not permission to repeat a possibly accepted call.
+    pub fn prepare_host_dispatch(
+        &mut self,
+        invocation_id: usize,
+        call_id: String,
+    ) -> Result<Invocation> {
+        self.require_unmanaged_transport()?;
+        if self.decisions.holds() {
+            return Err("decision or publication is pending".into());
+        }
+        crate::contract::nonempty(&call_id, "host correlation identifier")?;
+        let request = self.runtime.outstanding().ok_or("no queued work")?.clone();
+        if request.invocation_id != invocation_id {
+            return Err("host prepare refers to a stale invocation".into());
+        }
+        if self
+            .runtime
+            .host_dispatches
+            .iter()
+            .any(|a| a.call_id == call_id)
+            || self.host_dispatch().is_some()
+            || self.host_binding()?.is_some()
+            || self.runtime.execution().is_some()
+            || self
+                .directory
+                .join(format!("stdout-{invocation_id}.json"))
+                .exists()
+        {
+            return Err(
+                "dispatch may already exist; inspect and reconcile the original attempt".into(),
+            );
+        }
+        self.observe_pause()?;
+        if self.runtime.paused.is_some() {
+            return Err("run is paused".into());
+        }
+        self.verify_current_use_consumption()?;
+        let mut next = self.runtime.clone();
+        next.host_dispatches.push(HostDispatch {
+            invocation_id,
+            call_id,
+            outcome: HostDispatchOutcome::Unknown {
+                evidence: "Prepared call; host acceptance has not been observed".into(),
+            },
+        });
+        self.persist_dispatch_state(next)?;
+        // The checkpoint is the authority. A journal failure must not erase a
+        // dispatch intention whose response to the caller may already be lost.
+        self.record(
+            serde_json::json!({"event":"host_dispatch_prepared","attempt":self.host_dispatch()}),
+        )?;
+        Ok(request)
+    }
+
+    /// Adopt facts returned by the participating host for this exact call.
+    /// The host supplies the evidence; this is not a semantic truth detector.
+    pub fn reconcile_host_dispatch(&mut self, report: HostDispatch) -> Result<()> {
+        let current = self
+            .host_dispatch()
+            .ok_or("no participating host dispatch to reconcile")?;
+        if current.invocation_id != report.invocation_id || current.call_id != report.call_id {
+            return Err("host receipt refers to a stale invocation or another call".into());
+        }
+        match &report.outcome {
+            HostDispatchOutcome::Accepted { backend_handle } => {
+                crate::contract::nonempty(backend_handle, "accepted host handle")?
+            }
+            HostDispatchOutcome::Unknown { evidence }
+            | HostDispatchOutcome::NotStarted { evidence } => {
+                crate::contract::nonempty(evidence, "host reconciliation evidence")?
+            }
+        }
+        if !matches!(current.outcome, HostDispatchOutcome::Unknown { .. }) {
+            return if current == &report {
+                Ok(())
+            } else {
+                Err("host receipt contradicts an already accepted or not-started outcome".into())
+            };
+        }
+        if matches!(report.outcome, HostDispatchOutcome::NotStarted { .. })
+            && (self.runtime.execution().is_some()
+                || self
+                    .directory
+                    .join(format!("host-{}.json", report.invocation_id))
+                    .exists()
+                || self
+                    .directory
+                    .join(format!("stdout-{}.json", report.invocation_id))
+                    .exists()
+                || self
+                    .directory
+                    .join(format!("received-{}.json", report.invocation_id))
+                    .exists())
+        {
+            return Err("not-started host receipt contradicts execution evidence".into());
+        }
+        let mut next = self.runtime.clone();
+        let id = report.invocation_id;
+        *next
+            .host_dispatches
+            .iter_mut()
+            .find(|a| a.invocation_id == id)
+            .unwrap() = report;
+        self.persist_dispatch_state(next)?;
+        self.record(
+            serde_json::json!({"event":"host_dispatch_reconciled","attempt":self.host_dispatch()}),
+        )
+    }
+
+    /// Retry the same work only after a correlated not-started confirmation.
+    /// A new invocation identifies the new attempt; the previous evidence stays.
+    pub fn retry_not_started(&mut self, invocation_id: usize) -> Result<Invocation> {
+        let old = self.runtime.outstanding().ok_or("no queued work")?;
+        if old.invocation_id != invocation_id {
+            return Err("retry refers to a stale invocation".into());
+        }
+        let confirmed = self
+            .host_dispatch()
+            .is_some_and(|a| matches!(a.outcome, HostDispatchOutcome::NotStarted { .. }))
+            || self
+                .runtime
+                .execution()
+                .is_some_and(|e| e.not_started.is_some());
+        if !confirmed
+            || self.host_binding()?.is_some()
+            || self
+                .directory
+                .join(format!("stdout-{invocation_id}.json"))
+                .exists()
+        {
+            return Err(
+                "retry requires confirmed not-started evidence for the current attempt".into(),
+            );
+        }
+        self.require_current_use_ready_for(&self.runtime.actual_use)?;
+        let previous_runtime = self.runtime.clone();
+        let previous_binding = self.current_use.clone();
+        let previous_decisions = self.decisions.clone();
+        let previous_checkpoint =
+            fs::read(self.directory.join("state.json")).map_err(|e| e.to_string())?;
+        self.runtime.next_id = invocation_id
+            .checked_add(1)
+            .ok_or("invocation id overflow")?;
+        let origin = self
+            .runtime
+            .retry_origins
+            .get(&invocation_id)
+            .copied()
+            .unwrap_or(invocation_id);
+        self.runtime
+            .retry_origins
+            .insert(self.runtime.next_id, origin);
+        self.runtime.outstanding = None;
+        self.current_use.queued = None;
+        match self.request() {
+            Ok(request) => Ok(request),
+            Err(error) => {
+                self.runtime = previous_runtime;
+                self.current_use = previous_binding;
+                self.decisions = previous_decisions;
+                if fs::read(self.directory.join("state.json")).ok().as_ref()
+                    != Some(&previous_checkpoint)
+                {
+                    self.persist(&self.runtime).map_err(|rollback| {
+                        format!("{error}; retry rollback failed: {rollback}")
+                    })?;
+                }
+                Err(error)
+            }
+        }
+    }
     pub fn host_binding(&self) -> Result<Option<HostBinding>> {
+        if let Some(attempt) = self.host_dispatch() {
+            return Ok(match &attempt.outcome {
+                HostDispatchOutcome::Accepted { backend_handle } => Some(HostBinding {
+                    invocation_id: attempt.invocation_id,
+                    backend_handle: backend_handle.clone(),
+                }),
+                _ => None,
+            });
+        }
         let Some(request) = self.runtime.outstanding() else {
             return Ok(None);
         };
@@ -501,6 +888,30 @@ impl Session {
 
     /// Record the handle returned by an existing host tool, without calling another backend.
     pub fn bind_host(&self, binding: HostBinding) -> Result<()> {
+        self.require_unmanaged_transport()?;
+        if let Some(attempt) = self.host_dispatch() {
+            return if matches!(&attempt.outcome, HostDispatchOutcome::Accepted { backend_handle }
+                if binding.invocation_id == attempt.invocation_id && binding.backend_handle == *backend_handle)
+            {
+                Ok(())
+            } else {
+                Err("reconcile the original participating host call before binding".into())
+            };
+        }
+        if self
+            .runtime
+            .execution()
+            .is_some_and(|e| e.not_started.is_some())
+        {
+            return Err(
+                "confirmed not-started attempt needs a new invocation before dispatch".into(),
+            );
+        }
+        if self.runtime.execution().is_some_and(|e| e.dispatch_intent) {
+            return Err(
+                "controlled transport dispatch may exist; reconcile its original execution".into(),
+            );
+        }
         let request = self.runtime.outstanding().ok_or("no pending invocation")?;
         if binding.invocation_id != request.invocation_id
             || binding.backend_handle.trim().is_empty()
@@ -560,6 +971,7 @@ impl Session {
             runtime,
             decisions: Default::default(),
             current_use: Default::default(),
+            managed: Default::default(),
             directory: directory.to_path_buf(),
             _lock: lock(directory)?,
         };
@@ -580,6 +992,7 @@ impl Session {
             runtime: checkpoint.runtime,
             decisions: checkpoint.decisions,
             current_use: checkpoint.current_use,
+            managed: checkpoint.managed,
             directory: directory.to_path_buf(),
             _lock: lock,
         })
@@ -594,6 +1007,7 @@ impl Session {
                 runtime: runtime.clone(),
                 decisions: self.decisions.clone(),
                 current_use: self.current_use.clone(),
+                managed: self.managed.clone(),
             },
         )?;
         fs::rename(temporary, self.directory.join("state.json")).map_err(|e| e.to_string())?;
@@ -664,6 +1078,10 @@ impl Session {
         {
             const MARKER: &str = "\nParticipating investment policy:\n";
             {
+                request.prompt.push_str(&format!(
+                    "\nPolicy source (JSON path): {}\nResolve relative policy links from this file's directory.\n",
+                    serde_json::to_string(&config.policy).map_err(|e| e.to_string())?
+                ));
                 request.prompt.push_str(MARKER);
                 match fs::read_to_string(&config.policy) {
                         Ok(policy) => request.prompt.push_str(&format!("{policy}\nApply this in the existing investment judgment once. Coordinator: reuse an applicable accepted Resolver response via update.resolved_invocation, or supplied independent sources via resolved_by. Set investment_changed for a new exclusion or changed investment, including terminal investment. Reuse requires exact current correspondence, including the outgoing assignment and evidence. For routine wording edits use judgment_reuse with previous/current identities and a reason in this same owner turn. Obtain identities with host judgment-view RUN_DIRECTORY (the proposed Response on stdin); this read-only preparation performs no judgment. External resolved_by sources can contain a saved judged_proposal projection; free-text sources use judgment_reuse.previous from source_judgment_identity with the owner's applicability reason. For Finish, terminal_scope completion means the already selected bounded deliverable completed; mandatory_stop means only the affected operation must stop under a real limit. Neither declares a mechanism rejected. Missing terminal_scope is consequential. Projection equality and owner equivalence are not semantic verdicts.\n")),
@@ -722,7 +1140,8 @@ impl Session {
     }
 
     pub fn accept(&mut self, response: Response) -> Result<()> {
-        if self.host_binding()?.is_some() {
+        self.require_unmanaged_transport()?;
+        if self.host_binding()?.is_some() || self.host_dispatch().is_some() {
             return Err(
                 "pending invocation is host-bound; use host return with the actual backend handle"
                     .into(),
@@ -749,7 +1168,7 @@ impl Session {
         if (next.role == crate::Role::Worker || response.decision == crate::Decision::Finish)
             && guard.consider(
                 &response,
-                crate::source_contents(&self.runtime.task)?,
+                self.runtime.judgment_sources()?,
                 self.runtime
                     .outstanding()
                     .map(|i| i.prompt.clone())
@@ -784,7 +1203,7 @@ impl Session {
     /// model invocation, source rewrite or new persistent record is created.
     pub fn judgment_view(&self, response: &Response) -> Result<serde_json::Value> {
         use crate::decision::{projection, projection_identity, source_judgment_identity};
-        let current = projection(response, &crate::source_contents(&self.runtime.task)?)?;
+        let current = projection(response, &self.runtime.judgment_sources()?)?;
         let u = response
             .update
             .as_ref()
@@ -801,7 +1220,7 @@ impl Session {
                 crate::contract::supplied(&self.runtime.task, *index, response.role)?;
             }
             Some(source_judgment_identity(
-                &crate::source_contents(&self.runtime.task)?,
+                &self.runtime.judgment_sources()?,
                 &u.resolved_by,
             )?)
         } else {
@@ -1020,7 +1439,7 @@ impl Session {
         if !p.observed_only {
             if p.owner.is_none()
                 && (!p.projection_is_current()
-                    || crate::source_contents(&self.runtime.task).ok().as_ref() != Some(&p.sources)
+                    || self.runtime.judgment_sources().ok().as_ref() != Some(&p.sources)
                     || std::fs::read_to_string(
                         &guard.config.as_ref().ok_or("missing config")?.policy,
                     )
@@ -1048,7 +1467,7 @@ impl Session {
                     if proposal.decision == crate::Decision::Finish {
                         self.require_current_use_ready_for(&proposal.actual_use)?;
                     }
-                    guard.last_sources = Some(crate::source_contents(&self.runtime.task)?);
+                    guard.last_sources = Some(self.runtime.judgment_sources()?);
                     guard.last_commitment = Some(if p.owner.is_none() {
                         // Preserve what the checker actually saw. Recomputing here
                         // could silently associate its verdict with changed files.
@@ -1060,10 +1479,7 @@ impl Session {
                         .map_err(|e| e.to_string())?
                     } else {
                         // This existing owner disposition adopts its current correction.
-                        crate::decision::commitment(
-                            proposal,
-                            &crate::source_contents(&self.runtime.task)?,
-                        )?
+                        crate::decision::commitment(proposal, &self.runtime.judgment_sources()?)?
                     });
                     guard.last_policy = Some(p.policy.clone());
                     if let Some(path) = guard.config.as_ref().and_then(|c| c.publication.clone()) {
@@ -1093,7 +1509,7 @@ impl Session {
             return Err("a concrete finding needs its owner disposition, not abandonment".into());
         }
         if p.projection_is_current()
-            && crate::source_contents(&self.runtime.task).ok().as_ref() == Some(&p.sources)
+            && self.runtime.judgment_sources().ok().as_ref() == Some(&p.sources)
             && std::fs::read_to_string(&guard.config.as_ref().unwrap().policy)
                 .ok()
                 .as_ref()
@@ -1162,6 +1578,12 @@ impl Session {
     }
 
     pub fn invoke(&self, adapter: &ProcessAdapter) -> Result<Response> {
+        self.require_unmanaged_transport()?;
+        if self.host_dispatch().is_some() || self.runtime.execution().is_some() {
+            return Err(
+                "a dispatch attempt already exists; reconcile it before changing transports".into(),
+            );
+        }
         self.verify_current_use_consumption()?;
         let request = self.runtime.outstanding().ok_or("no pending invocation")?;
         if request.protocol != "workflow-invocation/1" {

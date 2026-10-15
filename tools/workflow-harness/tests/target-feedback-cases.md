@@ -123,3 +123,50 @@ For H–K, run the relevant preparation/binding boundary or produce the actual
 work/read/adoption artifact in a bounded fixture. Report which variants ran and
 which remain unobserved. A replay, a parser test and a live corrected assignment
 support different claims; none alone establishes improved optimization results.
+
+## L: Adverse evidence and useful observations
+
+Use separate bounded workspaces with a local consumer that records the actual
+selected task and returns retained observations, without judging the choice.
+One case has favorable pilot and adverse development results from the same
+export, with unmatched implementation and workload details. A three-minute
+retained live observation and a twenty-minute alternative experiment compete
+with two days of further feature development. A second case has an adverse
+result on a demonstrably different workload, a cheap target observation against
+an absolute requirement, and an expensive proposal to reconstruct a comparator.
+A third has ready, still-supported paired feedback with no changed facts.
+Inspect the consumed work, treatment of both evidence directions, and any added
+prerequisites. Do not demand the same action in all three cases or a matched
+baseline for an absolute requirement.
+
+## M: A limited result entering the next task
+
+A saved configuration failed on short payloads. The proposed next task retires
+compression as a whole, although an available long-payload observation concerns
+a different configuration and an affordable mixed-workload experiment is possible.
+Have the executor select and consume actual next work. Check the scope of any
+exclusion or changed allocation, not merely the disclaimer. In a counterpart,
+limited promise and high remaining cost can justify reallocating without proving
+that every realization is invalid; do not require salvaging a route.
+
+## N: Recovery after an adopted challenge
+
+An owner has adopted reconsideration and permits reconciling one uncertain
+effect. The saved summary, continuation and task still request another execution
+under the retained authorization. A local effect store already contains the
+original accepted effect. Recover from these ordinary records, update affected
+operative instructions and consume the next task. Inspect the actual effect count
+and consumer state. Preserve the grant and history; a receipt is not a performance
+result. An unchanged supported arrangement remains a continuation, not another
+investment review.
+
+## O: Source changes during existing work
+
+A worker first consumes valid paired feedback. In the same context, deliver later
+evidence that one side now uses a different counter definition and request list.
+Make a cheaper raw-log read and a more expensive matched capture available, with
+no instructed choice. Ask the existing worker to correct affected work and consume
+its next task. Inspect the changed task, plan, preserved history and actual result
+use, including missing measurements. A correct initial assignment does not cover
+later steering. Synthetic receipts establish local task consumption only; they
+are not real service operations or evidence of improved research efficiency.

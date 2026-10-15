@@ -7,7 +7,7 @@ import pytest
 import yaml
 
 import frontier_references as refs
-from context_delivery import digest, model_view, read_retained, verify_prepared
+from context_delivery import consume_request, digest, model_view, read_retained, verify_prepared
 
 
 def account_case(root):
@@ -164,6 +164,7 @@ def test_batch_projection_retains_operative_current_restrictions():
     assert refs._use_projection(yaml.safe_dump(batch)) == first
     batch["current"]["measurement_definition"]["resource_ceiling"] = 0
     assert refs._use_projection(yaml.safe_dump(batch)) != first
+
     batch["current"]["measurement_definition"]["resource_ceiling"] = 1
     batch["current"]["status"] = "rejected"
     assert refs._use_projection(yaml.safe_dump(batch)) != first
@@ -171,6 +172,179 @@ def test_batch_projection_retains_operative_current_restrictions():
     assert refs._use_projection(yaml.safe_dump(batch)) == first
     batch["current"]["conclusion"] = "Exclude this mechanism permanently."
     assert refs._use_projection(yaml.safe_dump(batch)) != first
+
+
+def selected_request_case(root):
+    (root / "goal.md").write_text("# Current\nCompare useful observations; only the final cold timing excludes reused results.\n"
+                                 "# Draft\nProposed: prohibit every reused result.\n# History\n" + "Retired condition. " * 1000)
+    (root / "work.md").write_text("# Now\nInspect effective settings and the affected timing claim; retain valid output.\n"
+                                 "# Old handoff\nStart all work from scratch regardless of the claim.\n")
+    (root / "owner.json").write_text(json.dumps({"objective_basis": {
+        "objective_source": {"path": "goal.md", "section": "current"},
+        "evaluation_source": {"path": "goal.md", "section": "current"},
+        "current_work_source": {"path": "work.md", "section": "now"}}}))
+
+
+def test_rendered_request_uses_selected_units_and_keeps_history_retrievable(tmp_path):
+    selected_request_case(tmp_path)
+    prepared = refs.prepare_adoption_context(tmp_path, "owner.json")
+    raw = consume_request(tmp_path, prepared)
+    projected = consume_request(tmp_path, model_view(tmp_path, prepared))
+    assert raw == projected
+    assert raw.count("only the final cold timing excludes reused results") == 1
+    assert "Inspect effective settings" in raw
+    assert "prohibit every reused result" not in raw
+    assert "Start all work from scratch" not in raw
+    assert "Retired condition" not in raw
+    assert "work.md" in prepared["actual_use"]
+    goal = next(s for s in prepared["sources"] if s["source"]["path"] == "goal.md")
+    # The full source is still accessible without delivering it as current work.
+    assert "# Draft" in read_retained(tmp_path, goal.get("retrieval") or
+                                      __import__("context_delivery").retain_source(tmp_path, goal["contents"]))
+
+
+def test_missing_selector_cannot_turn_whole_history_into_current_instructions(tmp_path):
+    selected_request_case(tmp_path)
+    (tmp_path / "work.md").write_text("# Old handoff\nRestart everything.\n")
+    prepared = refs.prepare_adoption_context(tmp_path, "owner.json")
+    with pytest.raises(ValueError, match="selection unavailable"):
+        consume_request(tmp_path, model_view(tmp_path, prepared))
+    # An independent focused request still works; this is not a workspace hold.
+    (tmp_path / "independent.md").write_text("Inspect the unrelated parser.")
+    assert "unrelated parser" in consume_request(tmp_path, refs.prepare_adoption_context(tmp_path, "independent.md"))
+
+
+def test_pending_account_revision_is_not_the_governing_request(tmp_path):
+    selected_request_case(tmp_path)
+    account_case(tmp_path)
+    first = refs.prepare_adoption_context(tmp_path, "owner.json")
+    (tmp_path / "understanding.md").write_text("Proposed unconditional success; not adopted.")
+    updated = model_view(tmp_path, refs.prepare_adoption_context(tmp_path, "owner.json"))
+    request = consume_request(tmp_path, updated)
+    assert first["current_account"]["contents"] in request
+    assert "Proposed unconditional success" not in request
+
+
+def test_adopted_account_controls_overlapping_source_until_owner_adopts_revision(tmp_path):
+    account = account_case(tmp_path)
+    owner = json.loads((tmp_path / "owner.json").read_text())
+    owner["objective_basis"] = {role: {"path": "understanding.md"} for role in
+                               ("objective_source", "evaluation_source", "current_work_source")}
+    (tmp_path / "owner.json").write_text(json.dumps(owner))
+    first = refs.prepare_adoption_context(tmp_path, "owner.json")
+    (tmp_path / "understanding.md").write_text("Proposed unconditional success; not adopted.")
+    pending = model_view(tmp_path, refs.prepare_adoption_context(tmp_path, "owner.json"))
+    rendered = consume_request(tmp_path, pending)
+    assert "Proposed unconditional success" not in rendered
+    assert first["current_account"]["contents"] in rendered
+    owner["context_account"]["sha256"] = digest((tmp_path / "understanding.md").read_text())
+    (tmp_path / "owner.json").write_text(json.dumps(owner))
+    adopted = refs.prepare_adoption_context(tmp_path, "owner.json")
+    assert "Proposed unconditional success" in consume_request(tmp_path, model_view(tmp_path, adopted))
+    with pytest.raises(ValueError, match="source changed"):
+        consume_request(tmp_path, pending)
+
+
+def test_selected_work_is_not_reexpanded_by_current_state_or_explicit_source(tmp_path):
+    selected_request_case(tmp_path)
+    owner = json.loads((tmp_path / "owner.json").read_text())
+    owner["current_state"] = {"work_record": "work.md"}
+    (tmp_path / "owner.json").write_text(json.dumps(owner))
+    request = consume_request(tmp_path, model_view(tmp_path, refs.prepare_adoption_context(
+        tmp_path, "owner.json", task_sources=["work.md"])))
+    assert "Start all work from scratch" not in request
+    assert request.count("Inspect effective settings") == 1
+
+
+@pytest.mark.parametrize("governing,adopted,overlap", [
+    ("current", "adopted", True), ("adopted", "current", True), ("independent", "adopted", False)])
+def test_pending_nested_sections_do_not_compete_with_adoption(tmp_path, governing, adopted, overlap):
+    original = "# Current\nScope C.\n## Adopted\nConditional only.\n# Independent\nInspect the parser.\n"
+    (tmp_path / "meaning.md").write_text(original)
+    association = {"source": {"path": "meaning.md", "section": adopted},
+                   "sha256": digest(refs._selected_text(original, {"section": adopted}))}
+    (tmp_path / "owner.json").write_text(json.dumps({"context_account": association, "objective_basis": {
+        role: {"path": "meaning.md", "section": governing} for role in
+        ("objective_source", "evaluation_source", "current_work_source")}}))
+    refs.prepare_adoption_context(tmp_path, "owner.json")
+    (tmp_path / "meaning.md").write_text(original.replace("Conditional only.", "Pending unconditional revision."))
+    prepared = model_view(tmp_path, refs.prepare_adoption_context(tmp_path, "owner.json"))
+    if overlap:
+        with pytest.raises(ValueError, match="overlaps a pending"):
+            consume_request(tmp_path, prepared)
+    else:
+        request = consume_request(tmp_path, prepared)
+        assert "Pending unconditional revision" not in request
+        assert "Inspect the parser" in request
+
+
+def test_nested_proposal_references_remain_readable_in_standalone_request(tmp_path):
+    selected_request_case(tmp_path)
+    detail = "A conditional recommendation, not adopted. " * 20
+    prepared = refs.prepare_adoption_context(tmp_path, "owner.json", incoming={
+        "requested_work": detail, "conditions": {"same": [detail]},
+        "serialized": json.dumps({"notes": detail}, indent=4)})
+    raw = consume_request(tmp_path, prepared)
+    projected = consume_request(tmp_path, model_view(tmp_path, prepared))
+    assert projected == raw
+    assert "delivered_content_ref" not in projected
+    assert "decoded_json" not in projected
+
+
+def test_selected_work_cannot_omit_its_known_correction_scope(tmp_path):
+    selected_request_case(tmp_path)
+    (tmp_path / "finding.md").write_text("The selected work needs an owner correction.")
+    owner = json.loads((tmp_path / "owner.json").read_text())
+    owner["current_use_corrections"] = [{"id": "selected-work", "finding": "finding.md",
+        "effect": "repair", "affected_sources": ["work.md"], "status": "open"}]
+    (tmp_path / "owner.json").write_text(json.dumps(owner))
+    prepared = refs.prepare_adoption_context(tmp_path, "owner.json")
+    with pytest.raises(ValueError, match="requires owner correction"):
+        consume_request(tmp_path, model_view(tmp_path, prepared))
+
+
+def test_normal_cli_delivers_the_actual_request_and_rejects_stale_use(tmp_path):
+    import subprocess
+    import sys
+
+    selected_request_case(tmp_path)
+    script = Path(refs.__file__)
+    command = [sys.executable, str(script)]
+    prepared = subprocess.run(command + ["recover-work", "--repo", str(tmp_path),
+        "--owner-source", "owner.json", "--output", str(tmp_path / "prepared.json")],
+        capture_output=True, text=True, check=True)
+    delivery = json.loads(prepared.stdout)["delivery"]
+    received = tmp_path / "received.txt"
+
+    def handoff():
+        result = subprocess.run(command + ["deliver", "--repo", str(tmp_path), "--path", delivery],
+                                capture_output=True, text=True)
+        if result.returncode == 0:
+            # A real receiving process gets the emitted request unchanged.
+            subprocess.run([sys.executable, "-c", "import pathlib,sys; pathlib.Path(sys.argv[1]).write_bytes(sys.stdin.buffer.read())",
+                            str(received)], input=result.stdout.encode(), check=True)
+        return result
+
+    assert handoff().returncode == 0
+    original = received.read_text()
+    assert "only the final cold timing" in original
+    (tmp_path / "unrelated.md").write_text("New progress elsewhere.")
+    assert handoff().returncode == 0
+    assert received.read_text() == original
+    (tmp_path / "goal.md").write_text("# Current\nThe owner has adopted a changed observation.\n")
+    assert handoff().returncode == 2
+    assert received.read_text() == original  # No stale second delivery occurred.
+
+
+def test_selected_json_retains_exact_bytes_after_model_projection(tmp_path):
+    settings = {"condition": "Preserve effective scope. " * 30, "mode": "current"}
+    (tmp_path / "owner.json").write_text(json.dumps({"objective_basis": {
+        "objective_source": {"path": "settings.json", "field": "current"},
+        "evaluation_source": {"path": "settings.json", "field": "current"},
+        "current_work_source": {"path": "settings.json", "field": "current"}}}))
+    (tmp_path / "settings.json").write_text(json.dumps({"current": settings, "draft": "prohibit all work"}))
+    prepared = refs.prepare_adoption_context(tmp_path, "owner.json")
+    assert consume_request(tmp_path, prepared) == consume_request(tmp_path, model_view(tmp_path, prepared))
 
 
 def test_decoded_source_retains_its_exact_original_bytes(tmp_path):

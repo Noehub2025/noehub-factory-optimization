@@ -133,6 +133,8 @@ modules:
       - frontier-optimization/scripts/test_current_use.py
       - frontier-optimization/scripts/test_context_delivery.py
       - frontier-optimization/scripts/test_frontier_references.py
+      - frontier-optimization/scripts/test_resolver_delivery.py
+      - frontier-optimization/scripts/test_frontier_current_basis.py
       - frontier-optimization/scripts/test_saved_git.py
       - frontier-optimization/scripts/test_run_workflow_checks.py
       - run-frontier-batch/scripts/test_batch_execution_example.py

@@ -265,6 +265,61 @@ def test_resolver_does_not_reuse_old_head_over_uncommitted_correction(case):
     assert check_current_use(root, "owner.json", ["task.md"])["status"] == "current"
 
 
+def test_markdown_owner_correction_refresh_preserves_objective_prose(case):
+    root, owner = case
+    correction = owner.pop("current_use_corrections")
+    task = root / "OWNER.md"
+    body = "# Objective\nImprove the result within the accepted resource limit.\n"
+
+    def save_owner(prose=body):
+        task.write_text("---\n" + json.dumps(owner) + "\n---\n" + prose)
+
+    save_owner()
+    write(root / "evidence.json", {"observation": "unchanged"})
+
+    def git(*args):
+        return subprocess.check_output(["git", "-C", str(root), *args], stderr=subprocess.PIPE)
+
+    git("init")
+    git("config", "user.email", "test@example.invalid")
+    git("config", "user.name", "Test")
+    git("add", ".")
+    git("commit", "-m", "initial")
+    prepared = refs.prepare_resolver(root, "HEAD", "evidence.json", owner_source="OWNER.md")
+    owner["current_use_corrections"] = correction
+    save_owner()
+    with pytest.raises(ValueError, match="current-use correction changed"):
+        refs.bind_resolution(root, prepared, {"row": 11})
+    fresh = refs.prepare_resolver(root, "HEAD", "evidence.json", owner_source="OWNER.md")
+    assert fresh["current_use"]["blocked_ids"] == ["narrowing"]
+    save_owner(body.replace("accepted resource limit", "an unrelated new limit"))
+    with pytest.raises(ValueError, match="basis changed"):
+        refs.prepare_resolver(root, "HEAD", "evidence.json", owner_source="OWNER.md")
+
+
+@pytest.mark.parametrize("replacement", [True, 1.0])
+def test_owner_correction_comparison_keeps_metadata_types(case, replacement):
+    root, owner = case
+    owner.pop("current_use_corrections")
+    owner["objective"] = {"required_count": 1}
+    write(root / "owner.json", owner)
+    write(root / "evidence.json", {"observation": "unchanged"})
+
+    def git(*args):
+        return subprocess.check_output(["git", "-C", str(root), *args], stderr=subprocess.PIPE)
+
+    git("init")
+    git("config", "user.email", "test@example.invalid")
+    git("config", "user.name", "Test")
+    git("add", ".")
+    git("commit", "-m", "initial")
+    prepared = refs.prepare_resolver(root, "HEAD", "evidence.json", owner_source="owner.json")
+    owner["objective"]["required_count"] = replacement
+    write(root / "owner.json", owner)
+    with pytest.raises(ValueError, match="basis changed"):
+        refs.bind_resolution(root, prepared, {"row": 11})
+
+
 def test_cli_checks_actual_task_without_native_registration(case):
     root, owner = case
     import sys

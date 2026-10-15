@@ -834,6 +834,74 @@ fn prose_and_progress_reuse_judgment_but_material_investment_changes_do_not() {
     assert!(g.pending.is_some());
 }
 
+fn read_policy_link_from_delivered_source(input: &str) {
+    let locator = input
+        .lines()
+        .find_map(|line| line.strip_prefix("Policy source (JSON path): "))
+        .unwrap();
+    let source: PathBuf = serde_json::from_str(locator).unwrap();
+    let policy = fs::read_to_string(&source).unwrap();
+    assert!(input.contains(&policy));
+    let target = policy
+        .split_once("](")
+        .unwrap()
+        .1
+        .split_once(')')
+        .unwrap()
+        .0;
+    let linked = source
+        .parent()
+        .unwrap()
+        .join(target.split('#').next().unwrap());
+    assert!(!fs::read_to_string(linked).unwrap().trim().is_empty());
+}
+
+#[test]
+fn installed_policy_reaches_coordinator_and_resolver_unchanged() {
+    let f = Fixture::new();
+    let policy_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("decision-policy.md");
+    let policy = fs::read_to_string(&policy_path).unwrap();
+    let mut session = Session::create(f.task(), &f.run()).unwrap();
+    let mut config = f.config(Mode::Observe);
+    config.policy = policy_path;
+    session.configure_decisions(config).unwrap();
+    let coordinator = session.request().unwrap();
+    assert_eq!(coordinator.role, Role::Coordinator);
+    assert!(coordinator.prompt.contains(&format!(
+        "\nParticipating investment policy:\n{policy}\nApply this in the existing investment judgment once."
+    )));
+    read_policy_link_from_delivered_source(&coordinator.prompt);
+    let response = serde_json::from_value(json!({
+        "invocation_id": coordinator.invocation_id,
+        "role": "coordinator", "decision": "reconsider",
+        "summary": "Check installed policy delivery", "assignment": "Compare the current alternatives",
+        "update": {"remaining_work": [], "interpretation": "Delivery check only"}
+    })).unwrap();
+    session.accept(response).unwrap();
+    let resolver = session.request().unwrap();
+    assert_eq!(resolver.role, Role::Resolver);
+    assert!(resolver.prompt.contains(&format!(
+        "\nParticipating investment policy:\n{policy}\nApply this in the existing investment judgment once."
+    )));
+    read_policy_link_from_delivered_source(&resolver.prompt);
+}
+
+#[test]
+fn independent_check_delivers_the_configured_policy_location() {
+    let f = Fixture::new();
+    let (_, proposal) = f.start(Mode::Disabled);
+    let mut config = f.config(Mode::Observe);
+    config.policy = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("decision-policy.md");
+    let mut guard = Guard {
+        config: Some(config),
+        ..Guard::default()
+    };
+    guard
+        .consider(&proposal, vec![], "Existing role input".into())
+        .unwrap();
+    read_policy_link_from_delivered_source(&guard.pending.as_ref().unwrap().input);
+}
+
 #[test]
 fn accepted_resolver_judgment_is_reused_without_a_second_model_check() {
     let f = Fixture::new();
@@ -1049,17 +1117,8 @@ fn current_use_cannot_be_released_by_revised_or_contested_owner_labels() {
 #[test]
 fn current_use_bypasses_no_new_investment_flag_without_an_extra_checker() {
     let f = Fixture::new();
-    let (mut session, response) = f.start(Mode::Enforce);
-    session.decisions.last_commitment = Some(
-        workflow_harness::decision::commitment(
-            &response,
-            &["Actual role method for mechanical verification.".into()],
-        )
-        .unwrap(),
-    );
-    session.decisions.last_sources = Some(vec![
-        "Actual role method for mechanical verification.".into(),
-    ]);
+    let (mut session, mut response) = cleared_session(&f);
+    response.invocation_id = complete_worker(&mut session, &response);
     assert!(!response.update.as_ref().unwrap().investment_changed);
     session.adopt_current_use(current_use(&f, true)).unwrap();
     assert!(
@@ -1840,10 +1899,11 @@ fn old_accepted_resolver_does_not_cover_changed_assignment_or_terminal_exclusion
 
 #[test]
 fn structured_external_judgment_reuses_only_its_current_actual_consequence() {
-    for changed in [false, true] {
+    for changed in ["none", "assignment", "header"] {
         let f = Fixture::new();
         let (_unused, mut p) = f.start(Mode::Disabled);
-        let judged = workflow_harness::decision::projection(
+        let judged = task_projection(
+            &f,
             &p,
             &["Actual role method for mechanical verification.".into()],
         )
@@ -1854,6 +1914,9 @@ fn structured_external_judgment_reuses_only_its_current_actual_consequence() {
         )
         .unwrap();
         let mut task = f.task();
+        if changed == "header" {
+            task.constraints = "Different current task scope".into();
+        }
         task.sources.push(workflow_harness::Source {
             path: "judgment.json".into(),
             first_line: 1,
@@ -1866,14 +1929,14 @@ fn structured_external_judgment_reuses_only_its_current_actual_consequence() {
         s.configure_decisions(f.config(Mode::Enforce)).unwrap();
         p.invocation_id = s.request().unwrap().invocation_id;
         p.update.as_mut().unwrap().resolved_by = vec![1];
-        if changed {
+        if changed == "assignment" {
             p.assignment
                 .push_str(" Eliminate the mechanism on any error.");
         }
         s.accept(p).unwrap();
         drop(s);
         let mut s = Session::open(&run).unwrap();
-        if changed {
+        if changed != "none" {
             assert!(s.decisions.pending.is_some());
             assert!(s.request().is_err());
         } else {
@@ -1891,7 +1954,8 @@ fn ordinary_repair_reuses_same_judgment_across_return_handoff_and_reload() {
     let f = Fixture::new();
     let (mut s, mut p) = cleared_session(&f);
     p.invocation_id = complete_worker(&mut s, &p);
-    let previous = workflow_harness::decision::projection(
+    let previous = task_projection(
+        &f,
         &p,
         &["Actual role method for mechanical verification.".into()],
     )
@@ -1899,7 +1963,8 @@ fn ordinary_repair_reuses_same_judgment_across_return_handoff_and_reload() {
     p.assignment = "Repair the known interface name and obtain the selected observation".into();
     p.update.as_mut().unwrap().interpretation =
         "Wrapper failed before execution; same affordable selected commitment".into();
-    let current = workflow_harness::decision::projection(
+    let current = task_projection(
+        &f,
         &p,
         &["Actual role method for mechanical verification.".into()],
     )
@@ -1930,7 +1995,8 @@ fn stale_equivalence_cannot_bind_a_later_assignment_change() {
     let (mut s, mut p) = cleared_session(&f);
     p.invocation_id = complete_worker(&mut s, &p);
     let id = workflow_harness::decision::projection_identity(
-        &workflow_harness::decision::projection(
+        &task_projection(
+            &f,
             &p,
             &["Actual role method for mechanical verification.".into()],
         )
@@ -2019,7 +2085,8 @@ fn free_text_judgment_uses_same_turn_owner_association_without_new_checker() {
     let (mut s, mut p) = f.start(Mode::Enforce);
     p.update.as_mut().unwrap().resolved_by = vec![0];
     let current = workflow_harness::decision::projection_identity(
-        &workflow_harness::decision::projection(
+        &task_projection(
+            &f,
             &p,
             &["Actual role method for mechanical verification.".into()],
         )
@@ -2218,9 +2285,8 @@ fn same_assignment_replacement_cannot_change_judged_actual_use() {
     let f = Fixture::new();
     let (mut s, mut p) = f.start(Mode::Enforce);
     let assignment = p.assignment.clone();
-    p.assignment = format!(
-        "This assignment supersedes the earlier queued restriction and task.\n{assignment}"
-    );
+    p.assignment =
+        format!("This assignment supersedes the earlier queued assignment.\n{assignment}");
     let equivalent = f.0.join("second-dependency.md");
     fs::write(&equivalent, "Existing dependency").unwrap();
     p.actual_use.push(equivalent.clone());
@@ -2249,4 +2315,616 @@ fn same_assignment_replacement_cannot_change_judged_actual_use() {
         .replace_queued_work_for(assignment, vec![equivalent, f.0.join("method.txt")])
         .unwrap();
     s.verify_queued_context(&replacement).unwrap();
+}
+
+fn task_projection(
+    f: &Fixture,
+    response: &Response,
+    sources: &[String],
+) -> workflow_harness::Result<serde_json::Value> {
+    let mut projection = workflow_harness::decision::projection(response, sources)?;
+    projection["task_header"] = json!({"task_objective": f.task().objective,
+        "task_constraints": f.task().constraints});
+    Ok(projection)
+}
+
+fn owner_task_correction() -> workflow_harness::QueuedWorkCorrection {
+    serde_json::from_value(json!({
+        "assignment":"Use the authorized local device; measure CPU target timing separately.",
+        "objective":"Improve the full molecular ranking result",
+        "constraints":"Local MPS development is allowed; retain CPU target timing. No paid resources."
+    })).unwrap()
+}
+
+#[test]
+fn owner_task_correction_updates_full_request_and_cold_recovery() {
+    let f = Fixture::new();
+    let (mut s, response) = f.start(Mode::Disabled);
+    s.adopt_current_use(current_use(&f, false)).unwrap();
+    s.accept(response).unwrap();
+    let old = s.request().unwrap();
+    let before = serde_json::to_value(&s.runtime).unwrap();
+    let replacement = s
+        .replace_queued_work_with_correction(owner_task_correction())
+        .unwrap();
+    let header = replacement
+        .prompt
+        .split("Current assignment:")
+        .next()
+        .unwrap();
+    assert!(header.contains("Objective: Improve the full molecular ranking result"));
+    assert!(header.contains("Constraints: Local MPS development is allowed"));
+    assert!(!header.contains("Constraints: Temporary files only"));
+    assert!(
+        replacement
+            .prompt
+            .contains("measure CPU target timing separately")
+    );
+    assert!(replacement.prompt.contains("No paid resources"));
+    assert_ne!(replacement.invocation_id, old.invocation_id);
+    s.verify_queued_context(&replacement).unwrap();
+    s.verify_queued_current_use(&replacement).unwrap();
+    assert!(s.verify_queued_context(&old).is_err());
+    let after = serde_json::to_value(&s.runtime).unwrap();
+    for field in ["history", "executions", "segment", "judged_uses"] {
+        assert_eq!(before[field], after[field], "{field}");
+    }
+    assert_eq!(before["task"]["research"], after["task"]["research"]);
+    assert_eq!(
+        before["task"]["invocation_limit"],
+        after["task"]["invocation_limit"]
+    );
+    assert_eq!(before["task"]["sources"], after["task"]["sources"]);
+    assert_eq!(old.actual_use, replacement.actual_use);
+    assert!(
+        f.run()
+            .join(format!("request-{}.json", old.invocation_id))
+            .is_file()
+    );
+    drop(s);
+    let s = Session::open(&f.run()).unwrap();
+    assert_eq!(s.runtime.outstanding().unwrap().prompt, replacement.prompt);
+    assert_eq!(serde_json::to_value(&s.runtime).unwrap(), after);
+    s.verify_queued_current_use(&replacement).unwrap();
+}
+
+#[test]
+fn owner_task_correction_omitted_fields_and_legacy_calls_preserve_task() {
+    let f = Fixture::new();
+    let (mut s, response) = f.start(Mode::Disabled);
+    s.accept(response).unwrap();
+    let original = s.request().unwrap();
+    let task = serde_json::to_value(&s.runtime).unwrap()["task"].clone();
+    let minimal =
+        serde_json::from_value(json!({"assignment":"Continue the selected observation"})).unwrap();
+    s.replace_queued_work_with_correction(minimal).unwrap();
+    let request = s
+        .replace_queued_work("Revise the assignment wording only".into())
+        .unwrap();
+    assert_eq!(serde_json::to_value(&s.runtime).unwrap()["task"], task);
+    assert_eq!(original.actual_use, request.actual_use);
+    assert!(request.prompt.contains("Constraints: Temporary files only"));
+    assert!(
+        !request
+            .prompt
+            .contains("supersedes the earlier queued restriction")
+    );
+    // Worker responses cannot smuggle task corrections through the return schema.
+    for field in ["objective", "constraints", "task", "actual_use_correction"] {
+        let mut response = json!({"invocation_id":request.invocation_id,"role":"worker",
+            "decision":"observed","summary":"Observation","evidence":[]});
+        response[field] = json!("Unrequested authority change");
+        assert!(
+            serde_json::from_value::<Response>(response).is_err(),
+            "{field}"
+        );
+    }
+}
+
+#[test]
+fn owner_task_correction_preserves_all_started_work_guards() {
+    for started in ["execution", "host", "stdout"] {
+        let f = Fixture::new();
+        let (mut s, response) = f.start(Mode::Disabled);
+        s.accept(response).unwrap();
+        let request = s.request().unwrap();
+        match started {
+            "execution" => {
+                s.begin_execution(workflow_harness::control::Capabilities {
+                    fresh_context: true,
+                    events: true,
+                    controlled_continuation: true,
+                    ..Default::default()
+                })
+                .unwrap();
+            }
+            "host" => s
+                .bind_host(workflow_harness::session::HostBinding {
+                    invocation_id: request.invocation_id,
+                    backend_handle: "existing-worker".into(),
+                })
+                .unwrap(),
+            _ => fs::write(
+                f.run()
+                    .join(format!("stdout-{}.json", request.invocation_id)),
+                "",
+            )
+            .unwrap(),
+        }
+        let before = serde_json::to_value(&s.runtime).unwrap();
+        let disk = fs::read(f.run().join("state.json")).unwrap();
+        assert!(
+            s.replace_queued_work_with_correction(owner_task_correction())
+                .unwrap_err()
+                .contains("unstarted")
+        );
+        assert_eq!(serde_json::to_value(&s.runtime).unwrap(), before);
+        assert_eq!(fs::read(f.run().join("state.json")).unwrap(), disk);
+    }
+}
+
+#[test]
+fn owner_task_correction_keeps_known_correction_and_judgment_checks() {
+    let f = Fixture::new();
+    let (mut s, response) = f.start(Mode::Disabled);
+    s.accept(response).unwrap();
+    s.request().unwrap();
+    s.adopt_current_use(current_use(&f, true)).unwrap();
+    let before = serde_json::to_value(&s.runtime).unwrap();
+    assert!(
+        s.replace_queued_work_with_correction(owner_task_correction())
+            .unwrap_err()
+            .contains("unresolved")
+    );
+    assert_eq!(serde_json::to_value(&s.runtime).unwrap(), before);
+
+    let f = Fixture::new();
+    let (mut s, _) = f.submit(Mode::Enforce);
+    s.decision_result(f.result(Verdict::NoFinding)).unwrap();
+    f.publish(&s);
+    s.confirm_publication(1).unwrap();
+    let original = s.request().unwrap();
+    let disk = fs::read(f.run().join("state.json")).unwrap();
+    assert!(
+        s.replace_queued_work("Changed assignment without owner adoption".into())
+            .unwrap_err()
+            .contains("judged consequence")
+    );
+    s.verify_queued_context(&original).unwrap();
+    assert_eq!(fs::read(f.run().join("state.json")).unwrap(), disk);
+}
+
+#[test]
+fn owner_task_correction_rolls_back_after_checkpoint_but_failed_journal() {
+    let f = Fixture::new();
+    let (mut s, response) = f.start(Mode::Disabled);
+    s.adopt_current_use(current_use(&f, false)).unwrap();
+    s.accept(response).unwrap();
+    let original = s.request().unwrap();
+    let before = serde_json::to_value(&s.runtime).unwrap();
+    let disk = fs::read(f.run().join("state.json")).unwrap();
+    // Force a failure after request() has already saved the new checkpoint.
+    fs::rename(
+        f.run().join("events.jsonl"),
+        f.run().join("events.saved.jsonl"),
+    )
+    .unwrap();
+    fs::create_dir(f.run().join("events.jsonl")).unwrap();
+    assert!(
+        s.replace_queued_work_with_correction(owner_task_correction())
+            .is_err()
+    );
+    assert_eq!(serde_json::to_value(&s.runtime).unwrap(), before);
+    assert_eq!(fs::read(f.run().join("state.json")).unwrap(), disk);
+    s.verify_queued_context(&original).unwrap();
+    s.verify_queued_current_use(&original).unwrap();
+    drop(s);
+    let s = Session::open(&f.run()).unwrap();
+    assert_eq!(serde_json::to_value(&s.runtime).unwrap(), before);
+    s.verify_queued_current_use(&original).unwrap();
+}
+
+#[test]
+fn host_cli_corrects_task_header_and_rejects_started_or_invalid_updates() {
+    let f = Fixture::new();
+    let (mut s, response) = f.start(Mode::Disabled);
+    s.accept(response).unwrap();
+    s.request().unwrap();
+    drop(s);
+    let path = f.0.join("correction.json");
+    fs::write(&path, serde_json::to_vec(&owner_task_correction()).unwrap()).unwrap();
+    let result = current_use_cli(&f, "current-use-correct", &path);
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let request: workflow_harness::Invocation = serde_json::from_slice(&result.stdout).unwrap();
+    assert!(
+        request
+            .prompt
+            .contains("Constraints: Local MPS development is allowed")
+    );
+    let s = Session::open(&f.run()).unwrap();
+    s.verify_queued_context(&request).unwrap();
+    s.bind_host(workflow_harness::session::HostBinding {
+        invocation_id: request.invocation_id,
+        backend_handle: "running-worker".into(),
+    })
+    .unwrap();
+    drop(s);
+    assert!(
+        !current_use_cli(&f, "current-use-correct", &path)
+            .status
+            .success()
+    );
+    let s = Session::open(&f.run()).unwrap();
+    s.verify_queued_context(&request).unwrap();
+    drop(s);
+    fs::write(
+        &path,
+        json!({"assignment":"Continue", "invocation_limit":100}).to_string(),
+    )
+    .unwrap();
+    let invalid = current_use_cli(&f, "current-use-correct", &path);
+    assert!(!invalid.status.success());
+    assert!(String::from_utf8_lossy(&invalid.stderr).contains("unknown field"));
+}
+
+#[test]
+fn excerpt_correction_requires_full_read_or_owner_delivery_of_qualifications() {
+    let f = Fixture::new();
+    fs::write(f.0.join("arrangement.md"), "# Original arrangement\nUse CPU only during local development.\n\n# Current owner correction\nLocal MPS development is allowed; retain CPU target timing separately.\n").unwrap();
+    let mut task = f.task();
+    task.research = None;
+    task.sources.push(
+        serde_json::from_value(json!({"path":"arrangement.md","first_line":1,"last_line":2,
+        "purpose":"local execution arrangement","roles":["coordinator","resolver","worker"]}))
+        .unwrap(),
+    );
+    let mut s = Session::create(task.clone(), &f.run()).unwrap();
+    let request = s.request().unwrap();
+    assert!(
+        request
+            .prompt
+            .contains("Use CPU only during local development.")
+    );
+    assert!(!request.prompt.contains("Local MPS development is allowed"));
+    s.verify_queued_context(&request).unwrap();
+    let full = s.runtime.read_context_evidence("/full_sources/1").unwrap();
+    assert!(
+        full.as_str()
+            .unwrap()
+            .contains("Local MPS development is allowed")
+    );
+    // The existing owner can read the omitted qualification and explicitly
+    // deliver its current scope without mutating source selectors or history.
+    s.accept(serde_json::from_value(json!({
+        "invocation_id":request.invocation_id,"role":"coordinator","decision":"work",
+        "summary":"Adopt the current owner correction after reading its full source",
+        "assignment":"Use local MPS for development and retain CPU target timing separately. The earlier CPU-only local-development arrangement in the source excerpt is superseded.",
+        "actual_use":[f.0.join("arrangement.md")],"evidence":[f.0.join("arrangement.md")]
+    })).unwrap()).unwrap();
+    let worker = s.request().unwrap();
+    assert_eq!(worker.role, Role::Worker);
+    assert!(
+        worker
+            .prompt
+            .contains("Current assignment: Use local MPS for development")
+    );
+    assert!(
+        worker
+            .prompt
+            .contains("retain CPU target timing separately")
+    );
+    s.verify_queued_context(&worker).unwrap();
+    drop(s);
+    let recovered = Session::open(&f.run()).unwrap();
+    assert_eq!(
+        recovered.runtime.outstanding().unwrap().prompt,
+        worker.prompt
+    );
+    task.sources[1].last_line = 5;
+    let mut complete = Session::create(task, &f.0.join("complete-run")).unwrap();
+    assert!(
+        complete
+            .request()
+            .unwrap()
+            .prompt
+            .contains("Local MPS development is allowed")
+    );
+}
+
+#[test]
+fn enforced_header_correction_returns_owner_and_supports_existing_reuse_or_check() {
+    for reuse in [false, true] {
+        let f = Fixture::new();
+        let (mut s, mut proposal) = f.start(Mode::Enforce);
+        let assignment = proposal.assignment.clone();
+        proposal.assignment =
+            format!("This assignment supersedes the earlier queued assignment.\n{assignment}");
+        s.adopt_current_use(current_use(&f, false)).unwrap();
+        s.accept(proposal.clone()).unwrap();
+        s.bind_decision(1, "actual-checker".into()).unwrap();
+        s.decision_result(f.result(Verdict::NoFinding)).unwrap();
+        f.publish(&s);
+        s.confirm_publication(1).unwrap();
+        let old = s.request().unwrap();
+        drop(s);
+        let mut s = Session::open(&f.run()).unwrap();
+        let correction = workflow_harness::QueuedWorkCorrection {
+            assignment,
+            objective: Some("Corrected project objective".into()),
+            constraints: Some("Local MPS development; CPU target timing; no paid resources".into()),
+            actual_use: None,
+        };
+        let owner = if reuse {
+            s.replace_queued_work_with_correction(correction).unwrap()
+        } else {
+            drop(s);
+            let path = f.0.join("header-correction.json");
+            fs::write(&path, serde_json::to_vec(&correction).unwrap()).unwrap();
+            let output = current_use_cli(&f, "current-use-correct", &path);
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            s = Session::open(&f.run()).unwrap();
+            serde_json::from_slice::<workflow_harness::Invocation>(&output.stdout).unwrap()
+        };
+        assert_eq!(owner.role, Role::Coordinator);
+        assert!(
+            owner
+                .prompt
+                .contains("Objective: Corrected project objective")
+        );
+        assert!(owner.prompt.contains("Constraints: Local MPS development"));
+        assert!(s.verify_queued_context(&old).is_err());
+        assert_eq!(s.decisions.next_id, 1);
+        drop(s);
+        let mut s = Session::open(&f.run()).unwrap();
+        assert_eq!(s.runtime.outstanding().unwrap().prompt, owner.prompt);
+        proposal.invocation_id = owner.invocation_id;
+        let view = s.judgment_view(&proposal).unwrap();
+        assert_ne!(view["previous"], view["current"]);
+        assert_eq!(
+            view["projection"]["task_header"]["task_objective"],
+            "Corrected project objective"
+        );
+        if reuse {
+            proposal.update.as_mut().unwrap().judgment_reuse = Some(workflow_harness::decision::JudgmentReuse {
+                previous:view["previous"].as_str().unwrap().into(), current:view["current"].as_str().unwrap().into(),
+                reason:"The owner verified the corrected development scope; the selected mechanism and target evidence remain applicable.".into()
+            });
+        }
+        s.accept(proposal).unwrap();
+        if reuse {
+            assert!(s.decisions.pending.is_none());
+            assert_eq!(s.decisions.next_id, 1);
+        } else {
+            assert_eq!(s.decisions.pending.as_ref().unwrap().check_id, 2);
+            assert!(s.request().is_err());
+            s.bind_decision(2, "actual-checker".into()).unwrap();
+            let mut result = f.result(Verdict::NoFinding);
+            result.check_id = 2;
+            s.decision_result(result).unwrap();
+            f.publish(&s);
+            s.confirm_publication(2).unwrap();
+        }
+        let worker = s.request().unwrap();
+        assert_eq!(worker.role, Role::Worker);
+        assert!(worker.prompt.contains("Constraints: Local MPS development"));
+        s.verify_queued_current_use(&worker).unwrap();
+        drop(s);
+        let s = Session::open(&f.run()).unwrap();
+        s.verify_queued_context(&worker).unwrap();
+    }
+}
+
+#[test]
+fn enforced_unchanged_header_keeps_worker_without_an_owner_round_trip() {
+    let f = Fixture::new();
+    let (mut s, mut proposal) = f.start(Mode::Enforce);
+    let assignment = proposal.assignment.clone();
+    proposal.assignment =
+        format!("This assignment supersedes the earlier queued assignment.\n{assignment}");
+    s.accept(proposal).unwrap();
+    s.bind_decision(1, "actual-checker".into()).unwrap();
+    s.decision_result(f.result(Verdict::NoFinding)).unwrap();
+    f.publish(&s);
+    s.confirm_publication(1).unwrap();
+    s.request().unwrap();
+    let request = s
+        .replace_queued_work_with_correction(workflow_harness::QueuedWorkCorrection {
+            assignment,
+            objective: Some(f.task().objective),
+            constraints: Some(f.task().constraints),
+            actual_use: None,
+        })
+        .unwrap();
+    assert_eq!(request.role, Role::Worker);
+    assert_eq!(s.decisions.next_id, 1);
+    s.verify_queued_context(&request).unwrap();
+}
+
+#[test]
+fn legacy_judgment_requires_original_header_evidence_and_can_return_to_owner() {
+    for evidence in ["matching", "changed", "missing"] {
+        let f = Fixture::new();
+        let (mut s, _) = cleared_session(&f);
+        let worker = s.request().unwrap();
+        drop(s);
+        let path = f.run().join("state.json");
+        let mut state: serde_json::Value =
+            serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        let mut commitment: serde_json::Value =
+            serde_json::from_str(state["decisions"]["last_commitment"].as_str().unwrap()).unwrap();
+        commitment.as_object_mut().unwrap().remove("task_header");
+        state["decisions"]["last_commitment"] = json!(commitment.to_string());
+        state["decisions"]["last_sources"]
+            .as_array_mut()
+            .unwrap()
+            .pop();
+        if evidence == "changed" {
+            state["runtime"]["task"]["constraints"] = json!("Unverified different constraint");
+        } else if evidence == "missing" {
+            fs::remove_file(f.run().join("request-1.json")).unwrap();
+        }
+        fs::write(&path, serde_json::to_vec(&state).unwrap()).unwrap();
+        let mut s = Session::open(&f.run()).unwrap();
+        if evidence == "matching" {
+            s.verify_queued_context(&worker).unwrap();
+            assert_eq!(s.runtime.outstanding().unwrap().role, Role::Worker);
+            continue;
+        } else {
+            assert!(
+                s.verify_queued_context(&worker)
+                    .unwrap_err()
+                    .contains("legacy judgment")
+            );
+        }
+        let owner = s
+            .replace_queued_work_with_correction(
+                serde_json::from_value(json!({
+                    "assignment":"Continue after the owner verifies the current scope"
+                }))
+                .unwrap(),
+            )
+            .unwrap();
+        assert_eq!(owner.role, Role::Coordinator);
+        s.verify_queued_context(&owner).unwrap();
+        assert!(owner.prompt.contains("was not bound to"));
+    }
+}
+
+#[test]
+fn historical_resolver_header_is_not_recomputed_as_current_evidence() {
+    let f = Fixture::new();
+    let (mut s, mut proposal) = f.start(Mode::Enforce);
+    proposal.decision = workflow_harness::Decision::Reconsider;
+    s.accept(proposal.clone()).unwrap();
+    let resolver = s.request().unwrap();
+    let mut resolved = proposal.clone();
+    resolved.role = Role::Resolver;
+    resolved.invocation_id = resolver.invocation_id;
+    resolved.decision = workflow_harness::Decision::Work;
+    s.accept(resolved).unwrap();
+    proposal.invocation_id = s.request().unwrap().invocation_id;
+    proposal.decision = workflow_harness::Decision::Work;
+    proposal.update.as_mut().unwrap().resolved_invocation = Some(resolver.invocation_id);
+    s.accept(proposal.clone()).unwrap();
+    assert!(s.decisions.pending.is_none());
+    f.publish(&s);
+    s.confirm_publication(1).unwrap();
+    s.request().unwrap();
+    let owner = s.replace_queued_work_with_correction(serde_json::from_value(json!({
+        "assignment":proposal.assignment,"constraints":"A different current development scope"
+    })).unwrap()).unwrap();
+    assert_eq!(owner.role, Role::Coordinator);
+    proposal.invocation_id = owner.invocation_id;
+    s.accept(proposal).unwrap();
+    assert!(s.decisions.pending.is_some());
+    let saved = serde_json::to_value(&s.runtime).unwrap();
+    assert_eq!(
+        saved["judged_uses"][resolver.invocation_id.to_string()]["proposal"]["task_header"]["task_constraints"],
+        f.task().constraints
+    );
+}
+
+#[test]
+fn legacy_matching_header_keeps_assignment_replacement_on_worker() {
+    let f = Fixture::new();
+    let (mut s, mut proposal) = f.start(Mode::Enforce);
+    let assignment = proposal.assignment.clone();
+    proposal.assignment =
+        format!("This assignment supersedes the earlier queued assignment.\n{assignment}");
+    s.accept(proposal.clone()).unwrap();
+    s.bind_decision(1, "actual-checker".into()).unwrap();
+    s.decision_result(f.result(Verdict::NoFinding)).unwrap();
+    f.publish(&s);
+    s.confirm_publication(1).unwrap();
+    s.request().unwrap();
+    drop(s);
+    let path = f.run().join("state.json");
+    let mut state: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    let mut commitment: serde_json::Value =
+        serde_json::from_str(state["decisions"]["last_commitment"].as_str().unwrap()).unwrap();
+    commitment.as_object_mut().unwrap().remove("task_header");
+    state["decisions"]["last_commitment"] = json!(commitment.to_string());
+    state["decisions"]["last_sources"]
+        .as_array_mut()
+        .unwrap()
+        .pop();
+    fs::write(path, serde_json::to_vec(&state).unwrap()).unwrap();
+    let mut s = Session::open(&f.run()).unwrap();
+    let replacement = s.replace_queued_work(assignment).unwrap();
+    assert_eq!(replacement.role, Role::Worker);
+    assert_eq!(s.decisions.next_id, 1);
+    s.verify_queued_context(&replacement).unwrap();
+    drop(s);
+    let mut s = Session::open(&f.run()).unwrap();
+    s.verify_queued_context(&replacement).unwrap();
+    proposal.invocation_id = complete_worker(&mut s, &proposal);
+    let view = s.judgment_view(&proposal).unwrap();
+    assert_ne!(view["previous"], view["current"]);
+    proposal.update.as_mut().unwrap().judgment_reuse = Some(workflow_harness::decision::JudgmentReuse {
+        previous:view["previous"].as_str().unwrap().into(), current:view["current"].as_str().unwrap().into(),
+        reason:"The owner verified the unchanged legacy task header against its original delivery; the same commitment remains applicable.".into()
+    });
+    s.accept(proposal).unwrap();
+    assert_eq!(s.decisions.next_id, 1);
+    assert!(s.decisions.pending.is_none());
+    assert_eq!(s.request().unwrap().role, Role::Worker);
+}
+
+#[test]
+fn native_retry_preserves_enforced_judgment_and_current_use_consumption() {
+    use workflow_harness::control::{HostDispatch, HostDispatchOutcome};
+    let f = Fixture::new();
+    let (mut s, proposal) = f.start(Mode::Enforce);
+    s.adopt_current_use(current_use(&f, false)).unwrap();
+    s.accept(proposal.clone()).unwrap();
+    assert!(s.prepare_host_dispatch(2, "held-call".into()).is_err());
+    assert!(s.host_dispatch_history().is_empty());
+    s.bind_decision(1, "actual-checker".into()).unwrap();
+    s.decision_result(f.result(Verdict::NoFinding)).unwrap();
+    f.publish(&s);
+    s.confirm_publication(1).unwrap();
+    let old = s.request().unwrap();
+    s.prepare_host_dispatch(old.invocation_id, "rejected-call".into())
+        .unwrap();
+    s.reconcile_host_dispatch(HostDispatch {
+        invocation_id: old.invocation_id,
+        call_id: "rejected-call".into(),
+        outcome: HostDispatchOutcome::NotStarted {
+            evidence: "Host confirms capacity rejection before starting work".into(),
+        },
+    })
+    .unwrap();
+    drop(s);
+    let mut s = Session::open(&f.run()).unwrap();
+    let retry = s.retry_not_started(old.invocation_id).unwrap();
+    assert_ne!(old.invocation_id, retry.invocation_id);
+    assert_eq!(retry.role, Role::Worker);
+    assert!(retry.prompt.contains(&proposal.assignment));
+    assert!(s.decisions.pending.is_none());
+    s.verify_judgment_consumption().unwrap();
+    s.verify_queued_current_use(&retry).unwrap();
+    assert!(s.verify_queued_current_use(&old).is_err());
+    drop(s);
+    let mut s = Session::open(&f.run()).unwrap();
+    s.verify_judgment_consumption().unwrap();
+    s.verify_queued_current_use(&retry).unwrap();
+    fs::write(
+        f.0.join("method.txt"),
+        "Changed source after retry preparation\n",
+    )
+    .unwrap();
+    assert!(
+        s.prepare_host_dispatch(retry.invocation_id, "stale-call".into())
+            .is_err()
+    );
+    assert!(s.host_dispatch().is_none());
+    assert!(s.begin_execution(Default::default()).is_err());
 }

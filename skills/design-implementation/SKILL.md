@@ -24,13 +24,13 @@ This step is complete when the design question, evidence surface, and exclusive 
 
 ## Check the seam before designing
 
-Apply [Choose the profile](../frontier-optimization/references/technical-design.md#choose-the-profile) to distinguish the professional question, needed design content and any later independent judgment. Return `DIRECT_ELIGIBLE` without writing when established agreements already settle the important choices; do not routinely recheck the Coordinator's direct cases.
+Apply [Choose the profile](../frontier-optimization/references/technical-design.md#choose-the-profile), including professional preparation before classifying important choices as settled. Return `DIRECT_ELIGIBLE` without writing when applicable grounds and agreements settle those choices. Sufficient retained grounds allow immediate reuse; do not routinely recheck the Coordinator's direct cases.
 
 This step is complete when the remaining professional question and affected scope are clear, or the work is returned for direct implementation.
 
 ## Reconstruct the implementation design
 
-Inspect the current modules, callers, state, dependencies, runtime flow, failures, tests, and deployment or migration facts that bear on the target. Apply [Ground consequential design choices](../frontier-optimization/references/technical-design.md#ground-consequential-design-choices) when selecting the realization.
+Inspect the current modules, callers, state, dependencies, runtime flow, failures, tests, and deployment or migration facts that bear on the target. Apply [Ground consequential design choices](../frontier-optimization/references/technical-design.md#ground-consequential-design-choices) when selecting the realization, including [Professional engineering knowledge](../frontier-optimization/references/technical-design.md#apply-professional-engineering-knowledge) before fixing consequential choices. Resolve the professional questions posed by the actual work, not only those suggested by the proposed implementation.
 
 Use its [first-realization guidance](../frontier-optimization/references/technical-design.md#preserve-the-mechanism-in-the-first-realization), [implementation-path comparison](../frontier-optimization/references/technical-design.md#choose-a-realization-on-the-same-required-behavior) and [parameter choices](../frontier-optimization/references/technical-design.md#design-consequential-parameter-choices) where material. Supply the concrete relationship or explicit investigation before dependent construction; preserve the originating problem even if an adopted selection already narrowed it. These are design responsibilities, not additional gates.
 

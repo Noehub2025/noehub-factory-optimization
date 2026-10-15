@@ -12,15 +12,17 @@ Before measurement, the Coordinator writes one current definition through `Batch
 - evidence and interpretation limits; and
 - `result_owner`: `B` or `E`.
 
-Use or reference the existing basis for [Evidence sufficient for the decision](../../frame-optimization/references/measurement-design.md#evidence-sufficient-for-the-decision), including the observation's stopping conditions and actual intended use. Keep decision-relevant value, lifecycle and context available to the adapter and [Result Adoption](result-adoption.md#preserve-meaning-through-the-use-path) using the existing definition and result structure. This adds no mandatory fields or separate evidence record.
+Apply [Professional preparation and reuse](../../frame-optimization/references/measurement-design.md#professional-preparation-and-reuse) before selecting or inheriting the definition, including ordinary diagnostic and direct work. Use or reference the applicable basis for [Evidence sufficient for the decision](../../frame-optimization/references/measurement-design.md#evidence-sufficient-for-the-decision), including stopping conditions and actual intended and cumulative uses. Keep decision-relevant value, lifecycle and context available to the adapter and [Result Adoption](result-adoption.md#preserve-meaning-through-the-use-path) using the existing definition and result structure. This adds no mandatory fields or separate evidence record.
 
 Only when the Action or installed adapter declares `single_use_consumption`, also state `nonrepeatable_unit`, `resource_owner: workflow | user`, and `consumption_control`, and set `Action.repeatable: false`. Omit those fields when there is no real single-use unit; do not write `none`. Current writes use `nonrepeatable_unit`. Historical `non_repeatable_unit` remains readable, but two different alias values are invalid before the adapter starts.
 
-Equivalent existing definitions remain usable even when their field names predate this guide. Instantiating a still-valid protocol or repairing its implementation follows [Measurement design and support](../../frame-optimization/references/measurement-work.md); only changed measurement meaning or a concrete challenge to its basis needs professional revision. Field renaming alone creates no migration or review.
+Equivalent existing definitions remain usable even when their field names predate this guide, after the basis is matched to actual use rather than unchanged fields, mode or data identity. Instantiating a still-valid protocol or repairing its implementation follows [Measurement design and support](../../frame-optimization/references/measurement-work.md); changed reusable meaning or an unsupported fitness judgment returns to its existing owner. Supported unchanged use continues without new research, design or review. Field renaming alone creates no migration or review.
 
 An Action cannot supply another definition. `Batch.perform` reads the current one, binds it to the selected Git Candidate Revision and passing checks, checks applicable R, V and resource limits, then creates the consuming Attempt before the adapter begins.
 
 ## Run the selected mode
+
+When an adopted measurement change reaches execution, check the selected inputs, consequential configuration, adapter and output coverage against that current definition. Historical frozen counts, hashes and comparators remain valid for reproducing their original comparison; they cannot silently override a newly adopted scope. Reuse, extend or replace the affected consumer as needed, preserving historical evidence and any useful common comparison. Verify the actual receiving path under normal checks, not only the revised document. This creates no requirement to rewrite unrelated old tools or rerun old experiments.
 
 | Mode | Use | Maximum evidence produced by the Batch |
 |---|---|---|
@@ -55,6 +57,8 @@ During delay, worthwhile independent work or bounded conditional work may procee
 A failed call, timeout, missing post or parse error does not prove absence of an effect. Reconcile the original operation/reference under [Protect an actual single-use unit](#protect-an-actual-single-use-unit) before a possible duplicate; direct tools retain the same recovery responsibility. Changing a task or Action key cannot clear uncertainty. Another effect needs evidence and authority establishing retry eligibility. Block only duplication or affected resource use; allow read-only recovery and unrelated work. Invocation, effect and observation states remain distinct.
 
 ## Assurance by consequence
+
+Apply [Adopt verification prerequisites for the intended use](technical-design.md#adopt-verification-prerequisites-for-the-intended-use) when evidence acquisition or checking becomes a prerequisite. A receipt's passed status or candidate identity alone does not support a stronger use. The actual consuming adapter must assess that use against applicable facts, reusing sufficient evidence and keeping unsupported claims unavailable. Preserve requested exact delivery and evidence needed before destructive follow-up.
 
 This is the shared method for choosing review work, not another approval stage. The Coordinator starts with the next actual use, not a list of review roles:
 

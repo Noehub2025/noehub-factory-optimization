@@ -70,15 +70,31 @@ impl Adapter for StreamAdapter {
         let stderr = File::create(self.directory.join("stderr.txt")).map_err(|e| e.to_string())?;
         let trace = File::create(self.directory.join("events.jsonl")).map_err(|e| e.to_string())?;
         self.invocation_id = Some(invocation.invocation_id);
-        let mut child = Command::new(&self.process.program)
+        let spawned = Command::new(&self.process.program)
             .args(&self.process.args)
             .current_dir(&self.workspace)
             .env("WORKFLOW_INVOCATION_DIRECTORY", &self.directory)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(stderr)
-            .spawn()
-            .map_err(|e| e.to_string())?;
+            .spawn();
+        let mut child = match spawned {
+            Ok(child) => child,
+            Err(error) => {
+                let receipt = Recovery::NotStartedConfirmed {
+                    invocation_id: invocation.invocation_id,
+                    evidence: format!("The configured backend could not start: {error}"),
+                };
+                let mut file = OpenOptions::new()
+                    .write(true)
+                    .create_new(true)
+                    .open(self.directory.join("not-started.json"))
+                    .map_err(|e| e.to_string())?;
+                serde_json::to_writer(&mut file, &receipt).map_err(|e| e.to_string())?;
+                file.sync_all().map_err(|e| e.to_string())?;
+                return Err(error.to_string());
+            }
+        };
         self.input = child.stdin.take();
         self.output = child.stdout.take().map(BufReader::new);
         self.trace = Some(trace);
@@ -180,6 +196,18 @@ impl Adapter for StreamAdapter {
                 .is_some_and(|child| matches!(child.try_wait(), Ok(None)))
         {
             return Ok(Recovery::Running);
+        }
+        let rejected = self.directory.join("not-started.json");
+        if rejected.exists() {
+            let receipt: Recovery =
+                serde_json::from_slice(&fs::read(rejected).map_err(|e| e.to_string())?)
+                    .map_err(|e| e.to_string())?;
+            return match receipt {
+                Recovery::NotStartedConfirmed {
+                    invocation_id: id, ..
+                } if id == invocation_id => Ok(receipt),
+                _ => Err("not-started receipt has wrong invocation or outcome".into()),
+            };
         }
         Ok(Recovery::Unknown)
     }

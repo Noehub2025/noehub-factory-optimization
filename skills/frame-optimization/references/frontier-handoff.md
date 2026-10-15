@@ -44,6 +44,8 @@ Only a changed durable parent meaning or concrete contrary evidence can affect a
 
 ## Research knowledge in the handoff
 
+Preserve what the retained inquiry actually covered and any consequential unresolved scope issue. Reuse a proposed first check's applicable investment rationale, not readiness or a positive review as a substitute for that rationale. If only readiness is established, Frontier resolves the allocation in its existing decision; sufficient retained reasoning permits direct continuation without repeating Frame or adding a review.
+
 At initial handoff, a material framing change or an actual applicability challenge, use relevant retained research to explain what changes the pending search judgment. A limitation that undermines the current method goes to its professional owner rather than only becoming a disclaimer. Unknowns that do not affect the choice need no new research. Frontier consumes this reasoning through [Investment comparison](../../frontier-optimization/references/learning-loop.md#route-investment-ordering), including theory-grounded exploration without promoting an unsupported proxy conclusion. Use the existing handoff and decision work; this adds no per-result analysis, research checkpoint or review.
 
 ## Handoff contract
