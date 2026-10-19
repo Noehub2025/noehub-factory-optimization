@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Change the project license from MIT to GNU General Public License
+  version 3 only (`GPL-3.0-only`) on October 19, 2026.
+
 ## 1.1.0 - 2026-10-15
 
 This public release promotes the current reviewed Workflow into an independent

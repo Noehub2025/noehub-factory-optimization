@@ -150,4 +150,7 @@ version series.
 
 ## License
 
-[MIT](./LICENSE)
+Copyright (c) 2026 Ken Chen.
+
+This project is licensed under the
+[GNU General Public License version 3 only](./LICENSE) (`GPL-3.0-only`).
