@@ -148,6 +148,18 @@ requires building the binary and trusting the project Hook definition; see
 The public release is **1.1.0**. Public and development versions use separate
 version series.
 
+## Support and privacy
+
+The workflow's new public name is **Aka Optimization**, published by **Noehub**,
+Hangzhou Boshu Technology Co., Ltd. Existing installation names remain unchanged.
+Read the [privacy policy](./PRIVACY.md) and [support information](./SUPPORT.md),
+or contact [support@noehub.com](mailto:support@noehub.com).
+
+This branch still provides the existing public 1.1.0 distribution and its
+installation instructions. The newer desktop plugin is a separate development
+candidate; these policy pages do not publish that candidate or change the
+existing release.
+
 ## License
 
 Copyright (c) 2026 Ken Chen.
