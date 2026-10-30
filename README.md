@@ -1,46 +1,53 @@
-# Noehub Factory Optimization
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/brand/aka-wordmark-light-text.png">
+    <source media="(prefers-color-scheme: light)" srcset="./assets/brand/aka-wordmark-dark-text.png">
+    <img alt="Aka Optimization" src="./assets/brand/aka-wordmark-dark-text.png" width="480">
+  </picture>
+</p>
 
-**An optimization research workflow for coding agents.**
+<p align="center">
+  <a href="#get-started"><img alt="Public version: 1.1.0" src="https://img.shields.io/badge/public-1.1.0-e87924"></a>
+  <a href="./LICENSE"><img alt="License: GPL-3.0-only" src="https://img.shields.io/badge/license-GPL--3.0--only-blue"></a>
+  <a href="./docs/workflow-reference.md"><img alt="Skills: 13" src="https://img.shields.io/badge/skills-13-3776AB"></a>
+</p>
 
-Define what better means, test promising ideas, and use the results to choose
-the next improvement. Goals, evaluation rules, budgets, and decisions stay in
-your repository so another session can pick up the work.
+<p align="center"><strong>Engineering and algorithm optimization.</strong></p>
 
-Use it to reduce inference cost or latency, improve a model or game-playing
-agent, tune a configuration, or explore alternative implementations. It is
-especially useful when passing tests alone cannot tell you whether a change
-is better.
+<p align="center">
+  <a href="#get-started">Get started</a> |
+  <a href="#what-could-you-try">Examples</a> |
+  <a href="./docs/workflow-reference.md">Workflow</a> |
+  <a href="./CHANGELOG.md">Changelog</a> |
+  <a href="./SUPPORT.md">Support</a>
+</p>
 
-[Get started](#get-started) · [How it works](#how-it-works) ·
-[Documentation](#documentation) · [Release 1.1.0](./CHANGELOG.md)
+# Aka Optimization
 
-## How it works
+Aka Optimization is a workflow for engineering and algorithm optimization with
+Codex and other compatible coding agents. It helps you define what to improve,
+research possible approaches, implement changes, and measure their effects.
+The results guide what to try next, while saved experiments and findings let
+you review earlier work and continue from where you left off.
 
-The workflow aims for the best attainable result. It encourages ambitious
-hypotheses, compares alternative approaches, and chooses tests that can resolve
-the uncertainty that matters most to the next decision.
+## What could you try?
 
-```text
-Define the goal and comparison rules
-  → Decide what can be changed and searched
-  → Research, implement, and measure promising approaches
-  → Use the evidence to improve, change direction, or stop
-```
+| Something you want to improve | A way to ask |
+|---|---|
+| A program that takes too long to run | “Help this program run faster without changing its results.” |
+| A model that costs too much to run | “Help me investigate ways to reduce this model's inference cost while preserving the quality we agree to measure.” |
+| An algorithm with alternatives to compare | “Help me compare algorithm approaches under the same computing budget.” |
 
-Two coordinator Skills manage this process. They assign specialist Skills for
-research, design, implementation, review, and questions that need your judgment.
-
-| Coordinator | Responsibility | Main project files |
-|---|---|---|
-| [frame-optimization](./skills/frame-optimization/SKILL.md) | Define the objective, measurement rules, and allowed search space; obtain the required independent review. | `PROBLEM.md`, `REPRESENTATION.md` |
-| [frontier-optimization](./skills/frontier-optimization/SKILL.md) | Run the improvement campaign within the agreed limits, learn from results, and preserve the context needed to resume. | `FRONTIER.md`, `frontier/` |
-
-This is Recursive Self-Improvement (RSI): evidence from one cycle informs the
-next. Where the task permits it, that can also improve the search strategy,
-evaluator, or tools. Changes to comparison rules remain explicit so results
-from incompatible evaluations are not treated as comparable.
+These are starting examples, not reports of measured improvements. Bring the
+files and information needed for your task. Aka helps work out how to compare
+the options; real-world changes may still need your involvement.
 
 ## Get started
+
+This public repository provides version **1.1.0**, with thirteen workflow Skills.
+The newer desktop plugin is a separate **1.2.0 development candidate**. It is
+not included here and has not been published to the official Codex Marketplace.
+The public bundle does not include the desktop `setup-noehub` helper.
 
 Use a Git repository for your project. Retain the commits and artifacts used
 for reviews, results, and recovery; a remote repository is optional.
@@ -109,18 +116,38 @@ docs/skills/optimization/inference-cost-reduction/.
 
 ## What to expect
 
-- **Comparable results.** The task states what may change, how it is measured,
-  and which conclusions the evidence supports.
-- **Learning across experiments.** Failed ideas, useful alternatives, and reasons
-  for changing direction remain available to later work.
-- **Work within your limits.** The agent reuses applicable decisions and asks
-  when a consequential action needs authorization you have not already given.
-- **Recoverable progress.** Project files retain the current question, next
-  observation, resource use, and conditions for continuing or stopping.
+- The approaches that were tried and what happened.
+- A comparison that explains which changes helped, which did not, and what is
+  still uncertain.
+- A recommendation for the next useful step, including any choice you need to make.
+- Saved project records so a later session can continue from the same work.
 
-The repository provides a research workflow, not a domain-specific optimizer.
-Successful installation and passing checks do not establish that it will improve
-your target system; that needs evidence from your task.
+Some attempts will fail. The aim is to learn which directions deserve more work,
+including better alternatives to the approach you started with. Aka does not
+guarantee an improvement or a particular score.
+
+## How it works
+
+You and Aka first agree on what a useful improvement would look like, how to
+recognize it, and what can change. Aka then investigates promising approaches,
+tries the ones worth pursuing, and compares the results. What it learns guides
+the next attempt or a change in direction. Work stays within your agreed limits.
+
+The following names are useful when you need the detailed controls:
+
+| Skill | What it helps with |
+|---|---|
+| [frame-optimization](skills/frame-optimization/SKILL.md) | Clarify the goal, comparison rules, and possible changes before starting. |
+| [frontier-optimization](skills/frontier-optimization/SKILL.md) | Research and try approaches, compare results, and continue or change direction. |
+
+They coordinate the other Skills for research, design, implementation, review,
+and questions that need your judgment. Task records live under
+`docs/skills/optimization/<task-slug>/`. Their goals, decisions, observations,
+and linked files help later sessions recover the work. See the
+[workflow reference](docs/workflow-reference.md) for the full structure.
+
+The public name is Aka Optimization. The installation identifier remains
+`noehub-factory-optimization`, so existing installation commands continue to work.
 
 ## Optional Codex Hook
 
@@ -157,7 +184,7 @@ or contact [support@noehub.com](mailto:support@noehub.com).
 
 This branch still provides the existing public 1.1.0 distribution and its
 installation instructions. The newer desktop plugin is a separate development
-candidate; these policy pages do not publish that candidate or change the
+candidate; this README update does not publish that candidate or change the
 existing release.
 
 ## License
@@ -166,3 +193,8 @@ Copyright (c) 2026 Ken Chen.
 
 This project is licensed under the
 [GNU General Public License version 3 only](./LICENSE) (`GPL-3.0-only`).
+
+The historical public [`v1.1.0` tag](https://github.com/Noehub2025/noehub-factory-optimization/tree/v1.1.0)
+retains its [MIT license](https://github.com/Noehub2025/noehub-factory-optimization/blob/v1.1.0/LICENSE).
+The default branch later changed to GPL-3.0-only. Read the license in the source
+version you install.
