@@ -8,10 +8,10 @@ dependencies, and what has been tested.
 
 ## Use a specific release
 
-Clone the public 1.2.0 release:
+Clone the public 1.2.1 release:
 
 ```sh
-git clone --branch v1.2.0 --single-branch https://github.com/Noehub2025/noehub-factory-optimization.git
+git clone --branch v1.2.1 --single-branch https://github.com/Noehub2025/noehub-factory-optimization.git
 ```
 
 The earlier `v1.1.0` tag has thirteen Skills, no desktop setup helper, and the

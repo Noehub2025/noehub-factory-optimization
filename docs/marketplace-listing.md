@@ -1,6 +1,6 @@
 # Aka Optimization listing materials
 
-Status: listing prepared for version 1.2.0 after a real Codex desktop test. Not yet submitted or approved.
+Status: listing prepared for version 1.2.1 after a real Codex desktop test of 1.2.0, whose Skills and scripts are unchanged. Not yet submitted or approved.
 
 ## Audience and first impression
 
@@ -134,10 +134,8 @@ PARTNERNET SOFTWARE PTY LTD completed OpenAI business verification for its
 PartnerNetSoftware organization and will upload the package as publisher. A real
 Codex desktop install and complete improvement-and-resume task passed on
 macOS on 2026-10-31; see the [verification table](desktop-plugin.md#verification-boundary).
-Marketplace submission remains unfinished. The public
-repository already has privacy/support pages and their README entry. This
-description revision changes only the development materials; development
-version 1.2.0 remains unreleased there.
+Marketplace submission remains unfinished. The desktop plugin was first
+released publicly as 1.2.0; 1.2.1 adds the manifest capabilities for submission.
 
 The [official submission fields](https://developers.openai.com/plugins/deploy/submission#listing-metadata)
 limit the name and subtitle to 30 characters, the long description to 4,000,

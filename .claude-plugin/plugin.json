@@ -1,6 +1,6 @@
 {
   "name": "noehub-factory-optimization",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Aka Optimization is a workflow for engineering and algorithm optimization. It helps you research approaches, implement changes, measure their effects, and continue from saved experiments and findings.",
   "author": {
     "name": "Ken Chen"

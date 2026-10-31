@@ -22,8 +22,8 @@ scripts. The desktop archive does not contain a Hook binary or Rust host.
 
 The public source repository is
 [Noehub2025/noehub-factory-optimization](https://github.com/Noehub2025/noehub-factory-optimization).
-The complete corresponding source for version 1.2.0 is its `v1.2.0` tag and the
-source archive attached to that GitHub Release. The older `v1.1.0` tag is not a
+The complete corresponding source for each version is its version tag, such as `v1.2.1`, and the
+source archive attached to that version's GitHub Release. The older `v1.1.0` tag is not a
 substitute for it.
 
 ## Match a future release to its source

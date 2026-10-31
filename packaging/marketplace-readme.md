@@ -71,7 +71,7 @@ The [runtime guide](skills/setup-noehub/references/desktop-runtime.md) explains
 local dependencies, package paths, review requirements, and recovery. The
 optional Codex Hook and Rust support are separate GitHub integrations; they are
 not included or required by this package. The matching source for this version
-is the `v1.2.0` tag of the
+is the `v1.2.1` tag of the
 [public repository](https://github.com/Noehub2025/noehub-factory-optimization).
 
 ## Privacy, support, and source

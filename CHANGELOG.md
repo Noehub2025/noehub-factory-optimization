@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1 - 2026-10-31
+
+- Declare the plugin's capabilities (Interactive, Read, Write) in the
+  manifest for OpenAI Plugins Directory submission. Skills, scripts, and
+  documentation are unchanged from 1.2.0.
+
 ## 1.2.0 - 2026-10-31
 
 This release adds the Aka Optimization desktop plugin for Codex.

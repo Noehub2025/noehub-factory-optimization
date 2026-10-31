@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "noehub-factory-optimization",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Aka Optimization is a workflow for engineering and algorithm optimization. It helps you research approaches, implement changes, measure their effects, and continue from saved experiments and findings.",
   "author": {
     "name": "Ken Chen"
@@ -26,6 +26,11 @@
         "longDescription": "Aka Optimization is a workflow for engineering and algorithm optimization in Codex. Describe what you want to improve, and it helps you define how results will be compared, research possible approaches, implement changes, and measure their effects, with independent reviews along the way. Saved task records let you review earlier work and continue in a later conversation. Possible tasks include making a program run faster while preserving its results, investigating model inference cost at an agreed quality level, or comparing algorithms under the same computing budget. Improvement is not guaranteed. The workflow plans and measures before it changes code, so even a small task can take 15 to 30 minutes. It saves task records in your project and can create Git commits as it works. It needs a local Git project, Python 3.10 or later, PyYAML 6.x, and Codex with sub-agents. Tested on macOS; Linux is untested and the helper scripts do not support Windows.",
         "developerName": "Partnernet Software Pty Ltd",
         "category": "Productivity",
+        "capabilities": [
+          "Interactive",
+          "Read",
+          "Write"
+        ],
         "defaultPrompt": [
           "Help me set up Aka Optimization for this project.",
           "Use Aka Optimization to help this program run faster without changing its results.",

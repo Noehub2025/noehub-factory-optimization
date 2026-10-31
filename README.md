@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="#get-started"><img alt="Public version: 1.2.0" src="https://img.shields.io/badge/public-1.2.0-e87924"></a>
+  <a href="#get-started"><img alt="Public version: 1.2.1" src="https://img.shields.io/badge/public-1.2.1-e87924"></a>
   <a href="./LICENSE"><img alt="License: GPL-3.0-only" src="https://img.shields.io/badge/license-GPL--3.0--only-blue"></a>
   <a href="./docs/workflow-reference.md"><img alt="Skills: 14" src="https://img.shields.io/badge/skills-14-3776AB"></a>
 </p>
@@ -46,7 +46,7 @@ the options; real-world changes may still need your involvement.
 
 ## Get started
 
-This repository provides version **1.2.0**: thirteen workflow Skills plus the
+This repository provides version **1.2.1**: thirteen workflow Skills plus the
 `setup-noehub` Skill, which connects a project to the workflow. Use a Git
 repository for your project. Retain the commits and artifacts used for reviews,
 results, and recovery; a remote repository is optional.
@@ -204,7 +204,7 @@ requires building the binary and trusting the project Hook definition; see
 | Configure execution, recovery, or the Codex Hook | [Harness guide](./tools/workflow-harness/README.md) |
 | Check release changes or publish a release | [Changelog](./CHANGELOG.md) · [Release procedure](./docs/releasing.md) |
 
-The public release is **1.2.0**. Public and development versions use separate
+The public release is **1.2.1**. Public and development versions use separate
 version series.
 
 ## Support and privacy
