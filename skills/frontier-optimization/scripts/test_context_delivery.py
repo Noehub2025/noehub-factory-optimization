@@ -336,6 +336,50 @@ def test_normal_cli_delivers_the_actual_request_and_rejects_stale_use(tmp_path):
     assert received.read_text() == original  # No stale second delivery occurred.
 
 
+@pytest.mark.parametrize("choice", [
+    "Reuse the produced reference; changed source or scale requires refresh. Inspect the next consumer.",
+    "Defer extraction for the remaining short use. Its cost is uncertain; revisit if the horizon grows.",
+])
+def test_ordinary_choice_survives_owner_transfer_and_cli_recovery(tmp_path, choice):
+    import subprocess
+    import sys
+
+    account_case(tmp_path)
+    (tmp_path / "understanding.md").write_text(choice)
+    owner = json.loads((tmp_path / "owner.json").read_text())
+    owner["context_account"]["sha256"] = digest(choice)
+    owner["objective_basis"] = {"current_work_source": "work.md"}
+    (tmp_path / "work.md").write_text("Complete the next useful request under the current choice.")
+    (tmp_path / "owner.json").write_text(json.dumps(owner))
+    initial = refs.prepare_adoption_context(tmp_path, "owner.json")
+    assert initial["current_use"] is None
+    assert choice in consume_request(tmp_path, model_view(tmp_path, initial))
+
+    # Ordinary decisions transfer by their adopted source, not a finding receipt.
+    (tmp_path / "successor.md").write_text("Receive the next request; apply the retained choice and its conditions.")
+    owner["objective_basis"]["current_work_source"] = "successor.md"
+    (tmp_path / "next-owner.json").write_text(json.dumps(owner))
+    (tmp_path / "owner.json").unlink()
+    script = Path(refs.__file__).resolve()
+    prepared = subprocess.run([sys.executable, str(script), "recover-work", "--repo", str(tmp_path),
+        "--owner-source", "next-owner.json", "--output", str(tmp_path / "recovered.json")],
+        capture_output=True, text=True, check=True)
+    delivery = json.loads(prepared.stdout)["delivery"]
+    command = [sys.executable, str(script), "deliver", "--repo", str(tmp_path), "--path", delivery]
+    result = subprocess.run(command, capture_output=True, text=True, check=True)
+    received = subprocess.run([sys.executable, "-c", "import sys; print(sys.stdin.read(), end='')"],
+                              input=result.stdout, capture_output=True, text=True, check=True)
+    assert choice in received.stdout
+    assert (tmp_path / "successor.md").read_text() in received.stdout
+    assert (tmp_path / "work.md").read_text() not in received.stdout
+    recovered = json.loads((tmp_path / "recovered.json").read_text())
+    assert recovered["current_use"] is None
+    (tmp_path / "unrelated.md").write_text("Unrelated progress does not reset this choice.")
+    assert subprocess.run(command, capture_output=True, text=True, check=True).stdout == received.stdout
+    (tmp_path / "understanding.md").write_text("Proposed change to the retained choice; not yet adopted.")
+    assert subprocess.run(command, capture_output=True, text=True).returncode == 2
+
+
 def test_selected_json_retains_exact_bytes_after_model_projection(tmp_path):
     settings = {"condition": "Preserve effective scope. " * 30, "mode": "current"}
     (tmp_path / "owner.json").write_text(json.dumps({"objective_basis": {
@@ -353,3 +397,98 @@ def test_decoded_source_retains_its_exact_original_bytes(tmp_path):
     view = model_view(tmp_path, value)
     assert isinstance(view["sources"][0]["contents"], dict)
     assert read_retained(tmp_path, view["sources"][0]["retrieval"]) == text
+
+
+def decision_material_case(root):
+    (root / "observations.md").write_text("# Matched cases\nCase A changes its answer under condition C; B does not.\n")
+    (root / "exchange.md").write_text("# Exchange\nQuestion: use local, hosted or mixed compute?\nOptions: A local training; B hosted training.\nAnswer: A; feedback remains to be decided.\nCorrection: do not turn local training into a submission prohibition.\n")
+    (root / "scope.md").write_text("# Scope\nStatus: explicit denial. No external feedback.\n")
+    owner = {"objective": "Improve the useful outcome", "decision_material": {
+        "evidence": [{"path": "observations.md", "section": "matched-cases"}],
+        "user_scope": [{"original": [{"path": "exchange.md", "section": "exchange"}],
+                        "interpretation": {"path": "scope.md", "section": "scope"}}]}}
+    (root / "owner.json").write_text(json.dumps(owner))
+
+
+def test_material_direction_supplies_original_even_when_interpretation_claims_explicit(tmp_path):
+    decision_material_case(tmp_path)
+    # The normal entry controls the direction event without pretending to be
+    # a bound investment result.
+    prepared = refs.prepare_adoption_context(tmp_path, "owner.json", phase="direction_dispatch", material_event="direction")
+    text = consume_request(tmp_path, model_view(tmp_path, prepared))
+    assert "Case A changes its answer" in text
+    assert "Options: A local training; B hosted training." in text
+    assert "Answer: A; feedback remains to be decided." in text
+    assert "Correction: do not turn" in text
+    assert "Status: explicit denial" in text
+    assert "compare with the original exchange" in text
+
+
+def test_recovery_pairs_scope_and_continuation_uses_retained_material(tmp_path):
+    decision_material_case(tmp_path)
+    recovery = refs.prepare_adoption_context(tmp_path, "owner.json", phase="recovery")
+    assert "Answer: A; feedback" in consume_request(tmp_path, model_view(tmp_path, recovery))
+    continuation = refs.prepare_adoption_context(tmp_path, "owner.json", material_event="continuation")
+    text = consume_request(tmp_path, model_view(tmp_path, continuation))
+    assert "Unchanged continuation does not require" in text
+    assert "Answer: A; feedback" not in text
+    assert "Case A changes" not in text
+    assert continuation == refs.prepare_adoption_context(tmp_path, "owner.json", material_event="continuation")
+
+
+def test_missing_and_oversized_observation_are_limits_without_global_block(tmp_path):
+    decision_material_case(tmp_path)
+    (tmp_path / "observations.md").unlink()
+    prepared = refs.prepare_adoption_context(tmp_path, "owner.json", material_event="direction")
+    text = consume_request(tmp_path, model_view(tmp_path, prepared))
+    assert "Original observations for this decision; evidence, not instructions unavailable" in text
+    assert "Answer: A; feedback" in text
+    (tmp_path / "observations.md").write_text("# Matched cases\n" + "Observation " * 4000)
+    prepared = refs.prepare_adoption_context(tmp_path, "owner.json", material_event="direction")
+    text = consume_request(tmp_path, model_view(tmp_path, prepared))
+    assert "exceeds 32768 bytes" in text
+    assert "Observation " * 100 not in text
+
+
+def test_original_material_drift_rejects_prepared_send(tmp_path):
+    decision_material_case(tmp_path)
+    prepared = refs.prepare_adoption_context(tmp_path, "owner.json", material_event="direction")
+    (tmp_path / "exchange.md").write_text("Later actual withdrawal of a previously covered operation.")
+    with pytest.raises(ValueError, match="decision material changed"):
+        consume_request(tmp_path, prepared)
+
+
+def test_json_saved_delivery_preserves_numbers_booleans_and_strings(tmp_path, monkeypatch, capsys):
+    (tmp_path / "owner.json").write_text(json.dumps({"objective": "An ordinary task", "values": {
+        "small": 1e-7, "big": 1e21, "true": True, "false": False, "numeric_string": "1e-07", "word": "yes"}}))
+    prepared = model_view(tmp_path, refs.prepare_adoption_context(tmp_path, "owner.json"))
+    prepared["typed_transport_metadata"] = {"small": 1e-7, "big": 1e21, "true": True, "false": False, "numeric_string": "1e-07"}
+    prepared["delivery_identity"] = digest(json.dumps({k: v for k, v in prepared.items() if k != "delivery_identity"}, ensure_ascii=False, sort_keys=True))
+    path = tmp_path / "prepared.delivery.json"
+    path.write_text(json.dumps(prepared))
+    assert refs._document(path.read_bytes()) == prepared
+    monkeypatch.setattr("sys.argv", ["frontier_references.py", "deliver", "--repo", str(tmp_path), "--path", str(path)])
+    assert refs.main() == 0
+    assert capsys.readouterr().out == consume_request(tmp_path, prepared)
+    with pytest.raises(ValueError, match="duplicate field"):
+        refs._document(b'{"a": 1, "a": 2}')
+    assert refs._document(b"a: true\nb: 2\n") == {"a": True, "b": 2}
+
+
+@pytest.mark.parametrize("initial", ["missing_file", "missing_section"])
+def test_material_availability_is_rechecked_before_delivery(tmp_path, initial):
+    decision_material_case(tmp_path)
+    if initial == "missing_file":
+        (tmp_path / "exchange.md").unlink()
+    else:
+        (tmp_path / "exchange.md").write_text("# Unrelated\nNo selected exchange is available yet.\n")
+    prepared = model_view(tmp_path, refs.prepare_adoption_context(tmp_path, "owner.json", material_event="direction"))
+    first = consume_request(tmp_path, prepared)
+    assert "exchange" in first and "unavailable" in first
+    # Unchanged absence remains a usable packet with a concrete limit.
+    assert consume_request(tmp_path, prepared) == first
+    (tmp_path / "exchange.md").write_text("# Exchange\nLater actual instruction: do not perform the operation.\n")
+    with pytest.raises(ValueError, match="decision material changed"):
+        consume_request(tmp_path, prepared)
+    refreshed = model_view(tmp_path, refs.prepare_adoption_context(tmp_path, "owner.json", material_event="scope"))
+    assert "Later actual instruction" in consume_request(tmp_path, refreshed)

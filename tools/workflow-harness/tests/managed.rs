@@ -155,6 +155,12 @@ def done():
 #[test]
 fn actual_host_retires_noncooperative_worker_and_queued_actions() {
     let f = Fixture::new().worker();
+    fs::write(f.0.join("produced.json"), r#"{"a":7,"b":16}"#).unwrap();
+    fs::write(
+        f.0.join("requests.json"),
+        r#"[{"key":"b","factor":2,"offset":1},{"key":"a","factor":3,"offset":-1}]"#,
+    )
+    .unwrap();
     let child=f.backend(r#"
 if ident==2:
     action('forge',"open('forged','w').write('bad')",3)
@@ -168,8 +174,9 @@ else:
     assert 'New objective scope' in request['prompt']
     assert 'Current conditions remain explicit' in request['prompt']
     assert 'Corrected governing source.' in request['prompt']
+    assert 'Use the produced representation for current requests' in request['prompt']
     (root/'installed.json').write_text(json.dumps(request))
-    action('current',"open('current-effect','w').write('good')")
+    action('current',"import json; p=json.load(open('produced.json')); requests=json.load(open('requests.json')); out=[p[r['key']]*r['factor']+r['offset'] for r in requests]; json.dump(out,open('consumer-result.json','w')); open('current-effect','w').write('good')")
     assert read()['kind']=='action_result'
     done()
 "#);
@@ -184,6 +191,8 @@ else:
     );
     let mut fix = correction();
     fix.expected_invocation = 2;
+    fix.replacement.assignment =
+        "Use the produced representation for current requests; preserve completed evidence".into();
     let next = Session::open_managed(&f.run())
         .unwrap()
         .correct_managed_work(fix.clone())
@@ -218,6 +227,9 @@ else:
     );
     assert!(f.0.join("old-completed").exists());
     assert!(f.0.join("current-effect").exists());
+    let consumed: Value =
+        serde_json::from_slice(&fs::read(f.0.join("consumer-result.json")).unwrap()).unwrap();
+    assert_eq!(consumed, json!([33, 20]));
     assert!(!f.0.join("forbidden").exists());
     assert!(!f.0.join("forged").exists());
     let old_messages = fs::read_to_string(f.run().join("managed-2.jsonl")).unwrap();
@@ -376,4 +388,50 @@ fn unsuccessful_correction_keeps_original_state_and_key_scope() {
     assert_eq!(next.invocation_id, 2);
     drop(s);
     assert!(finish(child).status.success());
+}
+
+#[test]
+fn paused_correction_keeps_complete_successor_and_previously_admitted_effect() {
+    let f = Fixture::new().worker();
+    let child = f.backend(
+        r#"
+action('started',"from pathlib import Path; import time; Path('started').touch(); end=time.monotonic()+8\nwhile not Path('release').exists() and time.monotonic()<end: time.sleep(.01)\nPath('effect-completed').write_text('once')")
+read()
+"#,
+    );
+    wait_file(&f.0.join("started"));
+    Session::request_pause(&f.run(), "Owner paused new work".into()).unwrap();
+    let mut change = correction();
+    change.expected_invocation = 2;
+    let mut session = Session::open_managed(&f.run()).unwrap();
+    let successor = session.correct_managed_work(change.clone()).unwrap();
+    drop(session);
+    let paused = f.state();
+    assert_eq!(paused["runtime"]["paused"], "Owner paused new work");
+    assert_eq!(paused["managed"]["invocations"]["2"]["phase"], "retired");
+    assert_eq!(
+        paused["runtime"]["outstanding"]["invocation_id"],
+        successor.invocation_id
+    );
+    assert!(
+        f.run()
+            .join(format!("request-{}.json", successor.invocation_id))
+            .is_file()
+    );
+    assert!(paused["managed"]["invocations"]["2"]["actions"]["started"]["outcome"].is_null());
+    fs::write(f.0.join("release"), "continue the already admitted effect").unwrap();
+    let held = finish(child);
+    assert!(!held.status.success());
+    assert!(String::from_utf8_lossy(&held.stderr).contains("run is paused"));
+    wait_file(&f.0.join("effect-completed"));
+    let mut resumed = Session::open_managed(&f.run()).unwrap();
+    resumed.unpause().unwrap();
+    let recovered = resumed.correct_managed_work(change).unwrap();
+    assert_eq!(recovered.invocation_id, successor.invocation_id);
+    drop(resumed);
+    assert!(f.state()["runtime"]["paused"].is_null());
+    assert_eq!(
+        fs::read_to_string(f.0.join("effect-completed")).unwrap(),
+        "once"
+    );
 }

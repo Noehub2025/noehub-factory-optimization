@@ -1,0 +1,6 @@
+interface:
+  display_name: "Set Up Aka Optimization"
+  short_description: "Connect Aka to your local project"
+  default_prompt: "Use $setup-noehub to set up Aka Optimization for this project while preserving its existing instructions."
+policy:
+  allow_implicit_invocation: true

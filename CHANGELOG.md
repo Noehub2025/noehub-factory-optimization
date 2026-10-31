@@ -1,9 +1,37 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 - 2026-10-31
 
+This release adds the Aka Optimization desktop plugin for Codex.
+
+### Desktop plugin
+
+- Add the `setup-noehub` Skill and helper scripts. Setup checks Git, Python
+  3.10+, and PyYAML 6.x, keeps existing project instructions, and adds a marked
+  link plus `.noehub/workflow.md` and `.noehub/setup.json`.
+- Add a portable plugin manifest with listing metadata, logo, and composer icon,
+  plus a Codex repository marketplace. Build separate market and GitHub archives
+  from explicit file allowlists; only the GitHub archive keeps the optional
+  Codex Hook.
+- Tested in the Codex desktop app on macOS: setup, a complete optimization task,
+  and continuation in a new conversation. Linux is untested; the helper scripts
+  do not support Windows.
+
+### Workflow
+
+- Add the task execution entry, shared research understanding, and reusable
+  project capability guidance, with their checks.
+
+### Publisher, privacy, and license
+
+- Present the workflow as Aka Optimization. PARTNERNET SOFTWARE PTY LTD
+  publishes it; Noehub, Hangzhou Boshu Technology Co., Ltd., develops it and
+  handles support at support@noehub.com. Ken Chen remains author and copyright
+  holder.
+- Add the privacy policy, support page, and terms of service.
 - Change the project license from MIT to GNU General Public License
-  version 3 only (`GPL-3.0-only`) on October 19, 2026.
+  version 3 only (`GPL-3.0-only`) on October 19, 2026. The `v1.1.0` tag keeps
+  its MIT license.
 
 ## 1.1.0 - 2026-10-15
 

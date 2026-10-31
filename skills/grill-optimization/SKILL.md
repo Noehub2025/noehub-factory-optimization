@@ -54,7 +54,7 @@ After every material user answer, write a concise faithful record before continu
 
 Write only:
 
-- the user's answer;
+- the question, offered options, selected option or exact free-text answer;
 - the user's authorization, denial, or conditions;
 - decision source and necessary context;
 - unresolved user choices.
@@ -70,17 +70,18 @@ Target: <A-H | R1-R8 | named cross-cutting point>
 Question: <exact delegated question>
 Decision status: decided | authorized | denied | deferred | unable
 User answer: <faithful concise answer>
-Authorization: granted | denied | not applicable
+Authorization: granted | denied | unresolved | not applicable
 Conditions: <user-stated conditions or none>
 Decision source: user
 Decision context: <minimum context needed to interpret the answer>
+Source reference: <accessible original question and answer; label any translation>
 Unresolved user choices: <remaining choices or none>
 Decision record: <canonical detail path>
 ```
 
 When the user cannot decide, use `Decision status: unable` and preserve the response and unresolved choice. Do not adopt an agent default. The Primary Framing Agent decides whether an evidence-backed reversible default is permitted.
 
-When the user defers, denies authorization, or lacks authority, preserve that exact distinction. Do not translate it into a Contract status or blocker.
+When the user defers, denies authorization, or lacks authority, preserve that exact distinction. An unmentioned material effect is unresolved unless the continuing task already covers it; do not map it to granted or denied. Retain free-text qualifications and later corrections rather than interpreting only a selected option. Do not translate the answer into a Contract status or blocker.
 
 ## Protected content
 

@@ -7,9 +7,9 @@
 </p>
 
 <p align="center">
-  <a href="#get-started"><img alt="Public version: 1.1.0" src="https://img.shields.io/badge/public-1.1.0-e87924"></a>
+  <a href="#get-started"><img alt="Public version: 1.2.0" src="https://img.shields.io/badge/public-1.2.0-e87924"></a>
   <a href="./LICENSE"><img alt="License: GPL-3.0-only" src="https://img.shields.io/badge/license-GPL--3.0--only-blue"></a>
-  <a href="./docs/workflow-reference.md"><img alt="Skills: 13" src="https://img.shields.io/badge/skills-13-3776AB"></a>
+  <a href="./docs/workflow-reference.md"><img alt="Skills: 14" src="https://img.shields.io/badge/skills-14-3776AB"></a>
 </p>
 
 <p align="center"><strong>Engineering and algorithm optimization.</strong></p>
@@ -19,7 +19,9 @@
   <a href="#what-could-you-try">Examples</a> |
   <a href="./docs/workflow-reference.md">Workflow</a> |
   <a href="./CHANGELOG.md">Changelog</a> |
-  <a href="./SUPPORT.md">Support</a>
+  <a href="./SUPPORT.md">Support</a> |
+  <a href="./PRIVACY.md">Privacy</a> |
+  <a href="./TERMS.md">Terms</a>
 </p>
 
 # Aka Optimization
@@ -44,26 +46,53 @@ the options; real-world changes may still need your involvement.
 
 ## Get started
 
-This public repository provides version **1.1.0**, with thirteen workflow Skills.
-The newer desktop plugin is a separate **1.2.0 development candidate**. It is
-not included here and has not been published to the official Codex Marketplace.
-The public bundle does not include the desktop `setup-noehub` helper.
+This repository provides version **1.2.0**: thirteen workflow Skills plus the
+`setup-noehub` Skill, which connects a project to the workflow. Use a Git
+repository for your project. Retain the commits and artifacts used for reviews,
+results, and recovery; a remote repository is optional.
 
-Use a Git repository for your project. Retain the commits and artifacts used
-for reviews, results, and recovery; a remote repository is optional.
+**Before you start:** you need Python 3.10 or later, PyYAML 6.x, and a host
+that provides separate review conversations, such as Codex. The workflow plans
+and measures before it changes code, so even a small task can take 15 to 30
+minutes, and it can create Git commits in your project. Setup, a complete task,
+and continuation have been tested in the Codex desktop app on macOS. Linux is
+untested and the helper scripts do not support Windows.
 
-### 1. Install the Skills
+### Codex desktop plugin
 
-Choose one installation method. **Install all thirteen Skills together**, even
-though you normally invoke only the two coordinators.
+Add this repository as a plugin marketplace and install the plugin:
 
-**Codex and other Agent Skills-compatible agents**
+```sh
+codex plugin marketplace add Noehub2025/noehub-factory-optimization
+codex plugin add noehub-factory-optimization@noehub
+```
+
+Restart the Codex app, open your project, and start each request with the
+`@Aka Optimization` plugin mention:
+
+```text
+@Aka Optimization Help me set up Aka Optimization for this project.
+@Aka Optimization Use Aka Optimization to help this program run faster without changing its results.
+@Aka Optimization Use Aka Optimization to continue the task I choose from where we left off.
+```
+
+Setup checks Git, Python, and PyYAML, keeps your existing project instructions,
+and adds a short link plus two files under `.noehub/`. It does not start
+experiments or install dependencies. When setup is done, skip to
+[Start a task](#3-start-a-task).
+
+### 1. Install the Skills in other agents
+
+Choose one installation method. **Install all Skills together**, even though
+you normally invoke only the two coordinators.
+
+**Agent Skills-compatible agents**
 
 ```sh
 npx skills@latest add Noehub2025/noehub-factory-optimization
 ```
 
-Select all thirteen Skills and your target agent in the installer.
+Select all Skills and your target agent in the installer.
 
 **Claude Code plugin**
 
@@ -74,10 +103,12 @@ Run these commands inside Claude Code:
 /plugin install noehub-factory-optimization@noehub
 ```
 
-The plugin installs all thirteen Skills as one bundle. For a version-pinned
-checkout or manual installation, see the [installation guide](./docs/installation.md).
+The plugin installs the Skills as one bundle. For a version-pinned checkout or
+manual installation, see the [installation guide](./docs/installation.md).
 
 ### 2. Add the project instructions
+
+The Codex desktop plugin's setup Skill does this for you. For other agents:
 
 Copy [`AGENTS.md`](./AGENTS.md) into your project root. If one already exists,
 merge the three shared sections while preserving the project's existing rules.
@@ -167,25 +198,23 @@ requires building the binary and trusting the project Hook definition; see
 |---|---|
 | Install a specific version or copy Skills manually | [Installation guide](./docs/installation.md) |
 | Merge instructions into an existing project | [Shared agent instructions](./docs/agent-instructions.md) |
-| Browse all thirteen Skills and understand the detailed rules | [Workflow reference](./docs/workflow-reference.md) |
+| Browse all Skills and understand the detailed rules | [Workflow reference](./docs/workflow-reference.md) |
+| Check desktop dependencies and what has been tested | [Desktop plugin guide](./docs/desktop-plugin.md) |
 | Maintain shared evaluation, packaging, or submission tools | [Reusable project capabilities](./docs/project-capabilities.md) |
 | Configure execution, recovery, or the Codex Hook | [Harness guide](./tools/workflow-harness/README.md) |
 | Check release changes or publish a release | [Changelog](./CHANGELOG.md) · [Release procedure](./docs/releasing.md) |
 
-The public release is **1.1.0**. Public and development versions use separate
+The public release is **1.2.0**. Public and development versions use separate
 version series.
 
 ## Support and privacy
 
-The workflow's new public name is **Aka Optimization**, published by **Noehub**,
-Hangzhou Boshu Technology Co., Ltd. Existing installation names remain unchanged.
-Read the [privacy policy](./PRIVACY.md) and [support information](./SUPPORT.md),
-or contact [support@noehub.com](mailto:support@noehub.com).
-
-This branch still provides the existing public 1.1.0 distribution and its
-installation instructions. The newer desktop plugin is a separate development
-candidate; this README update does not publish that candidate or change the
-existing release.
+Aka Optimization is published by **PARTNERNET SOFTWARE PTY LTD**
+(ACN 621 438 622), Sydney, Australia, and developed by **Noehub**, Hangzhou Boshu
+Technology Co., Ltd. Existing installation names remain unchanged. Read the
+[privacy policy](./PRIVACY.md), [terms of service](./TERMS.md), and
+[support information](./SUPPORT.md), or contact
+[support@noehub.com](mailto:support@noehub.com).
 
 ## License
 

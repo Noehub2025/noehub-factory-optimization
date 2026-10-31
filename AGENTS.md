@@ -1,3 +1,24 @@
+# Shared workflow instructions
+
+Project-specific instructions and the user's task limits control the shared
+guidance below. Preserve those rules when merging this file into another project.
+See [instruction deployment](docs/agent-instructions.md) for existing files and
+Claude Code, and [project capabilities](docs/project-capabilities.md) for the
+supported entries, dependencies, responsible owners and limits.
+
+For current-Codex direction, receiving and recovery work, use the
+[task execution entry](docs/workflow/task-entry.md) when that path is configured
+for the task. It composes selected material and current-use checks without a
+separate model process. Preserve the existing owner's pause and authority.
+Native agent calls remain outside its controlled transport.
+
+For continuing research, maintain and use
+[shared research understanding](docs/workflow/research-basis.md) when forming
+questions, comparing investments, designing consequential observations and
+adopting results. Reuse sufficient prose or the optional structured account.
+Neither form certifies complete research or creates a readiness gate. Original
+goals, permissions and task decisions retain their owners.
+
 ## Frontier-seeking workflow behavior
 
 Drive optimization toward the best physically or theoretically attainable result. Treat current baselines, conventional approaches, and local optima as provisional. Generate bold, mechanism-grounded hypotheses with material upside, then choose the highest-leverage affordable test: the one that can most quickly falsify a hypothesis, distinguish live explanations, tighten a bound, or expose a better route. Do not select work merely because it is familiar, small, easy to approve, or guaranteed to produce an artifact. Use bounded and reversible actions as efficient probes of ambitious hypotheses, not as substitutes for ambition.
@@ -19,6 +40,8 @@ Whenever any workflow returns control to the user, lead with what materially cha
 Put record identifiers, reviews, gates, budget accounting, and repository status afterward as audit detail. A stop, authorization, or permission boundary limits what the agent may do; it does not justify omitting legal next choices or their consequences.
 
 ## Common project capabilities
+
+Use applicable entries from the consuming project's maintained capability and professional-reference records when preparing work. Link those records from effective project instructions. A record does not certify that every professional need is covered.
 
 At project planning, a material scope change, or first construction of an execution path, identify foreseeable common needs such as evaluation, packaging, submission, storage, recovery, and external-service adapters. Arrange reuse, construction, investigation, or justified deferral with the existing technical owner before dependent work makes later reuse unnecessarily fragile. Do not require duplicate code, a second consumer, or an incident before planning a need that the objective and expected work already make concrete.
 

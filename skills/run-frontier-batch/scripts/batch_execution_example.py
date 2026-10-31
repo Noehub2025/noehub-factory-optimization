@@ -108,8 +108,14 @@ def execute(
     effects = ("single_use_consumption",) if single_use else ()
 
     def operation(action: Action, context: Mapping[str, Any]) -> OperationResult:
-        # Batch supplies the definition accepted at execution, not a prose copy.
-        active = context["measurement_definition"]
+        return consume(action, context, context["measurement_definition"])
+
+    def prepare(action: Action, context: Mapping[str, Any]) -> dict:
+        return dict(context["measurement_definition"])
+
+    def consume(action: Action, context: Mapping[str, Any], active: dict) -> OperationResult:
+        # The enrolled path uses the exact checked object; it does not reload
+        # configuration or apply a different set of defaults after the check.
         rows = []
         failure = None
         read_count = 0
@@ -151,7 +157,7 @@ def execute(
 
     batch = Batch.open(
         repo, batch_name, governance=governance,
-        operations={"observe-status-sequence": OperationBinding(operation, effects)},
+        operations={"observe-status-sequence": OperationBinding(operation, effects, prepare, consume)},
     )
     return batch.perform(Action(
         key="observe-status-sequence", operation="observe-status-sequence", kind="measurement",

@@ -1,0 +1,2 @@
+# Shared Python runtime for the desktop Skills and current-conversation entry.
+PyYAML>=6.0,<7

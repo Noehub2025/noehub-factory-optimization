@@ -1,7 +1,7 @@
 {
   "name": "noehub-factory-optimization",
-  "version": "1.1.0",
-  "description": "Task-agnostic Recursive Self-Improvement research with active learning, bounded repair, and Git-backed evidence.",
+  "version": "1.2.0",
+  "description": "Aka Optimization is a workflow for engineering and algorithm optimization. It helps you research approaches, implement changes, measure their effects, and continue from saved experiments and findings.",
   "author": {
     "name": "Ken Chen"
   },
@@ -23,6 +23,7 @@
     "skills"
   ],
   "skills": [
+    "./skills/setup-noehub",
     "./skills/frame-optimization",
     "./skills/design-measurement",
     "./skills/research-optimization",

@@ -26,6 +26,7 @@ except ImportError as exc:  # pragma: no cover
 
 VALIDATOR = "optimization-workflow-bundle/4"
 EXPECTED_SKILLS = {
+    "setup-noehub": True,
     "frame-optimization": False,
     "design-measurement": True,
     "design-implementation": True,

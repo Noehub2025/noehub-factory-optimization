@@ -1,0 +1,20 @@
+{
+  "name": "noehub",
+  "interface": {
+    "displayName": "Aka Optimization"
+  },
+  "plugins": [
+    {
+      "name": "noehub-factory-optimization",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

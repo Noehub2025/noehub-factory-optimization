@@ -5,6 +5,11 @@ description: Coordinate Optimization Frontier campaigns. Use when the user reque
 
 # Frontier Optimization
 
+For a desktop plugin installation, use the [desktop runtime guide](../setup-noehub/references/desktop-runtime.md)
+when locating scripts, connecting a project, or recovering without a Hook. Load
+the assigned Skills through host discovery; keep installed code separate from
+the selected project's state and preserve required review independence.
+
 Coordinate one canonical optimization task. The Coordinator owns direction, allocation and adoption; specialist workers own their assigned research, design, execution or review.
 
 Read [User decisions](references/user-decisions.md) when interpreting the request, recovering its continuing scope, or determining permission.
@@ -20,7 +25,7 @@ Read [User decisions](references/user-decisions.md) when interpreting the reques
 3. Load action references only at their trigger below. Keep unrelated stage procedures and historical formats unloaded.
 4. Complete necessary adoption and accounting, then use [Active learning chain](references/learning-loop.md#active-learning-chain) to order the next work, including first preparation, early queries and long-task recovery. Load the direction resolver only at its investment trigger. A worker return or Batch outcome does not by itself end the research problem. Read [User-facing handoff](references/user-facing-handoff.md) when the completion boundary in User decisions requires a user return.
 
-At initial planning, consequential adoption and affected recovery, apply [Evidence use and continuing feedback](references/learning-loop.md#evidence-use-and-continuing-feedback) before accepting an inherited evaluator or supplied route menu as sufficient. Recover actual and cumulative use even when labels and sources are unchanged. Carry the resulting choice into current work and the actual receiving action; sufficient unchanged grounds permit ordinary continuation without another reviewer or search.
+At initial planning, consequential adoption and affected recovery, use [Research understanding](references/learning-loop.md#research-understanding) to connect direct observations, prior knowledge and demonstrated method coverage before accepting the inherited question or route menu. Apply [Evidence use and continuing feedback](references/learning-loop.md#evidence-use-and-continuing-feedback) to the intended judgment and cumulative use. Adopt substantive changes at one shared source and correct the affected assignment or design; sufficient unchanged grounds permit ordinary continuation without another reviewer, search or summary.
 
 For a continuing open objective, first entry, resumption and reuse recover or establish its reachable next discovery point under [Discovery allocation](references/learning-loop.md#discovery-allocation), even when local work succeeds and no missing fact is named. Initial direction formation and material reconsideration use actual proportionate discovery, applicable prior discovery, explicit deferral or a real access/resource limit. A focused task needs no wider survey. At recovery, use [Current-use correction](references/worker-interfaces.md#current-use-correction) to recover the controlling objective separately from inherited question and completion restrictions, even without a new result or known finding; reuse an applicable basis and continue ordinary work. Correct unsupported scope in the actual assignment; changing policy text or reporting `addressed` is not adoption.
 

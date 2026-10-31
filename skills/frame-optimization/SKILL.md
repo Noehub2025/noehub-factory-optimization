@@ -5,6 +5,11 @@ description: Define or revise an optimization problem, measurement meaning, or s
 
 # frame-optimization
 
+For a desktop plugin installation, use the [desktop runtime guide](../setup-noehub/references/desktop-runtime.md)
+when locating scripts, connecting a project, or recovering without a Hook. Load
+the assigned Skills through host discovery; keep installed code separate from
+the selected project's state and preserve required review independence.
+
 Build the durable contracts that make solution comparison and search work meaningful. Coordinate evidence, user-owned decisions, semantic repair, representation design, and independent review without running an optimization campaign.
 
 ## Operating contract

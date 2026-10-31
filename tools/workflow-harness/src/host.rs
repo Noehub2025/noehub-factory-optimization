@@ -23,6 +23,16 @@ struct HostEvent {
     event: Event,
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HostManagedCorrection {
+    correction_id: String,
+    expected_invocation: usize,
+    replacement: workflow_harness::QueuedWorkCorrection,
+    #[serde(default)]
+    current_use: Option<workflow_harness::current_use::CurrentUse>,
+}
+
 fn input<T: serde::de::DeserializeOwned>() -> Result<T> {
     let mut text = String::new();
     io::stdin()
@@ -83,9 +93,17 @@ pub fn run() -> Result<()> {
         )?);
     }
     if command == "managed-correct" && args.len() == 2 {
-        return emit(
-            &Session::open_managed(&PathBuf::from(&args[1]))?.correct_managed_work(input()?)?,
-        );
+        let request: HostManagedCorrection = input()?;
+        let correction = workflow_harness::session::ManagedCorrection {
+            correction_id: request.correction_id,
+            expected_invocation: request.expected_invocation,
+            replacement: request.replacement,
+        };
+        let mut session = Session::open_managed(&PathBuf::from(&args[1]))?;
+        return emit(&match request.current_use {
+            Some(binding) => session.correct_managed_work_with_use(correction, binding)?,
+            None => session.correct_managed_work(correction)?,
+        });
     }
     if command == "managed-reconcile" && args.len() == 2 {
         Session::open_managed(&PathBuf::from(&args[1]))?.reconcile_managed_receipts()?;
@@ -271,7 +289,11 @@ pub fn run() -> Result<()> {
         }
         "resume" => {
             session.unpause()?;
-            next(&mut session)
+            if let Some(request) = session.runtime.outstanding() {
+                emit(request)
+            } else {
+                next(&mut session)
+            }
         }
         "bind" => {
             let binding: HostBinding = input()?;

@@ -19,11 +19,15 @@ modules:
       - frontier-optimization/references/batch-code-execution.md
       - frontier-optimization/references/batch-current.md
       - frontier-optimization/references/current-use-corrections.md
+      - frontier-optimization/references/research-basis.md
       - frontier-optimization/scripts/current_use.py
+      - frontier-optimization/scripts/research_basis.py
       - frontier-optimization/scripts/context_delivery.py
       - frontier-optimization/scripts/frontier_batch.py
       - frontier-optimization/scripts/frontier_context.py
       - frontier-optimization/scripts/frontier_references.py
+      - frontier-optimization/scripts/protected_effect.py
+      - frontier-optimization/scripts/professional_input.py
       - frontier-optimization/scripts/saved_git.py
   validator-support:
     depends_on: [graph-core]
@@ -131,10 +135,13 @@ modules:
       - frontier-optimization/scripts/test_frontier_batch.py
       - frontier-optimization/scripts/test_frontier_context.py
       - frontier-optimization/scripts/test_current_use.py
+      - frontier-optimization/scripts/test_protected_effect.py
+      - frontier-optimization/scripts/test_research_basis.py
       - frontier-optimization/scripts/test_context_delivery.py
       - frontier-optimization/scripts/test_frontier_references.py
       - frontier-optimization/scripts/test_resolver_delivery.py
       - frontier-optimization/scripts/test_frontier_current_basis.py
+      - frontier-optimization/scripts/test_professional_input.py
       - frontier-optimization/scripts/test_saved_git.py
       - frontier-optimization/scripts/test_run_workflow_checks.py
       - run-frontier-batch/scripts/test_batch_execution_example.py

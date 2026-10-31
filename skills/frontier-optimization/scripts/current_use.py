@@ -284,6 +284,8 @@ def inspect_current_use(root: Path, owner: str, sources=(), *, previous_owner: s
         verify()
         from frontier_context import _publish
         value = {"owner": owner, "records": records}
+        if state.get("research_publications"):
+            value["research_publications"] = state["research_publications"]
         if links:
             value["relations"] = links
         if pending and not _complete_pending:
@@ -406,6 +408,8 @@ def adopt_current_work(root: Path, owner: str, *, corrections=(), replacements=(
     receipt.parent.mkdir(parents=True, exist_ok=True)
     with receipt.with_suffix(".adoption.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
+        from research_basis import reconcile_context_publications
+        reconcile_context_publications(root, owner)
         state = _state(receipt)
         pending = state.get("pending")
         if pending and pending["request"] != request:

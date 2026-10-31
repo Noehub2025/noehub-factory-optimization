@@ -351,9 +351,43 @@ impl Session {
         self.persist(&self.runtime)
     }
 
+    pub(super) fn has_prepared_managed_correction(&self) -> bool {
+        let Some(request) = self.runtime.outstanding() else {
+            return false;
+        };
+        self.runtime.execution().is_none()
+            && self
+                .managed
+                .corrections
+                .values()
+                .any(|(_, id)| *id == request.invocation_id)
+            && self
+                .managed
+                .invocations
+                .get(&request.invocation_id)
+                .is_some_and(|item| item.phase == "prepared" && item.actions.is_empty())
+    }
+
     /// Publish once under the action-admission lock. The existing renderer builds
     /// the full successor request. Prior effects and retired returns stay evidence.
+    pub fn correct_managed_work_with_use(
+        &mut self,
+        correction: ManagedCorrection,
+        binding: crate::current_use::CurrentUse,
+    ) -> Result<Invocation> {
+        self.correct_managed_work_with_binding(correction, Some(binding))
+    }
+
+    /// Source publication happened separately; this checkpoint is activation.
     pub fn correct_managed_work(&mut self, correction: ManagedCorrection) -> Result<Invocation> {
+        self.correct_managed_work_with_binding(correction, None)
+    }
+
+    fn correct_managed_work_with_binding(
+        &mut self,
+        correction: ManagedCorrection,
+        binding: Option<crate::current_use::CurrentUse>,
+    ) -> Result<Invocation> {
         key(&correction.correction_id)?;
         let body = serde_json::to_string(&correction).map_err(|e| e.to_string())?;
         if let Some((saved, id)) = self.managed.corrections.get(&correction.correction_id) {
@@ -366,6 +400,9 @@ impl Session {
             )
             .map_err(|e| e.to_string());
         }
+        // Pause observation and decision expiry can themselves checkpoint. Run
+        // them before changing the binding or retiring any invocation.
+        self.observe_request_controls()?;
         let old = self.runtime.outstanding().ok_or("no active work")?.clone();
         if old.invocation_id != correction.expected_invocation {
             return Err("correction refers to another invocation".into());
@@ -390,7 +427,14 @@ impl Session {
         if actual_use.iter().any(|path| !path.starts_with(&root)) {
             return Err("actual-use source is outside the workspace".into());
         }
-        self.require_current_use_ready_for(&actual_use)?;
+        if let Some(binding) = &binding {
+            binding.require_ready_for(&actual_use)?;
+            if let Some(previous) = &self.current_use.adopted {
+                binding.carries(previous)?;
+            }
+        } else {
+            self.require_current_use_ready_for(&actual_use)?;
+        }
         let sources = crate::source_contents(&self.runtime.task)?;
         let before = fs::read(self.directory.join("state.json")).map_err(|e| e.to_string())?;
         let old_runtime = self.runtime.clone();
@@ -402,6 +446,9 @@ impl Session {
             .next_id
             .checked_add(1)
             .ok_or("invocation id overflow")?;
+        if let Some(binding) = binding {
+            self.current_use.adopted = Some(binding);
+        }
         if let Some(v) = change.objective {
             self.runtime.task.objective = v;
         }
@@ -438,9 +485,10 @@ impl Session {
         self.managed
             .corrections
             .insert(correction.correction_id, (body, self.runtime.next_id));
-        // request() publishes the successor and revoked state in one checkpoint.
-        // An error after publication is recovered by the idempotency key above.
-        let result = self.request();
+        // No control transition may persist this partially staged replacement.
+        // Render the complete successor while retaining an observed pause. The
+        // final checkpoint publishes its request, binding and retirement together.
+        let result = self.render_request(true);
         if result.is_err()
             && fs::read(self.directory.join("state.json")).ok().as_ref() == Some(&before)
         {

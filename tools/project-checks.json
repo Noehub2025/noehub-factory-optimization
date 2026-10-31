@@ -2,6 +2,36 @@
   "schema": "project-checks/1",
   "rules": [
     {
+      "name": "Desktop plugin distributions and setup",
+      "paths": [
+        "plugin.json",
+        "assets/**",
+        ".agents/plugins/marketplace.json",
+        "requirements-runtime.txt",
+        "packaging/**",
+        "scripts/build_distribution.py",
+        "scripts/noehub_setup.py",
+        "scripts/workflow_task.py",
+        "skills/setup-noehub/**",
+        "tests/test_desktop_plugin.py",
+        "docs/desktop-plugin.md",
+        "PRIVACY.md",
+        "SUPPORT.md",
+        "SOURCE.md",
+        "docs/marketplace-listing.md"
+      ],
+      "commands": [
+        [
+          "{python}",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_desktop_plugin.py",
+          "tests/test_workflow_task.py"
+        ]
+      ]
+    },
+    {
       "name": "shared instructions and plugin packaging",
       "paths": [
         "AGENTS.md",
@@ -15,7 +45,8 @@
         "docs/releasing.md",
         ".claude-plugin/plugin.json",
         ".claude-plugin/marketplace.json",
-        "tools/project-checks.json"
+        "tools/project-checks.json",
+        "docs/workflow/**"
       ],
       "commands": [
         [
@@ -37,12 +68,54 @@
       "commands": [
         [
           "cargo",
+          "build",
+          "--locked",
+          "--manifest-path",
+          "tools/workflow-harness/Cargo.toml",
+          "--bin",
+          "workflow-harness"
+        ],
+        [
+          "{python}",
+          "-m",
+          "pytest",
+          "-q",
+          "tools/workflow-harness/tests/test_codex_owner.py",
+          "tools/workflow-harness/tests/test_codex_owner_project.py",
+          "tools/workflow-harness/tests/test_direction_owner.py",
+          "tools/workflow-harness/tests/test_managed_correction.py",
+          "tools/workflow-harness/tests/test_protected_http.py"
+        ],
+        [
+          "cargo",
           "test",
           "--locked",
           "--manifest-path",
           "tools/workflow-harness/Cargo.toml",
           "--",
           "--test-threads=1"
+        ]
+      ]
+    },
+    {
+      "name": "Current Codex task context and research input",
+      "paths": [
+        "scripts/workflow_task.py",
+        "tests/test_workflow_task.py",
+        "tests/test_workflow_research_basis.py",
+        "docs/workflow/**",
+        "tools/workflow-harness/adapters/direction_owner.py",
+        "skills/frontier-optimization/scripts/**"
+      ],
+      "commands": [
+        [
+          "{python}",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/test_workflow_task.py",
+          "tests/test_workflow_research_basis.py",
+          "tools/workflow-harness/tests/test_direction_owner.py"
         ]
       ]
     }

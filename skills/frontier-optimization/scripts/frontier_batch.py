@@ -9,9 +9,10 @@ Consequences, consumption, and the terminal result.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 import copy
 import fcntl
+import json
 import math
 import os
 from pathlib import Path
@@ -294,6 +295,56 @@ class OperationBinding:
 
     run: OperationAdapter
     protected_consequences: tuple[str, ...] = ()
+    prepare: Callable[[Action, Mapping[str, Any]], dict[str, Any]] | None = None
+    consume: Callable[[Action, Mapping[str, Any], dict[str, Any]], OperationResult] | None = None
+
+    describe_effect: Callable[[Action, Mapping[str, Any], dict[str, Any]], Action] | None = None
+    require_effect_description: bool = False
+
+    @classmethod
+    def configured(cls, load, consume, protected_consequences=(), *, describe_effect=None):
+        """Connect an existing configuration loader and consumer to owner choices.
+
+        The loader resolves real defaults. Only existing configuration selectors
+        can be replaced. The receiving function must use the supplied object,
+        not reload a second configuration. Preparation must be side-effect free.
+        Selected protected adapters derive an Action from this same object with
+        describe_effect; Batch checks its final parameters before consumption.
+        Without describe_effect this compatibility entry checks only the declared
+        Action, including for protected operations; it does not certify final
+        parameter coverage. Select configured_effect for that strict contract.
+        A consumer with later protected sends must also use its effect controller.
+        """
+        def prepare(action, context):
+            effective = copy.deepcopy(load(action, context))
+            for selector, value in context.get("realization", {}).get("choices", {}).items():
+                target = effective
+                parts = selector.split(".")
+                for part in parts[:-1]:
+                    if not isinstance(target, dict) or part not in target:
+                        raise ValueError(f"configuration lacks selected choice: {selector}")
+                    target = target[part]
+                if not isinstance(target, dict) or parts[-1] not in target:
+                    raise ValueError(f"configuration lacks selected choice: {selector}")
+                target[parts[-1]] = copy.deepcopy(value)
+            return effective
+
+        def legacy(action, context):
+            return consume(action, context, load(action, context))
+
+        return cls(legacy, tuple(protected_consequences), prepare, consume, describe_effect)
+
+    @classmethod
+    def configured_effect(cls, load, consume, protected_consequences=(), *, describe_effect):
+        """Require final-effect derivation for the selected configured sender.
+
+        This explicit contract cannot silently degrade to declaration-only checks.
+        Existing configured consumers keep their documented compatibility scope.
+        """
+        if not callable(describe_effect):
+            raise BatchFormatError("configured_effect requires a callable effect description")
+        binding = cls.configured(load, consume, protected_consequences, describe_effect=describe_effect)
+        return replace(binding, require_effect_description=True)
 
 
 LegacyProjector: TypeAlias = Callable[[Path, str], Mapping[str, Any] | None]
@@ -464,6 +515,164 @@ class Batch:
             self._projected_legacy = False
             return self.view
 
+    def prepare_realization(self, spec: Mapping[str, Any] | None = None) -> dict:
+        """Prepare the owner's next choice; preparation is never model delivery."""
+        from professional_input import prepare, identity
+
+        with _locked(self._lock_path):
+            state = self._reload_for_write()
+            if not state["definition"]:
+                raise ChangeRejected("define the owning Batch before preparing its realization")
+            old = state["current"].get("realization", {})
+            chosen = copy.deepcopy(dict(spec)) if spec is not None else old.get("spec")
+            if not isinstance(chosen, dict):
+                raise ChangeRejected("first realization needs its owner, decision, consumer and operation scope")
+            for name in ("owner", "intended_decision", "consumer"):
+                _require_text(chosen.get(name), name)
+            if not isinstance(chosen.get("operations"), list) or not chosen["operations"]:
+                raise ChangeRejected("realization needs maintained operation names and supported aliases")
+            for name in chosen["operations"]:
+                _require_key(name, "operation")
+            if old and not set(old["spec"]["operations"]) <= set(chosen["operations"]):
+                raise ChangeRejected("preparation cannot remove durable operation enrollment")
+            history = copy.deepcopy(old.get("history", []))
+            if old.get("invocation"):
+                history.append(copy.deepcopy(old["invocation"]))
+            realization = old if old and identity(old["spec"]) == identity(chosen) else {
+                "spec": chosen, "choice": None, "invocation": None, "history": history}
+            prepared = prepare(self._repo_root, self._batch, _realization_definition(state), chosen)
+            realization["prepared"] = prepared
+            state["current"]["realization"] = realization
+            _write_state(self._state_path, state)
+            self._state = state
+            return copy.deepcopy(prepared)
+
+    def answer_realization(self, prepared: dict, adapter) -> dict:
+        """Host-owned round trip through trusted integration code.
+
+        This interface does not install or call an external service itself. The
+        adapter is application wiring, never a model-selected receipt writer.
+        """
+        from professional_input import verify, request_text
+        from context_delivery import retain_source
+        from uuid import uuid4
+
+        with _locked(self._lock_path):
+            state = self._reload_for_write()
+            current = state["current"].get("realization")
+            if not current:
+                raise ChangeRejected("prepare the realization first")
+            verify(self._repo_root, self._batch, _realization_definition(state), current["spec"], prepared)
+            prior = current.get("invocation")
+            if prior and prior["status"] == "awaiting_response":
+                raise ChangeRejected("owner response is pending; settle the existing invocation before retrying")
+            if prior:
+                current.setdefault("history", []).append(copy.deepcopy(prior))
+            prompt = request_text(prepared)
+            invocation = {"id": uuid4().hex, "owner": current["spec"]["owner"],
+                          "status": "awaiting_response", "input": copy.deepcopy(prepared),
+                          "request": retain_source(self._repo_root, prompt), "adapter": adapter.name}
+            current["invocation"] = invocation
+            _write_state(self._state_path, state)
+            self._state = state
+        try:
+            reply = adapter.reply(self._repo_root, prompt)
+            return self.receive_realization(invocation["id"], reply)
+        except Exception as exc:
+            with _locked(self._lock_path):
+                state = self._reload_for_write()
+                current = state["current"].get("realization", {})
+                saved = current.get("invocation")
+                if saved and saved["id"] == invocation["id"] and saved["status"] == "awaiting_response":
+                    saved.update(status="failed", error=f"{type(exc).__name__}: {exc}")
+                    if getattr(exc, "trace", None):
+                        saved["trace"] = exc.trace
+                    _write_state(self._state_path, state)
+                    self._state = state
+            raise
+
+    def receive_realization(self, invocation_id: str, reply) -> dict:
+        """Receive a trusted adapter return, including a locally recovered one.
+
+        Host wiring calls this after an actual response. It is not a public
+        command for accepting caller-authored answer or receipt files.
+        """
+        from professional_input import OwnerReply, verify, validate_choice
+        from context_delivery import retain_source
+
+        if not isinstance(reply, OwnerReply) or not reply.response_id:
+            raise ValueError("adapter returned no bound owner response")
+        with _locked(self._lock_path):
+            state = self._reload_for_write()
+            current = state["current"].get("realization", {})
+            invocation = current.get("invocation")
+            if (not invocation or invocation["id"] != invocation_id
+                    or invocation["status"] != "awaiting_response"):
+                raise ChangeRejected("owner invocation was superseded; its response cannot adopt")
+            verify(self._repo_root, self._batch, _realization_definition(state), current["spec"], invocation["input"])
+            choice = validate_choice(self._repo_root, reply.answer, reply.supplied_sources)
+            invocation.update(status="responded", response_id=reply.response_id, choice=choice,
+                              trace=reply.trace, response=retain_source(self._repo_root, json.dumps(reply.answer)))
+            _write_state(self._state_path, state)
+            self._state = state
+            return {"invocation_id": invocation_id, "response_id": reply.response_id,
+                    "coverage": "trusted_adapter_response", "choice": copy.deepcopy(choice)}
+
+    def adopt_realization(self, invocation_id: str) -> BatchView:
+        """Adopt the saved host answer, never caller-supplied answer/receipt bytes."""
+        from professional_input import verify, check_grounds
+
+        with _locked(self._lock_path):
+            state = self._reload_for_write()
+            current = state["current"].get("realization", {})
+            answer = current.get("invocation")
+            if not answer or answer["id"] != invocation_id or answer["status"] not in {"responded", "adopted"}:
+                raise ChangeRejected("no completed current owner response; prepared content is not delivery")
+            if answer["owner"] != current["spec"]["owner"]:
+                raise ChangeRejected("response belongs to a different professional owner")
+            verify(self._repo_root, self._batch, _realization_definition(state), current["spec"], answer["input"])
+            check_grounds(self._repo_root, answer["choice"])
+            current["choice"] = copy.deepcopy(answer["choice"])
+            current["choice_input"] = copy.deepcopy(answer["input"])
+            answer["status"] = "adopted"
+            _write_state(self._state_path, state)
+            self._state = state
+            return self.view
+
+    def realization_choices(self) -> dict:
+        """Read current adopted selectors for a maintained consumer, without a new call."""
+        from professional_input import verify, check_grounds
+
+        with _locked(self._lock_path):
+            state = self._reload_for_write()
+            current = state["current"].get("realization", {})
+            if not current.get("choice"):
+                raise ChangeRejected("no adopted professional realization")
+            verify(self._repo_root, self._batch, _realization_definition(state), current["spec"], current["choice_input"])
+            check_grounds(self._repo_root, current["choice"])
+            self._state = state
+            return copy.deepcopy(current["choice"]["choices"])
+
+    def retire_realization_response(self, invocation_id: str, reason: str) -> BatchView:
+        """Revoke response eligibility without asserting that a backend stopped.
+
+        Reuse the existing controller for actual cancellation/effect settlement.
+        Recovery must not replay uncertain external effects.
+        """
+        _require_text(reason, "retirement reason")
+        with _locked(self._lock_path):
+            state = self._reload_for_write()
+            current = state["current"].get("realization", {})
+            answer = current.get("invocation")
+            if not answer or answer["id"] != invocation_id:
+                raise ChangeRejected("retirement must name the current owner invocation")
+            if answer["status"] == "adopted":
+                current["choice"] = None
+            answer.update(status="retired", recovery_condition=reason)
+            _write_state(self._state_path, state)
+            self._state = state
+            return self.view
+
     def perform(self, action: Action) -> ActionOutcome:
         """Perform one action through its installed adapter and record its facts."""
 
@@ -482,36 +691,42 @@ class Batch:
                     f"no operation adapter is installed for {action.operation!r}"
                 )
 
-            measurement_definition = _measurement_definition_for_action(state, action)
-            _validate_action_against_state(
-                self._repo_root,
-                state,
-                action,
-                operation.protected_consequences,
-            )
-            _validate_single_use_contract(
-                measurement_definition,
-                action,
-                operation.protected_consequences,
-            )
-            _verify_resources(state, action.requested_resources)
-            if measurement_definition is not None:
-                _verify_measurement_resources(
-                    state,
-                    measurement_definition,
-                    action.requested_resources,
-                )
-            self._verify_governance(
-                state,
-                action,
-                operation.protected_consequences,
-            )
-            _verify_repeat(
-                state,
-                action,
-                measurement_definition,
-                operation.protected_consequences,
-            )
+            # The declaration remains an early check. Resolved defaults and adopted
+            # choices are checked again before the exact supplied object is consumed.
+            measurement_definition = self._check_action(state, action, operation)
+            effective = None
+            realization = state["current"].get("realization")
+            enrolled = bool(realization and action.operation in realization["spec"]["operations"])
+            preparation_context = {
+                "batch": self._batch,
+                "definition": copy.deepcopy(state["definition"]),
+                "measurement_definition": copy.deepcopy(measurement_definition),
+                "remaining_resources": _remaining_resources(state),
+            }
+            if enrolled:
+                from professional_input import verify, check_choice
+                if not realization.get("choice"):
+                    raise ConsequenceBlocked("enrolled operation needs the owner's adopted realization")
+                if operation.prepare is None or operation.consume is None:
+                    raise ConsequenceBlocked("enrolled operation requires effective-input preparation and consumption")
+                preparation_context["realization"] = copy.deepcopy(realization["choice"])
+            if operation.prepare is not None:
+                try:
+                    if enrolled:
+                        verify(self._repo_root, self._batch, _realization_definition(state), realization["spec"], realization["choice_input"])
+                    effective = operation.prepare(action, preparation_context)
+                    if not isinstance(effective, dict):
+                        raise ValueError("effective operation input must be a mapping")
+                    if enrolled:
+                        check_choice(self._repo_root, realization["choice"], effective)
+                        verify(self._repo_root, self._batch, _realization_definition(state), realization["spec"], realization["choice_input"])
+                    if operation.describe_effect is not None:
+                        resolved = operation.describe_effect(action, preparation_context, effective)
+                        _validate_resolved_action(action, resolved)
+                        action = resolved
+                        measurement_definition = self._check_action(state, action, operation)
+                except ValueError as exc:
+                    raise ConsequenceBlocked(str(exc)) from exc
 
             needs_attempt = bool(
                 measurement_definition
@@ -553,7 +768,12 @@ class Batch:
                 "remaining_resources": _remaining_resources(state),
             }
             try:
-                result = operation.run(action, context)
+                if effective is not None:
+                    if enrolled:
+                        context["realization"] = copy.deepcopy(realization["choice"])
+                    result = operation.consume(action, context, effective)
+                else:
+                    result = operation.run(action, context)
                 if not isinstance(result, OperationResult):
                     raise TypeError("operation adapter must return OperationResult")
             except Exception as exc:
@@ -683,6 +903,17 @@ class Batch:
         _validate_state(state, self._batch)
         return state
 
+    def _check_action(self, state, action, operation):
+        measurement = _measurement_definition_for_action(state, action)
+        _validate_action_against_state(self._repo_root, state, action, operation.protected_consequences)
+        _validate_single_use_contract(measurement, action, operation.protected_consequences)
+        _verify_resources(state, action.requested_resources)
+        if measurement is not None:
+            _verify_measurement_resources(state, measurement, action.requested_resources)
+        self._verify_governance(state, action, operation.protected_consequences)
+        _verify_repeat(state, action, measurement, operation.protected_consequences)
+        return measurement
+
     def _verify_governance(
         self,
         state: dict[str, Any],
@@ -758,6 +989,10 @@ class Batch:
                 requested=action.requested_resources,
                 limits=limits,
             )
+
+
+def _realization_definition(state: Mapping[str, Any]) -> dict[str, Any]:
+    return {**state["definition"], "measurement": state["current"].get("measurement_definition")}
 
 
 def _empty_state(batch: str) -> dict[str, Any]:
@@ -1152,11 +1387,18 @@ def _validate_state(state: Mapping[str, Any], expected_batch: str) -> None:
         "observations",
         "conclusion",
     }
-    optional_current = {"revision_rationale", "candidate_rationale"}
+    optional_current = {"revision_rationale", "candidate_rationale", "realization"}
     if not isinstance(current, dict) or not current_fields <= set(current):
         raise BatchFormatError("Batch current state is incomplete")
     if set(current) - current_fields - optional_current:
         raise BatchFormatError("Batch current state contains unknown fields")
+    if "realization" in current:
+        realization = current["realization"]
+        if not isinstance(realization, dict) or not isinstance(realization.get("spec"), dict):
+            raise BatchFormatError("realization requires an owner specification")
+        spec = realization["spec"]
+        if not isinstance(spec.get("operations"), list) or not spec["operations"]:
+            raise BatchFormatError("realization must retain its enrolled operations")
     if current["status"] not in {"draft", "open", *FINAL_STATUSES}:
         raise BatchFormatError("Batch status is invalid")
     _validate_measurement_definition(current["measurement_definition"])
@@ -1229,6 +1471,18 @@ def _validate_action(action: Action) -> None:
     _require_text_tuple(action.required_checks, "required_checks", allow_empty=True)
     _validate_consequence_kinds(action.possible_consequences)
     _resource_mapping(action.requested_resources, "requested_resources")
+
+
+def _validate_resolved_action(declared: Action, resolved: Action) -> None:
+    if not isinstance(resolved, Action):
+        raise ConsequenceBlocked("effect description must return an Action")
+    _validate_action(resolved)
+    for name in ("key", "operation", "kind", "candidate", "repeatable"):
+        if getattr(declared, name) != getattr(resolved, name):
+            raise ConsequenceBlocked(f"resolved effect changed action identity: {name}")
+    for name in ("required_reviews", "required_permissions", "required_checks", "possible_consequences"):
+        if not set(getattr(declared, name)).issubset(getattr(resolved, name)):
+            raise ConsequenceBlocked(f"resolved effect removed declared requirements: {name}")
 
 
 def _validate_action_against_state(
@@ -1515,6 +1769,7 @@ def batch_facts(view: BatchView) -> dict[str, Any]:
         "resource_limits": state["resource_limits"],
         "attempt_consumption": state["consumption"],
         "remaining_capacity": view.remaining_capacity,
+        **({"realization": state["current"]["realization"]} if "realization" in state["current"] else {}),
         "unresolved_attempts": [
             item["attempt"] for item in state["attempts"]
             if item["status"] in {"running", "uncertain"}
@@ -1600,6 +1855,14 @@ def _operation_bindings(
                 f"operation {key!r} must use an OperationBinding"
             )
         _validate_consequence_kinds(binding.protected_consequences)
+        if (binding.prepare is None) != (binding.consume is None):
+            raise BatchFormatError("effective-input adapters require prepare and consume together")
+        if binding.prepare is not None and (not callable(binding.prepare) or not callable(binding.consume)):
+            raise BatchFormatError("effective-input preparation and consumption must be callable")
+        if binding.require_effect_description and not callable(binding.describe_effect):
+            raise BatchFormatError("strict configured effect binding requires a callable effect description")
+        if binding.describe_effect is not None and (binding.prepare is None or not callable(binding.describe_effect)):
+            raise BatchFormatError("effect description requires a callable and effective-input preparation")
         normalized[key] = binding
     return normalized
 

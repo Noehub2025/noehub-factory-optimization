@@ -1,6 +1,12 @@
 # Deploying shared agent instructions
 
-This repository keeps task-neutral optimization behavior in `AGENTS.md`. The thirteen Skills remain the authority for workflow procedures, review gates, evidence rules, and durable records. Do not duplicate those detailed contracts in a root instruction file.
+This repository keeps task-neutral optimization behavior in `AGENTS.md`. The thirteen workflow Skills remain the authority for workflow procedures, review gates, evidence rules, and durable records. Do not duplicate those detailed contracts in a root instruction file.
+
+For the complete desktop plugin, `setup-noehub` connects the selected project
+through one marked link in its effective root instruction file. It preserves
+existing shared sections and nested rules, rather than copying this repository's
+entire root file. See [desktop project setup](desktop-plugin.md#project-setup).
+The following manual deployment paths remain available.
 
 ## How the files are loaded
 
@@ -12,6 +18,20 @@ This repository keeps task-neutral optimization behavior in `AGENTS.md`. The thi
 The checked-in `CLAUDE.md` in this repository is a regular file rather than a symbolic link. This keeps the adapter portable to Windows and leaves room for Claude Code-specific additions.
 
 Claude Code also offers two conversion helpers. With `CLAUDE_CODE_NEW_INIT=1`, `/init` can inspect an existing `AGENTS.md` while proposing `CLAUDE.md`; `/import` can append a one-time copy of another coding agent's configuration in Claude Code 2.1.213 or later. Prefer direct `AGENTS.md` loading or a checked-in `@AGENTS.md` import when the shared instructions should stay synchronized. Use `/import` only when a one-time conversion is intentional, then remove duplicated rules before committing.
+
+## Adapt the linked project entries
+
+The shared root file also points to capability, task-context and research guides.
+When deploying it, copy those supporting guides or replace the links with the
+receiving project's existing maintained entries. Keep actual task owners,
+assignments, pauses and permissions local to that project. Installing Skills
+alone does not configure a task entry or install the Python and Rust adapters.
+
+For an existing `AGENTS.md`, merge this pointer guidance only where applicable;
+keep the three shared behavior sections exactly once. A project using another
+host can retain the shared research guidance without configuring a Codex task
+receiver. The optional [task entry](workflow/task-entry.md) and
+[research account](workflow/research-basis.md) describe their dependencies and limits.
 
 ## New repository
 

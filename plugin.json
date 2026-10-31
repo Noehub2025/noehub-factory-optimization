@@ -1,0 +1,41 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "noehub-factory-optimization",
+  "version": "1.2.0",
+  "description": "Aka Optimization is a workflow for engineering and algorithm optimization. It helps you research approaches, implement changes, measure their effects, and continue from saved experiments and findings.",
+  "author": {
+    "name": "Ken Chen"
+  },
+  "repository": "https://github.com/Noehub2025/noehub-factory-optimization",
+  "license": "GPL-3.0-only",
+  "keywords": [
+    "optimization",
+    "research",
+    "experiments",
+    "workflow"
+  ],
+  "extensions": {
+    "com.openai": {
+      "requires_local_executor": true,
+      "onboardingSkill": "./skills/setup-noehub/SKILL.md",
+      "interface": {
+        "displayName": "Aka Optimization",
+        "logo": "./assets/logo.png",
+        "composerIcon": "./assets/icon.png",
+        "shortDescription": "Engineering and algorithms",
+        "longDescription": "Aka Optimization is a workflow for engineering and algorithm optimization in Codex. Describe what you want to improve, and it helps you define how results will be compared, research possible approaches, implement changes, and measure their effects, with independent reviews along the way. Saved task records let you review earlier work and continue in a later conversation. Possible tasks include making a program run faster while preserving its results, investigating model inference cost at an agreed quality level, or comparing algorithms under the same computing budget. Improvement is not guaranteed. The workflow plans and measures before it changes code, so even a small task can take 15 to 30 minutes. It saves task records in your project and can create Git commits as it works. It needs a local Git project, Python 3.10 or later, PyYAML 6.x, and Codex with sub-agents. Tested on macOS; Linux is untested and the helper scripts do not support Windows.",
+        "developerName": "Partnernet Software Pty Ltd",
+        "category": "Productivity",
+        "defaultPrompt": [
+          "Help me set up Aka Optimization for this project.",
+          "Use Aka Optimization to help this program run faster without changing its results.",
+          "Use Aka Optimization to continue the task I choose from where we left off."
+        ],
+        "websiteURL": "https://github.com/Noehub2025/noehub-factory-optimization",
+        "privacyPolicyURL": "https://github.com/Noehub2025/noehub-factory-optimization/blob/main/PRIVACY.md",
+        "supportURL": "https://github.com/Noehub2025/noehub-factory-optimization/blob/main/SUPPORT.md",
+        "termsOfServiceURL": "https://github.com/Noehub2025/noehub-factory-optimization/blob/main/TERMS.md"
+      }
+    }
+  }
+}

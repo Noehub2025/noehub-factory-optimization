@@ -1,16 +1,18 @@
 # Aka Optimization privacy policy
 
-Effective date: October 28, 2026.
+Effective date: October 31, 2026.
 
-Aka Optimization is published by **Noehub**, **Hangzhou Boshu Technology Co., Ltd.**,
-based in Hangzhou, Zhejiang, China. Contact
+Aka Optimization is published by **PARTNERNET SOFTWARE PTY LTD** (ACN 621 438 622),
+Sydney, New South Wales, Australia. It is developed by **Noehub**,
+**Hangzhou Boshu Technology Co., Ltd.**, Hangzhou, Zhejiang, China, which handles
+support and privacy requests on the publisher's behalf. In this policy, "we"
+means the publisher and Noehub. Contact
 [support@noehub.com](mailto:support@noehub.com) for privacy questions or requests.
 
 This policy covers the distributed Skills, local helper scripts, and optional
 GitHub integrations in the Noehub Factory Optimization repositories, now
-presented as Aka Optimization. The complete desktop plugin is a development
-candidate; the public 1.1.0 release does not include its setup helper. This
-policy does not announce a new release or Marketplace approval.
+presented as Aka Optimization. It applies to version 1.2.0 and later, including
+the desktop plugin and its project setup helper.
 
 ## Files and information used for your task
 

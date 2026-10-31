@@ -5,9 +5,35 @@ agent calls, records cumulative execution evidence, and returns every worker
 result to its coordinator for adoption. It complements the Skills; it does not
 replace their professional judgment, permission boundaries, or project records.
 
+The [normal adapter entries](adapters/README.md) also provide controlled direction
+delivery, a cooperative HTTP sender, and source-to-managed correction recovery.
+These local repairs cover only their selected receivers. The Hook, direct shell
+calls and existing live tasks do not gain those guarantees by installation.
+
 The core is host-neutral. The checked-in project Hook is a Codex adapter only.
 This release intentionally provides no Hook configuration or compatibility
 shim for Claude Code, Cursor, or other agent hosts.
+
+## Optional Codex owner adapter
+
+The [owner adapter](adapters/README.md) connects professional choices to an
+ordinary Batch and its actual configuration consumer. It prepares the selected
+problem and resource descriptions, delivers authorized material through an
+explicit Codex call, and saves the returned choice for adoption and recovery.
+The Batch checks that the receiving operation uses the adopted effective inputs.
+
+The [Batch interface](../../skills/frontier-optimization/references/batch-current.md#professional-realization-and-actual-input-use)
+owns the choice. Preparation alone does not prove model delivery, and delivery
+or matching inputs do not prove professional adequacy. An unchanged applicable
+choice can be reused; an uncertain call is not automatically repeated. The
+adapter requires an installed Codex binary and host-selected model, effort, call
+allowance and timeout. It adds no Skill installation or routine reviewer.
+
+This adapter is separate from the Codex Hook and the managed subprocess host.
+The local tests use substituted transports and exercise configuration consumption
+and recovery. The source installation's behavioral observations and project logs
+are outside this portable bundle. Neither those records nor the release checks
+establish adoption or improved outcomes in another project.
 
 ## What it controls
 

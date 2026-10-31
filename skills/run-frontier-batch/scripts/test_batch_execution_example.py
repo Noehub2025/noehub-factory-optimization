@@ -32,6 +32,33 @@ def commit_inputs(repo: Path) -> CandidateRevision:
     return CandidateRevision(commit, tuple(inputs))
 
 
+def test_enrolled_realization_reaches_maintained_receiving_consumer(tmp_path):
+    from professional_input import OwnerReply
+
+    batch = example.prepare_demo(tmp_path, ("accepted", "rejected", "accepted"))
+    (tmp_path / "owner.md").write_text("Observe this sequence in its given order.")
+    inputs = batch.view.measurement_definition["inputs"]
+    prepared = batch.prepare_realization({"owner": "owner.md", "consumer": "status sequence",
+        "intended_decision": "Locate the first rejection", "operations": ["observe-status-sequence"],
+        "sources": [{"path": "owner.md"}]})
+
+    class LocalOwner:
+        name = "local-protocol-fixture"
+
+        def reply(self, root, prompt):
+            return OwnerReply({"choices": {"inputs": inputs},
+                "rationale": "Preserve the ordered sequence under the existing definition.",
+                "observation": "Stop at the first rejection.", "grounds": [{"path": "owner.md"}]},
+                "fixture-response", {"coverage": "not a model run"})
+
+    response = batch.answer_realization(prepared, LocalOwner())
+    batch.adopt_realization(response["invocation_id"])
+    result = example.execute(tmp_path, "B001")
+    assert result.operation_result.result["outcome"] == "negative"
+    assert [r["path"] for r in result.operation_result.result["rows"]] == inputs[:2]
+    assert example.read_result(tmp_path, "B001") == result.operation_result.result
+
+
 @pytest.mark.parametrize(("statuses", "single_use", "expected", "count"), [
     (("accepted", "accepted", "accepted"), False, "positive", 3),
     (("accepted", "rejected", "accepted"), False, "negative", 2),

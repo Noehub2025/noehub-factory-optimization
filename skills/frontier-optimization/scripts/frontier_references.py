@@ -77,7 +77,13 @@ _UniqueLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _y
 
 
 def _document(raw: bytes) -> dict[str, Any]:
-    value = yaml.load(raw, Loader=_UniqueLoader)
+    # JSON is not type-equivalent to PyYAML's YAML 1.1 interpretation: an
+    # exponent such as 1e-07 can become a string and invalidate saved delivery.
+    # Preserve JSON types and duplicate-key rejection before accepting YAML.
+    try:
+        value = json.loads(raw, object_pairs_hook=_pairs)
+    except json.JSONDecodeError:
+        value = yaml.load(raw, Loader=_UniqueLoader)
     if not isinstance(value, dict):
         raise ReferenceError("expected a mapping")
     return value
@@ -189,6 +195,14 @@ def _source_text(root: Path, ref: dict) -> str:
 
 def _selected_text(text: str, ref: dict) -> str:
     """Select the same meaningful bytes from Git or saved working sources."""
+    if "attempt" in ref:
+        if type(ref["attempt"]) is not int or ref["attempt"] < 1 or ref.get("field") or ref.get("section"):
+            raise ReferenceError("a return selector needs one positive attempt and no field or section")
+        results = [item["result"] for item in _source_metadata(text).get("attempts", [])
+                   if isinstance(item, dict) and item.get("attempt") == ref["attempt"] and "result" in item]
+        if len(results) != 1:
+            raise ReferenceError("return selector needs one existing attempt result")
+        return canonical_json(results[0]).decode()
     if ref.get("field"):
         metadata = _source_metadata(text)
         if ref["field"] not in metadata:
@@ -483,7 +497,7 @@ def _validate_objective_inputs(root: Path, prepared: dict, *, refresh_prior_cont
     saved_owner = _source_metadata(read_reference(root, owner).decode())
     live_owner = _source_metadata(_working_text(root, owner["path"]))
     owner_keys = ("type", "problem", "problem_epoch", "representation",
-                  "representation_revision", "objective_basis", "current_state",
+                  "representation_revision", "objective_basis", "decision_material", "current_state",
                   "feedback_trigger", "feedback_not_due")
     if any(live_owner.get(key) != saved_owner.get(key) for key in owner_keys):
         raise ReferenceError(f"decision-relevant objective basis changed: {owner['path']}; reconcile through the owner and prepare again")
@@ -509,7 +523,7 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
                              controlling_source: str | dict | None = None, phase: str = "adoption",
                              revision: str | None = None, incoming: dict | None = None,
                              account: dict | None = None, selected_basis: dict | None = None,
-                             incoming_sources=()) -> dict:
+                             incoming_sources=(), material_event: str | None = None) -> dict:
     """Present actual sources for owner judgment; neither choose scope nor certify it.
 
     Recovery reads saved working bytes without Git, a session, or a known finding.
@@ -534,7 +548,7 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
 
     def pointer(value, *, relative_to=None, current=False):
         if isinstance(value, dict):
-            ref = {key: value[key] for key in ("path", "section", "field", "commit") if key in value}
+            ref = {key: value[key] for key in ("path", "section", "field", "attempt", "commit") if key in value}
         elif isinstance(value, str) and value.strip():
             path, _, section = value.partition("#")
             if relative_to:
@@ -617,7 +631,7 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
             catalog[source_indices[key]] = {"source": catalog[source_indices[key]]["source"],
                                            "sha256": sha256_bytes(body.encode("utf-8")), **presentation(body, "full", ref["path"])}
         value = {"source": ref, "source_index": source_indices[key]}
-        if ref.get("field") or ref.get("section"):
+        if ref.get("field") or ref.get("section") or "attempt" in ref:
             try:
                 value["selected_contents"] = _selected_text(body, ref)
             except (ValueError, TypeError, KeyError, yaml.YAMLError) as exc:
@@ -685,6 +699,67 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
     if not controlling:
         limitations.append("Only the task owner is supplied. Its relationship to any broader objective is not established by this view; a standalone task needs no invented parent.")
 
+    # The owner chooses the bounded evidence surfaces once. Ordinary direction
+    # and recovery preparation supplies them without a caller noticing a gap.
+    # This optional association is not a new judgment or authorization schema.
+    event = material_event or ("direction" if phase == "investment_preparation" else
+                               "scope" if phase == "recovery" else "continuation")
+    if event not in {"direction", "scope", "design", "continuation"}:
+        raise ReferenceError("material event must be direction, scope, design or continuation")
+    material = metadata.get("decision_material", {})
+    if not isinstance(material, dict):
+        raise ReferenceError("decision_material must be a mapping when provided")
+    decision_material = {"event": event, "evidence": [], "user_scope": []}
+    material_bytes = {"observation": 0, "scope": 0, "discovery": 0, "research": 0}
+    for key in ("evidence", "user_scope", "discovery"):
+        if not isinstance(material.get(key, []), list):
+            raise ReferenceError(f"decision_material.{key} must be a list")
+
+    def material_source(value, role, category="scope"):
+        item = document(pointer(value, relative_to=owner_path, current=True), role)
+        # Evidence is data. Missing selections remain a visible limitation,
+        # unlike a missing operative objective or assignment.
+        if item.get("unavailable") or item.get("selection_unavailable"):
+            item["material_state"] = {"availability": "source_unavailable" if item.get("unavailable") else "selection_unavailable"}
+            return item
+        source = catalog[item["source_index"]]
+        selected_text = item.get("selected_contents", captured[(item["source"]["path"], item["source"].get("commit"))])
+        item["material_state"] = {"availability": "available", "sha256": digest(selected_text)}
+        size = len(selected_text.encode("utf-8"))
+        if size > 32768 or material_bytes[category] + size > 65536:
+            item["inline_omitted"] = "Selected material exceeds 32768 bytes or the 65536-byte material-group allowance; use a bounded source selector or exact retrieval. No interpretation was substituted."
+            limitations.append(f"{role}: {item['inline_omitted']}")
+        else:
+            material_bytes[category] += size
+        source["retrieval"] = retain_source(root, captured[(item["source"]["path"], item["source"].get("commit"))])
+        return item
+
+    for source in material.get("evidence", []):
+        decision_material["evidence"].append(material_source(source, "original observation material", "observation"))
+    if "discovery" in material:
+        decision_material["discovery"] = []
+        for source in material["discovery"]:
+            if isinstance(source, dict) and "commit" in source:
+                raise ReferenceError("current discovery source cannot select a historical commit; repair only this source association")
+            decision_material["discovery"].append(material_source(source, "current discovery arrangement", "discovery"))
+    if event in {"direction", "scope"} and not material.get("discovery"):
+        limitations.append("Discovery arrangement is unknown in this input, not completed. For a continuing objective, retain or establish a reachable discovery point or ground ending inquiry for its real remaining window. A focused task needs no invented parent arrangement.")
+    for pair in material.get("user_scope", []):
+        if not isinstance(pair, dict) or not isinstance(pair.get("original"), list):
+            raise ReferenceError("user_scope needs original source selectors and a separate interpretation selector")
+        original = [material_source(source, "original user question, options, answer or correction")
+                    for source in pair["original"]]
+        interpretation = material_source(pair["interpretation"], "current interpretation of user scope") if pair.get("interpretation") else None
+        if not original:
+            limitations.append("No original user exchange is available for one selected scope interpretation; its claimed status does not authenticate it.")
+        if interpretation is None:
+            limitations.append("No separate current interpretation is supplied for one selected user exchange.")
+        decision_material["user_scope"].append({"original": original, "interpretation": interpretation})
+    if event == "direction" and not decision_material["evidence"]:
+        limitations.append("No bounded original observation view is associated with this direction entry. Existing evidence remains usable; the owner decides whether further inspection is worthwhile.")
+    if event in {"direction", "scope"} and not decision_material["user_scope"]:
+        limitations.append("No original user exchange is associated with this scope use. A recorded permission label alone does not establish the original meaning; do not infer a new permission or prohibition.")
+
     assignments = [document(pointer(source), "incoming evidence") for source in incoming_sources]
     if assignment:
         # The explicit assignment is a current task, not historical evidence.
@@ -715,6 +790,12 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
         assignments.append({"provided_body": inherited_assignment})
     judgment = decision_body.get("judgment_binding")
     if judgment is not None:
+        # A fresh adoption/recovery view must not attach a saved judgment to
+        # material that judgment never received. Resolver preparation handles
+        # an inapplicable reuse candidate by preparing a new comparison below.
+        if phase != "investment_preparation":
+            retained_material = (decision_body["decision_material_basis"] if "decision_material_basis" in decision_body else
+                                 decision_material_identity(decision_body.get("adoption_context", {})))
         check_judgment_use(root, judgment)
         objective = _validate_objective_inputs(root, decision_body)
         _, evidence_identity = _evidence(root, decision_body["evidence_source"])
@@ -740,6 +821,91 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
     tasks = []
     for path in dict.fromkeys(paths):
         tasks.append(document(pointer(path, current=True), "outgoing or selected task", "full" if path in task_sources and not incorporated else "current_task"))
+
+    # The consumer owns dependencies. A direction/resumption view remains broad;
+    # a design view uses the declared neighborhood and its necessary conditions.
+    research_uses, research_pending, research_return_sources = [], [], []
+    consumers = [*assignments, *tasks, *([decision_context] if decision_context else [])]
+    for consumer in consumers:
+        if "source" in consumer:
+            ref = consumer["source"]
+            body = captured.get((ref["path"], ref.get("commit")))
+            return_source = {"source": {key: ref[key] for key in ("path", "commit") if key in ref},
+                             "availability": "available" if body is not None else "source_unavailable"}
+            if body is not None:
+                return_source["sha256"] = digest(body)
+            if return_source not in research_return_sources:
+                research_return_sources.append(return_source)
+        if "provided_body" in consumer:
+            declaration = consumer["provided_body"].get("research_use") if isinstance(consumer["provided_body"], dict) else None
+            if declaration is not None:
+                research_uses.append({"provided": True, "declaration": declaration})
+        if "source_index" not in consumer:
+            continue
+        ref = consumer["source"]
+        body = captured[(ref["path"], ref.get("commit"))]
+        declaration = _decision_source_body(body, ref).get("research_use")
+        if declaration is not None:
+            research_uses.append({"source": ref, "declaration": declaration})
+    structured = (adopted_account is not None and account_ref.get("field") == "research_basis"
+                  and isinstance(adopted_account.get("contents"), str))
+    if structured:
+        from research_basis import select_basis, render_basis, validate_research_use
+        basis = json.loads(adopted_account["contents"])
+        selected_ids = []
+        for use in research_uses:
+            use["declaration"] = validate_research_use(use["declaration"], owner=owner_path, basis=basis)
+            selected_ids.extend(use["declaration"]["items"])
+        research_view = select_basis(basis, None if event in {"direction", "scope"} or not research_uses
+                                     else list(dict.fromkeys(selected_ids)))
+        used_view = select_basis(basis, list(dict.fromkeys(selected_ids)) if research_uses else None)
+        adopted_account["use_identity"] = {"overview_sha256": digest(basis["overview"]),
+                                           "items": used_view["item_sha256"],
+                                           "selected_ids": used_view["selected_ids"]}
+        adopted_account["research_view"] = research_view
+        adopted_account["research_max_chars"] = association.get("max_chars", 16000)
+        adopted_account["research_render"] = render_basis(research_view, max_chars=adopted_account["research_max_chars"])
+        decision_material["research"] = []
+        for item in research_view["items"]:
+            for source in item["sources"]:
+                evidence = material_source(source, f"research source for {item['id']}", "research")
+                evidence["research_item"] = item["id"]
+                evidence["expected_sha256"] = source["sha256"]
+                evidence["basis_changed"] = evidence["material_state"].get("sha256") != source["sha256"]
+                decision_material["research"].append(evidence)
+                if evidence["basis_changed"]:
+                    limitations.append(f"Research basis source changed or is unavailable for {item['id']}: {source['path']}. The adopted statement is not a fresh interpretation of these bytes; reconcile its affected use.")
+        if research_uses and event in {"design", "continuation"} and any(item["basis_changed"] for item in decision_material["research"]):
+            raise ReferenceError("declared research dependency changed; use a direction or scope view to reconcile the affected use")
+    elif research_uses:
+        raise ReferenceError("declared research items need their adopted structured account; reconcile this consumer reference")
+
+    if judgment is not None and phase != "investment_preparation":
+        if retained_material != decision_material_identity({"sources": catalog, "decision_material": decision_material,
+                                                            "current_account": adopted_account}):
+            raise ReferenceError("saved judgment decision material changed; reconcile only the affected adoption or recovery")
+
+    # Existing result carriers are the registration boundary. No second return
+    # queue is created, and unassociated native returns are not authenticated.
+    for consumer in consumers:
+        if "source_index" not in consumer:
+            continue
+        ref = consumer["source"]
+        body = captured[(ref["path"], ref.get("commit"))]
+        saved = _source_metadata(body)
+        results = [a for a in saved.get("attempts", []) if isinstance(a, dict) and a.get("result") is not None]
+        if saved.get("result") is not None:
+            results.append({"result": saved["result"]})
+        for returned in results:
+            content = canonical_json(returned["result"]).decode()
+            identity = digest(content)
+            attempt = returned.get("attempt")
+            if incorporated.get((ref["path"], None)) == digest(body) or incorporated.get((ref["path"], attempt)) == identity:
+                continue
+            pending = {"source": {**ref, **({"attempt": attempt} if attempt is not None else {})},
+                       "sha256": identity, "contents": content}
+            if pending not in research_pending:
+                research_pending.append(pending)
     if not assignments:
         limitations.append("No separate incoming assignment was supplied; inspect the owner's inherited question and completion conditions.")
     if not tasks:
@@ -780,7 +946,10 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
         body = captured.get((item["path"], pointer(item["path"], current=item["path"] in actual_use).get("commit")))
         if body is None:
             continue
-        observed = digest(body)
+        try:
+            observed = digest(_selected_text(body, item))
+        except (ValueError, KeyError, TypeError):
+            observed = None
         if item.get("attempt") is not None:
             attempts = _source_metadata(body).get("attempts", [])
             result = next((a.get("result") for a in attempts if a.get("attempt") == item["attempt"]), None)
@@ -797,10 +966,15 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
         key = (item["source"]["path"], item["source"].get("commit"))
         if item.get("contents") != captured[key]:
             item["retrieval"] = retain_source(root, captured[key])
+    from professional_input import resource_view
+    resources = resource_view(root, owner_path)
     value = {"phase": phase, "sources": catalog, "owner": owner, "controlling_context": controlling_context,
+            "professional_resources": resources, "decision_material": decision_material,
             "selected_sources": selected, "incoming_assignments": assignments,
             "decision": decision_context, "outgoing_tasks": tasks, "limitations": limitations,
             "current_account": adopted_account, "actual_use": actual_use,
+            "research_uses": research_uses, "research_pending": research_pending,
+            "research_return_sources": research_return_sources,
             "current_sources": current_sources, "current_use": current_use,
             **({"judgment_binding": judgment} if judgment is not None else {}),
             "instruction": "Each source_index refers to one presentation in sources. Reuse the applicable owner-associated account; unincorporated results remain evidence, not adopted meaning. Current Frontier metadata and Brief remain visible. Omitted material is available through exact retrieval snapshots; inspect surrounding evidence independently and pursue new external evidence when useful. A delivered_content_ref is a JSON pointer to identical text in this input. Original task dependencies remain actual_use even when their presentation changes. Determine the controlling objective and source qualifications separately from local scope. A hash, focused label or cached account establishes neither semantic authority nor research completeness. Preserve real limits, pending effects and independent choices. For actual handoff or direct work, save this prepared JSON and use deliver --repo <workspace> --path <delivery-file>; send its complete stdout without rewritten governing headers. Delivery checks cannot intercept an opaque host. This view supplies evidence, not a verdict or permission."}
@@ -812,6 +986,78 @@ def prepare_adoption_context(root: Path, owner_path: str, *, assignment: str | N
                                      "sha256": digest(account_body), "retrieval": adopted_account["retrieval"]})
     value["delivery_identity"] = digest(json.dumps(value, ensure_ascii=False, sort_keys=True))
     return value
+
+
+def decision_material_identity(context: dict) -> dict:
+    """Identify selected content and availability, not unrelated source sections."""
+    def source(item):
+        if item is None:
+            return None
+        state = item.get("material_state")
+        if state is None:
+            # Read older retained associations without pretending that an old
+            # absence is current availability. New preparation records it.
+            if item.get("unavailable") or item.get("selection_unavailable"):
+                state = {"availability": "source_unavailable" if item.get("unavailable") else "selection_unavailable"}
+            else:
+                selected = item.get("selected_contents")
+                if selected is not None and not isinstance(selected, str):
+                    raise ReferenceError("selected material identity is unavailable; use the original prepared record")
+                state = {"availability": "available", "sha256": sha256_bytes(selected.encode()) if selected is not None
+                         else context["sources"][item["source_index"]]["sha256"]}
+        return {"source": item["source"], **state}
+    material = context.get("decision_material", {})
+    research_use = (context.get("current_account") or {}).get("use_identity")
+    return {"evidence": [source(item) for item in material.get("evidence", [])],
+            **{role: [source(item) for item in material[role]
+                      if role != "research" or research_use is None or item.get("research_item") in research_use["items"]]
+               for role in ("discovery", "research") if role in material},
+            **({"research_basis": research_use} if research_use is not None else {}),
+            "user_scope": [{"original": [source(item) for item in pair["original"]],
+                            "interpretation": source(pair.get("interpretation"))}
+                           for pair in material.get("user_scope", [])]}
+
+
+def check_decision_material(root: Path, context: dict) -> dict:
+    """Check the prepared selected basis, including an earlier missing source."""
+    basis = decision_material_identity(context)
+    selected = [*basis["evidence"], *basis.get("discovery", []), *basis.get("research", [])]
+    if any("commit" in item["source"] for item in basis.get("discovery", [])):
+        raise ReferenceError("current discovery source cannot select a historical commit")
+    for pair in basis["user_scope"]:
+        selected.extend(pair["original"])
+        if pair["interpretation"] is not None:
+            selected.append(pair["interpretation"])
+    for item in selected:
+        ref = item["source"]
+        try:
+            body = read_reference(root, ref).decode("utf-8") if ref.get("commit") else _working_text(root, ref["path"])
+        except (OSError, ValueError):
+            current = {"availability": "source_unavailable"}
+        else:
+            try:
+                text = _selected_text(body, ref)
+            except (ValueError, TypeError, KeyError, yaml.YAMLError):
+                current = {"availability": "selection_unavailable"}
+            else:
+                current = {"availability": "available", "sha256": sha256_bytes(text.encode())}
+        if {"source": ref, **current} != item:
+            raise ReferenceError(f"prepared decision material changed: {ref['path']}; refresh only the affected use")
+    return basis
+
+
+def check_research_returns(root: Path, context: dict) -> None:
+    """Refresh when an associated return carrier appears or changes, not unseen work."""
+    for retained in context.get("research_return_sources", []):
+        ref = retained["source"]
+        try:
+            body = read_reference(root, ref).decode() if ref.get("commit") else _working_text(root, ref["path"])
+        except (OSError, ValueError):
+            current = {"source": ref, "availability": "source_unavailable"}
+        else:
+            current = {"source": ref, "availability": "available", "sha256": sha256_bytes(body.encode())}
+        if current != retained:
+            raise ReferenceError(f"associated research return changed: {ref['path']}; refresh the affected input")
 
 
 def _feedback_decision(prepared: dict, result: dict) -> None:
@@ -841,7 +1087,7 @@ def _feedback_decision(prepared: dict, result: dict) -> None:
 
 
 _JUDGMENT_DERIVED = {
-    "adoption_context", "judgment_binding", "judgment_reuse", "decision_policy", "policy_coverage",
+    "adoption_context", "judgment_binding", "judgment_reuse", "decision_policy", "policy_coverage", "decision_material_basis",
     "evidence_source", "evidence_state_identity", "objective_owner", "objective_basis",
     "objective_basis_content", "objective_basis_identity", "objective_basis_options",
     "controlling_objective_binding", "feedback_trigger", "feedback_not_due", "current_use", "judgment_scope", "delivery_identity",
@@ -979,7 +1225,21 @@ def prepare_resolver(root: Path, revision: str, path: str, prior_paths=(), *, ow
         task_sources=task_sources, decision=prior if prepared.get("reuse_resolution") else None,
         selected_basis=objective["objective_basis"], incoming_sources=(ref,),
         controlling_source=objective.get("controlling_objective_binding", {}).get("source"),
-        phase="investment_preparation")
+        phase="investment_preparation",
+        material_event="continuation" if prepared.get("reuse_resolution") else "direction")
+    if prepared.get("reuse_resolution"):
+        retained_material = (prior["decision_material_basis"] if "decision_material_basis" in prior else
+                             decision_material_identity(prior.get("adoption_context", {})))
+        if decision_material_identity(prepared["adoption_context"]) != retained_material:
+            # Retained judgment is not a new comparison of changed original
+            # evidence or scope. Refresh only this affected owner use.
+            prepared.pop("reuse_resolution")
+            prepared.pop("reused_policy_coverage", None)
+            prepared["adoption_context"] = prepare_adoption_context(
+                root, owner_source, revision=ref["commit"], assignment=assignment,
+                task_sources=task_sources, selected_basis=objective["objective_basis"], incoming_sources=(ref,),
+                controlling_source=objective.get("controlling_objective_binding", {}).get("source"),
+                phase="investment_preparation", material_event="direction")
     return prepared
 
 
@@ -997,6 +1257,12 @@ def bind_resolution(root: Path, prepared: dict, result: dict, *, historical_sour
             raise ReferenceError("historical result belongs to different decision facts")
         return {**result, "evidence_state_identity": old_identity}
     objective = _validate_objective_inputs(root, prepared)
+    material_basis = check_decision_material(root, prepared.get("adoption_context", {}))
+    previous_material = result.get("decision_material_basis")
+    if previous_material is None and result.get("objective_basis"):
+        previous_material = decision_material_identity(result.get("adoption_context", {}))
+    if previous_material is not None and previous_material != material_basis:
+        raise ReferenceError("result belongs to different prepared decision material; reconcile the affected judgment")
     from current_use import inspect_current_use, same_corrections
     current_use = inspect_current_use(root, objective["objective_owner"]["path"])
     if not same_corrections(current_use, prepared.get("current_use")):
@@ -1050,10 +1316,13 @@ def bind_resolution(root: Path, prepared: dict, result: dict, *, historical_sour
     bound = {**{key: part for key, part in result.items() if key != "judgment_scope"},
              **retained_objective, **current_binding, "evidence_source": ref, "evidence_state_identity": identity,
              "judgment_binding": binding, "decision_policy": retained_policy,
+             "decision_material_basis": material_basis,
              "policy_coverage": _policy_coverage(root, policy, result)}
     bound["adoption_context"] = prepare_adoption_context(root, objective["objective_owner"]["path"],
         revision=objective["objective_owner"]["commit"], decision=bound, incoming=prepared,
         task_sources=scope["task_sources"], phase="result_adoption")
+    if decision_material_identity(bound["adoption_context"]) != material_basis:
+        raise ReferenceError("prepared decision material changed before adoption; refresh only the affected use")
     return bound
 
 
@@ -1162,7 +1431,7 @@ def register_hook_record(root: Path, output: Path, phase: str, session_id: str |
 @_cached_reference_operation
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("kind", choices=("design", "resolver", "bind-resolution", "prepare-adoption", "recover-work", "deliver", "verify-delivery", "read-evidence", "check-continuation", "check-current-use", "adopt-work", "bind-return", "batch-review", "batch-update", "batch-view"))
+    parser.add_argument("kind", choices=("design", "resolver", "bind-resolution", "prepare-adoption", "recover-work", "prepare-realization", "adopt-realization", "deliver", "verify-delivery", "read-evidence", "check-continuation", "check-current-use", "adopt-work", "bind-return", "batch-review", "batch-update", "batch-view", "adopt-context-account", "research-view", "research-impact"))
     parser.add_argument("--repo", type=Path, default=Path.cwd())
     parser.add_argument("--revision", help="chosen saved revision; defaults to HEAD for reference preparation")
     parser.add_argument("--path", help="W, evidence, review, or existing prepared assignment path")
@@ -1182,6 +1451,9 @@ def main() -> int:
     parser.add_argument("--scope", action="append", default=[])
     parser.add_argument("--prior", action="append", default=[], help="known resolution path at revision; repeat as needed")
     parser.add_argument("--result", type=Path, help="existing result draft for binding")
+    parser.add_argument("--item", action="append", help="research item for a derived view; omit for the overview")
+    parser.add_argument("--mermaid", action="store_true", help="include a generated diagram in research-view")
+    parser.add_argument("--max-chars", type=int, default=16000, help="research view display allowance; omissions remain explicit")
     parser.add_argument("--output", type=Path, help="write into the existing assignment or result location")
     parser.add_argument("--batch", help="target Batch for batch-review, batch-update or batch-view")
     parser.add_argument("--handle", help="chosen R handle only when absent from the saved review")
@@ -1193,7 +1465,43 @@ def main() -> int:
     from frontier_batch import AdoptReview, Batch, BatchError, UpdateWorkingState, batch_facts
 
     try:
-        if args.kind == "deliver":
+        if args.kind == "adopt-context-account":
+            if not args.owner_source or not args.result or args.output:
+                raise ReferenceError("adopt-context-account needs --owner-source and --result containing the exact publication request; output is the existing owner only")
+            from research_basis import adopt_context_account
+            request = _document(args.result.read_bytes())
+            required = {"operation", "expected_owner_sha256", "expected_account_sha256", "proposed_account"}
+            if not required <= set(request) or set(request) - required - {"sources", "incorporates"}:
+                raise ReferenceError("publication request needs operation, expected owner/account digests and proposed_account; only sources and incorporates are optional")
+            value = adopt_context_account(args.repo.resolve(), args.owner_source, **request)
+        elif args.kind in {"research-view", "research-impact"}:
+            if not args.owner_source or args.output:
+                raise ReferenceError("research views need --owner-source and emit derived output without editing the account")
+            from research_basis import select_basis, render_basis, affected_uses, basis_digest
+            root = args.repo.resolve()
+            owner = _source_metadata(_working_text(root, args.owner_source))
+            association = owner.get("context_account", {})
+            ref = association.get("source", {})
+            if ref.get("field") != "research_basis":
+                raise ReferenceError("this view needs an adopted structured account; ordinary prose accounts remain readable through the normal entry")
+            raw = read_reference(root, ref).decode() if ref.get("commit") else _working_text(root, ref["path"])
+            basis = json.loads(_selected_text(raw, ref))
+            if basis_digest(basis) != association.get("sha256"):
+                raise ReferenceError("research source changed since adoption; do not label the new view adopted")
+            if args.kind == "research-view":
+                projection = select_basis(basis, args.item)
+                rendered = render_basis(projection, max_chars=args.max_chars, mermaid=args.mermaid)
+                print(json.dumps({"source": ref, "view": projection, "render": rendered}, ensure_ascii=False, indent=2)
+                      if args.raw else rendered["text"], end="\n" if args.raw else "")
+                return 0
+            if len(args.prior) != 1:
+                raise ReferenceError("research-impact needs one --prior account or owner snapshot and the known consumers as --source")
+            before = _source_metadata(_working_text(root, args.prior[0]))
+            before = before.get("research_basis", before)
+            consumers = [{"path": path, "research_use": _source_metadata(_working_text(root, path)).get("research_use")}
+                         for path in args.source]
+            value = affected_uses(before, basis, consumers, owner=args.owner_source)
+        elif args.kind == "deliver":
             if not args.path or args.output or args.raw:
                 raise ReferenceError("deliver requires --path to a prepared delivery; emits the complete request on stdout")
             from context_delivery import consume_request
@@ -1218,6 +1526,16 @@ def main() -> int:
                 controlling_source=args.controlling_source,
                 phase="recovery" if args.kind == "recover-work" else "adoption",
                 account=_document(args.account.read_bytes()) if args.account else None)
+        elif args.kind in {"prepare-realization", "adopt-realization"}:
+            if not args.batch or args.output:
+                raise ReferenceError("realization operations require --batch and write only the owning Batch")
+            batch = Batch.open(args.repo, args.batch)
+            if args.kind == "prepare-realization":
+                value = batch.prepare_realization(_document(args.result.read_bytes()) if args.result else None)
+            else:
+                if not args.call or args.result:
+                    raise ReferenceError("adopt-realization requires --call from a completed host response, not a supplied result")
+                value = batch_facts(batch.adopt_realization(args.call))
         elif args.kind == "check-current-use":
             if not args.owner_source or not args.source or args.result:
                 raise ReferenceError("check-current-use requires --owner-source and actual --source objects")
@@ -1239,12 +1557,15 @@ def main() -> int:
             request = _document(args.correction_request.read_bytes()) if args.correction_request else {}
             if set(request) - {"corrections", "replacements", "relations"}:
                 raise ReferenceError("correction request supports corrections, replacements and relations only")
+            # This existing command owns correction adoption, not the new
+            # professional choice. Its returned view describes current state.
             required = adopt_current_work(args.repo, args.path, sources=args.source, **request)
             context = prepare_adoption_context(args.repo, args.path, assignment=args.assignment,
                 decision=str(args.result) if args.result else None, task_sources=args.source,
                 controlling_source=args.controlling_source)
             from frontier_context import register_adopted_work
-            value = {**required, "adoption_context": context}
+            value = {**required, "adoption_context": context,
+                     "coverage": "Current-use correction only. This command does not establish pre-choice model delivery or adopt a professional realization."}
             try:
                 value["registered"] = register_adopted_work(args.repo, Path(args.path), args.session)
             except (OSError, ValueError) as exc:
@@ -1316,7 +1637,7 @@ def main() -> int:
                                   "instruction": "For adoption/recovery context, run deliver --repo <workspace> --path <delivery> at the handoff and send its complete stdout as the request. Do not prepend rewritten governing conditions. Other preparation outputs keep their existing consumer. The internal record is for checks or audit."}))
         else:
             from context_delivery import model_view
-            print(json.dumps(value if args.raw else model_view(args.repo.resolve(), value), ensure_ascii=False, indent=2))
+            print(json.dumps(value if args.raw or args.kind == "prepare-realization" else model_view(args.repo.resolve(), value), ensure_ascii=False, indent=2))
         return 0
     except (BatchError, ValueError, KeyError, TypeError, OSError, yaml.YAMLError) as exc:
         print(json.dumps({"status": "NOT_READY", "error": str(exc)}))

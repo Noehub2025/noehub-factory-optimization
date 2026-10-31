@@ -1266,3 +1266,153 @@ def test_bound_scalar_excerpt_preserves_parent_judgment_and_incoming_task(repo):
     assert view["judgment_binding"] == result["judgment_binding"]
     assert "batch.yaml" in view["actual_use"]
     verify_prepared(repo, model_view(repo, view))
+
+
+def test_normal_resolver_adds_owner_material_without_caller_reminder(repo):
+    from context_delivery import consume_request, model_view
+    metadata = {"feedback_not_due": "Continue the selected inquiry.", "decision_material": {
+        "evidence": [{"path": "raw.md"}], "user_scope": [{"original": [{"path": "user.md"}],
+        "interpretation": {"path": "scope.md"}}]}}
+    save(repo, {"TASK.md": "---\n" + yaml.safe_dump(metadata) + "---\n# Task\nImprove the actual outcome.\n",
+        "raw.md": "Actual observation: gains disappear under condition C.",
+        "user.md": "Question: resource location? Answer: local training. Feedback remains unasked.",
+        "scope.md": "Claimed explicit denial: never request external feedback.",
+        "evidence.json": '{"recommendation":"Repeat the familiar implementation."}'})
+    prepared = prepare(repo, "HEAD", "evidence.json")
+    text = consume_request(repo, model_view(repo, prepared))
+    assert "Actual observation: gains disappear" in text
+    assert "Feedback remains unasked" in text
+    assert "Claimed explicit denial" in text
+    result = refs.bind_resolution(repo, prepared, {"reason": "Keep the useful experiment; scope remains separately unresolved."})
+    save(repo, {"resolution.json": json.dumps(result)})
+    reused = prepare(repo, "HEAD", "evidence.json", ["resolution.json"])
+    assert reused.get("reuse_resolution")
+    assert reused["adoption_context"]["decision_material"]["event"] == "continuation"
+    (repo / "user.md").write_text("Later instruction changes the covered scope.")
+    changed = prepare(repo, "HEAD", "evidence.json", ["resolution.json"])
+    assert not changed.get("reuse_resolution")
+    assert changed["adoption_context"]["decision_material"]["event"] == "direction"
+
+
+def original_material_fixture(repo, missing=False):
+    metadata = {"feedback_not_due": "Current observation is not yet due.", "decision_material": {
+        "evidence": [{"path": "raw.md", "section": "observations"}],
+        "user_scope": [{"original": [{"path": "user.md", "section": "exchange"}],
+                        "interpretation": {"path": "scope.md"}}]}}
+    files = {"TASK.md": "---\n" + yaml.safe_dump(metadata) + "---\n# Task\nImprove the useful outcome.\n",
+             "raw.md": "# Observations\nThe treatment helps under C.\n# Unrelated\nEarlier history.\n",
+             "scope.md": "Current interpretation of the user's local-work constraint.",
+             "evidence.json": '{"recommendation":"Continue useful work."}'}
+    if not missing:
+        files["user.md"] = "# Exchange\nUser answer: local work only.\n# Unrelated\nEarlier history.\n"
+    save(repo, files)
+    return prepare(repo, "HEAD", "evidence.json")
+
+
+@pytest.mark.parametrize("changed", ["original", "observation", "missing_original_restored"])
+def test_normal_bind_cli_rejects_changed_original_material(repo, changed):
+    import sys
+    from context_delivery import consume_request, model_view
+    prepared = original_material_fixture(repo, missing=changed == "missing_original_restored")
+    consume_request(repo, model_view(repo, prepared))
+    (repo / "prepared.json").write_text(json.dumps(prepared))
+    (repo / "returned.json").write_text(json.dumps({"reason": "Retain the direction using the material supplied before my return."}))
+    if changed == "observation":
+        (repo / "raw.md").write_text("# Observations\nThe treatment fails under C.\n")
+    else:
+        (repo / "user.md").write_text("# Exchange\nLater correction: do not continue this direction.\n")
+    result = subprocess.run([sys.executable, str(Path(refs.__file__)), "bind-resolution", "--repo", str(repo),
+        "--path", "prepared.json", "--result", str(repo / "returned.json"), "--output", str(repo / "bound.json")],
+        capture_output=True, text=True)
+    assert result.returncode == 2
+    assert "prepared decision material changed" in result.stdout
+    assert not (repo / "bound.json").exists()
+
+
+def test_binding_preserves_prepared_selected_basis_across_unrelated_source_edits(repo):
+    prepared = original_material_fixture(repo)
+    basis = refs.decision_material_identity(prepared["adoption_context"])
+    original = (repo / "user.md").read_text()
+    (repo / "user.md").write_text(original.replace("Earlier history.", "Unrelated later history."))
+    result = refs.bind_resolution(repo, prepared, {"reason": "Continue the useful work within the unchanged selected scope."})
+    assert result["decision_material_basis"] == basis
+    save(repo, {"resolution.json": json.dumps(result)})
+    reused = prepare(repo, "HEAD", "evidence.json", ["resolution.json"])
+    assert reused.get("reuse_resolution")
+    assert reused["adoption_context"]["decision_material"]["event"] == "continuation"
+    # A new preparation is not a license to relabel a previously bound return.
+    (repo / "user.md").write_text("# Exchange\nNew instruction: stop this direction.\n")
+    refreshed = prepare(repo, "HEAD", "evidence.json")
+    with pytest.raises(ValueError, match="different prepared decision material"):
+        refs.bind_resolution(repo, refreshed, result)
+
+
+def test_direct_adoption_or_recovery_cannot_refresh_saved_judgment_material(repo):
+    prepared = original_material_fixture(repo)
+    result = refs.bind_resolution(repo, prepared, {"reason": "Keep this supported direction."})
+    (repo / "resolution.json").write_text(json.dumps(result))
+    for phase in ("adoption", "recovery"):
+        refs.prepare_adoption_context(repo, "TASK.md", decision="resolution.json", phase=phase)
+    (repo / "user.md").write_text("# Exchange\nLater instruction: stop this direction.\n")
+    for phase in ("adoption", "recovery"):
+        with pytest.raises(ValueError, match="saved judgment decision material changed"):
+            refs.prepare_adoption_context(repo, "TASK.md", decision="resolution.json", phase=phase)
+
+
+def structured_research_resolver_case(repo):
+    """A structured account whose research use is separate from objective state."""
+    from research_basis import basis_digest
+    files = frontier_files(due=False)
+    owner_path = "campaign/FRONTIER.md"
+    _, header, body = files[owner_path].split("---\n", 2)
+    owner = yaml.safe_load(header)
+
+    def item(identity):
+        return {"id": identity, "kind": "hypothesis", "text": f"Possible explanation {identity}.",
+                "conditions": "Only condition A was inspected.", "sources": [], "links": []}
+
+    basis = {"schema": 1, "overview": "Two independent research questions remain.",
+             "items": [item("used"), item("unrelated")]}
+    owner["research_basis"] = basis
+    owner["context_account"] = {"source": {"path": owner_path, "field": "research_basis"},
+                                "sha256": basis_digest(basis)}
+    files[owner_path] = "---\n" + yaml.safe_dump(owner, sort_keys=False) + "---\n" + body
+    batch_path = "artifacts/frontier/B001/batch.yaml"
+    batch = yaml.safe_load(files[batch_path])
+    batch["research_use"] = {"owner": owner_path, "items": ["used"]}
+    files[batch_path] = yaml.safe_dump(batch)
+    save(repo, files)
+    prepared = prepare(repo, "HEAD", "evidence.json", owner_source=owner_path)
+    result = refs.bind_resolution(repo, prepared, {"row": 11, "exact_action": "Investigate the selected comparison."})
+    save(repo, {"resolution.json": json.dumps(result)})
+    return owner_path, owner, body, result
+
+
+def test_structured_research_fresh_binding_and_changed_used_condition(repo):
+    from research_basis import basis_digest
+    owner_path, owner, body, result = structured_research_resolver_case(repo)
+    unchanged = prepare(repo, "HEAD", "evidence.json", ["resolution.json"], owner_source=owner_path)
+    assert unchanged["reuse_resolution"]["path"] == "resolution.json"
+    owner["research_basis"]["items"][0]["conditions"] = "Condition A no longer supports this interpretation."
+    owner["context_account"]["sha256"] = basis_digest(owner["research_basis"])
+    save(repo, {owner_path: "---\n" + yaml.safe_dump(owner, sort_keys=False) + "---\n" + body})
+    changed = prepare(repo, "HEAD", "evidence.json", ["resolution.json"], owner_source=owner_path)
+    assert "reuse_resolution" not in changed
+    assert changed["objective_basis_identity"] == unchanged["objective_basis_identity"]
+    assert refs.decision_material_identity(changed["adoption_context"]) != result["decision_material_basis"]
+    assert changed["adoption_context"]["current_account"]["research_view"]["items"][0]["conditions"] == owner["research_basis"]["items"][0]["conditions"]
+
+
+def test_unrelated_research_item_refreshes_carrier_without_rejecting_declared_use(repo):
+    from research_basis import basis_digest
+    owner_path, owner, body, _ = structured_research_resolver_case(repo)
+    before = prepare(repo, "HEAD", "evidence.json", ["resolution.json"], owner_source=owner_path)
+    owner["research_basis"]["items"][1]["conditions"] = "Only condition B was inspected."
+    owner["context_account"]["sha256"] = basis_digest(owner["research_basis"])
+    save(repo, {owner_path: "---\n" + yaml.safe_dump(owner, sort_keys=False) + "---\n" + body})
+    after = prepare(repo, "HEAD", "evidence.json", ["resolution.json"], owner_source=owner_path)
+    assert after["reuse_resolution"]["path"] == "resolution.json"
+    old_account = before["adoption_context"]["current_account"]
+    new_account = after["adoption_context"]["current_account"]
+    assert new_account["sha256"] != old_account["sha256"]
+    assert new_account["use_identity"] == old_account["use_identity"]

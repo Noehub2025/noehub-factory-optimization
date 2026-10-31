@@ -1,16 +1,21 @@
 # Installation
 
-For installer and Claude Code plugin commands, start with the
-[README](../README.md#get-started). This guide covers a fixed release, manual
-installation, and the optional Codex Hook.
+For the Codex desktop plugin, installer, and Claude Code plugin commands, start
+with the [README](../README.md#get-started). This guide covers a fixed release,
+manual installation, and the optional Codex Hook. The
+[desktop plugin guide](./desktop-plugin.md) covers the desktop runtime, its
+dependencies, and what has been tested.
 
 ## Use a specific release
 
-Clone the public 1.1.0 release:
+Clone the public 1.2.0 release:
 
 ```sh
-git clone --branch v1.1.0 --single-branch https://github.com/Noehub2025/noehub-factory-optimization.git
+git clone --branch v1.2.0 --single-branch https://github.com/Noehub2025/noehub-factory-optimization.git
 ```
+
+The earlier `v1.1.0` tag has thirteen Skills, no desktop setup helper, and the
+MIT license.
 
 Use this checkout as the source for the steps below. The installer and
 marketplace commands in the README use the public repository; they are not
@@ -18,7 +23,7 @@ pinned by this clone command.
 
 ## Install the complete Skill folders
 
-Copy or symlink all thirteen folders under `skills/` into the directory for
+Copy or symlink all fourteen folders under `skills/` into the directory for
 your agent. Choose project-level installation for one repository or user-level
 installation for use across projects.
 

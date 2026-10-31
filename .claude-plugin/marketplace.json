@@ -1,19 +1,19 @@
 {
   "name": "noehub",
   "owner": {
-    "name": "Ken Chen",
-    "url": "https://github.com/Noehub2025"
+    "name": "Noehub",
+    "url": "https://noehub.com/"
   },
-  "description": "Noehub Skills for task-agnostic Recursive Self-Improvement research, context recovery, and route-level learning.",
+  "description": "Aka Optimization is a workflow for engineering and algorithm optimization. It helps you research approaches, implement changes, measure their effects, and continue from saved experiments and findings.",
   "metadata": {
-    "description": "Noehub Skills for task-agnostic Recursive Self-Improvement research, context recovery, and route-level learning."
+    "description": "Aka Optimization is a workflow for engineering and algorithm optimization. It helps you research approaches, implement changes, measure their effects, and continue from saved experiments and findings."
   },
   "plugins": [
     {
       "name": "noehub-factory-optimization",
       "source": "./",
-      "version": "1.1.0",
-      "description": "Frame optimization problems, pursue core-mechanism advances, and turn measured experience into better next work.",
+      "version": "1.2.0",
+      "description": "Aka Optimization is a workflow for engineering and algorithm optimization. It helps you research approaches, implement changes, measure their effects, and continue from saved experiments and findings.",
       "category": "engineering",
       "keywords": [
         "optimization",

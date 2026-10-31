@@ -28,7 +28,7 @@ This step is complete when the question and allowed answer surface are reproduci
 
 For a tradeoff, present the technically eligible alternatives, material value differences, recommendation when supported, uncertainty and reconsideration event. For Permission, present the protected Consequence, scope, cumulative limit, known cost or risk, and the effect of permit, decline or conditions.
 
-Ask one plain-language question. Preserve the user's exact answer and conditions in the assigned answer path. Do not ask another question, rewrite the technical plan or adopt campaign state.
+Ask one plain-language question about the actual unresolved effects. Preserve the question, disclosed options, selected option or exact free-text answer, conditions and source reference in the assigned answer path; label translations. Keep any interpretation separate. A local resource answer does not implicitly decide external validation. Do not ask another question, rewrite the technical plan or adopt campaign state.
 
 This step is complete when the Coordinator can record one V without interpreting an ambiguous answer.
 

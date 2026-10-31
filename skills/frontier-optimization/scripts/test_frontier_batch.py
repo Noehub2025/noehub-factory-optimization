@@ -305,6 +305,101 @@ class BatchModuleTests(unittest.TestCase):
         )
         return batch
 
+    def test_strict_configured_effect_cannot_omit_or_lose_its_description(self):
+        consume = lambda *args: self.fail("invalid strict binding must not consume")
+        for inherent in ((), ("external_submission",)):
+            with self.subTest(protected_consequences=inherent):
+                with self.assertRaises(TypeError):
+                    OperationBinding.configured_effect(lambda a, c: {}, consume, inherent)
+                for missing in (None, "not a callable"):
+                    with self.assertRaisesRegex(BatchFormatError, "callable effect description"):
+                        OperationBinding.configured_effect(lambda a, c: {}, consume, inherent,
+                                                           describe_effect=missing)
+                binding = OperationBinding.configured_effect(lambda a, c: {}, consume, inherent,
+                                                              describe_effect=lambda a, c, e: a)
+                self.assertTrue(binding.require_effect_description)
+                with self.assertRaisesRegex(BatchFormatError, "strict configured effect"):
+                    Batch.open(self.repo, "B001", operations={"send": replace(binding, describe_effect=None)})
+
+    def test_legacy_configured_protected_binding_retains_explicit_declaration_only_scope(self):
+        checked, consumed = [], []
+        class DeclaredGovernance(Governance):
+            def permission(self, reference, action, actual_consumption):
+                checked.append(action.details["target"])
+                return PermissionAssessment(action.details["target"] == "declared", "outside scope", {},
+                                            ("external_submission",))
+        binding = OperationBinding.configured(lambda a, c: {"target": "resolved"},
+            lambda a, c, e: (consumed.append(e["target"]) or OperationResult("completed")),
+            ("external_submission",))
+        self.assertFalse(binding.require_effect_description)
+        batch = self._defined_batch(governance=DeclaredGovernance(), operations={"legacy": binding},
+                                    expected_consequences=("external_submission",))
+        batch.perform(Action("legacy", "legacy", "external", required_permissions=("V001",),
+                             possible_consequences=("external_submission",), details={"target": "declared"}))
+        self.assertEqual(checked, ["declared"])
+        self.assertEqual(consumed, ["resolved"])
+
+    def test_final_config_defaults_are_checked_without_realization(self):
+        seen, checked = [], []
+        class TargetGovernance(Governance):
+            def permission(self, reference, action, actual_consumption):
+                checked.append((action.details["target"], dict(action.requested_resources)))
+                return PermissionAssessment(action.details["target"] == "private", "target outside scope",
+                                            {"runs": 2}, ("external_submission",))
+        defaults = {"target": "public", "runs": 1}
+        def describe(action, context, effective):
+            return replace(action, details={"target": effective["target"]},
+                           requested_resources={"runs": effective["runs"]})
+        def consume(action, context, effective):
+            seen.append(effective)
+            return OperationResult("completed", resource_use=action.requested_resources)
+        binding = OperationBinding.configured_effect(lambda a, c: defaults, consume,
+            ("external_submission",), describe_effect=describe)
+        batch = self._defined_batch(governance=TargetGovernance(), operations={"send": binding},
+                                    expected_consequences=("external_submission",))
+        action = Action("first", "send", "external", required_permissions=("V001",),
+                        requested_resources={"runs": 1}, possible_consequences=("external_submission",),
+                        details={"target": "private"})
+        with self.assertRaisesRegex(ConsequenceBlocked, "target outside scope"):
+            batch.perform(action)
+        self.assertEqual(seen, [])
+        self.assertEqual(checked[-1][0], "public")
+        self.assertEqual(batch.view.export_record()["attempts"], [])
+        defaults["target"] = "private"
+        batch.perform(action)
+        self.assertEqual(seen, [{"target": "private", "runs": 1}])
+        defaults["runs"] = 2
+        with self.assertRaisesRegex(ConsequenceBlocked, "resource limit"):
+            batch.perform(replace(action, key="second"))
+        self.assertEqual(len(seen), 1)
+        defaults["runs"] = 1
+        batch.perform(replace(action, key="second"))
+        self.assertEqual(len(seen), 2)
+
+    def test_configured_input_is_resolved_once_and_retains_declared_requirements(self):
+        loads, seen = [], []
+        defaults = {"target": "selected"}
+        def load(action, context):
+            loads.append(True)
+            return defaults
+        def describe(action, context, effective):
+            defaults["target"] = "changed after preparation"
+            self.assertEqual(effective["target"], "selected")
+            return action
+        binding = OperationBinding.configured(load,
+            lambda a, c, e: (seen.append(e["target"]) or OperationResult("completed")),
+            describe_effect=describe)
+        batch = self._defined_batch(operations={"local": binding})
+        batch.perform(Action("local", "local", "preparation"))
+        self.assertEqual(loads, [True])
+        self.assertEqual(seen, ["selected"])
+        weakened = OperationBinding.configured(lambda a, c: {}, lambda *a: self.fail("must not consume"),
+            describe_effect=lambda a, c, e: replace(a, required_permissions=()))
+        runner = Batch.open(self.repo, "B001", state_path=self.state_path,
+                           governance=Governance(), operations={"local": weakened})
+        with self.assertRaisesRegex(ConsequenceBlocked, "removed declared requirements"):
+            runner.perform(Action("weaken", "local", "preparation", required_permissions=("V001",)))
+
     def _operation(
         self,
         run,

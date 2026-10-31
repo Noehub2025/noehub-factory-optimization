@@ -58,6 +58,22 @@ Claude Code can receive the same shared behavior through direct `AGENTS.md` supp
 
 The Codex Hook remains separate. It observes supported Codex events and does not make a capability maintained, grant authority, or provide a Claude Code Hook adapter.
 
+## Professional references at the execution entry
+
+Link the project's existing capability and professional-reference records from
+its `AGENTS.md`. The preparation helper can then include their descriptions
+independently of the proposed implementation's citations. The record helps the
+owner find applicable knowledge; it does not certify that every need is covered.
+Retrieve the selected method's actual content before relying on it.
+
+The optional [Codex owner adapter](../tools/workflow-harness/adapters/README.md)
+connects that preparation to an actual response, adopted choices, and the
+configuration consumed by a maintained operation. Existing valid grounds remain
+reusable. The adapter does not install Skills, select a project's model, change
+measurement meaning, or grant authority for external effects. Local tests check
+the connected path; scientific adequacy and receiving-project outcomes require
+their own applicable evidence.
+
 ## Project-owned affected checks
 
 Projects can connect their shared modules and deployment files to the workflow check selector with `tools/project-checks.json`:
@@ -100,3 +116,25 @@ python skills/frontier-optimization/scripts/run_workflow_checks.py \
 Use argument arrays, not shell strings. `{python}` resolves to the interpreter running the selector. The file is executable repository configuration and should be reviewed like other build configuration. A missing explicitly requested map or a malformed map fails instead of silently skipping project checks.
 
 Use repeated `--path` arguments only for an intentionally scoped dirty-worktree check, and report that scope. Release checks still run the current Workflow suite and the project commands selected by the changed paths.
+
+## Task context, research and selected effects
+
+The repository maintainer owns the portable adapters; each consuming project
+selects its actual owner, receiver and effect scope. See the
+[task entry](workflow/task-entry.md), [research account](workflow/research-basis.md)
+and [adapter guide](../tools/workflow-harness/adapters/README.md).
+
+| Entry | Dependencies and important defaults | Checks and limits |
+|---|---|---|
+| `scripts/workflow_task.py current` / `recover` | Python 3.10+, PyYAML, POSIX file locking, complete copied layout or desktop package; required consuming `--root`, explicit owner or existing Codex work association; receiver `current_codex` has no command | `tests/test_workflow_task.py`, `tests/test_workflow_research_basis.py`, `tests/test_desktop_plugin.py`; no native dispatch interception or authenticated native model return |
+| `scripts/noehub_setup.py` | Python 3.10+, Git and the complete package; defaults to a read-only plan; `--apply` adds project guidance after checking dependencies | `tests/test_desktop_plugin.py`; preserves existing instruction bytes and edited managed files, but cannot certify semantic agreement or host discovery |
+| `scripts/build_distribution.py` | Python 3.10+, Git and `packaging/distributions.json`; explicit profile and new output path; stable ZIP metadata | `tests/test_desktop_plugin.py`; market profile excludes Hooks, GitHub profile retains them; build success is not marketplace approval |
+| `frontier_references.py` research operations | Existing owner and sufficient prose or an optional adopted structured account | `test_research_basis.py`, `test_frontier_references.py`; publication and selected views do not establish complete research or semantic adoption |
+| `direction_owner.py` | Python, PyYAML and POSIX processes; explicit stdin consumer; 300-second timeout and 2,000,000-byte output allowance by default | `test_direction_owner.py`; no sandbox or automatic replay of an uncertain call |
+| `protected_http.py` | Python, local complete Skills and an owner-selected scope; one request, no redirects or retries | `test_protected_http.py`, `test_protected_effect.py`; only cooperative connected senders, with bounded withdrawal timing |
+| `managed_correction.py` | Python, PyYAML and a built Rust managed host; release binary preferred, debug fallback | `test_managed_correction.py`, Rust managed tests; source publication and Session activation are separate operations |
+
+Reconsider these arrangements when the consuming host, selected sources, actual
+configuration, effect scope or receiving path changes. Ordinary unchanged use
+can reuse applicable evidence. Passing local tests establishes neither live
+adoption nor better optimization outcomes. The Hook remains Codex-only.

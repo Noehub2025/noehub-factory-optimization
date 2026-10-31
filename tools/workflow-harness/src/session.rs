@@ -486,7 +486,13 @@ impl Session {
 
     pub fn unpause(&mut self) -> Result<()> {
         let mut next = self.runtime.clone();
-        next.unpause()?;
+        if self.has_prepared_managed_correction() {
+            // A correction can be fully prepared while paused. Keep that exact
+            // successor rather than allocating another invocation on resume.
+            next.paused = None;
+        } else {
+            next.unpause()?;
+        }
         self.persist(&next)?;
         self.runtime = next;
         let path = self.directory.join("pause-request.json");
@@ -1030,18 +1036,35 @@ impl Session {
         file.sync_all().map_err(|e| e.to_string())
     }
 
-    pub fn request(&mut self) -> Result<Invocation> {
+    fn observe_request_controls(&mut self) -> Result<()> {
         self.expire_decision()?;
         if self.decisions.holds() {
             return Err("decision or publication is pending; inspect host decision-status".into());
         }
-        self.observe_pause()?;
+        self.observe_pause()
+    }
+
+    pub fn request(&mut self) -> Result<Invocation> {
+        self.observe_request_controls()?;
+        self.render_request(false)
+    }
+
+    /// Build against staged state without checkpointing a separate control change.
+    fn render_request(&mut self, retain_pause: bool) -> Result<Invocation> {
         self.verify_judgment_consumption()?;
         if let Some(publication) = &self.decisions.publication {
             publication.verify()?;
         }
         let mut next = self.runtime.clone();
+        let paused = if retain_pause {
+            next.paused.take()
+        } else {
+            None
+        };
         let mut request = next.request()?;
+        if retain_pause {
+            next.paused = paused;
+        }
         if request.role == Role::Worker
             && let Some(binding) = &self.current_use.adopted
         {

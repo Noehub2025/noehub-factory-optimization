@@ -77,6 +77,15 @@ of the existing Skills, not additional stages or approval requirements.
 
 ### Responsibilities and design
 
+- Consequential realization choices retain their actual problem, professional
+  grounds, first useful observation, and intended consumer. The
+  [Batch interface](../skills/frontier-optimization/references/batch-current.md#professional-realization-and-actual-input-use)
+  connects prepared context, an actual owner response, adoption, and effective
+  configuration consumption. These relationships do not establish that the
+  professional choice is scientifically adequate. Use the optional
+  [Codex owner adapter](../tools/workflow-harness/adapters/README.md) only where
+  that explicit host integration is wanted.
+
 - One coordinator owns the task definition and search design; another owns the later campaign. Worker Skills cannot silently change either contract.
 
 - A fresh-context measurement designer can create or repair the complete decision-relevant protocol. It reconstructs how values are initialized, updated, aggregated, and related to the real objective; unsupported proxy relationships remain explicit. It separates execution, the intended change, the observed outcome, and its explanation when that distinction affects the decision, then asks only for evidence justified by the next use and the cost of being wrong. The framing coordinator must adopt that projection as a whole before it becomes part of the task contract.
